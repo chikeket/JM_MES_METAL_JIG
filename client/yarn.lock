@@ -4389,7 +4389,7 @@ duplexify@^3.5.0, duplexify@^3.6.0:
     readable-stream "^2.0.0"
     stream-shift "^1.0.0"
 
-"e2e@file:D:\\git\\JM_MES_METAL_JIG\\e2e":
+"e2e@file:D:\\git\\JM_MES_METAL_JIG\\client\\e2e":
   version "0.0.0"
   resolved "file:e2e"
 

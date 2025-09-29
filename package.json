@@ -1,0 +1,21 @@
+{
+  "name": "jm_mes_metal_jig",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chikeket/JM_MES_METAL_JIG.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/chikeket/JM_MES_METAL_JIG/issues"
+  },
+  "homepage": "https://github.com/chikeket/JM_MES_METAL_JIG#readme"
+}
