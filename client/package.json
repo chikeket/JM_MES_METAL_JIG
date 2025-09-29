@@ -3,9 +3,6 @@
   "private": true,
   "version": "3.1.0",
   "type": "module",
-  "workspaces": [
-    "e2e"
-  ],
   "scripts": {
     "dev": "vite",
     "build": "npm run lint && vue-tsc --noEmit && vite build",
@@ -16,9 +13,7 @@
     "format": "prettier --write .",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build",
-    "e2e": "yarn workspace e2e test",
-    "e2e:update-snapshots": "yarn workspace e2e update"
+    "build-storybook": "storybook build"
   },
   "lint-staged": {
     "./src/**/*.{ts,js,vue}": [
