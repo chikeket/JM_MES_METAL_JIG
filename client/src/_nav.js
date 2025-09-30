@@ -29,7 +29,6 @@ export default [
     component: 'CNavTitle',
     name: 'Components',
   },
-
   {
     component: 'CNavGroup',
     name: 'jamin',
@@ -45,6 +44,16 @@ export default [
   },
   {
     component: 'CNavGroup',
+
+    name: '오민수',
+    to: '/Minsu',
+    icon: 'cil-user',
+    items: [
+      {
+        component: 'CNavItem',
+        name: '수주 관리',
+        to: '/Minsu/rcvord',
+
     name: '생산',
     to: '/product',
     icon: 'cil-cursor',
@@ -53,6 +62,7 @@ export default [
         component: 'CNavItem',
         name: '생산지시',
         to: '/product/product-instructions',
+
       },
     ],
   },
