@@ -45,6 +45,19 @@ export default [
   },
   {
     component: 'CNavGroup',
+    name: '생산',
+    to: '/product',
+    icon: 'cil-cursor',
+    items: [
+      {
+        component: 'CNavItem',
+        name: '생산지시',
+        to: '/product/product-instructions',
+      },
+    ],
+  },
+  {
+    component: 'CNavGroup',
     name: 'zooE',
     to: '/zooE',
     icon: 'cil-cursor',
