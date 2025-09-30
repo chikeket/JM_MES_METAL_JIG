@@ -52,16 +52,6 @@ export default [
       },
       {
         component: 'CNavItem',
-        name: 'Calendar',
-        href: 'https://coreui.io/vue/docs/components/calendar.html',
-        external: true,
-        badge: {
-          color: 'danger',
-          text: 'PRO',
-        },
-      },
-      {
-        component: 'CNavItem',
         name: 'Carousels',
         to: '/base/carousels',
       },
@@ -102,25 +92,6 @@ export default [
       },
       {
         component: 'CNavItem',
-        name: 'Smart Pagination',
-        href: 'https://coreui.io/vue/docs/components/smart-pagination.html',
-        badge: {
-          color: 'danger',
-          text: 'PRO',
-        },
-      },
-      {
-        component: 'CNavItem',
-        name: 'Smart Table',
-        external: true,
-        href: 'https://coreui.io/vue/docs/components/smart-table.html',
-        badge: {
-          color: 'danger',
-          text: 'PRO',
-        },
-      },
-      {
-        component: 'CNavItem',
         name: 'Spinners',
         to: '/base/spinners',
       },
@@ -139,16 +110,6 @@ export default [
         name: 'Tooltips',
         to: '/base/tooltips',
       },
-      {
-        component: 'CNavItem',
-        name: 'Virtual Scroller',
-        href: 'https://coreui.io/vue/docs/components/virtual-scroller.html',
-        external: true,
-        badge: {
-          color: 'danger',
-          text: 'PRO',
-        },
-      }
     ],
   },
   {
@@ -169,16 +130,6 @@ export default [
       },
       {
         component: 'CNavItem',
-        name: 'Loading Button',
-        href: 'https://coreui.io/vue/docs/components/loading-button.html',
-        external: true,
-        badge: {
-          color: 'danger',
-          text: 'PRO',
-        },
-      },
-      {
-        component: 'CNavItem',
         name: 'Dropdowns',
         to: '/buttons/dropdowns',
       },
@@ -192,37 +143,8 @@ export default [
     items: [
       {
         component: 'CNavItem',
-        name: 'Autocomplete',
-        href: 'https://coreui.io/vue/docs/forms/autocomplete.html',
-        external: true,
-        badge: {
-          color: 'danger',
-          text: 'PRO',
-        },
-      },
-      {
-        component: 'CNavItem',
         name: 'Checks & Radios',
         to: '/forms/checks-radios',
-      },
-      {
-        component: 'CNavItem',
-        name: 'Date Picker',
-        href: 'https://coreui.io/vue/docs/forms/date-picker.html',
-        external: true,
-        badge: {
-          color: 'danger',
-          text: 'PRO',
-        },
-      },
-      {
-        component: 'CNavItem',
-        name: 'Date Range Picker',
-        href: 'https://coreui.io/vue/docs/forms/date-range-picker.html',
-        badge: {
-          color: 'danger',
-          text: 'PRO',
-        },
       },
       {
         component: 'CNavItem',
@@ -241,63 +163,13 @@ export default [
       },
       {
         component: 'CNavItem',
-        name: 'Password Input',
-        href: 'https://coreui.io/vue/docs/forms/password-input.html',
-        external: true,
-        badge: {
-          color: 'danger',
-          text: 'PRO',
-        },
-      },
-      {
-        component: 'CNavItem',
         name: 'Range',
         to: '/forms/range',
       },
       {
         component: 'CNavItem',
-        name: 'Range Slider',
-        href: 'https://coreui.io/vue/docs/forms/range-slider.html',
-        external: true,
-        badge: {
-          color: 'danger',
-          text: 'PRO',
-        },
-      },
-      {
-        component: 'CNavItem',
-        name: 'Rating',
-        href: 'https://coreui.io/vue/docs/forms/rating.html',
-        external: true,
-        badge: {
-          color: 'danger',
-          text: 'PRO',
-        },
-      },
-      {
-        component: 'CNavItem',
         name: 'Select',
         to: '/forms/select',
-      },
-      {
-        component: 'CNavItem',
-        name: 'Stepper',
-        href: 'https://coreui.io/vue/docs/forms/stepper.html',
-        external: true,
-        badge: {
-          color: 'danger',
-          text: 'PRO',
-        },
-      },
-      {
-        component: 'CNavItem',
-        name: 'Time Picker',
-        href: 'https://coreui.io/vue/docs/forms/time-picker.html',
-        external: true,
-        badge: {
-          color: 'danger',
-          text: 'PRO',
-        },
       },
       {
         component: 'CNavItem',
