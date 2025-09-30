@@ -50,11 +50,6 @@ const routes = [
             name: '자재발주',
             component: () => import('@/views/jamin/RscOrdr.vue'),
           },
-          {
-            path: '/jamin/test',
-            name: 'test',
-            component: () => import('@/views/jamin/test.vue'),
-          },
         ],
       },
 
@@ -69,9 +64,29 @@ const routes = [
         redirect: '/zooE/rsc-ordr',
         children: [
           {
-            path: '/zooE/rsc-ordr',
-            name: '주익이형',
-            component: () => import('@/views/zooE/RscOrdr.vue'),
+            path: '/zooE/company-manage',
+            name: '업체 관리',
+            component: () => import('@/views/zooE/CompanyManage.vue'),
+          },
+          {
+            path: '/zooE/menu1',
+            name: '생산 지시서 조회',
+            component: () => import('@/views/zooE/menu1.vue'),
+          },
+          {
+            path: '/zooE/rsc-manage',
+            name: '자재 관리',
+            component: () => import('@/views/zooE/rscManage.vue'),
+          },
+          {
+            path: '/zooE/prdt-manage',
+            name: '제품 관리',
+            component: () => import('@/views/zooE/prdtManage.vue'),
+          },
+          {
+            path: '/zooE/qlty-item-manage',
+            name: '품질 검사 항목 관리',
+            component: () => import('@/views/zooE/qltyItemManage.vue'),
           },
         ],
       },

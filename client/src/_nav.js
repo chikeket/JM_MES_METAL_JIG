@@ -41,11 +41,6 @@ export default [
         name: '자재 발주',
         to: '/jamin/rsc-ordr',
       },
-      {
-        component: 'CNavItem',
-        name: 'test',
-        to: '/jamin/test',
-      },
     ],
   },
   {
@@ -56,8 +51,28 @@ export default [
     items: [
       {
         component: 'CNavItem',
-        name: 'zooE',
-        to: '/zooE/rsc-ordr',
+        name: '업체 관리',
+        to: '/zooE/company-manage',
+      },
+      {
+        component: 'CNavItem',
+        name: '생산 지시',
+        to: '/zooE/menu1',
+      },
+      {
+        component: 'CNavItem',
+        name: '제품 관리',
+        to: '/zooE/prdt-manage',
+      },
+      {
+        component: 'CNavItem',
+        name: '품질 항목 관리',
+        to: '/zooE/qlty-item-manage',
+      },
+      {
+        component: 'CNavItem',
+        name: '자재 관리',
+        to: '/zooE/rsc-manage',
       },
     ],
   },
