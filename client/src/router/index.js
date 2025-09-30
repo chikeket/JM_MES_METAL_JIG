@@ -34,7 +34,23 @@ const routes = [
         name: 'Typography',
         component: () => import('@/views/theme/Typography.vue'),
       },
-
+      {
+        path: '/Minsu',
+        name: 'minsuMenu',
+        component: {
+          render() {
+            return h(resolveComponent('router-view'))
+          },
+        },
+        redirect: '/Minsu/rcvord',
+        children: [
+          {
+            path: '/Minsu/rcvord',
+            name: 'rcvord',
+            component: () => import('@/views/minsu/rcvord.vue'),
+          },
+        ],
+      },
       {
         path: '/jamin',
         name: 'jamin',
@@ -52,7 +68,6 @@ const routes = [
           },
         ],
       },
-
       {
         path: '/zooE',
         name: 'zooE',
