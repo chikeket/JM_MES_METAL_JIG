@@ -148,7 +148,7 @@ export default [
           color: 'danger',
           text: 'PRO',
         },
-      }
+      },
     ],
   },
   {
