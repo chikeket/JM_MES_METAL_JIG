@@ -81,7 +81,7 @@
     <CTable striped hover>
       <CTableHead>
         <CTableRow>
-          <CTableHeaderCell scope="col">No</CTableHeaderCell>
+          <CTableHeaderCell scope="col"><CFormCheck id="allCheck" /></CTableHeaderCell>
           <CTableHeaderCell scope="col">No</CTableHeaderCell>
           <CTableHeaderCell scope="col">자재 코드</CTableHeaderCell>
           <CTableHeaderCell scope="col">자재 이름</CTableHeaderCell>
@@ -92,36 +92,17 @@
       </CTableHead>
       <CTableBody>
         <CTableRow>
-          <CTableHeaderCell scope="row">1</CTableHeaderCell>
-          <CTableDataCell scope="row">1</CTableDataCell>
-          <CTableDataCell>Mark</CTableDataCell>
-          <CTableDataCell>Otto</CTableDataCell>
-          <CTableDataCell>@mdo</CTableDataCell>
-          <CTableDataCell>@mdo</CTableDataCell>
-          <CTableDataCell>@mdo</CTableDataCell>
-        </CTableRow>
-        <CTableRow>
-          <CTableHeaderCell scope="row">2</CTableHeaderCell>
-          <CTableDataCell scope="row">2</CTableDataCell>
-          <CTableDataCell>Jacob</CTableDataCell>
-          <CTableDataCell>Thornton</CTableDataCell>
-          <CTableDataCell>@fat</CTableDataCell>
-          <CTableDataCell>@fat</CTableDataCell>
-          <CTableDataCell>@fat</CTableDataCell>
-        </CTableRow>
-        <CTableRow>
-          <CTableHeaderCell scope="row">3</CTableHeaderCell>
-          <CTableDataCell scope="row">3</CTableDataCell>
-          <CTableDataCell>@twitter</CTableDataCell>
-          <CTableDataCell>@twitter</CTableDataCell>
-          <CTableDataCell>@twitter</CTableDataCell>
-          <CTableDataCell>@twitter</CTableDataCell>
+          <CTableHeaderCell scope="row"><CFormCheck id="flexCheckDefault" /></CTableHeaderCell>
+          <CTableDataCell scope="row"
+            ><CFormInput type="word" id="publication_date"
+          /></CTableDataCell>
+          <CTableDataCell></CTableDataCell>
+          <CTableDataCell></CTableDataCell>
+          <CTableDataCell></CTableDataCell>
+          <CTableDataCell></CTableDataCell>
+          <CTableDataCell></CTableDataCell>
         </CTableRow>
       </CTableBody>
     </CTable>
   </CContainer>
 </template>
-
-<script setup>
-import useDateUtils from '@/utils/useDates.js'
-</script>
