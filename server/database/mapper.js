@@ -1,37 +1,52 @@
-// server/database/mapper.js
+
+// MariaDB에 접속할 모듈
 const mariadb = require("mariadb");
-const path = require("path");
+// DB에서 실행할 SQL문을 별도 파일로 작성
+const sqlList = require("./sqlList.js");
 const dotenv = require("dotenv");
+dotenv.config() // .env 파일 로딩
 
-// .env 로드 (configs/dbConfig.env)
-dotenv.config({ path: path.resolve(__dirname, "configs", "dbConfig.env") });
 
-const pool = mariadb.createPool({
+// ConnectionPool 생성
+const connectionPool = mariadb.createPool({
+  // DB에 접속하는 정보
   host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT || 3306),
+  port: parseInt(process.env.DB_PORT, 10),
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  database: process.env.DB_DATABASE,
+  database: process.env.DB_NAME,
   connectionLimit: 10,
-  multipleStatements: false,
+
+  // Object의 필드정보(Entiry)를 Query문에 있는 '?'에 자동변환 설정
+  permitSetMultiParamEntries: true,
+  // DML(insert, update, delete)를 실행할 경우
+  // 반환되는 Object의 insertId 속성을 Number 타입으로 자동 변환
+  insertIdAsNumber: true,
+  // MariaDB의 데이터 타입 중 bigInt 타입을 Javascript의 Number 타입으로 자동 변환
+  // 해당 타입을 Javascript에선 자동으로 변환하지 못함
+  bigIntAsNumber: true,
+  // logger 등록
+  logger: {
+    // 실제 실행되는 SQL문이 console.log로 출력되도록 설정
+    query: console.log,
+    // error 발생 시 처리함수
+    error: console.log,
+  },
 });
 
-// 공통 쿼리 실행기
-async function query(sql, params = []) {
-  let conn;
+const query = async (alias, values) => {
+  let conn = null;
   try {
-    conn = await pool.getConnection();
-    const rows = await conn.query(sql, params);
-    // mariadb 드라이버는 rows에 meta가 섞여오지 않음 (mysql2와 다름)
-    return rows;
-  } catch (err) {
-    // 로깅 후 throw
-    console.error("[DB-ERROR]", err.message);
-    throw err;
+    conn = await connectionPool.getConnection();
+
+    const sql = sqlList[alias];
+    const result = await conn.query(sql, values);
+    return result;
   } finally {
     if (conn) conn.release();
   }
-}
+};
+
 
 module.exports = {
   query,

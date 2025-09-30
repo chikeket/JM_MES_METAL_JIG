@@ -68,6 +68,25 @@ const routes = [
           },
         ],
       },
+
+      {
+        path: '/product',
+        name: 'Product',
+        component: {
+          render() {
+            return h(resolveComponent('router-view'))
+          },
+        },
+        redirect: '/product/product-instructions',
+        children: [
+          {
+            path: '/product/product-instructions',
+            name: 'Product Component',
+            component: () => import('@/views/Product/instructions.vue'),
+          },
+        ],
+      },
+
       {
         path: '/zooE',
         name: 'zooE',
