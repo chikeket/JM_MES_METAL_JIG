@@ -1,25 +1,6 @@
 ## Git Commit Message Convention
 
-> This is adapted from [Angular's commit convention](https://github.com/conventional-changelog/conventional-changelog/tree/master/packages/conventional-changelog-angular).
-
-#### TL;DR:
-
-Messages must match the following regex:
-
-```js
-;/^(revert: )?(feat|fix|docs|style|refactor|test|ci|chore)(\(.+\))?: .{1,70}/
-```
-
-#### Types
-
-- `feat` - new functionality.
-- `fix` - patching a bug.
-- `docs` - documentation and comments.
-- `style` - style changes only (not necessarily in css).
-- `refactor` - reworking internals without impacting project interface.
-- `test` - tests and demo.
-- `ci` - deploy and continuous integration.
-- `chore` - no significant code changes: code formatting, version changes, tool updates, minor refactorings.
+> This is adapted from [Angular's commit convention](https://github.com/conventional-changelog/conventional-changelog/blob/master/packages/conventional-changelog-angular/convention.md).
 
 #### Examples
 
@@ -29,10 +10,10 @@ Appears under "Features" header, `compiler` subheader:
 feat(compiler): add 'comments' option
 ```
 
-Appears under "Bug Fixes" header, `v-model` subheader, with a link to issue #28:
+Appears under "Bug Fixes" header, `sidebar` subheader, with a link to issue #28:
 
 ```
-fix(v-model): handle events on blur
+fix(sidebar): handle events on blur
 
 close #28
 ```
@@ -40,7 +21,7 @@ close #28
 Appears under "Performance Improvements" header, and under "Breaking Changes" with the breaking change explanation:
 
 ```
-feat(core): improve vdom diffing by removing 'foo' option
+perf(core): improve vdom diffing by removing 'foo' option
 
 BREAKING CHANGE: The 'foo' option has been removed.
 ```
@@ -55,7 +36,7 @@ This reverts commit 667ecc1654a317a13331b17617d973392f415f02.
 
 ### Full Message Format
 
-A commit message consists of a **header**, **body** and **footer**. The header has a **type**, **scope** and **subject**:
+A commit message consists of a **header**, **body** and **footer**.  The header has a **type**, **scope** and **subject**:
 
 ```
 <type>(<scope>): <subject>
@@ -73,7 +54,7 @@ If the commit reverts a previous commit, it should begin with `revert: `, follow
 
 ### Type
 
-If the prefix is `feat` or `fix` it will appear in the changelog. However if there is any [BREAKING CHANGE](#footer), the commit will always appear in the changelog.
+If the prefix is `feat`, `fix` or `perf`, it will appear in the changelog. However if there is any [BREAKING CHANGE](#footer), the commit will always appear in the changelog.
 
 Other prefixes are up to your discretion. Suggested prefixes are `docs`, `chore`, `style`, `refactor`, and `test` for non-changelog related tasks.
 
@@ -85,9 +66,9 @@ The scope could be anything specifying place of the commit change. For example `
 
 The subject contains succinct description of the change:
 
-- use the imperative, present tense: "change" not "changed" nor "changes"
-- don't capitalize first letter
-- no period (.) at the end
+* use the imperative, present tense: "change" not "changed" nor "changes"
+* don't capitalize first letter
+* no dot (.) at the end
 
 ### Body
 
