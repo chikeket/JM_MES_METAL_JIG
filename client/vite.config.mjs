@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from 'node:path'
 import autoprefixer from 'autoprefixer'
+const server = 'http://localhost:3000';
 
 export default defineConfig(() => {
   return {
@@ -33,10 +34,14 @@ export default defineConfig(() => {
       extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.vue', '.scss'],
     },
     server: {
-      port: 3000,
+      port: 5000,
       proxy: {
-        // https://vitejs.dev/config/server-options.html
-      },
+        '^/api': {
+          target: server,
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, '/')
+        }
+      }
     },
   }
 })
