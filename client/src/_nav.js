@@ -29,6 +29,39 @@ export default [
     component: 'CNavTitle',
     name: 'Components',
   },
+
+  {
+    component: 'CNavGroup',
+    name: 'jamin',
+    to: '/jamin',
+    icon: 'cil-cursor',
+    items: [
+      {
+        component: 'CNavItem',
+        name: '자재 발주',
+        to: '/jamin/rsc-ordr',
+      },
+      {
+        component: 'CNavItem',
+        name: 'test',
+        to: '/jamin/test',
+      },
+    ],
+  },
+  {
+    component: 'CNavGroup',
+    name: 'zooE',
+    to: '/zooE',
+    icon: 'cil-cursor',
+    items: [
+      {
+        component: 'CNavItem',
+        name: 'zooE',
+        to: '/zooE/rsc-ordr',
+      },
+    ],
+  },
+
   {
     component: 'CNavGroup',
     name: 'Base',
