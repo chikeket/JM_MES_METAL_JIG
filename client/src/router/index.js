@@ -34,6 +34,48 @@ const routes = [
         name: 'Typography',
         component: () => import('@/views/theme/Typography.vue'),
       },
+
+      {
+        path: '/jamin',
+        name: 'jamin',
+        component: {
+          render() {
+            return h(resolveComponent('router-view'))
+          },
+        },
+        redirect: '/jamin/rsc-ordr',
+        children: [
+          {
+            path: '/jamin/rsc-ordr',
+            name: '자재발주',
+            component: () => import('@/views/jamin/RscOrdr.vue'),
+          },
+          {
+            path: '/jamin/test',
+            name: 'test',
+            component: () => import('@/views/jamin/test.vue'),
+          },
+        ],
+      },
+
+      {
+        path: '/zooE',
+        name: 'zooE',
+        component: {
+          render() {
+            return h(resolveComponent('router-view'))
+          },
+        },
+        redirect: '/zooE/rsc-ordr',
+        children: [
+          {
+            path: '/zooE/rsc-ordr',
+            name: '주익이형',
+            component: () => import('@/views/zooE/RscOrdr.vue'),
+          },
+        ],
+      },
+
       {
         path: '/base',
         name: 'Base',
