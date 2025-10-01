@@ -21,8 +21,14 @@ app.listen(3000, () => {
 
 const co = require("./routers/co_router.js"); // 업체(테스트 완료 주익이 나중에 쓰면 됨)
 
+const instruction = require("./routers/instruction_router.js");
+
+
+
+
 const rcvord = require("./routers/rcvord_router.js"); // 수주
 const rscOrdr = require("./routers/rscOrdr_router.js"); // 자재 발주
+
 const prdt = require("./routers/prdt_router.js");
 
 // 기본 라우팅
