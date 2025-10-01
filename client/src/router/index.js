@@ -81,7 +81,7 @@ const routes = [
         children: [
           {
             path: '/product/product-instructions',
-            name: 'Product Component',
+            name: 'instructions',
             component: () => import('@/views/Product/instructions.vue'),
           },
         ],
@@ -95,7 +95,7 @@ const routes = [
             return h(resolveComponent('router-view'))
           },
         },
-        redirect: '/zooE/rsc-ordr',
+        redirect: '/zooE/company-manage',
         children: [
           {
             path: '/zooE/company-manage',
@@ -121,6 +121,25 @@ const routes = [
             path: '/zooE/qlty-item-manage',
             name: '품질 검사 항목 관리',
             component: () => import('@/views/zooE/qltyItemManage.vue'),
+          },
+        ],
+      },
+
+      {
+        path: '/modal',
+        name: 'Modal',
+        component: {
+          render() {
+            return h(resolveComponent('router-view'))
+          },
+        },
+        redirect: '/modal/prdt',
+        children: [
+          {
+            path: '/modal/prdt',
+            name: '제품검색모달창',
+            component: () => import('@/views/modal/prdtModal.vue'),
+            meta: { isModal: true },
           },
         ],
       },
