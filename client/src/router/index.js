@@ -78,11 +78,15 @@ const routes = [{
           },
         },
         redirect: '/product/product-instructions',
-        children: [{
-          path: '/product/product-instructions',
-          name: 'Product Component',
-          component: () => import('@/views/Product/instructions.vue'),
-        }, ],
+
+        children: [
+          {
+            path: '/product/product-instructions',
+            name: 'instructions',
+            component: () => import('@/views/Product/instructions.vue'),
+          },
+        ],
+
       },
 
       {
@@ -93,8 +97,10 @@ const routes = [{
             return h(resolveComponent('router-view'))
           },
         },
+
         redirect: '/zooE/rsc-ordr',
         children: [{
+
             path: '/zooE/company-manage',
             name: '업체 관리',
             component: () => import('@/views/zooE/CompanyManage.vue'),
@@ -118,6 +124,25 @@ const routes = [{
             path: '/zooE/menu1',
             name: '생산 지시서 조회',
             component: () => import('@/views/zooE/menu1.vue'),
+          },
+        ],
+      },
+
+      {
+        path: '/modal',
+        name: 'Modal',
+        component: {
+          render() {
+            return h(resolveComponent('router-view'))
+          },
+        },
+        redirect: '/modal/prdt',
+        children: [
+          {
+            path: '/modal/prdt',
+            name: '제품검색모달창',
+            component: () => import('@/views/modal/prdtModal.vue'),
+            meta: { isModal: true },
           },
         ],
       },

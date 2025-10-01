@@ -3,12 +3,12 @@ const express = require("express");
 const router = express.Router();
 
 // 해당 라우터를 통해 제공할 서비스를 가져옴
-const instructionService = require("../services/instruction_service.js");
+const rcvordService = require("../services/rcvord_service.js");
 
-router.post("/instruction", async (req, res) => {
-  let bookInfo = req.body;
-  let result = await instructionService
-    .addNewInstruction(bookInfo)
+router.get("/rcvords", async (req, res) => {
+  let rcvordInfo = req.body;
+  let result = await rcvordService
+    .rcvordFindAll(rcvordInfo)
     .catch((err) => console.log(err));
   res.send(result);
 });

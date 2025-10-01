@@ -1,2 +1,6 @@
-node_modules
-dbConfig.env
+
+/node_modules
+/database/**/*.env
+
+
+
