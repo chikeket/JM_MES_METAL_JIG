@@ -16,15 +16,15 @@
           <CCardBody>
             <CRow class="g-3">
               <CCol :md="3">
-                <CFormLabel class="small mb-1">항목코드</CFormLabel>
+                <CFormLabel class="small mb-2">항목코드</CFormLabel>
                 <CFormInput v-model="form.itemCode" size="sm" placeholder="입력해주세요." />
               </CCol>
               <CCol :md="3">
-                <CFormLabel class="small mb-1">항목명</CFormLabel>
+                <CFormLabel class="small mb-2">항목명</CFormLabel>
                 <CFormInput v-model="form.itemName" size="sm" placeholder="입력해주세요." />
               </CCol>
               <CCol :md="2">
-                <CFormLabel class="small mb-1">타입</CFormLabel>
+                <CFormLabel class="small mb-2">타입</CFormLabel>
                 <CFormSelect v-model="form.type" size="sm">
                   <option value="">선택</option>
                   <option value="정량">정량</option>
@@ -32,26 +32,26 @@
                 </CFormSelect>
               </CCol>
               <CCol :md="2">
-                <CFormLabel class="small mb-1">버전</CFormLabel>
+                <CFormLabel class="small mb-2">버전</CFormLabel>
                 <CFormInput v-model="form.version" size="sm" placeholder="예: 1.0" />
               </CCol>
               <CCol :md="2">
-                <CFormLabel class="small mb-1">상태</CFormLabel>
+                <CFormLabel class="small mb-2">상태</CFormLabel>
                 <CFormSelect v-model="form.status" size="sm">
                   <option value="active">사용</option>
                   <option value="inactive">미사용</option>
                 </CFormSelect>
               </CCol>
               <CCol :md="2">
-                <CFormLabel class="small mb-1">기준치</CFormLabel>
+                <CFormLabel class="small mb-">기준치</CFormLabel>
                 <CFormInput v-model="form.standard" size="sm" placeholder="입력" />
               </CCol>
               <CCol :md="2">
-                <CFormLabel class="small mb-1">오차범위</CFormLabel>
+                <CFormLabel class="small mb-2">오차범위</CFormLabel>
                 <CFormInput v-model="form.tolerance" size="sm" placeholder="입력" />
               </CCol>
               <CCol :md="3">
-                <CFormLabel class="small mb-1">등록일</CFormLabel>
+                <CFormLabel class="small mb-2">등록일</CFormLabel>
                 <CFormInput type="date" v-model="form.createdAt" size="sm" />
               </CCol>
             </CRow>
@@ -183,13 +183,15 @@ const onDelete = () => {
 /* 버튼 스타일 */
 :deep(.btn) {
   font-size: 11px;
+  color: #fff;
+  padding: 0.5rem 2rem;
 }
 
 /* 폼 라벨 */
 :deep(label),
 :deep(.form-label) {
   font-size: 11px;
-  color: #444;
+  color: #white;
   font-weight: normal;
 }
 
