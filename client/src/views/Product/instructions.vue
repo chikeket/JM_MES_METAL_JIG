@@ -12,6 +12,8 @@ const goToPrdt = () => {
 const closePrdtModal = () => {
   isPrdtModalVisible.value = false
 }
+let empId = 'emp01'
+let instrucId = new Date().getTime();
 
 const Info = ref({
   ordrName1: '',
@@ -22,31 +24,81 @@ const Info = ref({
 })
 
 const insertRowsToDB = async () => {
-  // let obj = rows.value.map((row) => ({
-  //   ordrName: Info.value.ordrName1,
-  //   regDate: Info.value.regDate,
-  //   startDate: Info.value.startDate,
-  //   endDate: Info.value.endDate,
-  //   remark: Info.value.remark,
-  //   ...row, // row 객체의 모든 필드 포함
-  // }))
-  for (const row of rows.value) {
-    console.log(row)
+  // console.log(Info.value)
+  // console.log(instrucId)
+let obj = {
+    PROD_DRCT_ID: instrucId,
+    PROD_DRCT_NM: Info.value.ordrName1,
+    EMP_ID: empId,
+    PROD_DRCT_FR_DT: Info.value.startDate,
+    PROD_DRCT_TO_DT: Info.value.endDate,
+    REG_DT: Info.value.regDate,
+    RM: Info.value.remark,
+  };
+let result = await axios.post('/api/instruction', obj).catch((err) => console.log(err))
+  let addRes = result.data
+  if (addRes.isSuccessed) {
+    console.log('생산지시가 등록되었습니다.')
+  } else {
+    console.log('생산지시에 실패했습니다.')
   }
 
-  // let result = await axios.post('/api/books', obj).catch((err) => console.log(err))
-  // let addRes = result.data
-  // if (addRes.isSuccessed) {
-  //   alert('생산지시가 등록되었습니다.')
-  // } else {
-  //   alert('생산지시에 실패했습니다.')
-  // }
+  for (const row of rows.value) {
+    // console.log(row)
+    let obj = {
+    PROD_DRCT_DETA_ID: instrucId,
+    PROD_DRCT_ID: instrucId,
+    PROD_PLAN_DETA_ID: '',
+    PRDT_ID: row.prdtId,
+    PRDT_OPT_ID: row.prdtNm,
+    DRCT_QY: row.drctQy,
+    PRIORT: row.priort,
+    RM: row.rm,
+  };
+let result = await axios.post('/api/instructionDeta', obj).catch((err) => console.log(err))
+  let addRes = result.data
+  if (addRes.isSuccessed) {
+    console.log('생산지시상세가 등록되었습니다.')
+  } else {
+    console.log('생산지시상세에 실패했습니다.')
+  }
+  }
+
+  
 }
 
-const rows = ref([])
+const rows = ref([
+  // {
+  //   id: 1,
+  //   prdtId: 'a091',
+  //   prdtNm: 'a091',
+  //   spec: 'a091',
+  //   unit: 'a091',
+  //   planQy: 600,
+  //   drctQy: 0,
+  //   baseQuantity: 100,
+  //   unspecifiedQuantity: 0,
+  //   priort: 0,
+  //   rm: '',
+  // }
+  //,{     id: 2,
+  //   prdtId: 'a091',
+  //   prdtNm: 'a091',
+  //   spec: 'a091',
+  //   unit: 'a091',
+  //   planQy: 0,
+  //   drctQy: 0,
+  //   baseQuantity: 0,
+  //   unspecifiedQuantity: 0,
+  //   priort: 0,
+  //   rm: '',
+  // }
+])
 
 const selectedPrdt = (prdts) => {
+  const newId = rows.value.length > 0 ? Math.max(...rows.value.map(r => r.id ?? 0)) + 1 : 1
   rows.value.push({
+    id: newId,
     prdtId: prdts.PRDT_ID,
     prdtNm: prdts.PRDT_NM,
     spec: prdts.SPEC,
@@ -83,7 +135,17 @@ function commitEdit(row, field) {
   if (field === 'drctQy') {
     const n = Number(v)
     row.drctQy = Number.isFinite(n) ? n : 0
-    row.baseQuantity = row.baseQuantity + row.drctQy // 기존값에 더하기
+    //기지시수량 출력조건
+    row.baseQuantity = row.drctQy
+
+    //미지시수량 출력 조건
+if (row.planQy === 0) {
+      row.unspecifiedQuantity = 0
+    } else {
+      row.unspecifiedQuantity = row.planQy - row.baseQuantity
+    }
+
+
   } else if (field === 'producible') {
     row.producible = v === 'true' || v === true
   } else if (field === 'unit') {
@@ -196,17 +258,17 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
         <CTableHeaderCell scope="row">{{ row.planQy }}</CTableHeaderCell>
 
         <!-- 지시수량 -->
-        <CTableDataCell class="text-end" @dblclick="startEdit(row, idx)">
-          <template v-if="isEditing(row, idx)">
+        <CTableDataCell class="text-end" @dblclick="startEdit(row, 'drctQy')">
+          <template v-if="isEditing(row, 'drctQy')">
             <CFormInput
               v-model.number="editDraft"
               type="number"
               min="0"
               size="sm"
               class="text-end"
-              @keyup.enter="commitEdit(row, idx)"
+              @keyup.enter="commitEdit(row, 'drctQy')"
               @keyup.esc="cancelEdit"
-              @blur="commitEdit(row, idx)"
+              @blur="commitEdit(row, 'drctQy')"
               placeholder="0"
             />
           </template>
@@ -220,17 +282,17 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
         <CTableHeaderCell scope="row">{{ row.unspecifiedQuantity }}</CTableHeaderCell>
 
         <!-- 우선순위 -->
-        <CTableDataCell class="text-end" @dblclick="startEdit(row, idx + 'a')">
-          <template v-if="isEditing(row, idx + 'a')">
+        <CTableDataCell class="text-end" @dblclick="startEdit(row, 'priort')">
+          <template v-if="isEditing(row, 'priort')">
             <CFormInput
               v-model.number="editDraft"
               type="number"
               min="0"
               size="sm"
               class="text-end"
-              @keyup.enter="commitEdit(row, idx + 'a')"
+              @keyup.enter="commitEdit(row, 'priort')"
               @keyup.esc="cancelEdit"
-              @blur="commitEdit(row, idx + 'a')"
+              @blur="commitEdit(row, 'priort')"
               placeholder="0"
             />
           </template>

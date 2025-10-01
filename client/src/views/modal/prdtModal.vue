@@ -56,6 +56,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['close'])
 const close = () => {
+  prdtList.value = [] 
   emit('close')
 }
 

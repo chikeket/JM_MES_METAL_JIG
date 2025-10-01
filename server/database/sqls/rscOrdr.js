@@ -29,9 +29,9 @@ RM
 FROM  RSC_ORDR O JOIN RSC_ORDR_DETA_ID D
                   ON `;
 
-const 
+
 
 //
 module.exports = {
-  selectRscOrdrList,
+	selectRscOrdrList,
 };

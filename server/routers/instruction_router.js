@@ -6,9 +6,17 @@ const router = express.Router();
 const instructionService = require("../services/instruction_service.js");
 
 router.post("/instruction", async (req, res) => {
-  let bookInfo = req.body;
+  let metalInfo = req.body;
   let result = await instructionService
-    .addNewInstruction(bookInfo)
+    .addNewInstruction(metalInfo)
+    .catch((err) => console.log(err));
+  res.send(result);
+});
+
+router.post("/instructionDeta", async (req, res) => {
+  let metalInfo = req.body;
+  let result = await instructionService
+    .addNewInstruction(metalInfo)
     .catch((err) => console.log(err));
   res.send(result);
 });
