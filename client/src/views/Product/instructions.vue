@@ -26,13 +26,24 @@ const Info = ref({
 const insertRowsToDB = async () => {
   // console.log(Info.value)
   // console.log(instrucId)
+let nullchk ;
+  if(Info.value.regDate ==''){    
+    const date = new Date()
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}`;
+    nullchk = formattedDate
+  }else{
+    nullchk = Info.value.regDate
+  }
 let obj = {
     PROD_DRCT_ID: instrucId,
     PROD_DRCT_NM: Info.value.ordrName1,
     EMP_ID: empId,
     PROD_DRCT_FR_DT: Info.value.startDate,
     PROD_DRCT_TO_DT: Info.value.endDate,
-    REG_DT: Info.value.regDate,
+    REG_DT: nullchk,
     RM: Info.value.remark,
   };
 let result = await axios.post('/api/instruction', obj).catch((err) => console.log(err))
@@ -43,17 +54,17 @@ let result = await axios.post('/api/instruction', obj).catch((err) => console.lo
     console.log('생산지시에 실패했습니다.')
   }
 
-  for (const row of rows.value) {
-    // console.log(row)
-    let obj = {
-    PROD_DRCT_DETA_ID: instrucId,
+  for (let row of rows.value) {
+    let info = JSON.parse(JSON.stringify(row));
+    console.log(info.prdtId)
+    let obj = {    
     PROD_DRCT_ID: instrucId,
     PROD_PLAN_DETA_ID: '',
-    PRDT_ID: row.prdtId,
-    PRDT_OPT_ID: row.prdtNm,
-    DRCT_QY: row.drctQy,
-    PRIORT: row.priort,
-    RM: row.rm,
+    PRDT_ID: info.prdtId,
+    PRDT_OPT_ID: info.prdtNm,
+    DRCT_QY: info.drctQy,
+    PRIORT: info.priort,
+    RM: info.rm,
   };
 let result = await axios.post('/api/instructionDeta', obj).catch((err) => console.log(err))
   let addRes = result.data
@@ -110,7 +121,7 @@ const selectedPrdt = (prdts) => {
     priort: 0,
     rm: prdts.RM,
   })
-  // console.log(prdts)
+  console.log(rows.value)
 }
 
 const reset = () => {
@@ -166,6 +177,7 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
 </script>
 
 <template>
+  <CContainer fluid>
   <div class="d-flex justify-content-end gap-2 mb-3">
     <CButton color="secondary">신규</CButton>
     <CButton color="secondary">생산지시서 조회</CButton>
@@ -309,4 +321,5 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
       </CTableRow>
     </CTableBody>
   </CTable>
+  </CContainer>
 </template>

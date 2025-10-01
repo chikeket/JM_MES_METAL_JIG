@@ -30,12 +30,12 @@ const addNewInstruction = async (Info) => {
 
 const addNewInstructionDeta = async (Info) => {
     let insertColumns = [
-        'PROD_DRCT_DETA_ID', 'PROD_DRCT_ID', 'PROD_PLAN_DETA_ID', 'PRDT_ID', 'PRDT_OPT_ID', 'DRCT_QY', 'PRIORT', 'RM'
+        'PROD_DRCT_ID', 'PROD_PLAN_DETA_ID', 'PRDT_ID', 'PRDT_OPT_ID', 'DRCT_QY', 'PRIORT', 'RM'
     ];
     let data = convertObjToAry(Info, insertColumns);
-
+    // console.log(Info)
     let resInfo = await mariadb
-        .query("instructionInsertDeta", data)
+        .query("instructionInsertDetail", data)
         .catch((err) => console.log(err));
 
     let result = null;

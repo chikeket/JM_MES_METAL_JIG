@@ -6,8 +6,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?)`;
 
 const instructionInsertDetail =
   //
-  `INSERT INTO PROD_DRCT_DETA (PROD_DRCT_DETA_ID, PROD_DRCT_ID, PROD_PLAN_DETA_ID, PRDT_ID, PRDT_OPT_ID, DRCT_QY, PRIORT, RM)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+  `INSERT INTO PROD_DRCT_DETA (PROD_DRCT_ID, PROD_PLAN_DETA_ID, PRDT_ID, PRDT_OPT_ID, DRCT_QY, PRIORT, RM)
+VALUES (?, ?, ?, ?, ?, ?, ?)`;
 
 module.exports = {
   instructionInsert,
