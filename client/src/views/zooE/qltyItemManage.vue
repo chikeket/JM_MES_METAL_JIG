@@ -1,58 +1,58 @@
 <template>
   <CContainer fluid class="h-100 d-flex flex-column p-0 m-0">
     <CCard class="flex-grow-1 d-flex flex-column overflow-hidden m-0 h-100">
-      <CCardBody class="p-2 d-flex flex-column overflow-hidden flex-grow-1 min-vh-0">
+      <CCardBody class="p-2 d-flex flex-column overflow-hidden flex-grow-1">
 
-        <!-- 상단 버튼 -->
-        <div class="d-flex justify-content-end mb-2 gap-2 flex-wrap">
-          <CButton color="secondary" size="sm" @click="onSearch">조회</CButton>
-          <CButton color="secondary" size="sm" @click="onReset">초기화</CButton>
-          <CButton color="secondary" size="sm" @click="onSave">저장</CButton>
-          <CButton color="danger" size="sm" @click="onDelete">삭제</CButton>
+        <!-- 상단 조회/초기화/저장/삭제 버튼 -->
+        <div class="d-flex justify-content-end mb-2 gap-2">
+          <CButton color="secondary" size="sm" @click="handleSearch">조회</CButton>
+          <CButton color="secondary" size="sm" @click="handleReset">초기화</CButton>
+          <CButton color="secondary" size="sm" @click="handleSave">저장</CButton>
+          <CButton color="danger" size="sm" @click="handleDelete">삭제</CButton>
         </div>
 
-        <!-- 상단 폼 -->
+        <!-- 검색 필터 영역 -->
         <CCard class="mb-2">
           <CCardBody>
             <CRow class="g-3">
               <CCol :md="3">
-                <CFormLabel class="small mb-2">항목코드</CFormLabel>
-                <CFormInput v-model="form.itemCode" size="sm" placeholder="입력해주세요." />
+                <CFormLabel class="form-label">항목코드</CFormLabel>
+                <CFormInput v-model="formData.itemCode" size="sm" placeholder="입력해주세요" />
               </CCol>
               <CCol :md="3">
-                <CFormLabel class="small mb-2">항목명</CFormLabel>
-                <CFormInput v-model="form.itemName" size="sm" placeholder="입력해주세요." />
+                <CFormLabel class="form-label">항목명</CFormLabel>
+                <CFormInput v-model="formData.itemName" size="sm" placeholder="입력해주세요" />
               </CCol>
               <CCol :md="2">
-                <CFormLabel class="small mb-2">타입</CFormLabel>
-                <CFormSelect v-model="form.type" size="sm">
+                <CFormLabel class="form-label">타입</CFormLabel>
+                <CFormSelect v-model="formData.type" size="sm">
                   <option value="">선택</option>
                   <option value="정량">정량</option>
                   <option value="미달">미달</option>
                 </CFormSelect>
               </CCol>
               <CCol :md="2">
-                <CFormLabel class="small mb-2">버전</CFormLabel>
-                <CFormInput v-model="form.version" size="sm" placeholder="예: 1.0" />
+                <CFormLabel class="form-label">버전</CFormLabel>
+                <CFormInput v-model="formData.version" size="sm" placeholder="예: 1.0" />
               </CCol>
               <CCol :md="2">
-                <CFormLabel class="small mb-2">상태</CFormLabel>
-                <CFormSelect v-model="form.status" size="sm">
+                <CFormLabel class="form-label">상태</CFormLabel>
+                <CFormSelect v-model="formData.status" size="sm">
                   <option value="active">사용</option>
                   <option value="inactive">미사용</option>
                 </CFormSelect>
               </CCol>
               <CCol :md="2">
-                <CFormLabel class="small mb-">기준치</CFormLabel>
-                <CFormInput v-model="form.standard" size="sm" placeholder="입력" />
+                <CFormLabel class="form-label">기준치</CFormLabel>
+                <CFormInput v-model="formData.standard" size="sm" placeholder="입력" />
               </CCol>
               <CCol :md="2">
-                <CFormLabel class="small mb-2">오차범위</CFormLabel>
-                <CFormInput v-model="form.tolerance" size="sm" placeholder="입력" />
+                <CFormLabel class="form-label">오차범위</CFormLabel>
+                <CFormInput v-model="formData.tolerance" size="sm" placeholder="입력" />
               </CCol>
               <CCol :md="3">
-                <CFormLabel class="small mb-2">등록일</CFormLabel>
-                <CFormInput type="date" v-model="form.createdAt" size="sm" />
+                <CFormLabel class="form-label">등록일</CFormLabel>
+                <CFormInput type="date" v-model="formData.createdAt" size="sm" />
               </CCol>
             </CRow>
           </CCardBody>
@@ -60,39 +60,42 @@
 
         <!-- 신규/저장/삭제 버튼 -->
         <div class="d-flex justify-content-end gap-2 mb-2">
-          <CButton color="secondary" size="sm" @click="onNew">신규</CButton>
-          <CButton color="secondary" size="sm" @click="onSave">저장</CButton>
-          <CButton color="danger" size="sm" @click="onDelete">삭제</CButton>
+          <CButton color="secondary" size="sm" @click="handleNew">신규</CButton>
+          <CButton color="secondary" size="sm" @click="handleSave">저장</CButton>
+          <CButton color="danger" size="sm" @click="handleDelete">삭제</CButton>
         </div>
 
-        <!-- 본문: 그리드 -->
+        <!-- 메인 컨텐츠 영역: 그리드 테이블 -->
         <CCard class="flex-grow-1 overflow-hidden d-flex flex-column">
           <CCardBody class="p-0 d-flex flex-column">
-            <div style="flex: 1; overflow-y: scroll;">
-              <CTable bordered hover class="mb-0" style="min-height: 320px; border-collapse: collapse;">
-                <CTableHead style="position: sticky; top: 0; z-index: 1;">
-                  <CTableRow class="text-center" style="font-weight: bold; background-color: #e9ecef;">
-                    <CTableHeaderCell style="width: 50px; background-color: #e9ecef;">
-                      <CFormCheck :checked="allChecked" @change="toggleAllCheck" />
+            <div class="table-wrapper">
+              <CTable bordered hover class="data-table">
+                <CTableHead>
+                  <CTableRow>
+                    <CTableHeaderCell style="width: 50px;">
+                      <CFormCheck 
+                        :checked="isAllChecked" 
+                        @change="handleToggleAll" 
+                      />
                     </CTableHeaderCell>
-                    <CTableHeaderCell style="background-color: #e9ecef;">품목코드</CTableHeaderCell>
-                    <CTableHeaderCell style="background-color: #e9ecef;">품목명</CTableHeaderCell>
-                    <CTableHeaderCell style="background-color: #e9ecef;">담당자명</CTableHeaderCell>
+                    <CTableHeaderCell>품목코드</CTableHeaderCell>
+                    <CTableHeaderCell>품목명</CTableHeaderCell>
+                    <CTableHeaderCell>담당자명</CTableHeaderCell>
                   </CTableRow>
                 </CTableHead>
                 <CTableBody>
-                  <CTableRow v-for="(item, idx) in displayTableData" :key="idx">
-                    <CTableDataCell class="text-center" style="background-color: #f8f9fa;">
+                  <!-- 데이터 행 -->
+                  <CTableRow v-for="(item, index) in displayedData" :key="index">
+                    <CTableDataCell class="text-center checkbox-cell">
                       <CFormCheck v-model="item.checked" />
                     </CTableDataCell>
                     <CTableDataCell>{{ item.productCode }}</CTableDataCell>
                     <CTableDataCell>{{ item.productName }}</CTableDataCell>
                     <CTableDataCell>{{ item.manager }}</CTableDataCell>
                   </CTableRow>
-
-                  <!-- 빈 줄로 10줄 고정 -->
-                  <CTableRow v-for="i in emptyRows" :key="'empty-' + i">
-                    <CTableDataCell colspan="4" style="height: 32px;">&nbsp;</CTableDataCell>
+                  <!-- 빈 행 채우기 (10행 고정) -->
+                  <CTableRow v-for="i in emptyRowCount" :key="'empty-' + i" class="empty-row">
+                    <CTableDataCell colspan="4">&nbsp;</CTableDataCell>
                   </CTableRow>
                 </CTableBody>
               </CTable>
@@ -106,10 +109,14 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed } from 'vue'
+import { ref, reactive, computed } from 'vue'
+
+// ============================================
+// 데이터 정의
+// ============================================
 
 // 상단 폼 데이터
-const form = reactive({
+const formData = reactive({
   itemCode: '',
   itemName: '',
   type: '',
@@ -120,34 +127,55 @@ const form = reactive({
   createdAt: ''
 })
 
-// 하단 그리드 데이터
-const tableData = ref([
-  { checked: false, productCode: 'P001', productName: '품목 A', manager: '홍길동' },
-  { checked: false, productCode: 'P002', productName: '품목 B', manager: '이몽룡' },
-  { checked: false, productCode: 'P003', productName: '품목 C', manager: '성춘향' }
+// 그리드 데이터
+const gridData = ref([
+  {
+    checked: false,
+    productCode: 'P001',
+    productName: '품목 A',
+    manager: '홍길동'
+  },
+  {
+    checked: false,
+    productCode: 'P002',
+    productName: '품목 B',
+    manager: '이몽룡'
+  },
+  {
+    checked: false,
+    productCode: 'P003',
+    productName: '품목 C',
+    manager: '성춘향'
+  }
 ])
 
-const displayTableData = computed(() => tableData.value.slice(0, 10))
-const emptyRows = computed(() => Math.max(0, 10 - displayTableData.value.length))
+// ============================================
+// Computed (계산된 속성)
+// ============================================
 
-// 모든 체크박스가 선택됐는지 계산 (헤더 체크박스 상태)
-const allChecked = computed(() => {
-  return displayTableData.value.length > 0 && displayTableData.value.every(item => item.checked)
+// 화면에 표시할 데이터 (최대 10개)
+const displayedData = computed(() => gridData.value.slice(0, 10))
+
+// 빈 행 개수 (10행 고정을 위해)
+const emptyRowCount = computed(() => Math.max(0, 10 - displayedData.value.length))
+
+// 전체 선택 체크 상태
+const isAllChecked = computed(() => {
+  return displayedData.value.length > 0 && displayedData.value.every(item => item.checked)
 })
 
-// 헤더 체크박스 클릭 시 모두 선택/해제 토글
-const toggleAllCheck = (event) => {
-  const checked = event.target.checked
-  displayTableData.value.forEach(item => (item.checked = checked))
+// ============================================
+// 메서드 (이벤트 핸들러)
+// ============================================
+
+// 조회 버튼 클릭
+const handleSearch = () => {
+  console.log('조회:', formData)
 }
 
-// 버튼 핸들러
-const onSearch = () => {
-  console.log('조회 클릭')
-}
-
-const onReset = () => {
-  Object.assign(form, {
+// 초기화 버튼 클릭
+const handleReset = () => {
+  Object.assign(formData, {
     itemCode: '',
     itemName: '',
     type: '',
@@ -157,57 +185,105 @@ const onReset = () => {
     tolerance: '',
     createdAt: ''
   })
-  tableData.value.forEach(row => (row.checked = false))
+  // 모든 체크 해제
+  gridData.value.forEach(item => item.checked = false)
 }
 
-const onNew = () => {
-  onReset()
+// 신규 버튼 클릭
+const handleNew = () => {
+  handleReset()
 }
 
-const onSave = () => {
-  console.log('저장:', form)
+// 저장 버튼 클릭
+const handleSave = () => {
+  console.log('저장:', formData)
 }
 
-const onDelete = () => {
-  tableData.value = tableData.value.filter(row => !row.checked)
+// 삭제 버튼 클릭 (체크된 항목 삭제)
+const handleDelete = () => {
+  gridData.value = gridData.value.filter(item => !item.checked)
+}
+
+// 전체 선택/해제 토글
+const handleToggleAll = (event) => {
+  const checked = event.target.checked
+  displayedData.value.forEach(item => item.checked = checked)
 }
 </script>
 
 <style scoped>
-/* 전체 기본 폰트 설정 */
+/* ============================================
+   전역 스타일
+   ============================================ */
 :deep(*) {
-  font-family: '맑은 고딕', Malgun Gothic, sans-serif;
+  font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
   line-height: 1.4;
+  box-sizing: border-box;
+  color: #000;
 }
 
-/* 버튼 스타일 */
+/* ============================================
+   버튼 스타일
+   ============================================ */
 :deep(.btn) {
   font-size: 11px;
-  color: #fff;
+  color: #fff !important;
   padding: 0.5rem 2rem;
 }
 
-/* 폼 라벨 */
-:deep(label),
+/* ============================================
+   폼 요소 스타일
+   ============================================ */
 :deep(.form-label) {
   font-size: 11px;
-  color: #white;
   font-weight: normal;
+  color: #444;
+  margin-bottom: 4px;
 }
 
-/* 입력 필드 (input, select 등) */
-:deep(input),
-:deep(select),
-:deep(textarea),
 :deep(.form-control),
 :deep(.form-select) {
   font-size: 12px;
   font-weight: normal;
+  padding: 0.25rem 0.5rem;
 }
 
-/* 테이블 헤더 */
-:deep(th),
-:deep(.table thead th) {
+:deep(input[type="date"]) {
+  font-size: 12px;
+}
+
+/* ============================================
+   체크박스 스타일
+   ============================================ */
+:deep(.form-check-input) {
+  cursor: pointer;
+}
+
+.checkbox-cell {
+  background-color: #f8f9fa;
+}
+
+/* ============================================
+   테이블 스타일
+   ============================================ */
+.table-wrapper {
+  flex: 1;
+  overflow-y: auto;
+}
+
+:deep(.data-table) {
+  margin-bottom: 0;
+  border-collapse: collapse;
+  min-height: 320px;
+}
+
+:deep(.data-table thead) {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+:deep(.data-table th) {
   font-size: 12px;
   font-weight: bold;
   background-color: #e9ecef;
@@ -215,32 +291,26 @@ const onDelete = () => {
   text-align: center;
 }
 
-/* 테이블 본문 셀 */
-:deep(td),
-:deep(.table tbody td) {
+:deep(.data-table td) {
   font-size: 11px;
-  color: #333;
+  vertical-align: middle;
 }
 
-/* 체크박스 라벨 (숨겨진 텍스트 방지용) */
-:deep(.form-check-label) {
-  font-size: 11px;
+/* 빈 행 스타일 */
+.empty-row td {
+  height: 32px;
 }
 
-/* 날짜 입력 필드 */
-:deep(input[type="date"]) {
-  font-size: 12px;
-}
-
-/* 반응형 대응 (선택사항) */
+/* ============================================
+   반응형
+   ============================================ */
 @media (max-width: 768px) {
-  :deep(label),
   :deep(.form-label),
-  :deep(input),
-  :deep(select),
+  :deep(.form-control),
+  :deep(.form-select),
   :deep(.btn),
-  :deep(td),
-  :deep(th) {
+  :deep(th),
+  :deep(td) {
     font-size: 11px !important;
   }
 }

@@ -1,104 +1,124 @@
 <template>
   <CContainer fluid class="h-100 d-flex flex-column p-0 m-0">
     <CCard class="flex-grow-1 d-flex flex-column overflow-hidden m-0 h-100">
-      <CCardBody class="p-2 d-flex flex-column overflow-hidden flex-grow-1 min-vh-0">
+      <CCardBody class="p-2 d-flex flex-column overflow-hidden flex-grow-1">
 
-        <!-- 상단 버튼 -->
-        <div class="d-flex justify-content-end mb-2 gap-2 flex-wrap">
-          <CButton color="secondary" size="sm" @click="onSearch">조회</CButton>
-          <CButton color="secondary" size="sm" @click="onReset">초기화</CButton>
+        <!-- 상단 조회/초기화 버튼 -->
+        <div class="d-flex justify-content-end mb-2 gap-2">
+          <CButton color="secondary" size="sm" @click="handleSearch">조회</CButton>
+          <CButton color="secondary" size="sm" @click="handleReset">초기화</CButton>
         </div>
 
-        <!-- 검색 필터 -->
+        <!-- 검색 필터 영역 -->
         <CCard class="mb-2">
           <CCardBody>
             <CRow class="g-3">
               <CCol :md="4">
-                <CFormLabel class="small mb-1">자재명</CFormLabel>
-                <CFormInput v-model="filters.materialName" size="sm" placeholder="입력해주세요." />
+                <CFormLabel class="form-label">자재명</CFormLabel>
+                <CFormInput v-model="searchFilters.materialName" size="sm" placeholder="입력해주세요" />
               </CCol>
               <CCol :md="4">
-                <CFormLabel class="small mb-1">자재분류타입</CFormLabel>
-                <CFormInput v-model="filters.materialType" size="sm" placeholder="입력해주세요." />
+                <CFormLabel class="form-label">자재분류타입</CFormLabel>
+                <CFormInput v-model="searchFilters.materialType" size="sm" placeholder="입력해주세요" />
               </CCol>
             </CRow>
           </CCardBody>
         </CCard>
 
-        <!-- 버튼 -->
-        <div class="d-flex justify-content-end gap-2 mb-2">
-          <CButton color="secondary" size="sm" @click="onNew">신규</CButton>
-          <CButton color="secondary" size="sm" @click="onSave">저장</CButton>
-          <CButton color="danger" size="sm" @click="onDelete">삭제</CButton>
-        </div>
-
-        <!-- 메인 영역 -->
-        <CRow class="g-2 flex-grow-1 min-vh-0">
-          <!-- 좌측 테이블 -->
-          <CCol :md="6" class="d-flex flex-column min-vh-0">
-            <CCard class="rounded flex-grow-1 d-flex flex-column overflow-hidden">
-              <CCardBody class="p-0 flex-grow-1 overflow-auto">
-                <CTable bordered hover class="ctable mb-0">
-                  <CTableHead class="sticky-top bg-light">
-                    <CTableRow class="text-center">
-                      <CTableHeaderCell>자재코드</CTableHeaderCell>
-                      <CTableHeaderCell>자재분류타입</CTableHeaderCell>
-                      <CTableHeaderCell>자재명</CTableHeaderCell>
-                      <CTableHeaderCell>규격</CTableHeaderCell>
-                      <CTableHeaderCell>수량단위</CTableHeaderCell>
-                      <CTableHeaderCell>비고</CTableHeaderCell>
-                    </CTableRow>
-                  </CTableHead>
-                  <CTableBody>
-                    <CTableRow
-                      v-for="(item, index) in displayData"
-                      :key="index"
-                      @click="onSelect(item)"
-                      :class="{ 'table-active': selectedRow === index }"
-                      style="cursor: pointer;"
-                    >
-                      <CTableDataCell class="text-end">{{ item.materialCode }}</CTableDataCell>
-                      <CTableDataCell class="text-start">{{ item.materialType }}</CTableDataCell>
-                      <CTableDataCell class="text-start">{{ item.materialName }}</CTableDataCell>
-                      <CTableDataCell class="text-start">{{ item.spec }}</CTableDataCell>
-                      <CTableDataCell class="text-start">{{ item.unit }}</CTableDataCell>
-                      <CTableDataCell class="text-start">{{ item.remark }}</CTableDataCell>
-                    </CTableRow>
-
-                    <CTableRow v-for="i in emptyRows" :key="'empty-' + i">
-                      <CTableDataCell colspan="6" style="height: 32px;">&nbsp;</CTableDataCell>
-                    </CTableRow>
-                  </CTableBody>
-                </CTable>
+        <!-- 메인 컨텐츠 영역 -->
+        <CRow class="flex-grow-1 overflow-hidden g-2">
+          
+          <!-- 좌측: 데이터 그리드 -->
+          <CCol :md="6" class="d-flex flex-column overflow-hidden">
+            <!-- 높이 맞추기용 투명 버튼 영역 -->
+            <div class="button-spacer mb-2">
+              <CButton color="secondary" size="sm">신규</CButton>
+              <CButton color="secondary" size="sm">저장</CButton>
+              <CButton color="danger" size="sm">삭제</CButton>
+            </div>
+            
+            <!-- 그리드 테이블 -->
+            <CCard class="flex-grow-1 overflow-hidden d-flex flex-column">
+              <CCardBody class="p-0 d-flex flex-column">
+                <div class="table-wrapper">
+                  <CTable bordered hover class="data-table">
+                    <CTableHead>
+                      <CTableRow>
+                        <CTableHeaderCell>자재코드</CTableHeaderCell>
+                        <CTableHeaderCell>자재분류타입</CTableHeaderCell>
+                        <CTableHeaderCell>자재명</CTableHeaderCell>
+                        <CTableHeaderCell>규격</CTableHeaderCell>
+                        <CTableHeaderCell>수량단위</CTableHeaderCell>
+                        <CTableHeaderCell>비고</CTableHeaderCell>
+                      </CTableRow>
+                    </CTableHead>
+                    <CTableBody>
+                      <!-- 데이터 행 -->
+                      <CTableRow
+                        v-for="(item, index) in displayedData"
+                        :key="index"
+                        @click="handleRowSelect(item, index)"
+                        :class="{ 'selected-row': selectedRowIndex === index }"
+                      >
+                        <CTableDataCell class="text-end">{{ item.materialCode }}</CTableDataCell>
+                        <CTableDataCell>{{ item.materialType }}</CTableDataCell>
+                        <CTableDataCell>{{ item.materialName }}</CTableDataCell>
+                        <CTableDataCell>{{ item.spec }}</CTableDataCell>
+                        <CTableDataCell>{{ item.unit }}</CTableDataCell>
+                        <CTableDataCell>{{ item.remark }}</CTableDataCell>
+                      </CTableRow>
+                      <!-- 빈 행 채우기 (10행 고정) -->
+                      <CTableRow v-for="i in emptyRowCount" :key="'empty-' + i" class="empty-row">
+                        <CTableDataCell colspan="6">&nbsp;</CTableDataCell>
+                      </CTableRow>
+                    </CTableBody>
+                  </CTable>
+                </div>
               </CCardBody>
             </CCard>
           </CCol>
 
-          <!-- 우측 폼 -->
-          <CCol :md="6" class="d-flex flex-column min-vh-0">
+          <!-- 우측: 상세 입력 폼 -->
+          <CCol :md="6" class="d-flex flex-column overflow-hidden">
+            <!-- 신규/저장/삭제 버튼 -->
+            <div class="d-flex justify-content-end gap-2 mb-2">
+              <CButton color="secondary" size="sm" @click="handleNew">신규</CButton>
+              <CButton color="secondary" size="sm" @click="handleSave">저장</CButton>
+              <CButton color="danger" size="sm" @click="handleDelete">삭제</CButton>
+            </div>
+
+            <!-- 입력 폼 (2열 구조) -->
             <CCard class="flex-grow-1 d-flex flex-column overflow-hidden">
-              <CCardBody class="p-3 overflow-auto flex-grow-1">
+              <CCardBody class="p-3 flex-grow-1 overflow-auto">
                 <CRow>
-                  <!-- 좌측 -->
+                  <!-- 좌측 열 -->
                   <CCol :md="6">
-                    <CRow class="mb-2" v-for="field in ['materialCode', 'materialType', 'materialName']" :key="field">
-                      <CCol :md="4" class="pe-1">
-                        <CFormLabel class="mb-0 pt-1 small">{{ fieldLabels[field] }}</CFormLabel>
+                    <CRow class="mb-2" v-for="field in leftFields" :key="field.key">
+                      <CCol :md="4" class="text-end pe-2">
+                        <CFormLabel class="form-label pt-1">{{ field.label }}</CFormLabel>
                       </CCol>
-                      <CCol :md="8" class="ps-1">
-                        <CFormInput v-model="form[field]" size="sm" placeholder="입력해주세요." />
+                      <CCol :md="8" class="ps-2">
+                        <CFormInput
+                          v-model="formData[field.key]"
+                          size="sm"
+                          placeholder="입력해주세요"
+                        />
                       </CCol>
                     </CRow>
                   </CCol>
 
-                  <!-- 우측 -->
+                  <!-- 우측 열 -->
                   <CCol :md="6">
-                    <CRow class="mb-2" v-for="field in ['spec', 'unit', 'remark']" :key="field">
-                      <CCol :md="4" class="pe-1">
-                        <CFormLabel class="mb-0 pt-1 small">{{ fieldLabels[field] }}</CFormLabel>
+                    <CRow class="mb-2" v-for="field in rightFields" :key="field.key">
+                      <CCol :md="4" class="text-end pe-2">
+                        <CFormLabel class="form-label pt-1">{{ field.label }}</CFormLabel>
                       </CCol>
-                      <CCol :md="8" class="ps-1">
-                        <CFormInput v-model="form[field]" size="sm" placeholder="입력해주세요." />
+                      <CCol :md="8" class="ps-2">
+                        <CFormInput
+                          v-model="formData[field.key]"
+                          size="sm"
+                          placeholder="입력해주세요"
+                        />
                       </CCol>
                     </CRow>
                   </CCol>
@@ -107,6 +127,7 @@
             </CCard>
           </CCol>
         </CRow>
+
       </CCardBody>
     </CCard>
   </CContainer>
@@ -115,8 +136,18 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
 
-const filters = reactive({ materialName: '', materialType: '' })
-const form = reactive({
+// ============================================
+// 데이터 정의
+// ============================================
+
+// 검색 필터
+const searchFilters = reactive({
+  materialName: '',
+  materialType: ''
+})
+
+// 입력 폼 데이터
+const formData = reactive({
   materialCode: '',
   materialType: '',
   materialName: '',
@@ -124,16 +155,22 @@ const form = reactive({
   unit: '',
   remark: ''
 })
-const fieldLabels = {
-  materialCode: '자재코드',
-  materialType: '자재분류타입',
-  materialName: '자재명',
-  spec: '규격',
-  unit: '수량단위',
-  remark: '비고'
-}
-const selectedRow = ref(null)
 
+// 폼 필드 정의 (좌측)
+const leftFields = [
+  { key: 'materialCode', label: '자재코드' },
+  { key: 'materialType', label: '자재분류타입' },
+  { key: 'materialName', label: '자재명' }
+]
+
+// 폼 필드 정의 (우측)
+const rightFields = [
+  { key: 'spec', label: '규격' },
+  { key: 'unit', label: '수량단위' },
+  { key: 'remark', label: '비고' }
+]
+
+// 그리드 데이터
 const gridData = ref([
   {
     materialCode: 'M001',
@@ -153,28 +190,53 @@ const gridData = ref([
   }
 ])
 
-const filteredData = computed(() =>
-  gridData.value.filter(item =>
-    (!filters.materialName || item.materialName.includes(filters.materialName)) &&
-    (!filters.materialType || item.materialType.includes(filters.materialType))
-  )
-)
+// 선택된 행 인덱스
+const selectedRowIndex = ref(null)
 
-const displayData = computed(() => filteredData.value.slice(0, 10))
-const emptyRows = computed(() => Math.max(0, 10 - displayData.value.length))
+// ============================================
+// Computed (계산된 속성)
+// ============================================
 
-const onSearch = () => { selectedRow.value = null }
-const onReset = () => {
-  filters.materialName = ''
-  filters.materialType = ''
-  selectedRow.value = null
+// 필터링된 데이터
+const filteredData = computed(() => {
+  return gridData.value.filter(item => {
+    const matchName = !searchFilters.materialName || item.materialName.includes(searchFilters.materialName)
+    const matchType = !searchFilters.materialType || item.materialType.includes(searchFilters.materialType)
+    return matchName && matchType
+  })
+})
+
+// 화면에 표시할 데이터 (최대 10개)
+const displayedData = computed(() => filteredData.value.slice(0, 10))
+
+// 빈 행 개수 (10행 고정을 위해)
+const emptyRowCount = computed(() => Math.max(0, 10 - displayedData.value.length))
+
+// ============================================
+// 메서드 (이벤트 핸들러)
+// ============================================
+
+// 조회 버튼 클릭
+const handleSearch = () => {
+  selectedRowIndex.value = null
 }
-const onSelect = (item) => {
-  Object.assign(form, item)
-  selectedRow.value = displayData.value.indexOf(item)
+
+// 초기화 버튼 클릭
+const handleReset = () => {
+  searchFilters.materialName = ''
+  searchFilters.materialType = ''
+  selectedRowIndex.value = null
 }
-const onFormReset = () => {
-  Object.assign(form, {
+
+// 그리드 행 선택
+const handleRowSelect = (item, index) => {
+  Object.assign(formData, item)
+  selectedRowIndex.value = index
+}
+
+// 폼 데이터 초기화
+const resetFormData = () => {
+  Object.assign(formData, {
     materialCode: '',
     materialType: '',
     materialName: '',
@@ -182,91 +244,143 @@ const onFormReset = () => {
     unit: '',
     remark: ''
   })
-  selectedRow.value = null
+  selectedRowIndex.value = null
 }
-const onNew = () => { onFormReset() }
-const onSave = () => {
-  const idx = gridData.value.findIndex(d => d.materialCode === form.materialCode)
-  if (idx >= 0) {
-    gridData.value[idx] = { ...form }
+
+// 신규 버튼 클릭
+const handleNew = () => {
+  resetFormData()
+}
+
+// 저장 버튼 클릭
+const handleSave = () => {
+  const existingIndex = gridData.value.findIndex(item => item.materialCode === formData.materialCode)
+  
+  if (existingIndex >= 0) {
+    // 기존 데이터 업데이트
+    gridData.value[existingIndex] = { ...formData }
   } else {
-    form.materialCode = 'M' + String(gridData.value.length + 1).padStart(3, '0')
-    gridData.value.push({ ...form })
+    // 신규 데이터 추가
+    const newCode = 'M' + String(gridData.value.length + 1).padStart(3, '0')
+    gridData.value.push({ ...formData, materialCode: newCode })
   }
-  onFormReset()
+  
+  resetFormData()
 }
-const onDelete = () => {
-  const idx = gridData.value.findIndex(d => d.materialCode === form.materialCode)
-  if (idx >= 0) gridData.value.splice(idx, 1)
-  onFormReset()
+
+// 삭제 버튼 클릭
+const handleDelete = () => {
+  const existingIndex = gridData.value.findIndex(item => item.materialCode === formData.materialCode)
+  
+  if (existingIndex >= 0) {
+    gridData.value.splice(existingIndex, 1)
+  }
+  
+  resetFormData()
 }
 </script>
 
 <style scoped>
+/* ============================================
+   전역 스타일
+   ============================================ */
 :deep(*) {
-  font-family: '맑은 고딕', Malgun Gothic, sans-serif;
-  font-size: 11px;
+  font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
   line-height: 1.4;
-  color: #000000
+  box-sizing: border-box;
+  color: #000;
 }
 
-/* 버튼 스타일 */
+/* ============================================
+   버튼 스타일
+   ============================================ */
 :deep(.btn) {
   font-size: 11px;
-  color: #fff;
+  color: #fff !important;
   padding: 0.5rem 2rem;
 }
 
-/* 라벨 */
-:deep(.form-label) {
-  font-size: 11px;
-  color: #495057;
+/* 높이 맞추기용 투명 버튼 영역 */
+.button-spacer {
+  visibility: hidden;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
-/* 인풋 */
+/* ============================================
+   폼 요소 스타일
+   ============================================ */
+:deep(.form-label) {
+  font-size: 11px;
+  font-weight: normal;
+  color: #444;
+  margin-bottom: 0;
+}
+
 :deep(.form-control),
 :deep(.form-select) {
   font-size: 12px;
+  font-weight: normal;
+  padding: 0.25rem 0.5rem;
 }
 
-/* 테이블 */
-:deep(.ctable) {
-  border: 1px solid #dee2e6;
-  font-size: 11px;
+/* ============================================
+   테이블 스타일
+   ============================================ */
+.table-wrapper {
+  flex: 1;
+  overflow-y: auto;
 }
 
-:deep(.ctable th) {
-  background-color: #e9ecef;
-  font-weight: bold;
+:deep(.data-table) {
+  margin-bottom: 0;
+  border-collapse: collapse;
+}
+
+:deep(.data-table thead) {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+:deep(.data-table th) {
   font-size: 12px;
+  font-weight: bold;
+  background-color: #e9ecef;
+  color: #212529;
   text-align: center;
 }
 
-:deep(.ctable td) {
+:deep(.data-table td) {
+  font-size: 11px;
   vertical-align: middle;
 }
 
-:deep(.table-active) {
+:deep(.data-table tbody tr) {
+  cursor: pointer;
+}
+
+/* 선택된 행 스타일 */
+:deep(.selected-row) {
   background-color: #d9edf7 !important;
 }
 
-:deep(.sticky-top) {
-  position: sticky;
-  top: 0;
-  z-index: 2;
+/* 빈 행 스타일 */
+.empty-row td {
+  height: 32px;
 }
 
-/* 폼 간격 */
-.right-form-cardbody .form-label {
-  padding-top: 4px;
-}
-
+/* ============================================
+   반응형
+   ============================================ */
 @media (max-width: 768px) {
   :deep(.form-label),
   :deep(.form-control),
+  :deep(.form-select),
   :deep(.btn),
-  :deep(td),
-  :deep(th) {
+  :deep(th),
+  :deep(td) {
     font-size: 11px !important;
   }
 }
