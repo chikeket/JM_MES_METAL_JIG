@@ -1,15 +1,15 @@
 // 업체 전체 조회
 const coFindAll = `SELECT
-      CO_ID,
-      CO_NM,
-      CO_TY_ID,
-      RPSTR_NM,
-      RPSTR_TEL,
-      BIZR_REG_NO,
-      ST,
-      RM
-    FROM CO
-    ORDER BY CO_ID`;
+      co_id,
+      co_nm,
+      co_ty_id,
+      rpstr_nm,
+      rpstr_tel,
+      bizr_reg_no,
+      st,
+      rm
+    FROM co
+    ORDER BY co_id`;
 
 module.exports = {
   coFindAll,
