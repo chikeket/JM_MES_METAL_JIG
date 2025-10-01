@@ -29,7 +29,9 @@ RM
 FROM  RSC_ORDR O JOIN RSC_ORDR_DETA_ID D
                   ON `;
 
-const 
+// 자재 발주 등록
+const insertRscOrdr = `
+INSERT INTO rsc_ordr()`;
 
 //
 module.exports = {
