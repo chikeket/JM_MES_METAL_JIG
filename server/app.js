@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
-
+const dotenv = require("dotenv");
+dotenv.config({ path: "./database/configs/dbConfig.env" });
 // 미들웨어 등록 영역
 // 1. body parser
 // content-type : application/x-www-form-urlencoded
@@ -15,7 +16,8 @@ app.listen(3000, () => {
 });
 
 // 라우팅 등록 영역
-const bookRouter = require("./routers/router.js");
+const instruction = require("./routers/instruction_router.js");
+const prdt = require("./routers/prdt_router.js");
 
 // 기본 라우팅
 app.get("/", (req, res) => {
@@ -23,4 +25,5 @@ app.get("/", (req, res) => {
 });
 
 // 라우터 모듈 등록
-app.use("/", bookRouter);
+app.use("/", instruction);
+app.use("/", prdt);
