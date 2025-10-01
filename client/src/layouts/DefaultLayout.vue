@@ -11,7 +11,7 @@ import AppSidebar from '@/components/AppSidebar.vue'
     <div class="wrapper d-flex flex-column min-vh-100">
       <AppHeader />
       <div class="body flex-grow-1">
-        <CContainer class="px-4" lg>
+        <CContainer fluid class="h-100 p-0">
           <router-view />
         </CContainer>
       </div>

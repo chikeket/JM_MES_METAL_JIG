@@ -1,23 +1,27 @@
-import { h, resolveComponent } from 'vue'
-import { createRouter, createWebHashHistory } from 'vue-router'
+import {
+  h,
+  resolveComponent
+} from 'vue'
+import {
+  createRouter,
+  createWebHashHistory
+} from 'vue-router'
 
 import DefaultLayout from '@/layouts/DefaultLayout'
 
-const routes = [
-  {
+const routes = [{
     path: '/',
     name: 'Home',
     component: DefaultLayout,
     redirect: '/dashboard',
-    children: [
-      {
+    children: [{
         path: '/dashboard',
         name: 'Dashboard',
         // route level code-splitting
         // this generates a separate chunk (about.[hash].js) for this route
         // which is lazy-loaded when the route is visited.
         component: () =>
-          import(/* webpackChunkName: "dashboard" */ '@/views/dashboard/Dashboard.vue'),
+          import( /* webpackChunkName: "dashboard" */ '@/views/dashboard/Dashboard.vue'),
       },
       {
         path: '/theme',
@@ -43,13 +47,11 @@ const routes = [
           },
         },
         redirect: '/Minsu/rcvord',
-        children: [
-          {
-            path: '/Minsu/rcvord',
-            name: 'rcvord',
-            component: () => import('@/views/minsu/rcvord.vue'),
-          },
-        ],
+        children: [{
+          path: '/Minsu/rcvord',
+          name: 'rcvord',
+          component: () => import('@/views/minsu/rcvord.vue'),
+        }, ],
       },
       {
         path: '/jamin',
@@ -60,13 +62,11 @@ const routes = [
           },
         },
         redirect: '/jamin/rsc-ordr',
-        children: [
-          {
-            path: '/jamin/rsc-ordr',
-            name: '자재발주',
-            component: () => import('@/views/jamin/RscOrdr.vue'),
-          },
-        ],
+        children: [{
+          path: '/jamin/rsc-ordr',
+          name: '자재발주',
+          component: () => import('@/views/jamin/RscOrdr.vue'),
+        }, ],
       },
 
       {
@@ -78,6 +78,7 @@ const routes = [
           },
         },
         redirect: '/product/product-instructions',
+
         children: [
           {
             path: '/product/product-instructions',
@@ -85,6 +86,7 @@ const routes = [
             component: () => import('@/views/Product/instructions.vue'),
           },
         ],
+
       },
 
       {
@@ -95,22 +97,18 @@ const routes = [
             return h(resolveComponent('router-view'))
           },
         },
-        redirect: '/zooE/company-manage',
-        children: [
-          {
+
+        redirect: '/zooE/rsc-ordr',
+        children: [{
+
             path: '/zooE/company-manage',
             name: '업체 관리',
             component: () => import('@/views/zooE/CompanyManage.vue'),
           },
           {
-            path: '/zooE/menu1',
-            name: '생산 지시서 조회',
-            component: () => import('@/views/zooE/menu1.vue'),
-          },
-          {
-            path: '/zooE/rsc-manage',
-            name: '자재 관리',
-            component: () => import('@/views/zooE/rscManage.vue'),
+            path: '/zooE/qlty-item-manage',
+            name: '품질 검사 항목 관리',
+            component: () => import('@/views/zooE/qltyItemManage.vue'),
           },
           {
             path: '/zooE/prdt-manage',
@@ -118,9 +116,14 @@ const routes = [
             component: () => import('@/views/zooE/prdtManage.vue'),
           },
           {
-            path: '/zooE/qlty-item-manage',
-            name: '품질 검사 항목 관리',
-            component: () => import('@/views/zooE/qltyItemManage.vue'),
+            path: '/zooE/rsc-manage',
+            name: '자재 관리',
+            component: () => import('@/views/zooE/rscManage.vue'),
+          },
+          {
+            path: '/zooE/menu1',
+            name: '생산 지시서 조회',
+            component: () => import('@/views/zooE/menu1.vue'),
           },
         ],
       },
@@ -153,8 +156,7 @@ const routes = [
           },
         },
         redirect: '/base/breadcrumbs',
-        children: [
-          {
+        children: [{
             path: '/base/accordion',
             name: 'Accordion',
             component: () => import('@/views/base/Accordion.vue'),
@@ -240,8 +242,7 @@ const routes = [
           },
         },
         redirect: '/buttons/standard-buttons',
-        children: [
-          {
+        children: [{
             path: '/buttons/standard-buttons',
             name: 'Button Component',
             component: () => import('@/views/buttons/Buttons.vue'),
@@ -267,8 +268,7 @@ const routes = [
           },
         },
         redirect: '/forms/form-control',
-        children: [
-          {
+        children: [{
             path: '/forms/form-control',
             name: 'Form Control',
             component: () => import('@/views/forms/FormControl.vue'),
@@ -324,8 +324,7 @@ const routes = [
           },
         },
         redirect: '/icons/coreui-icons',
-        children: [
-          {
+        children: [{
             path: '/icons/coreui-icons',
             name: 'CoreUI Icons',
             component: () => import('@/views/icons/CoreUIIcons.vue'),
@@ -351,8 +350,7 @@ const routes = [
           },
         },
         redirect: '/notifications/alerts',
-        children: [
-          {
+        children: [{
             path: '/notifications/alerts',
             name: 'Alerts',
             component: () => import('@/views/notifications/Alerts.vue'),
@@ -390,8 +388,7 @@ const routes = [
         return h(resolveComponent('router-view'))
       },
     },
-    children: [
-      {
+    children: [{
         path: '404',
         name: 'Page404',
         component: () => import('@/views/pages/Page404'),
@@ -416,11 +413,14 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHashHistory(import.meta.env.BASE_URL),
+  history: createWebHashHistory(
+    import.meta.env.BASE_URL),
   routes,
   scrollBehavior() {
     // always scroll to top
-    return { top: 0 }
+    return {
+      top: 0
+    }
   },
 })
 

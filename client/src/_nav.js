@@ -81,8 +81,8 @@ export default [
       },
       {
         component: 'CNavItem',
-        name: '생산 지시',
-        to: '/zooE/menu1',
+        name: '품질 항목 관리',
+        to: '/zooE/qlty-item-manage',
       },
       {
         component: 'CNavItem',
@@ -91,13 +91,13 @@ export default [
       },
       {
         component: 'CNavItem',
-        name: '품질 항목 관리',
-        to: '/zooE/qlty-item-manage',
+        name: '자재 관리',
+        to: '/zooE/rsc-manage',
       },
       {
         component: 'CNavItem',
-        name: '자재 관리',
-        to: '/zooE/rsc-manage',
+        name: '생산 지시',
+        to: '/zooE/menu1',
       },
     ],
   },
