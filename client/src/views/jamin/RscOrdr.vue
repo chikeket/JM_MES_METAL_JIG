@@ -80,14 +80,14 @@
           <div class="d-grid gap-2 d-md-flex justify-content-md-end mb-3">
             <CButton color="primary" class="me-md-2" @click="goToRsc()">자재 조회</CButton>
             <RscModal :visible="isRscModalVisible" @close="closeRscModal" @select="selectedRsc" />
-            <CButton color="danger">삭제</CButton>
+            <CButton color="danger" @click="deleteSelectedRows">삭제</CButton>
           </div>
 
           <CTable striped hover>
             <CTableHead>
               <CTableRow>
-                <CTableHeaderCell scope="col" class="text-center">
-                  <CFormCheck id="allCheck" :checked="allChecked" @change="toggleAll($event)" />
+                <CTableHeaderCell>
+                  <CFormCheck :checked="allChecked" @change="toggleAll($event)" />
                 </CTableHeaderCell>
                 <CTableHeaderCell scope="col" class="text-center">No</CTableHeaderCell>
                 <CTableHeaderCell scope="col" class="text-center">자재 코드</CTableHeaderCell>
@@ -98,72 +98,23 @@
                 <CTableHeaderCell scope="col" class="text-center">비고</CTableHeaderCell>
               </CTableRow>
             </CTableHead>
+
             <CTableBody>
               <CTableRow v-for="row in rows" :key="row.id">
-                <CTableHeaderCell class="text-center">
+                <CTableDataCell>
                   <CFormCheck :checked="isSelected(row.id)" @change="toggleRow(row.id, $event)" />
-                </CTableHeaderCell>
+                </CTableDataCell>
+
                 <CTableDataCell class="text-end">{{ row.id }}</CTableDataCell>
-                <CTableDataCell @dblclick="startEdit(row, 'name')">
-                  <template v-if="isEditing(row, 'name')">
-                    <CFormInput
-                      v-model="editDraft"
-                      size="sm"
-                      @keyup.enter="commitEdit(row, 'name')"
-                      @keyup.esc="cancelEdit"
-                      @blur="commitEdit(row, 'name')"
-                      placeholder="자재 코드 입력"
-                    />
-                  </template>
 
-                  <template v-else>
-                    {{ row.name || '—' }}
-                  </template>
-                </CTableDataCell>
-                <CTableDataCell @dblclick="startEdit(row, 'option')">
-                  <template v-if="isEditing(row, 'option')">
-                    <CFormInput
-                      v-model="editDraft"
-                      size="sm"
-                      @keyup.enter="commitEdit(row, 'option')"
-                      @keyup.esc="cancelEdit"
-                      @blur="commitEdit(row, 'option')"
-                      placeholder="자재 이름 입력"
-                    />
-                  </template>
+                <CTableDataCell>{{ row.code }}</CTableDataCell>
 
-                  <template v-else>
-                    {{ row.name || '—' }}
-                  </template>
-                </CTableDataCell>
-                <CTableDataCell @dblclick="startEdit(row, 'spec')">
-                  <template v-if="isEditing(row, 'spec')">
-                    <CFormInput
-                      v-model="editDraft"
-                      size="sm"
-                      @keyup.enter="commitEdit(row, 'spec')"
-                      @keyup.esc="cancelEdit"
-                      @blur="commitEdit(row, 'spec')"
-                      placeholder="예: 20g"
-                    />
-                  </template>
-                  <template v-else>{{ row.spec || '—' }}</template>
-                </CTableDataCell>
-                <CTableDataCell @dblclick="startEdit(row, 'unit')">
-                  <template v-if="isEditing(row, 'unit')">
-                    <CFormSelect
-                      v-model="editDraft"
-                      size="sm"
-                      @change="commitEdit(row, 'unit')"
-                      @blur="commitEdit(row, 'unit')"
-                    >
-                      <option value="EA">EA</option>
-                      <option value="BOX">BOX</option>
-                      <option value="SET">SET</option>
-                    </CFormSelect>
-                  </template>
-                  <template v-else>{{ row.unit || 'EA' }}</template>
-                </CTableDataCell>
+                <CTableDataCell>{{ row.name }}</CTableDataCell>
+
+                <CTableDataCell>{{ row.spec }}</CTableDataCell>
+
+                <CTableDataCell>{{ row.unit }}</CTableDataCell>
+
                 <CTableDataCell class="text-end" @dblclick="startEdit(row, 'qty')">
                   <template v-if="isEditing(row, 'qty')">
                     <CFormInput
@@ -180,11 +131,14 @@
                   </template>
                   <template v-else>{{ fmtQty(row.qty) }}</template>
                 </CTableDataCell>
+
                 <CTableDataCell @dblclick="startEdit(row, 'note')">
                   <template v-if="isEditing(row, 'note')">
                     <CFormInput
                       v-model="editDraft"
+                      type="text"
                       size="sm"
+                      class="text-end"
                       @keyup.enter="commitEdit(row, 'note')"
                       @keyup.esc="cancelEdit"
                       @blur="commitEdit(row, 'note')"
@@ -193,6 +147,7 @@
                   </template>
                   <template v-else>{{ row.note || '—' }}</template>
                 </CTableDataCell>
+
               </CTableRow>
             </CTableBody>
           </CTable>
@@ -217,13 +172,18 @@ const closeRscModal = () => {
   isRscModalVisible.value = false
 }
 
-const rows = ref({
-  ordrName1: '',
-  regDate: '',
-  startDate: '',
-  endDate: '',
-  remark: '',
-})
+const rows = ref([]) // 배열로 변경
+
+const selectedRsc = (rsc) => {
+  const newId = rows.value.length > 0 ? Math.max(...rows.value.map(r => r.id ?? 0)) + 1 : 1
+  rows.value.push({
+    id: newId,
+    code: rsc.rsc_id,
+    name: rsc.rsc_nm,
+    spec: rsc.spec,
+    unit: rsc.unit,
+  })
+}
 
 const editing = reactive({ id: null, field: null })
 const editDraft = ref(null)
@@ -238,19 +198,23 @@ function startEdit(row, field) {
   editDraft.value = field === 'producible' ? String(!!cur) : cur
 }
 
+let editLocked = false
+
 function commitEdit(row, field) {
+  if (editLocked) return
+  editLocked = true
+
   let v = editDraft.value
   if (field === 'qty') {
-    const n = Number(v)
-    row.qty = Number.isFinite(n) ? n : 0
-  } else if (field === 'producible') {
-    row.producible = v === 'true' || v === true
-  } else if (field === 'unit') {
-    row.unit = String(v || 'EA')
-  } else {
-    row[field] = (v ?? '').toString()
+    if (v !== null && v !== '') {
+      const n = Number(v)
+      row.qty = Number.isFinite(n) ? n : row.qty
+    }
+  } else if (field === 'note') {
+    if (v !== null && v !== '') row.note = v
   }
   cancelEdit()
+  setTimeout(() => { editLocked = false }, 0) // 다음 tick에 unlock
 }
 
 function cancelEdit() {
@@ -263,22 +227,29 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
 
 const selected = ref(new Set())
 
-const isSelected = (id) => selected.value.has(id)
-
-const allChecked = computed(() =>
-  rows.value.length > 0 && selected.value.size === rows.value.length
-)
-
-function toggleAll(e) {
-  if (e.target.checked) {
-    selected.value = new Set(rows.value.map(r => r.id))
-  } else {
-    selected.value = new Set()
-  }
+function isSelected(id) {
+  return selected.value.has(id)
 }
 
 function toggleRow(id, e) {
   if (e.target.checked) selected.value.add(id)
   else selected.value.delete(id)
+}
+
+function toggleAll(e) {
+  if (e.target.checked) {
+    selected.value = new Set(rows.value.map(r => r.id))
+  } else {
+    selected.value.clear()
+  }
+}
+
+const allChecked = computed(() =>
+  rows.value.length > 0 && selected.value.size === rows.value.length
+)
+
+function deleteSelectedRows() {
+  rows.value = rows.value.filter(row => !selected.value.has(row.id))
+  selected.value.clear()
 }
 </script>
