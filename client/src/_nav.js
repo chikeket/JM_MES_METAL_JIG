@@ -44,7 +44,19 @@ export default [
   },
   {
     component: 'CNavGroup',
-
+    name: '민윤기',
+    to: '/product',
+    icon: 'cil-cursor',
+    items: [
+      {
+        component: 'CNavItem',
+        name: '생산지시',
+        to: '/product/product-instructions',
+      },
+    ],
+  },
+  {
+    component: 'CNavGroup',
     name: '오민수',
     to: '/Minsu',
     icon: 'cil-user',
@@ -53,16 +65,6 @@ export default [
         component: 'CNavItem',
         name: '수주 관리',
         to: '/Minsu/rcvord',
-
-    name: '생산',
-    to: '/product',
-    icon: 'cil-cursor',
-    items: [
-      {
-        component: 'CNavItem',
-        name: '생산지시',
-        to: '/product/product-instructions',
-
       },
     ],
   },
