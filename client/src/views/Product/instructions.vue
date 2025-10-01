@@ -2,7 +2,7 @@
 import { ref, reactive } from 'vue'
 
 import PrdtModal from '../modal/prdtModal.vue'
-
+import axios from 'axios'
 const isPrdtModalVisible = ref(false)
 
 const goToPrdt = () => {
@@ -22,50 +22,48 @@ const Info = ref({
 })
 
 const insertRowsToDB = async () => {
-  let obj = rows.value.map((row) => ({
-    ordrName: Info.value.ordrName1,
-    regDate: Info.value.regDate,
-    startDate: Info.value.startDate,
-    endDate: Info.value.endDate,
-    remark: Info.value.remark,
-    ...row, // row 객체의 모든 필드 포함
-  }))
-
-  let result = await axios.post('/api/books', obj).catch((err) => console.log(err))
-  let addRes = result.data
-  if (addRes.isSuccessed) {
-    alert('생산지시가 등록되었습니다.')
-  } else {
-    alert('생산지시에 실패했습니다.')
+  // let obj = rows.value.map((row) => ({
+  //   ordrName: Info.value.ordrName1,
+  //   regDate: Info.value.regDate,
+  //   startDate: Info.value.startDate,
+  //   endDate: Info.value.endDate,
+  //   remark: Info.value.remark,
+  //   ...row, // row 객체의 모든 필드 포함
+  // }))
+  for (const row of rows.value) {
+    console.log(row)
   }
+
+  // let result = await axios.post('/api/books', obj).catch((err) => console.log(err))
+  // let addRes = result.data
+  // if (addRes.isSuccessed) {
+  //   alert('생산지시가 등록되었습니다.')
+  // } else {
+  //   alert('생산지시에 실패했습니다.')
+  // }
 }
 
-const rows = ref([
-  {
-    prdtId: 'a_red_030',
-    prdtNm: '메탈지그A',
-    spec: '30',
-    unit: 'g',
+const rows = ref([])
+
+const selectedPrdt = (prdts) => {
+  rows.value.push({
+    prdtId: prdts.PRDT_ID,
+    prdtNm: prdts.PRDT_NM,
+    spec: prdts.SPEC,
+    unit: prdts.UNIT,
     planQy: 0,
     drctQy: 0,
     baseQuantity: 0,
     unspecifiedQuantity: 0,
-    priort: 1,
-    rm: '정기생산',
-  },
-  {
-    prdtId: 'b_red_030',
-    prdtNm: '메탈지그B',
-    spec: '30',
-    unit: 'g',
-    planQy: 0,
-    drctQy: 0,
-    baseQuantity: 0,
-    unspecifiedQuantity: 0,
-    priort: 1,
-    rm: '돌발생산',
-  },
-])
+    priort: 0,
+    rm: prdts.RM,
+  })
+  // console.log(prdts)
+}
+
+const reset = () => {
+  rows.value = []
+}
 
 const editing = reactive({ id: null, field: null })
 const editDraft = ref(null)
@@ -148,10 +146,10 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
   <div class="d-flex justify-content-end gap-2 mb-3">
     <CButton color="secondary" @click="goToPrdt()">제품 조회</CButton>
     <!-- 모달 컴포넌트 -->
-    <PrdtModal :visible="isPrdtModalVisible" @close="closePrdtModal" />
+    <PrdtModal :visible="isPrdtModalVisible" @close="closePrdtModal" @select="selectedPrdt" />
 
     <CButton color="secondary">생산계획서 조회</CButton>
-    <CButton color="secondary">초기화</CButton>
+    <CButton color="secondary" @click="reset()">초기화</CButton>
   </div>
 
   <CTable hover bordered small class="align-middle">
@@ -198,17 +196,17 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
         <CTableHeaderCell scope="row">{{ row.planQy }}</CTableHeaderCell>
 
         <!-- 지시수량 -->
-        <CTableDataCell class="text-end" @dblclick="startEdit(row, 'drctQy')">
-          <template v-if="isEditing(row, 'drctQy')">
+        <CTableDataCell class="text-end" @dblclick="startEdit(row, idx)">
+          <template v-if="isEditing(row, idx)">
             <CFormInput
               v-model.number="editDraft"
               type="number"
               min="0"
               size="sm"
               class="text-end"
-              @keyup.enter="commitEdit(row, 'drctQy')"
+              @keyup.enter="commitEdit(row, idx)"
               @keyup.esc="cancelEdit"
-              @blur="commitEdit(row, 'drctQy')"
+              @blur="commitEdit(row, idx)"
               placeholder="0"
             />
           </template>
@@ -222,13 +220,28 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
         <CTableHeaderCell scope="row">{{ row.unspecifiedQuantity }}</CTableHeaderCell>
 
         <!-- 우선순위 -->
-        <CTableHeaderCell scope="row">{{ row.priort }}</CTableHeaderCell>
+        <CTableDataCell class="text-end" @dblclick="startEdit(row, idx + 'a')">
+          <template v-if="isEditing(row, idx + 'a')">
+            <CFormInput
+              v-model.number="editDraft"
+              type="number"
+              min="0"
+              size="sm"
+              class="text-end"
+              @keyup.enter="commitEdit(row, idx + 'a')"
+              @keyup.esc="cancelEdit"
+              @blur="commitEdit(row, idx + 'a')"
+              placeholder="0"
+            />
+          </template>
+          <template v-else>{{ fmtQty(row.priort) }}</template>
+        </CTableDataCell>
 
         <!-- 비고 -->
         <CTableHeaderCell scope="row">{{ row.rm }}</CTableHeaderCell>
       </CTableRow>
       <CTableRow v-if="!rows || rows.length === 0">
-        <CTableDataCell colspan="8" class="text-center text-muted py-5"
+        <CTableDataCell colspan="10" class="text-center text-muted py-5"
           >행이 없습니다.</CTableDataCell
         >
       </CTableRow>

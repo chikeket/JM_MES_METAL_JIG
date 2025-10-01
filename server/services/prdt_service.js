@@ -6,7 +6,7 @@ const mariadb = require("../database/mapper.js");
 // 조건 없이 전체조회
 const prdtfindAll = async () => {
   let list = await mariadb.query("prdtSelect").catch((err) => console.log(err));
-  console.log("조회 결과:", list);
+  // console.log("조회 결과:", list);
   return list;
 };
 

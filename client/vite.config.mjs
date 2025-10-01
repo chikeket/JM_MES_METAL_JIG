@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from 'node:path'
 import autoprefixer from 'autoprefixer'
-const server = 'http://localhost:3000';
+const server = 'http://localhost:3000'
 
 export default defineConfig(() => {
   return {
@@ -39,9 +39,9 @@ export default defineConfig(() => {
         '^/api': {
           target: server,
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, '/')
-        }
-      }
+          rewrite: (path) => path.replace(/^\/api/, ''),
+        },
+      },
     },
   }
 })

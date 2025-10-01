@@ -30,11 +30,12 @@
           </thead>
 
           <tbody class="table table-bordered table-hover mb-0">
-            <tr v-for="(family, i) in memberList" :key="i">
-              <td>a_red_030</td>
-              <td>메탈지그A</td>
-              <td>30</td>
-              <td>빨간색</td>
+            <!-- v-for="(prdts, i) in prdtList" :key="i" -->
+            <tr v-for="(prdts, i) in prdtList" :key="i" @dblclick="selectProduct(prdts)">
+              <td>{{ prdts.PRDT_ID }}</td>
+              <td>{{ prdts.PRDT_NM }}</td>
+              <td>{{ prdts.SPEC }}</td>
+              <td>{{ prdts.PRDT_ST }}</td>
             </tr>
           </tbody>
         </table>
@@ -47,7 +48,8 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue'
+import { defineProps, defineEmits, shallowRef } from 'vue'
+import axios from 'axios'
 
 const props = defineProps({
   visible: Boolean,
@@ -62,5 +64,10 @@ let prdtList = shallowRef([]) // <- 반응형 객체
 const prdtSearch = async () => {
   let result = await axios.get('/api/prdts').catch((err) => console.log(err))
   prdtList.value = result.data
+}
+
+const selectProduct = (prdts) => {
+  emit('select', prdts) // 부모에게 선택된 제품 전달
+  close() // 모달 닫기
 }
 </script>

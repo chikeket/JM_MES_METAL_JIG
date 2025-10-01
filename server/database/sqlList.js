@@ -1,6 +1,5 @@
 // ┌───각 테이블 별로 실행한 SQL문을 별도 파일로 작성───┐
 
-
 //업체
 const co = require("./sqls/co.js");
 
@@ -9,11 +8,6 @@ const instructions = require("./sqls/instruction.js");
 
 //수주
 const rcvord = require("./sqls/rcvord.js");
-
-
-//생산지시
-const instructions = require("./sqls/instruction.js");
-
 
 //제품
 const prdt = require("./sqls/prdt.js");
@@ -27,5 +21,4 @@ module.exports = {
 
   ...co,
   ...rcvord,
-
 };
