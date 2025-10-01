@@ -58,9 +58,9 @@
 
             <CCol md="4">
               <CInputGroup>
-                <CInputGroupText id="addon-ordr-name-1">공급 업체 명</CInputGroupText>
+                <CInputGroupText id="addon-ordr-name-2">공급 업체 명</CInputGroupText>
                 <CFormInput
-                  v-model="ordrName1"
+                  v-model="ordrName2"
                   placeholder="공급 업체 명"
                   aria-label="Rsc-ordr-name-1"
                   aria-describedby="addon-ordr-name-1"
@@ -78,7 +78,8 @@
           ></CFormTextarea>
 
           <div class="d-grid gap-2 d-md-flex justify-content-md-end mb-3">
-            <CButton color="primary" class="me-md-2">자재 조회</CButton>
+            <CButton color="primary" class="me-md-2" @click="goToRsc()">자재 조회</CButton>
+            <RscModal :visible="isRscModalVisible" @close="closeRscModal" @select="selectedRsc" />
             <CButton color="danger">삭제</CButton>
           </div>
 
@@ -204,48 +205,25 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
 
-const rows = ref([
-  {
-    id: 1,
-    name: '모델A_20',
-    option: '홀로그랭스티..',
-    qty: 5000,
-    spec: '20g',
-    unit: 'EA',
-    producible: true,
-    note: '배송지 정보',
-  },
-  {
-    id: 2,
-    name: '모델B_30',
-    option: '홀로그랭스티..',
-    qty: 5000,
-    spec: '30g',
-    unit: 'EA',
-    producible: true,
-    note: '배송지 정보',
-  },
-  {
-    id: 3,
-    name: '모델C_10',
-    option: '옵션C',
-    qty: 1200,
-    spec: '10g',
-    unit: 'EA',
-    producible: false,
-    note: '-',
-  },
-  {
-    id: 4,
-    name: '모델D_50',
-    option: '옵션D',
-    qty: 300,
-    spec: '50g',
-    unit: 'BOX',
-    producible: true,
-    note: '특이사항 없음',
-  },
-])
+import RscModal from '../modal/rscModal.vue'
+
+const isRscModalVisible = ref(false)
+
+const goToRsc = () => {
+  isRscModalVisible.value = true
+}
+
+const closeRscModal = () => {
+  isRscModalVisible.value = false
+}
+
+const rows = ref({
+  ordrName1: '',
+  regDate: '',
+  startDate: '',
+  endDate: '',
+  remark: '',
+})
 
 const editing = reactive({ id: null, field: null })
 const editDraft = ref(null)
