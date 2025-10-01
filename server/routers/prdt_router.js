@@ -3,14 +3,15 @@ const express = require("express");
 const router = express.Router();
 
 // 해당 라우터를 통해 제공할 서비스를 가져옴
-const instructionService = require("../services/instruction_service.js");
+const prdtService = require("../services/prdt_service.js");
 
-router.post("/instruction", async (req, res) => {
-  let bookInfo = req.body;
-  let result = await instructionService
-    .addNewInstruction(bookInfo)
+router.get("/prdts", async (req, res) => {
+  let prdtList = await prdtService
+    .prdtfindAll()
     .catch((err) => console.log(err));
-  res.send(result);
+
+  res.send(prdtList);
+  // res.json(prdtList);
 });
 
 module.exports = router;

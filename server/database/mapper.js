@@ -1,11 +1,7 @@
-
 // MariaDB에 접속할 모듈
 const mariadb = require("mariadb");
 // DB에서 실행할 SQL문을 별도 파일로 작성
 const sqlList = require("./sqlList.js");
-const dotenv = require("dotenv");
-dotenv.config() // .env 파일 로딩
-
 
 // ConnectionPool 생성
 const connectionPool = mariadb.createPool({
@@ -46,7 +42,6 @@ const query = async (alias, values) => {
     if (conn) conn.release();
   }
 };
-
 
 module.exports = {
   query,
