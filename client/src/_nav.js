@@ -44,6 +44,19 @@ export default [
   },
   {
     component: 'CNavGroup',
+    name: '상쥬니♥',
+    to: '/zzun',
+    icon: 'cil-cursor',
+    items: [
+      {
+        component: 'CNavItem',
+        name: '공정 라우팅',
+        to: '/zzun/Routing',
+      },
+    ],
+  },
+  {
+    component: 'CNavGroup',
     name: '민윤기',
     to: '/product',
     icon: 'cil-cursor',

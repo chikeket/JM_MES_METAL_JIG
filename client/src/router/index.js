@@ -1,27 +1,23 @@
-import {
-  h,
-  resolveComponent
-} from 'vue'
-import {
-  createRouter,
-  createWebHashHistory
-} from 'vue-router'
+import { h, resolveComponent } from 'vue'
+import { createRouter, createWebHashHistory } from 'vue-router'
 
 import DefaultLayout from '@/layouts/DefaultLayout'
 
-const routes = [{
+const routes = [
+  {
     path: '/',
     name: 'Home',
     component: DefaultLayout,
     redirect: '/dashboard',
-    children: [{
+    children: [
+      {
         path: '/dashboard',
         name: 'Dashboard',
         // route level code-splitting
         // this generates a separate chunk (about.[hash].js) for this route
         // which is lazy-loaded when the route is visited.
         component: () =>
-          import( /* webpackChunkName: "dashboard" */ '@/views/dashboard/Dashboard.vue'),
+          import(/* webpackChunkName: "dashboard" */ '@/views/dashboard/Dashboard.vue'),
       },
       {
         path: '/theme',
@@ -47,11 +43,13 @@ const routes = [{
           },
         },
         redirect: '/Minsu/rcvord',
-        children: [{
-          path: '/Minsu/rcvord',
-          name: 'rcvord',
-          component: () => import('@/views/minsu/rcvord.vue'),
-        }, ],
+        children: [
+          {
+            path: '/Minsu/rcvord',
+            name: 'rcvord',
+            component: () => import('@/views/minsu/rcvord.vue'),
+          },
+        ],
       },
       {
         path: '/jamin',
@@ -62,11 +60,31 @@ const routes = [{
           },
         },
         redirect: '/jamin/rsc-ordr',
-        children: [{
-          path: '/jamin/rsc-ordr',
-          name: '자재발주',
-          component: () => import('@/views/jamin/RscOrdr.vue'),
-        }, ],
+        children: [
+          {
+            path: '/jamin/rsc-ordr',
+            name: '자재발주',
+            component: () => import('@/views/jamin/RscOrdr.vue'),
+          },
+        ],
+      },
+
+      {
+        path: '/zzun',
+        name: 'zzun',
+        component: {
+          render() {
+            return h(resolveComponent('router-view'))
+          },
+        },
+        redirect: '/zzun/Routing',
+        children: [
+          {
+            path: '/zzun/Routing',
+            name: 'prcsRouting',
+            component: () => import('@/views/zzun/Routing.vue'),
+          },
+        ],
       },
 
       {
@@ -86,7 +104,6 @@ const routes = [{
             component: () => import('@/views/Product/instructions.vue'),
           },
         ],
-
       },
 
       {
@@ -99,8 +116,8 @@ const routes = [{
         },
 
         redirect: '/zooE/rsc-ordr',
-        children: [{
-
+        children: [
+          {
             path: '/zooE/company-manage',
             name: '업체 관리',
             component: () => import('@/views/zooE/CompanyManage.vue'),
@@ -156,7 +173,8 @@ const routes = [{
           },
         },
         redirect: '/base/breadcrumbs',
-        children: [{
+        children: [
+          {
             path: '/base/accordion',
             name: 'Accordion',
             component: () => import('@/views/base/Accordion.vue'),
@@ -242,7 +260,8 @@ const routes = [{
           },
         },
         redirect: '/buttons/standard-buttons',
-        children: [{
+        children: [
+          {
             path: '/buttons/standard-buttons',
             name: 'Button Component',
             component: () => import('@/views/buttons/Buttons.vue'),
@@ -268,7 +287,8 @@ const routes = [{
           },
         },
         redirect: '/forms/form-control',
-        children: [{
+        children: [
+          {
             path: '/forms/form-control',
             name: 'Form Control',
             component: () => import('@/views/forms/FormControl.vue'),
@@ -324,7 +344,8 @@ const routes = [{
           },
         },
         redirect: '/icons/coreui-icons',
-        children: [{
+        children: [
+          {
             path: '/icons/coreui-icons',
             name: 'CoreUI Icons',
             component: () => import('@/views/icons/CoreUIIcons.vue'),
@@ -350,7 +371,8 @@ const routes = [{
           },
         },
         redirect: '/notifications/alerts',
-        children: [{
+        children: [
+          {
             path: '/notifications/alerts',
             name: 'Alerts',
             component: () => import('@/views/notifications/Alerts.vue'),
@@ -388,7 +410,8 @@ const routes = [{
         return h(resolveComponent('router-view'))
       },
     },
-    children: [{
+    children: [
+      {
         path: '404',
         name: 'Page404',
         component: () => import('@/views/pages/Page404'),
@@ -413,13 +436,12 @@ const routes = [{
 ]
 
 const router = createRouter({
-  history: createWebHashHistory(
-    import.meta.env.BASE_URL),
+  history: createWebHashHistory(import.meta.env.BASE_URL),
   routes,
   scrollBehavior() {
     // always scroll to top
     return {
-      top: 0
+      top: 0,
     }
   },
 })
