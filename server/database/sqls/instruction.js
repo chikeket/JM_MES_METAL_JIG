@@ -1,13 +1,28 @@
 //생산지시 관련 쿼리
 const instructionInsert =
   //
-  `INSERT INTO PROD_DRCT (PROD_DRCT_ID, PROD_DRCT_NM, EMP_ID, PROD_DRCT_FR_DT, PROD_DRCT_TO_DT, REG_DT, RM)
+  `INSERT INTO prod_drct (
+  prod_drct_id, 
+  prod_drct_nm, 
+  emp_id, 
+  prod_drct_fr_dt, 
+  prod_drct_to_dt, 
+  reg_dt, 
+  rm)
 VALUES (?, ?, ?, ?, ?, ?, ?)`;
 
 const instructionInsertDetail =
   //
-  `INSERT INTO PROD_DRCT_DETA (PROD_DRCT_ID, PROD_PLAN_DETA_ID, PRDT_ID, PRDT_OPT_ID, DRCT_QY, PRIORT, RM)
-VALUES (?, ?, ?, ?, ?, ?, ?)`;
+  `INSERT INTO prod_drct_deta (
+  prod_drct_id,
+  prod_plan_deta_id,
+  prdt_id,
+  prdt_opt_id,
+  drct_qy,
+  priort,
+  rm
+  )
+  VALUES (?, ?, ?, ?, ?, ?, ?)`;
 
 module.exports = {
   instructionInsert,

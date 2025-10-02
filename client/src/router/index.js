@@ -63,6 +63,7 @@ const routes = [
         children: [
           {
             path: '/jamin/rsc-ordr',
+
             name: '자재발주',
             component: () => import('@/views/jamin/RscOrdr.vue'),
           },
@@ -119,27 +120,27 @@ const routes = [
         children: [
           {
             path: '/zooE/company-manage',
-            name: '업체 관리',
+            name: 'companyManage',
             component: () => import('@/views/zooE/CompanyManage.vue'),
           },
           {
             path: '/zooE/qlty-item-manage',
-            name: '품질 검사 항목 관리',
+            name: 'qltyItemManage',
             component: () => import('@/views/zooE/qltyItemManage.vue'),
           },
           {
             path: '/zooE/prdt-manage',
-            name: '제품 관리',
+            name: 'prdtManage',
             component: () => import('@/views/zooE/prdtManage.vue'),
           },
           {
             path: '/zooE/rsc-manage',
-            name: '자재 관리',
+            name: 'rscManage',
             component: () => import('@/views/zooE/rscManage.vue'),
           },
           {
             path: '/zooE/menu1',
-            name: '생산 지시서 조회',
+            name: 'menu1',
             component: () => import('@/views/zooE/menu1.vue'),
           },
         ],
