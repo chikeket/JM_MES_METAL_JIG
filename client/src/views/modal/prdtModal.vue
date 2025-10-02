@@ -7,13 +7,18 @@
       <div class="modal-body" style="max-height: 400px; overflow-y: auto">
         <!-- 검색 영역 -->
         <div class="d-flex gap-2 mb-3">
-          <select class="form-select" style="width: 150px">
-            <option value="PRDT_ID">코드</option>
-            <option value="PRDT_NM">제품명</option>
-            <option value="SPEC">규격</option>
-            <option value="PRDT_OPT_ID">색상</option>
+          <select class="form-select" style="width: 150px" v-model="pickValue">
+            <option value="prdt_id">코드</option>
+            <option value="prdt_nm">제품명</option>
+            <option value="spec">규격</option>
+            <option value="prdt_opt_id">색상</option>
           </select>
-          <input type="text" class="form-control" placeholder="검색어 입력" />
+          <input
+            type="text"
+            class="form-control"
+            placeholder="검색어 입력"
+            v-model="searchKeyword"
+          />
           <button class="btn btn-secondary" @click="prdtSearch()">검색</button>
         </div>
 
@@ -32,10 +37,10 @@
           <tbody class="table table-bordered table-hover mb-0">
             <!-- v-for="(prdts, i) in prdtList" :key="i" -->
             <tr v-for="(prdts, i) in prdtList" :key="i" @dblclick="selectProduct(prdts)">
-              <td>{{ prdts.PRDT_ID }}</td>
-              <td>{{ prdts.PRDT_NM }}</td>
-              <td>{{ prdts.SPEC }}</td>
-              <td>{{ prdts.PRDT_ST }}</td>
+              <td>{{ prdts.prdt_id }}</td>
+              <td>{{ prdts.prdt_nm }}</td>
+              <td>{{ prdts.spec }}</td>
+              <td>{{ prdts.opt_nm }}</td>
             </tr>
           </tbody>
         </table>
@@ -48,7 +53,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, shallowRef } from 'vue'
+import { ref, defineProps, defineEmits, shallowRef } from 'vue'
 import axios from 'axios'
 
 const props = defineProps({
@@ -56,14 +61,30 @@ const props = defineProps({
 })
 const emit = defineEmits(['close'])
 const close = () => {
-  prdtList.value = [] 
+  prdtList.value = []
   emit('close')
 }
+
+const pickValue = ref('prdt_nm') // 기본값: 코드
+const searchKeyword = ref('')
 
 let prdtList = shallowRef([]) // <- 반응형 객체
 
 const prdtSearch = async () => {
-  let result = await axios.get('/api/prdts').catch((err) => console.log(err))
+  const params = { prdt_id: '', prdt_nm: '', spec: '', opt_nm: '' }
+
+  if (pickValue.value == 'prdt_id') {
+    params.prdt_id = searchKeyword.value
+  } else if (pickValue.value == 'prdt_nm') {
+    params.prdt_nm = searchKeyword.value
+  } else if (pickValue.value == 'spec') {
+    params.spec = searchKeyword.value
+  } else {
+    params.opt_nm = searchKeyword.value
+  }
+  // console.log(params)
+  let result = await axios.get('/api/prdts', { params }).catch((err) => console.log(err))
+  // console.log(result.data)
   prdtList.value = result.data
 }
 
