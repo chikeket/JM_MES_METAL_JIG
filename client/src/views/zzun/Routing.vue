@@ -58,7 +58,7 @@
               </CCard>
             </CCol>
 
-            <!-- 오른쪽 영역-->
+            <!-- 오른쪽 영역 / GPT 버전 -->
             <CCol md="3">
               <CInputGroup>
                 <CInputGroupText id="addon-ordr-name-1">제품명</CInputGroupText>
