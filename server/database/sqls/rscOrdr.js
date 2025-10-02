@@ -29,13 +29,27 @@ RM
 FROM  RSC_ORDR O JOIN RSC_ORDR_DETA_ID D
                   ON `;
 
-
 // 자재 발주 등록
 const insertRscOrdr = `
-INSERT INTO rsc_ordr()`;
+INSERT INTO rsc_ordr(
+										co_id,
+										emp_id,
+										reg_dt,
+										rm)
+VALUES (?, ?, ?, ?)`;
 
+// 자재 발주 상세 등록
+const insertRscOrdrDeta = `
+INSERT INTO rsc_ordr_deta(
+										rsc_ordr_id,
+										rsc_id,
+										qy,
+										rm)
+VALUES (?, ?, ?, ?)`;
 
 //
 module.exports = {
-	selectRscOrdrList,
+  selectRscOrdrList,
+  insertRscOrdr,
+  insertRscOrdrDeta,
 };
