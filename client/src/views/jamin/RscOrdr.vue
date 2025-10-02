@@ -30,6 +30,8 @@
             </CCol>
           </CRow>
 
+          <hr />
+
           <div class="d-grid gap-2 d-md-flex justify-content-md-end mb-3">
             <CButton color="secondary" class="me-md-2">신규</CButton>
             <CButton color="secondary" class="me-md-2">저장</CButton>
@@ -37,7 +39,7 @@
           </div>
 
           <CRow class="g-3 mb-3">
-            <CCol md="4">
+            <CCol md="3">
               <CInputGroup>
                 <CInputGroupText id="addon-ordr-name-1">자재 발주서 명</CInputGroupText>
                 <CFormInput
@@ -49,22 +51,31 @@
               </CInputGroup>
             </CCol>
 
-            <CCol md="4">
+            <CCol md="3">
               <CInputGroup>
                 <CInputGroupText id="addon-ordr-name-1">자재 발주서 등록 일자</CInputGroupText>
                 <CFormInput type="date" id="publication_date" />
               </CInputGroup>
             </CCol>
 
-            <CCol md="4">
+            <CCol md="3">
               <CInputGroup>
                 <CInputGroupText id="addon-ordr-name-2">공급 업체 명</CInputGroupText>
                 <CFormInput
                   v-model="ordrName2"
                   placeholder="공급 업체 명"
-                  aria-label="Rsc-ordr-name-1"
+                  aria-label="co-ordr-name-1"
                   aria-describedby="addon-ordr-name-1"
                 />
+                <CIcon :icon="cilMagnifyingGlass" size="xl" @click="goToCo()" />
+                <CoModal :visible="isCoModalVisible" @close="closeCoModal" @select="selectedCo" />
+              </CInputGroup>
+            </CCol>
+
+            <CCol md="3">
+              <CInputGroup>
+                <CInputGroupText id="addon-ordr-name-1">담당자 명</CInputGroupText>
+                <CFormInput type="text" id="login-session" />
               </CInputGroup>
             </CCol>
           </CRow>
@@ -77,8 +88,10 @@
             class="mb-3"
           ></CFormTextarea>
 
+          <hr />
+
           <div class="d-grid gap-2 d-md-flex justify-content-md-end mb-3">
-            <CButton color="primary" class="me-md-2" @click="goToRsc()">자재 조회</CButton>
+            <CButton color="secondary" class="me-md-2" @click="goToRsc()">자재 조회</CButton>
             <RscModal :visible="isRscModalVisible" @close="closeRscModal" @select="selectedRsc" />
             <CButton color="danger" @click="deleteSelectedRows">삭제</CButton>
           </div>
@@ -147,7 +160,6 @@
                   </template>
                   <template v-else>{{ row.note || '—' }}</template>
                 </CTableDataCell>
-
               </CTableRow>
             </CTableBody>
           </CTable>
@@ -160,9 +172,16 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
 
+// 돋보기 아이콘
+import { CIcon } from '@coreui/icons-vue'
+import { cilMagnifyingGlass } from '@coreui/icons'
+
+// 모달 기능
 import RscModal from '../modal/rscModal.vue'
+import CoModal from '../modal/coModal.vue'
 
 const isRscModalVisible = ref(false)
+const isCoModalVisible = ref(false) // 추가
 
 const goToRsc = () => {
   isRscModalVisible.value = true
@@ -172,10 +191,18 @@ const closeRscModal = () => {
   isRscModalVisible.value = false
 }
 
+const goToCo = () => {
+  isCoModalVisible.value = true
+}
+
+const closeCoModal = () => {
+  isCoModalVisible.value = false
+}
+
 const rows = ref([]) // 배열로 변경
 
 const selectedRsc = (rsc) => {
-  const newId = rows.value.length > 0 ? Math.max(...rows.value.map(r => r.id ?? 0)) + 1 : 1
+  const newId = rows.value.length > 0 ? Math.max(...rows.value.map((r) => r.id ?? 0)) + 1 : 1
   rows.value.push({
     id: newId,
     code: rsc.rsc_id,
@@ -185,6 +212,14 @@ const selectedRsc = (rsc) => {
   })
 }
 
+const ordrName2 = ref('') // 공급 업체 명 변수 선언
+
+const selectedCo = (co) => {
+  ordrName2.value = co.co_nm // 선택한 공급업체명을 입력란에 할당
+  closeCoModal() // 모달 닫기
+}
+
+// 그리드 기능
 const editing = reactive({ id: null, field: null })
 const editDraft = ref(null)
 
@@ -214,7 +249,9 @@ function commitEdit(row, field) {
     if (v !== null && v !== '') row.note = v
   }
   cancelEdit()
-  setTimeout(() => { editLocked = false }, 0) // 다음 tick에 unlock
+  setTimeout(() => {
+    editLocked = false
+  }, 0) // 다음 tick에 unlock
 }
 
 function cancelEdit() {
@@ -224,6 +261,8 @@ function cancelEdit() {
 }
 
 const fmtQty = (n) => (n ?? 0).toLocaleString()
+
+// 삭제 기능
 
 const selected = ref(new Set())
 
@@ -238,18 +277,19 @@ function toggleRow(id, e) {
 
 function toggleAll(e) {
   if (e.target.checked) {
-    selected.value = new Set(rows.value.map(r => r.id))
+    selected.value = new Set(rows.value.map((r) => r.id))
   } else {
     selected.value.clear()
   }
 }
 
-const allChecked = computed(() =>
-  rows.value.length > 0 && selected.value.size === rows.value.length
+// 체크박스 기능
+const allChecked = computed(
+  () => rows.value.length > 0 && selected.value.size === rows.value.length,
 )
 
 function deleteSelectedRows() {
-  rows.value = rows.value.filter(row => !selected.value.has(row.id))
+  rows.value = rows.value.filter((row) => !selected.value.has(row.id))
   selected.value.clear()
 }
 </script>
