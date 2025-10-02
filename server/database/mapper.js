@@ -43,7 +43,9 @@ const query = async (alias, values) => {
   }
 };
 
-const getConnection = async () => {
+
+let getConnection = async () => {
+
   return await connectionPool.getConnection();
 };
 
