@@ -63,8 +63,27 @@ const routes = [
         children: [
           {
             path: '/jamin/rsc-ordr',
-            name: 'rscOrdr',
+
+            name: '자재발주',
             component: () => import('@/views/jamin/RscOrdr.vue'),
+          },
+        ],
+      },
+
+      {
+        path: '/zzun',
+        name: 'zzun',
+        component: {
+          render() {
+            return h(resolveComponent('router-view'))
+          },
+        },
+        redirect: '/zzun/Routing',
+        children: [
+          {
+            path: '/zzun/Routing',
+            name: 'prcsRouting',
+            component: () => import('@/views/zzun/Routing.vue'),
           },
         ],
       },
