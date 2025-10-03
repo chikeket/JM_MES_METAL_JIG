@@ -4,8 +4,9 @@ const mariadb = require("../database/mapper.js");
 const { convertObjToAry } = require("../utils/converts.js");
 
 const addNewInstruction = async (Info) => {
-  //   console.log("서비스영역");
-  //   console.log(Info);
+  // console.log("서비스영역");
+  // console.log(Info);
+
   //마스터정보
   let insertColumns = [
     "prod_drct_id",
@@ -16,9 +17,10 @@ const addNewInstruction = async (Info) => {
     "reg_dt",
     "rm",
   ];
-  let data = convertObjToAry(Info.masterInfo, insertColumns);
+
   //디테일정보
   let insertColumnsDeta = [
+    "prod_drct_deta_id",
     "prod_drct_id",
     "prod_plan_deta_id",
     "prdt_id",
@@ -35,14 +37,43 @@ const addNewInstruction = async (Info) => {
   try {
     conn = await mariadb.getConnection();
     await conn.beginTransaction();
+
+    //생산지시ID생성
+    resDrctId = await mariadb
+      .query("prodDrctIdCreate")
+      .catch((err) => console.log(err));
+    // console.log("id생성");
+    // console.log(resDrctId);
+
+    let masterInfoMerge = { ...resDrctId[0], ...Info.masterInfo }
+    // console.log(masterInfoMerge);
+
+    let data = convertObjToAry(masterInfoMerge, insertColumns);
+
+    //생산지시마스터 인서트
     resInfo = await mariadb
       .query("instructionInsert", data)
       .catch((err) => console.log(err));
     // console.log("서비스영역");
     // console.log(Info.detailList);
 
+
+
+    // console.log("상세 인서트쪽")
     for (detail of Info.detailList) {
-      let dataDeta = convertObjToAry(detail, insertColumnsDeta);
+      //생산지시상세ID생성
+      resDrctDetaId = await mariadb
+        .query("prodDrctDetaIdCreate")
+        .catch((err) => console.log(err));
+      // console.log('정보resDrctDetaId')
+      // console.log(resDrctDetaId)
+      let detailInfoMerge = { ...resDrctDetaId[0], ...resDrctId[0], ...detail }
+      // console.log(detailInfoMerge)
+      let dataDeta = convertObjToAry(detailInfoMerge, insertColumnsDeta);
+      // console.log('변환후');
+      // console.log(dataDeta);
+
+
       // console.log("서비스");
       // console.log(dataDeta);
       resInfoDeta = await mariadb
@@ -61,7 +92,7 @@ const addNewInstruction = async (Info) => {
   }
 
   let result = null;
-  if (resInfo.affectedRows > 0 && resInfoDeta.affectedRows > 0) {
+  if (resInfoDeta.affectedRows > 0) {
     // 정상적으로 등록된 경우
     result = {
       isSuccessed: true,

@@ -18,6 +18,9 @@ const rscOrdr = require("./sqls/rscOrdr.js");
 // 자재
 const rsc = require("./sqls/rsc.js");
 
+// 생산계획
+const prodPlan = require("./sqls/prodPlan.js");
+
 // └───각 테이블 별로 실행한 SQL문을 별도 파일로 작성───┘
 
 module.exports = {
@@ -28,4 +31,5 @@ module.exports = {
   ...co,
   ...rcvord,
   ...rsc,
+  ...prodPlan,
 };

@@ -43,7 +43,7 @@
               <td>{{ prdts.opt_nm }}</td>
             </tr>
           </tbody>
-        </table>
+        </table>        
       </div>
     </CModalBody>
     <CModalFooter>

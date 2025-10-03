@@ -1,19 +1,29 @@
 <script setup>
 import { ref, reactive } from 'vue'
 
-import PrdtModal from '../modal/prdtModal.vue'
 import axios from 'axios'
+import PrdtModal from '../modal/prdtModal.vue'
+import ProdPlanModal from '../modal/prodPlanModal.vue'
 const isPrdtModalVisible = ref(false)
 
-const goToPrdt = () => {
+const goToPrdtModal = () => {
   isPrdtModalVisible.value = true
 }
 
 const closePrdtModal = () => {
   isPrdtModalVisible.value = false
 }
+
+const isProdPlanModalVisible = ref(false)
+
+const goToProdPlan = () => {
+  isProdPlanModalVisible.value = true
+}
+
+const closeProdPlanModal = () => {
+  isProdPlanModalVisible.value = false
+}
 let empId = 'emp01'
-let instrucId = new Date().getTime()
 
 const Info = ref({
   ordrName1: '',
@@ -37,8 +47,7 @@ const insertRowsToDB = async () => {
   } else {
     nullchk = Info.value.regDate
   }
-  const master = {
-    prod_drct_id: instrucId,
+  const master = {    
     prod_drct_nm: Info.value.ordrName1,
     emp_id: empId,
     prod_drct_fr_dt: Info.value.startDate,
@@ -47,11 +56,10 @@ const insertRowsToDB = async () => {
     rm: Info.value.remark,
   }
 
-  const detail = rows.value.map((row) => ({
-    prod_drct_id: instrucId,
-    prod_plan_deta_id: row.prdt_id || null,
+  const detail = rows.value.map((row) => ({      
+    prod_plan_deta_id: row.prod_plan_deta_id,
     prdt_id: row.prdt_id,
-    prdt_opt_id: row.prdt_nm,
+    prdt_opt_id: row.prdt_opt_id,
     drct_qy: row.drct_qy,
     priort: row.priort,
     rm: row.rm,
@@ -101,11 +109,32 @@ const rows = ref([
 ])
 
 const selectedPrdt = (prdts) => {
+  console.log(prdts)
   const new_id = rows.value.length > 0 ? Math.max(...rows.value.map((r) => r.id ?? 0)) + 1 : 1
-  rows.value.push({
+  if (Array.isArray(prdts)){
+    for(prdt of prdts)
+rows.value.push({
     id: new_id,
+    prod_plan_deta_id: prdt.prod_plan_deta_id,
+    prdt_id: prdt.prdt_id,
+    prdt_nm: prdt.prdt_nm,
+    prdt_opt_id: prdt.prdt_opt_id,
+    spec: prdt.spec,
+    unit: prdt.unit,
+    plan_qy: prdt.plan_qy,
+    drct_qy: 0,
+    base_quantity: 0,
+    unspecified_quantity: 0,
+    priort: prdt.priort,
+    rm: prdt.rm,
+  })
+  } else {
+rows.value.push({
+    id: new_id,
+    prod_plan_deta_id: 'none',
     prdt_id: prdts.prdt_id,
     prdt_nm: prdts.prdt_nm,
+    prdt_opt_id: prdts.prdt_opt_id,
     spec: prdts.spec,
     unit: prdts.unit,
     plan_qy: 0,
@@ -115,6 +144,8 @@ const selectedPrdt = (prdts) => {
     priort: 0,
     rm: prdts.rm,
   })
+  }
+  
   console.log(rows.value)
 }
 
@@ -137,17 +168,19 @@ function startEdit(row, field) {
 
 function commitEdit(row, field) {
   let v = editDraft.value
-  if (field === 'drctQy') {
+  if (field === 'drct_qy') {
     const n = Number(v)
-    row.drctQy = Number.isFinite(n) ? n : 0
-    //기지시수량 출력조건
-    row.baseQuantity = row.drctQy
+    const validQty = Number.isFinite(n) ? n : 0;
+
+    row.drct_qy = validQty;
+
+    row.base_quantity = row.base_quantity+row.drct_qy;  
 
     //미지시수량 출력 조건
-    if (row.planQy === 0) {
-      row.unspecifiedQuantity = 0
+    if (row.plan_qy === 0) {
+      row.unspecified_quantity = 0
     } else {
-      row.unspecifiedQuantity = row.planQy - row.baseQuantity
+      row.unspecified_quantity = row.plan_qy - row.base_quantity
     }
   } else if (field === 'producible') {
     row.producible = v === 'true' || v === true
@@ -210,11 +243,13 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
     <CFormTextarea v-model="Info.remark" label="비고" rows="3" text="필요 시 기재"></CFormTextarea>
 
     <div class="d-flex justify-content-end gap-2 mb-3">
-      <CButton color="secondary" @click="goToPrdt()">제품 조회</CButton>
+      <CButton color="secondary" @click="goToPrdtModal()">제품 조회</CButton>
       <!-- 모달 컴포넌트 -->
       <PrdtModal :visible="isPrdtModalVisible" @close="closePrdtModal" @select="selectedPrdt" />
 
-      <CButton color="secondary">생산계획서 조회</CButton>
+      <CButton color="secondary" @click="goToProdPlan()">생산계획서 조회</CButton>
+      <ProdPlanModal :visible="isProdPlanModalVisible" @close="closeProdPlanModal" @select="selectedPrdt" />
+
       <CButton color="secondary" @click="reset()">초기화</CButton>
     </div>
 
