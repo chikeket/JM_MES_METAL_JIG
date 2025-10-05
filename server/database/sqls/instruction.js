@@ -39,9 +39,52 @@ FROM prod_drct_deta
 WHERE SUBSTR(prod_drct_deta_id, 10, 4) = DATE_FORMAT(NOW(), '%y%m')
 FOR UPDATE`;
 
+const prcsProgPreconIdCreate =
+  // 공정진행현황 ID 생성
+  `SELECT CONCAT('PRCS_PROG', CONCAT(DATE_FORMAT(NOW(), '%y%m'),LPAD(IFNULL(MAX(SUBSTR(prcs_prog_precon_id, -3)),0) + 1, 3, '0'))) "prcs_prog_precon_id"
+FROM prcs_prog_precon
+WHERE SUBSTR(prcs_prog_precon_id, 10, 4) = DATE_FORMAT(NOW(), '%y%m')
+FOR UPDATE`;
+
+const prcsSelect =
+  // 제품ID,옵션ID로 라우팅과 공정열람 
+  `SELECT  
+ b.prcs_ord,
+ c.prcs_id,
+ c.prcs_nm
+FROM routing a
+JOIN routing_deta b
+ON a.prcs_routing_id = b.prcs_routing_id
+JOIN prcs c
+ON b.prcs_id = c.prcs_id
+WHERE a.prdt_id = ?
+AND a.opt_id = ?
+AND b.prcs_ord = 1`;
+
+const prcsProgPreconInsert =
+  // 공정진행현황 정보입력 
+  `INSERT INTO prcs_prog_precon (
+  prcs_prog_precon_id,
+  prod_drct_deta_id,
+  prcs_ord,
+  prcs_id,
+  prcs_nm,
+  drct_qy,
+  inpt_qy,
+  st,
+  rm
+  )
+  VALUES (?, ?, ?, ?, ?, ?, 0, '사용', ?)`;
+
+
+
+
 module.exports = {
   instructionInsert,
   instructionInsertDetail,
   prodDrctIdCreate,
   prodDrctDetaIdCreate,
+  prcsProgPreconIdCreate,
+  prcsSelect,
+  prcsProgPreconInsert,
 };
