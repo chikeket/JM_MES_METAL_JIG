@@ -1,9 +1,9 @@
-INSERT INTO PRDT (PRDT_ID, PRDT_NM, SPEC, UNIT, PRDT_ST, RM) VALUES
-('PRD001', '제품1', '10g', 'EA', '사용', '비고1'),
-('PRD002', '제품2', '20g', 'EA', '사용', '비고2'),
-('PRD003', '제품3', '30g', 'EA', '사용', '비고3'),
-('PRD004', '제품4', '40g', 'EA', '사용', '비고4'),
-('PRD005', '제품5', '50g', 'EA', '사용', '비고5');
+INSERT INTO prdt (prdt_id, prdt_nm, spec, unit, prdt_st, rm) VALUES
+('prd001', '제품1', '10g', 'EA', '사용', '비고1'),
+('prd002', '제품2', '20g', 'EA', '사용', '비고2'),
+('prd003', '제품3', '30g', 'EA', '사용', '비고3'),
+('prd004', '제품4', '40g', 'EA', '사용', '비고4'),
+('prd005', '제품5', '50g', 'EA', '사용', '비고5');
 
 INSERT INTO PROD_DRCT (PROD_DRCT_ID, PROD_DRCT_NM, EMP_ID, PROD_DRCT_FR_DT, PROD_DRCT_TO_DT, REG_DT, RM) VALUES
 ('PRO001', 'PROD_DRCT_PROD_DRCT_NM_1', 'PRO001', '2025-09-01', '2025-09-01', '2025-09-01', '비고1'),
@@ -19,7 +19,7 @@ INSERT INTO PROD_PLAN (PROD_PLAN_ID, RCVODR_ID, EMP_ID, PROD_PLAN_NM, PROD_EXPC_
 ('PRO004', 'PRO004', 'PRO004', 'PROD_PLAN_PROD_PLAN_NM_4', '2025-09-04', '2025-09-04', '2025-09-04', '비고4'),
 ('PRO005', 'PRO005', 'PRO005', 'PROD_PLAN_PROD_PLAN_NM_5', '2025-09-05', '2025-09-05', '2025-09-05', '비고5');
 
-INSERT INTO DELI_REG_DETA (DELI_DOC_REG_DETA_ID, PRDT_DELI_DOC_ID, PRDT_RCVORD_DETA_ID, DELI_QY, RM) VALUES
+INSERT INTO DELI_REG_DETA (DELI_DOC_REG_DETA_ID, PRDT_DELI_DOC_ID, RCVORD_DETA_ID, DELI_QY, RM) VALUES
 ('DEL001', 'DEL001', 'DEL001', 100, '비고1'),
 ('DEL002', 'DEL002', 'DEL002', 200, '비고2'),
 ('DEL003', 'DEL003', 'DEL003', 300, '비고3'),
@@ -82,12 +82,12 @@ INSERT INTO MOLD (MOLD_ID, PRDT_ID, MOLD_NM, MOLD_TY, KPA, ACCMLT_SHOT, WARN_QY,
 ('MOL004', 'MOL004', 'MOLD_MOLD_NM_4', '사용', 400, 400, 400, 400, 'MOLD_CHCK_CYCLE_4', '2025-09-04', '사용', '비고4'),
 ('MOL005', 'MOL005', 'MOLD_MOLD_NM_5', '사용', 500, 500, 500, 500, 'MOLD_CHCK_CYCLE_5', '2025-09-05', '사용', '비고5');
 
-INSERT INTO RCVORD_DETA (PRDT_RCVORD_DETA_ID, RCVODR_ID, PRDT_ID, PRDT_OPT_ID, RCVORD_QY, ST, PAPRD_DT, RM) VALUES
-('RCV001', 'RCV001', 'RCV001', 'RCV001', 100, '사용', '2025-09-01', '비고1'),
-('RCV002', 'RCV002', 'RCV002', 'RCV002', 200, '사용', '2025-09-02', '비고2'),
-('RCV003', 'RCV003', 'RCV003', 'RCV003', 300, '사용', '2025-09-03', '비고3'),
-('RCV004', 'RCV004', 'RCV004', 'RCV004', 400, '사용', '2025-09-04', '비고4'),
-('RCV005', 'RCV005', 'RCV005', 'RCV005', 500, '사용', '2025-09-05', '비고5');
+INSERT INTO rcvord_deta (rcvord_deta_id, rcvord_id, prdt_id, prdt_opt_id, rcvord_qy, paprd_dt, rm) VALUES
+('rcv_deta_001', 'rcv001', 'prd001', 'RCV001', 100, '2025-09-01', '비고1'),
+('rcv_deta_002', 'rcv002', 'prd002', 'RCV002', 200, '2025-09-02', '비고2'),
+('rcv_deta_003', 'rcv003', 'prd003', 'RCV003', 300, '2025-09-03', '비고3'),
+('rcv_deta_004', 'rcv004', 'prd004', 'RCV004', 400, '2025-09-04', '비고4'),
+('rcv_deta_005', 'rcv005', 'prd005', 'RCV005', 500, '2025-09-05', '비고5');
 
 INSERT INTO BOM_DETA (BOM_COMP_ID, BOM_ID, RSC_ID, SPEC_ID, UNIT_ID, REC_QY, RM) VALUES
 ('BOM001', 'BOM001', 'BOM001', 'BOM001', 'BOM001', 1.12345, '비고1'),
@@ -110,19 +110,19 @@ INSERT INTO QLTY_ITEM (QLTY_ITEM_MNG_ID, INSP_ITEM_NM, TY, VER, ST, BASI_VAL, SP
 ('QLT004', 'QLTY_ITEM_INSP_ITEM_NM_4', 'QLTY_ITEM_TY_4', 'QLTY_ITEM_VER_4', '사용', 'QLTY_ITEM_BASI_VAL_4', '40g', 'EA', 'QLTY_ITEM_EROR_SCOPE_MIN_4', 'QLTY_ITEM_EROR_SCOPE_MAX_4', '2025-09-04', '비고4'),
 ('QLT005', 'QLTY_ITEM_INSP_ITEM_NM_5', 'QLTY_ITEM_TY_5', 'QLTY_ITEM_VER_5', '사용', 'QLTY_ITEM_BASI_VAL_5', '50g', 'EA', 'QLTY_ITEM_EROR_SCOPE_MIN_5', 'QLTY_ITEM_EROR_SCOPE_MAX_5', '2025-09-05', '비고5');
 
-INSERT INTO EMP (EMP_ID, CO_ID, DEPT_ID, PERM_ID, WKGD_ID, EMP_NM, EMP_TEL, EMP_EMAIL, HIRE_DT, HOOF_ST, RM) VALUES
-('EMP001', 'EMP001', 'EMP001', 'EMP001', 'EMP001', '사원1', '010-0001-0001', 'user1@example.com', '2025-09-01', 'EMP_HOOF_ST_1', '비고1'),
-('EMP002', 'EMP002', 'EMP002', 'EMP002', 'EMP002', '사원2', '010-0002-0002', 'user2@example.com', '2025-09-02', 'EMP_HOOF_ST_2', '비고2'),
-('EMP003', 'EMP003', 'EMP003', 'EMP003', 'EMP003', '사원3', '010-0003-0003', 'user3@example.com', '2025-09-03', 'EMP_HOOF_ST_3', '비고3'),
-('EMP004', 'EMP004', 'EMP004', 'EMP004', 'EMP004', '사원4', '010-0004-0004', 'user4@example.com', '2025-09-04', 'EMP_HOOF_ST_4', '비고4'),
-('EMP005', 'EMP005', 'EMP005', 'EMP005', 'EMP005', '사원5', '010-0005-0005', 'user5@example.com', '2025-09-05', 'EMP_HOOF_ST_5', '비고5');
+INSERT INTO emp (emp_id, co_id, dept_id, perm_id, wkgd_id, emp_nm, emp_tel, emp_email, hire_dt, hoof_st, rm) VALUES
+('emp001', 'co001', 'dept001', 'perm001', 'wkgd001', '사원1', '010-0001-0001', 'user1@example.com', '2025-09-01', '재직중', '비고1'),
+('emp002', 'co002', 'dept002', 'perm002', 'wkgd002', '사원2', '010-0002-0002', 'user2@example.com', '2025-09-02', '재직중', '비고2'),
+('emp003', 'co003', 'dept003', 'perm003', 'wkgd003', '사원3', '010-0003-0003', 'user3@example.com', '2025-09-03', '재직중', '비고3'),
+('emp004', 'co004', 'dept004', 'perm004', 'wkgd004', '사원4', '010-0004-0004', 'user4@example.com', '2025-09-04', '재직중', '비고4'),
+('emp005', 'co005', 'dept005', 'perm005', 'wkgd005', '사원5', '010-0005-0005', 'user5@example.com', '2025-09-05', '휴직', '비고5');
 
-INSERT INTO RCVORD (RCVODR_ID, CO_ID, EMP_ID, REG_DT, RM) VALUES
-('RCV001', 'RCV001', 'RCV001', '2025-09-01', '비고1'),
-('RCV002', 'RCV002', 'RCV002', '2025-09-02', '비고2'),
-('RCV003', 'RCV003', 'RCV003', '2025-09-03', '비고3'),
-('RCV004', 'RCV004', 'RCV004', '2025-09-04', '비고4'),
-('RCV005', 'RCV005', 'RCV005', '2025-09-05', '비고5');
+INSERT INTO rcvord (rcvord_id, co_id, emp_id, reg_dt, st, rm) VALUES
+('rcv001', 'co001', 'emp001', '2025-09-01', '등록', '비고1'),
+('rcv002', 'co002', 'emp002', '2025-09-02', '진행중', '비고2'),
+('rcv003', 'co003', 'emp003', '2025-09-03', '진행중', '비고3'),
+('rcv004', 'co004', 'emp004', '2025-09-04', '진행중', '비고4'),
+('rcv005', 'co005', 'emp005', '2025-09-05', '완료', '비고5');
 
 INSERT INTO RWMATR_RTUN_TRGET (RSC_RTUN_TRGET_ID, PROD_DRCT_ITEM_ID, PRDT_ID, PRDT_OPT_ID, PROD_EXPC_QY, PROD_EXPC_DT, RM) VALUES
 ('RWM001', 'RWM001', 'RWM001', 'RWM001', 100, '2025-09-01', '비고1'),
@@ -180,12 +180,12 @@ INSERT INTO PROD_PLAN_DETA (PROD_PLAN_DETA_ID, PROD_PLAN_ID, PRDT_ID, PRDT_OPT_I
 ('PRO004', 'PRO004', 'PRO004', 'PRO004', 400, 400, '비고4'),
 ('PRO005', 'PRO005', 'PRO005', 'PRO005', 500, 500, '비고5');
 
-INSERT INTO PRDT_OPT (PRDT_OPT_ID, PRDT_ID, OPT_NM, ST, RM) VALUES
-('PRD001', 'PRD001', '옵션1', '사용', '비고1'),
-('PRD002', 'PRD002', '옵션2', '사용', '비고2'),
-('PRD003', 'PRD003', '옵션3', '사용', '비고3'),
-('PRD004', 'PRD004', '옵션4', '사용', '비고4'),
-('PRD005', 'PRD005', '옵션5', '사용', '비고5');
+INSERT INTO prdt_opt (prdt_opt_id, prdt_id, opt_nm, st, rm) VALUES
+('opt001', 'prd001', '옵션1', '사용', '비고1'),
+('opt002', 'prd002', '옵션2', '사용', '비고2'),
+('opt003', 'prd003', '옵션3', '사용', '비고3'),
+('opt004', 'prd004', '옵션4', '사용', '비고4'),
+('opt005', 'prd005', '옵션5', '사용', '비고5');
 
 INSERT INTO WRHOUS_WRHSDLVR (WRHOUS_WRHSDLVR_ID, RSC_RTUN_TRGET_ID, RSC_QLTY_INSP_ID, SEMI_PRDT_QLTY_INSP_ID, END_PRDT_QLTY_INSP_ID, DELI_DOC_REG_DETA_ID, RSC_ID, PRDT_ID, PRDT_OPT_ID, WRHOUS_ID, ZONE_ID, EMP_ID, LOT_NO, RCVPAY_TY, SPEC, UNIT, RCVPAY_QY, RCVPAY_DT, RM) VALUES
 ('WRH001', 'WRH001', 'WRH001', 'WRH001', 'WRH001', 'WRH001', 'WRH001', 'WRH001', 'WRH001', 'WRH001', 'WRH001', 'WRH001', 'WRH001', 'WRHOUS_WRHSDLVR_RCVPAY_TY_1', '10g', 'EA', 1.12345, '2025-09-01', '비고1'),
@@ -215,7 +215,7 @@ INSERT INTO ROUTING (PRCS_ROUTING_ID, PRDT_ID, OPT_ID) VALUES
 ('ROU004', 'ROU004', 'ROU004'),
 ('ROU005', 'ROU005', 'ROU005');
 
-INSERT INTO CO (CO_ID, CO_NM, CO_TY_ID, RPSTR_NM, RPSTR_TEL, BIZR_REG_NO, ST, RM) VALUES
+INSERT INTO co (co_id, co_nm, co_ty_id, rpstr_nm, rpstr_tel, bizr_reg_no, st, rm) VALUES
 ('CO001', '업체1', 'CO001', '대표1', '02-0001-0001', '80001-01-40001', '사용', '비고1'),
 ('CO002', '업체2', 'CO002', '대표2', '02-0002-0002', '80002-02-40002', '사용', '비고2'),
 ('CO003', '업체3', 'CO003', '대표3', '02-0003-0003', '80003-03-40003', '사용', '비고3'),
