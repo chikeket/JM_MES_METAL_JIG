@@ -7,6 +7,12 @@
       <button class="btn btn-sm btn-outline-secondary" @click="onSave">저장</button>
       <button class="btn btn-sm btn-outline-danger" @click="onDelete">삭제</button>
     </div>
+    <!-- 수주 조회 모달 -->
+    <RcvordModalOne
+      :visible="isRcvordModalVisible"
+      @close="isRcvordModalVisible = false"
+      @select="onSelectOrder"
+    />
   </div>
 
   <div class="rcvord-page vars-scope">
@@ -32,10 +38,6 @@
         <div class="field">
           <label>수주 등록 일자</label>
           <input type="date" v-model="header.orderDate" />
-        </div>
-        <div class="field">
-          <label>납품 예정 일자</label>
-          <input type="date" v-model="header.dueDate" />
         </div>
         <div class="field">
           <label>총 요청 수량</label>
@@ -74,6 +76,7 @@
             <th class="spec-col">규격</th>
             <th class="unit-col">단위</th>
             <th class="producible-col">생산 가능 여부</th>
+            <th class="due-date-col">납기 예정 일자</th>
             <th class="remark-col">비고</th>
           </tr>
         </thead>
@@ -114,6 +117,22 @@
             <td>
               <span class="cell-text" :title="row.producible">{{ row.producible }}</span>
             </td>
+            <td class="editable" @dblclick="startEdit(row, 'paprd_dt')">
+              <template v-if="isCellEditing(row, 'paprd_dt')">
+                <input
+                  ref="dueDateInputs"
+                  type="date"
+                  v-model="editValue"
+                  @keyup.enter="commitEdit"
+                  @blur="commitEdit"
+                  @keyup.esc="cancelEdit"
+                  class="editor-input"
+                />
+              </template>
+              <template v-else>
+                <span class="cell-text" :title="row.paprd_dt">{{ row.paprd_dt }}</span>
+              </template>
+            </td>
             <td class="editable" @dblclick="startEdit(row, 'remark')">
               <template v-if="isCellEditing(row, 'remark')">
                 <textarea
@@ -131,7 +150,7 @@
             </td>
           </tr>
           <tr v-if="!lines.length">
-            <td colspan="9" class="empty">행이 없습니다. 제품을 추가하세요.</td>
+            <td colspan="10" class="empty">행이 없습니다. 제품을 추가하세요.</td>
           </tr>
         </tbody>
       </table>
@@ -141,6 +160,8 @@
 
 <script setup>
 import { ref, reactive, computed, nextTick } from 'vue'
+import axios from 'axios'
+import RcvordModalOne from '../modal/rcvordModalOne.vue'
 
 // Header state
 const header = reactive({
@@ -149,33 +170,12 @@ const header = reactive({
   owner: '',
   status: '',
   orderDate: '',
-  dueDate: '',
   note: '',
 })
 
 // Lines state
 let lineSeq = 1
-const lines = ref([
-  // 초기 예시 데이터
-  createLine({
-    productName: '모델A_20',
-    optionName: '홀로그램스티..',
-    requestQty: 5000,
-    spec: '20g',
-    unit: 'EA',
-    producible: 'Y',
-    remark: '배송지 정보',
-  }),
-  createLine({
-    productName: '모델B_30',
-    optionName: '홀로그램스티..',
-    requestQty: 5000,
-    spec: '30g',
-    unit: 'EA',
-    producible: 'Y',
-    remark: '배송지 정보',
-  }),
-])
+const lines = ref([])
 
 function createLine(partial = {}) {
   return {
@@ -186,6 +186,7 @@ function createLine(partial = {}) {
     spec: '',
     unit: '',
     producible: '',
+    paprd_dt: '',
     remark: '',
     _selected: false,
     ...partial,
@@ -204,13 +205,16 @@ const editingField = ref('')
 const editValue = ref('')
 const qtyInputs = ref([])
 const remarkInputs = ref([])
+const dueDateInputs = ref([])
 
 function startEdit(row, field) {
-  // Only requestQty or remark allowed
-  if (!['requestQty', 'remark'].includes(field)) return
+  // 편집 허용 필드
+  if (!['requestQty', 'remark', 'paprd_dt'].includes(field)) return
   editingRow.value = row
   editingField.value = field
-  editValue.value = field === 'requestQty' ? String(row.requestQty) : row.remark
+  if (field === 'requestQty') editValue.value = String(row.requestQty)
+  else if (field === 'remark') editValue.value = row.remark
+  else if (field === 'paprd_dt') editValue.value = row.paprd_dt || ''
   nextTick(() => {
     // focus
     if (field === 'requestQty' && qtyInputs.value?.length) {
@@ -218,6 +222,9 @@ function startEdit(row, field) {
       el && el.focus()
     } else if (field === 'remark' && remarkInputs.value?.length) {
       const el = remarkInputs.value[remarkInputs.value.length - 1]
+      el && el.focus()
+    } else if (field === 'paprd_dt' && dueDateInputs.value?.length) {
+      const el = dueDateInputs.value[dueDateInputs.value.length - 1]
       el && el.focus()
     }
   })
@@ -237,6 +244,8 @@ function commitEdit() {
     editingRow.value.requestQty = Number.isFinite(num) ? num : 0
   } else if (editingField.value === 'remark') {
     editingRow.value.remark = editValue.value.trim()
+  } else if (editingField.value === 'paprd_dt') {
+    editingRow.value.paprd_dt = editValue.value || ''
   }
   cancelEdit()
 }
@@ -283,22 +292,99 @@ function onNew() {
     owner: '',
     status: '',
     orderDate: '',
-    dueDate: '',
     note: '',
   })
   onResetLines()
 }
+// 모달 표시 상태
+const isRcvordModalVisible = ref(false)
+
 function onSearch() {
-  // TODO: 검색 다이얼로그/조회 로직
-  console.log('search clicked')
+  isRcvordModalVisible.value = true
+}
+
+// 수주 선택 시 상세 호출하여 헤더/라인 매핑
+async function onSelectOrder(row) {
+  try {
+    const id = row.rcvord_id
+    if (!id) return
+    const { data } = await axios.get(`/api/rcvords/${id}`)
+    const { header: h, lines: ls } = data || {}
+    header.orderId = h?.rcvord_id || ''
+    header.vendorName = h?.co_nm || ''
+    header.owner = h?.emp_nm || h?.emp_id || ''
+    header.status = h?.status || '' // status 컬럼이 원본에 없으면 빈값 유지
+    header.orderDate = h?.reg_dt ? formatDateStr(h.reg_dt) : ''
+    header.note = h?.rm || ''
+    lines.value = Array.isArray(ls)
+      ? ls.map((l) =>
+          createLine({
+            productName: l.prdt_nm || l.prdt_id || '',
+            optionName: l.opt_nm || l.prdt_opt_id || '',
+            requestQty: l.rcvord_qy || 0,
+            spec: l.spec || '',
+            unit: l.unit || '',
+            producible: l.prdt_st || '',
+            paprd_dt: l.paprd_dt ? formatDateStr(l.paprd_dt) : '',
+            remark: l.rm || '',
+          }),
+        )
+      : []
+  } catch (err) {
+    console.error('order detail fetch error', err)
+  } finally {
+    isRcvordModalVisible.value = false
+  }
+}
+
+function formatDateStr(d) {
+  if (!d) return ''
+  try {
+    // d가 Date 객체 또는 문자열(YYYY-MM-DD HH:MM:SS) 형태일 수 있음
+    const date = new Date(d)
+    // 타임존 보정을 위해 로컬 기준 연-월-일 추출
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  } catch {
+    return ''
+  }
 }
 function onSave() {
-  // TODO: 서버 저장 API 연동
-  console.log('save', { header: { ...header }, lines: lines.value })
+  const payload = buildSavePayload()
+  axios
+    .post('/api/rcvords/save', payload)
+    .then(() => console.log('저장 성공'))
+    .catch((err) => console.error('저장 실패', err))
 }
 function onDelete() {
   // TODO: 삭제 로직 연동
   console.log('delete order')
+}
+
+function buildSavePayload() {
+  const hdr = {
+    rcvord_id: header.orderId || generateTempId(),
+    co_id: null, // TODO: 업체 선택 시 설정
+    emp_id: header.owner || null, // 현재 owner에 이름이 들어가므로 ID/이름 분리 필요
+    reg_dt: header.orderDate || new Date().toISOString().slice(0, 10),
+    st: header.status || null,
+    rm: header.note || null,
+  }
+  const ls = lines.value.map((l) => ({
+    rcvord_deta_id: l.id,
+    prdt_id: l.prdt_id || null,
+    prdt_opt_id: l.prdt_opt_id || null,
+    rcvord_qy: l.requestQty || 0,
+    paprd_dt: l.paprd_dt || null,
+    rm: l.remark || null,
+  }))
+  return { header: hdr, lines: ls }
+}
+
+function generateTempId() {
+  return 'TEMP-' + Date.now()
 }
 </script>
 
@@ -526,8 +612,11 @@ function onDelete() {
 .opt-col {
   width: 140px;
 }
+.due-date-col {
+  width: 110px; /* 납기 예정일: compact */
+}
 .remark-col {
-  width: 360px;
+  width: 450px; /* 비고: 확대 */
 }
 .text-center {
   text-align: center;
