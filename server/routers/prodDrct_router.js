@@ -3,14 +3,14 @@ const express = require("express");
 const router = express.Router();
 
 // 해당 라우터를 통해 제공할 서비스를 가져옴
-const prodPlanService = require("../services/prodPlan_service.js");
+const prodDrctService = require("../services/prodDrct_service.js");
 
-router.get("/prodPlanSearch", async (req, res) => {
+router.get("/prodDrctSearch", async (req, res) => {
   console.log("클라에서온값");
   console.log(req.query);
   // req.query;
-  let prdtList = await prodPlanService
-    .prodPlanfindAll(req.query)
+  let prdtList = await prodDrctService
+    .prodDrctfindAll(req.query)
     .catch((err) => console.log(err));
   // console.log("클라로갈값");
   // console.log(prdtList);
@@ -18,12 +18,12 @@ router.get("/prodPlanSearch", async (req, res) => {
   // res.json(prdtList);
 });
 
-router.get("/prodPlanDetaSearch", async (req, res) => {
+router.get("/prodDrctDetaSearch", async (req, res) => {
   console.log("클라에서온값");
   console.log(req.query);
   // req.query;
-  let prdtList = await prodPlanService
-    .prodPlanDetafindAll(req.query)
+  let prdtList = await prodDrctService
+    .prodDrctDetafindAll(req.query)
     .catch((err) => console.log(err));
   // console.log("클라로갈값");
   // console.log(prdtList);

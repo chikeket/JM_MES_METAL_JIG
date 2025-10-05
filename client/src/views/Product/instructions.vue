@@ -4,63 +4,50 @@ import { ref, reactive } from 'vue'
 import axios from 'axios'
 import PrdtModal from '../modal/prdtModal.vue'
 import ProdPlanModal from '../modal/prodPlanModal.vue'
+import ProdDrctModal from '../modal/prodDrctModal.vue'
+
+//제품검색모달
 const isPrdtModalVisible = ref(false)
-
-const goToPrdtModal = () => {
-  isPrdtModalVisible.value = true
-}
-
-const closePrdtModal = () => {
-  isPrdtModalVisible.value = false
-}
-
+const goToPrdtModal = () => {  isPrdtModalVisible.value = true}
+const closePrdtModal = () => {  isPrdtModalVisible.value = false}
+//생산계획모달
 const isProdPlanModalVisible = ref(false)
+const goToProdPlan = () => {  isProdPlanModalVisible.value = true}
+const closeProdPlanModal = () => {  isProdPlanModalVisible.value = false}
+//생산지시모달
+const isProdDrctModalVisible = ref(false)
+const goToDrctPlan = () => {  isProdDrctModalVisible.value = true}
+const closeProdDrctModal = () => {  isProdDrctModalVisible.value = false}
 
-const goToProdPlan = () => {
-  isProdPlanModalVisible.value = true
-}
 
-const closeProdPlanModal = () => {
-  isProdPlanModalVisible.value = false
-}
 let empId = 'emp01'
 
 const Info = ref({
   ordrName1: '',
-  regDate: '',
-  startDate: '',
+  regDate: new Date().toISOString().slice(0, 10),
+  startDate: new Date().toISOString().slice(0, 10),
   endDate: '',
   remark: '',
 })
 
 const insertRowsToDB = async () => {
   // console.log(Info.value)
-
-  let nullchk
-  if (Info.value.regDate == '') {
-    const date = new Date()
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    const formattedDate = `${year}-${month}-${day}`
-    nullchk = formattedDate
-  } else {
-    nullchk = Info.value.regDate
-  }
+  
   const master = {    
     prod_drct_nm: Info.value.ordrName1,
     emp_id: empId,
     prod_drct_fr_dt: Info.value.startDate,
     prod_drct_to_dt: Info.value.endDate,
-    reg_dt: nullchk,
+    reg_dt: Info.value.regDate,
     rm: Info.value.remark,
   }
 
   const detail = rows.value.map((row) => ({      
+    prod_drct_deta_id: row.prod_drct_deta_id,
     prod_plan_deta_id: row.prod_plan_deta_id,
     prdt_id: row.prdt_id,
     prdt_opt_id: row.prdt_opt_id,
-    drct_qy: row.drct_qy,
+    drct_qy: row.drct_qy+row.base_quantity,
     priort: row.priort,
     rm: row.rm,
   }))
@@ -82,39 +69,28 @@ const insertRowsToDB = async () => {
 const rows = ref([
   // {
   //   id: 1,
-  //   prdtId: 'a091',
-  //   prdtNm: 'a091',
+  //   prdt_id: 'a091',
+  //   prdt_nm: 'a091',
   //   spec: 'a091',
   //   unit: 'a091',
-  //   planQy: 600,
-  //   drctQy: 0,
-  //   baseQuantity: 100,
-  //   unspecifiedQuantity: 0,
+  //   plan_qy: 600,
+  //   drct_qy: 0,
+  //   base_quantity: 90,
+  //   unspecified_quantity: 500,
   //   priort: 0,
   //   rm: '',
-  // },
-  // {
-  //   id: 2,
-  //   prdtId: 'a091',
-  //   prdtNm: 'a091',
-  //   spec: 'a091',
-  //   unit: 'a091',
-  //   planQy: 0,
-  //   drctQy: 0,
-  //   baseQuantity: 0,
-  //   unspecifiedQuantity: 0,
-  //   priort: 0,
-  //   rm: '',
-  // },
+  // },  
 ])
 
 const selectedPrdt = (prdts) => {
   console.log(prdts)
-  const new_id = rows.value.length > 0 ? Math.max(...rows.value.map((r) => r.id ?? 0)) + 1 : 1
-  if (Array.isArray(prdts)){
-    for(prdt of prdts)
+  let new_id = rows.value.length > 0 ? Math.max(...rows.value.map((r) => r.id ?? 0)) + 1 : 1
+  if (Array.isArray(prdts)) {
+    rows.value = [];
+    for(const prdt of prdts)
 rows.value.push({
-    id: new_id,
+    id: new_id++,
+    prod_drct_deta_id: prdt.prod_drct_deta_id,
     prod_plan_deta_id: prdt.prod_plan_deta_id,
     prdt_id: prdt.prdt_id,
     prdt_nm: prdt.prdt_nm,
@@ -123,10 +99,10 @@ rows.value.push({
     unit: prdt.unit,
     plan_qy: prdt.plan_qy,
     drct_qy: 0,
-    base_quantity: 0,
-    unspecified_quantity: 0,
+    base_quantity: prdt.drct_qy ?? 0,
+    unspecified_quantity: prdt.plan_qy,
     priort: prdt.priort,
-    rm: prdt.rm,
+    rm: '',
   })
   } else {
 rows.value.push({
@@ -142,7 +118,7 @@ rows.value.push({
     base_quantity: 0,
     unspecified_quantity: 0,
     priort: 0,
-    rm: prdts.rm,
+    rm: '',
   })
   }
   
@@ -171,13 +147,18 @@ function commitEdit(row, field) {
   if (field === 'drct_qy') {
     const n = Number(v)
     const validQty = Number.isFinite(n) ? n : 0;
-
-    row.drct_qy = validQty;
-
-    row.base_quantity = row.base_quantity+row.drct_qy;  
+//  조건 검사: 계획수량이 총합보다 작으면 경고
+    const total = validQty + parseInt(row.base_quantity ?? 0) ;    
+    if (row.plan_qy < total) {
+      alert('계획수량을 초과할 수 없습니다.');
+      cancelEdit();
+      return;
+    }
+    
+    row.drct_qy = validQty;         
 
     //미지시수량 출력 조건
-    if (row.plan_qy === 0) {
+    if (row.plan_qy == 0) {
       row.unspecified_quantity = 0
     } else {
       row.unspecified_quantity = row.plan_qy - row.base_quantity
@@ -205,7 +186,8 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
   <CContainer fluid>
     <div class="d-flex justify-content-end gap-2 mb-3">
       <CButton color="secondary">신규</CButton>
-      <CButton color="secondary">생산지시서 조회</CButton>
+      <CButton color="secondary" @click="goToDrctPlan()">생산지시서 조회</CButton>
+      <ProdDrctModal :visible="isProdDrctModalVisible" @close="closeProdDrctModal" @select="selectedPrdt" />
       <CButton color="secondary" @click="insertRowsToDB">저장</CButton>
       <CButton color="secondary">수정</CButton>
       <CButton color="danger">삭제</CButton>
@@ -339,7 +321,19 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
           </CTableDataCell>
 
           <!-- 비고 -->
-          <CTableHeaderCell scope="row">{{ row.rm }}</CTableHeaderCell>
+           <CTableDataCell  @dblclick="startEdit(row, 'rm') ">
+          <template v-if="isEditing(row, 'rm')">
+            <CFormInput
+              v-model="editDraft"
+              size="sm"                                      
+              @keyup.enter="commitEdit(row, 'rm')"
+              @keyup.esc="cancelEdit"
+              @blur="commitEdit(row, 'rm')"              
+            />
+          </template>
+          <template v-else>{{ row.rm || '—' }}</template>
+        </CTableDataCell>
+          <!-- <CTableHeaderCell scope="row">{{ row.rm }}</CTableHeaderCell> -->
         </CTableRow>
         <CTableRow v-if="!rows || rows.length === 0">
           <CTableDataCell colspan="10" class="text-center text-muted py-5"
