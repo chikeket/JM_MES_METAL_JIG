@@ -8,6 +8,10 @@ const instructions = require("./sqls/instruction.js");
 
 //수주
 const rcvord = require("./sqls/rcvord.js");
+// 사원
+const emp = require("./sqls/emp.js");
+// 계정
+const acct = require("./sqls/acct.js");
 
 //제품
 const prdt = require("./sqls/prdt.js");
@@ -33,6 +37,8 @@ module.exports = {
   ...rscOrdr,
   ...co,
   ...rcvord,
+  ...emp,
+  ...acct,
   ...rsc,
   ...prodPlan,
   ...prodDrct,

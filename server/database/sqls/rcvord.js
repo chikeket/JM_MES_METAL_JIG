@@ -1,66 +1,79 @@
-// 수주 단건 헤더 (업체명) - 원본 컬럼만
+// 모달창 (수주 조회)
+// 수주 마스터 정보는 있지만 상세 정보가 없는것도 조회하기 위해서 LEFT JOIN 사용
+const modalRcvordFind = `SELECT
+  r.rcvord_id,
+  c.co_nm,
+  e.emp_nm,
+  IFNULL(SUM(rcvord_qy),0) AS total_qty,
+  r.reg_dt,
+  r.st,
+  r.rm
+FROM rcvord r
+    JOIN co c ON (r.co_id = c.co_id)
+	  JOIN emp e ON (r.emp_id = e.emp_id)
+	  LEFT JOIN rcvord_deta rd ON (r.rcvord_id = rd.rcvord_id)
+GROUP BY
+  r.rcvord_id
+HAVING r.rcvord_id LIKE CONCAT('%', ?, '%')
+ORDER BY r.rcvord_id DESC`;
+
+// 수주 헤더 단건 (원본 컬럼 유지)
 const rcvordFindHeader = `SELECT
-    r.rcvord_id,
-    r.co_id,
-    c.co_nm,
-    r.emp_id,
-    e.emp_nm,
-    r.reg_dt,
-    r.rm,
-    r.st
-  FROM rcvord r
-    LEFT JOIN co c ON c.co_id = r.co_id
-    LEFT JOIN emp e ON e.emp_id = r.emp_id
-  WHERE r.rcvord_id = ?`;
+  r.rcvord_id,
+  r.co_id,
+  c.co_nm,
+  r.emp_id,
+  e.emp_nm,
+  r.reg_dt,
+  r.st,
+  r.rm
+FROM rcvord r
+  JOIN co c ON c.co_id = r.co_id
+  JOIN emp e ON e.emp_id = r.emp_id
+WHERE r.rcvord_id = ?`;
 
-// 수주 목록 (집계 포함) - total_qty, due_date 계산 (원본 컬럼 + 파생컬럼)
-const rcvordFindAllWithAgg = `SELECT
-    r.rcvord_id,
-    r.co_id,
-    c.co_nm,
-    r.emp_id,
-    e.emp_nm,
-    r.reg_dt,
-    r.rm,
-    r.st,
-    IFNULL(SUM(d.rcvord_qy),0) AS total_qty,
-    MIN(d.paprd_dt) AS due_date
-  FROM rcvord r
-    LEFT JOIN co c ON c.co_id = r.co_id
-    LEFT JOIN emp e ON e.emp_id = r.emp_id
-    LEFT JOIN rcvord_deta d ON d.rcvord_id = r.rcvord_id
-  GROUP BY r.rcvord_id, r.co_id, c.co_nm, r.emp_id, e.emp_nm, r.reg_dt, r.rm, r.st
-  ORDER BY r.rcvord_id`;
-
-// 수주 상세 라인 목록 - 원본 컬럼/명칭 유지
+// 수주 상세 라인 목록
 const rcvordFindLines = `SELECT
-    d.rcvord_deta_id,
-    d.rcvord_id,
-    d.prdt_id,
-    p.prdt_nm,
-    p.spec,
-    p.unit,
-    p.prdt_st,
-    d.prdt_opt_id,
-    o.opt_nm,
-    d.rcvord_qy,
-    d.paprd_dt,
-    d.rm
-  FROM rcvord_deta d
-    LEFT JOIN prdt p ON p.prdt_id = d.prdt_id
-    LEFT JOIN prdt_opt o ON o.prdt_opt_id = d.prdt_opt_id
-  WHERE d.rcvord_id = ?
-  ORDER BY d.rcvord_deta_id`;
+  d.rcvord_deta_id,
+  d.rcvord_id,
+  d.prdt_id,
+  p.prdt_nm,
+  p.spec,
+  p.unit,
+  p.prdt_st,
+  d.prdt_opt_id,
+  o.opt_nm,
+  d.rcvord_qy,
+  d.paprd_dt,
+  d.rm
+FROM rcvord_deta d
+  JOIN prdt p ON p.prdt_id = d.prdt_id
+  JOIN prdt_opt o ON o.prdt_opt_id = d.prdt_opt_id
+WHERE d.rcvord_id = ?
+ORDER BY d.rcvord_deta_id`;
 
-// 저장 관련 (INSERT / UPDATE / LINE 재작성)
+// 저장 관련 (아주 기본 형태)
+// 존재 여부 확인
 const rcvordExists = `SELECT 1 FROM rcvord WHERE rcvord_id = ? LIMIT 1`;
+// 헤더 insert / update
 const rcvordInsert = `INSERT INTO rcvord (rcvord_id, co_id, emp_id, reg_dt, st, rm) VALUES (?, ?, ?, ?, ?, ?)`;
 const rcvordUpdate = `UPDATE rcvord SET co_id = ?, emp_id = ?, reg_dt = ?, st = ?, rm = ? WHERE rcvord_id = ?`;
+// 라인 재작성 (전체 삭제 후 다시 insert)
 const rcvordDeleteLines = `DELETE FROM rcvord_deta WHERE rcvord_id = ?`;
 const rcvordInsertLine = `INSERT INTO rcvord_deta (rcvord_deta_id, rcvord_id, prdt_id, prdt_opt_id, rcvord_qy, paprd_dt, rm) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+// 헤더 삭제 (라인 먼저 삭제 후 호출)
+const rcvordDeleteHeader = `DELETE FROM rcvord WHERE rcvord_id = ?`;
+
+// ID 생성 (월별 증가) - 학습용 (경합 상황 고려 X)
+const rcvordNewId = `SELECT CONCAT('RCV', DATE_FORMAT(NOW(), '%Y%m'), LPAD(IFNULL(MAX(SUBSTR(rcvord_id, -3)),0) + 1, 3, '0')) AS new_id
+  FROM rcvord
+  WHERE SUBSTR(rcvord_id, 4, 6) = DATE_FORMAT(NOW(), '%Y%m')`;
+const rcvordDetaNewId = `SELECT CONCAT('RCV_DETA', DATE_FORMAT(NOW(), '%Y%m'), LPAD(IFNULL(MAX(SUBSTR(rcvord_deta_id, -3)),0) + 1, 3, '0')) AS new_id
+  FROM rcvord_deta
+  WHERE SUBSTR(rcvord_deta_id, 9, 6) = DATE_FORMAT(NOW(), '%Y%m')`;
 
 module.exports = {
-  rcvordFindAllWithAgg,
+  modalRcvordFind,
   rcvordFindHeader,
   rcvordFindLines,
   rcvordExists,
@@ -68,4 +81,7 @@ module.exports = {
   rcvordUpdate,
   rcvordDeleteLines,
   rcvordInsertLine,
+  rcvordDeleteHeader,
+  rcvordNewId,
+  rcvordDetaNewId,
 };

@@ -40,12 +40,12 @@ INSERT INTO MENU_PERM (MENU_PERM_ID, MENU_ID, DEPT_ID, WKGD_ID, ACCES_YN, RM) VA
 ('MEN004', 'MEN004', 'MEN004', 'MEN004', 'MENU_PERM_ACCES_YN_4', '비고4'),
 ('MEN005', 'MEN005', 'MEN005', 'MEN005', 'MENU_PERM_ACCES_YN_5', '비고5');
 
-INSERT INTO ACCT (ACCT_ID, EMP_ID, ID, PW, RM) VALUES
-('ACC001', 'ACC001', 'ACC001', 'ACCT_PW_1', '비고1'),
-('ACC002', 'ACC002', 'ACC002', 'ACCT_PW_2', '비고2'),
-('ACC003', 'ACC003', 'ACC003', 'ACCT_PW_3', '비고3'),
-('ACC004', 'ACC004', 'ACC004', 'ACCT_PW_4', '비고4'),
-('ACC005', 'ACC005', 'ACC005', 'ACCT_PW_5', '비고5');
+INSERT INTO acct (acct_id, emp_id, id, pw, rm) VALUES
+('acc001', 'emp001', 'id001', 'pw001', '비고1'),
+('acc002', 'emp002', 'id002', 'pw002', '비고2'),
+('acc003', 'emp003', 'id003', 'pw003', '비고3'),
+('acc004', 'emp004', 'id004', 'pw004', '비고4'),
+('acc005', 'emp005', 'id005', 'pw005', '비고5');
 
 INSERT INTO PROD_DRCT_DETA (PROD_DRCT_DETA_ID, PROD_DRCT_ID, PROD_PLAN_DETA_ID, PRDT_ID, PRDT_OPT_ID, DRCT_QY, PRIORT, RM) VALUES
 ('PRO001', 'PRO001', 'PRO001', 'PRO001', 'PRO001', 100, 100, '비고1'),

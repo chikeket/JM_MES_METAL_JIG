@@ -23,43 +23,32 @@
           <CTableHead color="dark">
             <CTableRow>
               <CTableHeaderCell class="text-center" style="width: 50px">No</CTableHeaderCell>
-              <CTableHeaderCell class="text-center">수주ID</CTableHeaderCell>
-              <CTableHeaderCell class="text-center">납품업체명</CTableHeaderCell>
-              <CTableHeaderCell class="text-center">수주담당자</CTableHeaderCell>
-              <CTableHeaderCell class="text-center">총요청수량</CTableHeaderCell>
-              <CTableHeaderCell class="text-center">수주등록일자</CTableHeaderCell>
-              <CTableHeaderCell class="text-center">납품예정일자</CTableHeaderCell>
-              <CTableHeaderCell class="text-center">수주상태</CTableHeaderCell>
+              <CTableHeaderCell class="text-center">수주 ID</CTableHeaderCell>
+              <CTableHeaderCell class="text-center">납품 업체 명</CTableHeaderCell>
+              <CTableHeaderCell class="text-center">수주 담당자</CTableHeaderCell>
+              <CTableHeaderCell class="text-center">총 요청 수량</CTableHeaderCell>
+              <CTableHeaderCell class="text-center">수주 등록 일자</CTableHeaderCell>
+              <CTableHeaderCell class="text-center">수주 상태</CTableHeaderCell>
               <CTableHeaderCell class="text-center">비고</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
           <CTableBody>
-            <CTableRow v-if="loading">
-              <CTableDataCell colspan="9" class="text-center py-3">로딩중...</CTableDataCell>
-            </CTableRow>
-            <CTableRow v-else-if="errorMsg">
-              <CTableDataCell colspan="9" class="text-center text-danger py-3">{{
-                errorMsg
-              }}</CTableDataCell>
-            </CTableRow>
             <CTableRow
-              v-else
-              v-for="(row, idx) in filteredList"
-              :key="row.rcvord_id ?? idx"
+              v-for="(row, idx) in rcvordList"
+              :key="row.rcvord_id"
               @dblclick="selectRcvord(row)"
               style="cursor: pointer"
             >
-              <CTableDataCell class="text-center">{{ idx + 1 }}</CTableDataCell>
-              <CTableDataCell class="text-center">{{ row.rcvord_id }}</CTableDataCell>
-              <CTableDataCell>{{ row.co_nm }}</CTableDataCell>
-              <CTableDataCell>{{ row.emp_nm ?? row.emp_id }}</CTableDataCell>
-              <CTableDataCell class="text-end">{{ formatNumber(row.total_qty) }}</CTableDataCell>
-              <CTableDataCell class="text-center">{{ formatDate(row.reg_dt) }}</CTableDataCell>
-              <CTableDataCell class="text-center">{{ formatDate(row.due_date) }}</CTableDataCell>
-              <CTableDataCell class="text-center">{{ row.status ?? row.st ?? '' }}</CTableDataCell>
-              <CTableDataCell>{{ row.rm }}</CTableDataCell>
+              <CTableDataCell class="cell-no">{{ idx + 1 }}</CTableDataCell>
+              <CTableDataCell class="cell-left">{{ row.rcvord_id }}</CTableDataCell>
+              <CTableDataCell class="cell-left">{{ row.co_nm }}</CTableDataCell>
+              <CTableDataCell class="cell-left">{{ row.emp_nm }}</CTableDataCell>
+              <CTableDataCell class="cell-number">{{ formatNumber(row.total_qty) }}</CTableDataCell>
+              <CTableDataCell class="cell-left">{{ formatDate(row.reg_dt) }}</CTableDataCell>
+              <CTableDataCell class="cell-left">{{ row.status }}</CTableDataCell>
+              <CTableDataCell class="cell-left">{{ row.rm }}</CTableDataCell>
             </CTableRow>
-            <CTableRow v-if="!loading && !errorMsg && !filteredList.length">
+            <CTableRow v-if="!rcvordList.length">
               <CTableDataCell colspan="9" class="text-center text-muted py-3">
                 데이터가 없습니다.
               </CTableDataCell>
@@ -68,7 +57,6 @@
         </CTable>
       </div>
     </CModalBody>
-    <!-- 별도 하단 닫기 버튼 제거: 기본 모달 X 버튼만 사용 -->
   </CModal>
 </template>
 
@@ -83,15 +71,11 @@ const emit = defineEmits(['close', 'select'])
 
 // 상태
 const searchOrderId = ref('')
-let rcvordList = shallowRef([]) // 전체 목록
-let filteredList = shallowRef([]) // 검색 결과
-const loading = ref(false)
-const errorMsg = ref('')
+let rcvordList = shallowRef([])
 
 // 닫기
 const close = () => {
   emit('close')
-  // 닫힐 때 검색 값 유지 여부 선택 가능. 지금은 유지.
 }
 
 // 포맷 함수
@@ -99,7 +83,10 @@ const formatNumber = (n) => (n == null ? '' : Number(n).toLocaleString())
 const formatDate = (d) => {
   if (!d) return ''
   try {
+    // d가 이미 'YYYY-MM-DD' 형태 문자열일 경우 그대로 반환
+    if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d
     const date = new Date(d)
+    if (isNaN(date.getTime())) return ''
     const y = date.getFullYear()
     const m = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
@@ -111,43 +98,29 @@ const formatDate = (d) => {
 
 // 서버에서 목록 가져오기
 const fetchAll = async () => {
-  loading.value = true
-  errorMsg.value = ''
   try {
-    const { data } = await axios.get('/api/rcvords')
+    const params = {}
+    const keyword = (searchOrderId.value || '').trim()
+    if (keyword) params.rcvord_id = keyword
+
+    const { data } = await axios.get('/api/rcvords', { params })
     rcvordList.value = Array.isArray(data) ? data : []
-    applyFilter()
   } catch (err) {
     console.error('rcvords fetch error', err)
-    errorMsg.value = '조회 중 오류가 발생했습니다.'
-  } finally {
-    loading.value = false
   }
 }
 
-// 필터 적용
-const applyFilter = () => {
-  const keyword = (searchOrderId.value || '').trim().toLowerCase()
-  if (!keyword) {
-    filteredList.value = rcvordList.value
-    return
-  }
-  filteredList.value = rcvordList.value.filter((row) => {
-    const id = String(row.rcvord_id || '').toLowerCase()
-    return id.includes(keyword)
-  })
-}
+// 필터 적용 함수 제거 (서버에서 처리)
 
-// 조회 버튼 (필터만 적용 또는 서버 재호출 선택 가능) 여기선 재호출 없이 필터
+// 조회 버튼 - 서버에서 검색어 기반 조회
 const searchRcvord = async () => {
-  // 이미 목록을 가지고 있다고 가정하고 필터만 적용
-  applyFilter()
+  await fetchAll()
 }
 
 // 초기화: 입력창 비우고 전체 재조회 + 전체 목록 표시
 const reset = async () => {
   searchOrderId.value = ''
-  await fetchAll() // 서버에서 새로 전체 목록 가져와 filteredList 갱신
+  await fetchAll()
 }
 
 // 행 선택 (더블클릭)
@@ -173,7 +146,7 @@ onMounted(() => {
   if (props.visible && !rcvordList.value.length) fetchAll()
 })
 
-// filteredList 를 템플릿에서 직접 사용
+// rcvordList 직접 사용 (서버가 필터 처리)
 </script>
 
 <style scoped>
@@ -205,5 +178,14 @@ onMounted(() => {
   display: inline-block;
   min-width: 56px;
   text-align: right;
+}
+.cell-no {
+  text-align: center !important;
+}
+.cell-number {
+  text-align: right !important;
+}
+.cell-left {
+  text-align: left !important;
 }
 </style>
