@@ -1,5 +1,5 @@
 <template>
-  <!-- 상단 글로벌 버튼 바 (우측 여백 추가 + 색상 유지) -->
+  <!-- 상단 버튼 -->
   <div class="global-toolbar vars-scope">
     <div class="toolbar-buttons">
       <button class="btn btn-sm btn-outline-secondary" @click="onNew">신규</button>
@@ -13,10 +13,16 @@
       @close="isRcvordModalVisible = false"
       @select="onSelectOrder"
     />
+    <!-- 제품 선택 모달 -->
+    <RcvordModalTwo
+      :visible="isProductModalVisible"
+      @close="isProductModalVisible = false"
+      @select="onSelectProduct"
+    />
   </div>
 
   <div class="rcvord-page vars-scope">
-    <!-- 검색조건(헤더) 영역 -->
+    <!-- 수주 마스터 폼 -->
     <div class="order-header card-like">
       <div class="form-grid">
         <div class="field">
@@ -25,11 +31,11 @@
         </div>
         <div class="field">
           <label>납품업체 명</label>
-          <input type="text" v-model="header.vendorName" />
+          <input type="text" v-model="header.vendorName" required />
         </div>
         <div class="field">
           <label>수주 담당자</label>
-          <input type="text" v-model="header.owner" />
+          <input type="text" v-model="header.owner" required />
         </div>
         <div class="field">
           <label>수주 상태</label>
@@ -45,12 +51,12 @@
         </div>
         <div class="field field-col-span">
           <label>비고</label>
-          <textarea v-model="header.note" />
+          <textarea v-model="header.note"></textarea>
         </div>
       </div>
     </div>
 
-    <!-- 하단 제품 목록 외부 버튼바 -->
+    <!-- 하단 버튼 -->
     <div class="sub-toolbar">
       <div class="sub-toolbar-buttons">
         <button class="btn btn-xs btn-outline-secondary" @click="onResetLines">초기화</button>
@@ -61,7 +67,7 @@
       </div>
     </div>
 
-    <!-- 제품 목록 -->
+    <!-- 마스터 수주에 포함되는 제품 목록 -->
     <div class="table-wrapper table-wrapper-expanded">
       <table class="data-grid">
         <thead>
@@ -76,23 +82,27 @@
             <th class="spec-col">규격</th>
             <th class="unit-col">단위</th>
             <th class="producible-col">생산 가능 여부</th>
-            <th class="due-date-col">납기 예정 일자</th>
+            <th class="due-date-col">납품 예정 일자</th>
             <th class="remark-col">비고</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(row, idx) in lines" :key="row.id" :class="{ editing: isEditing(row) }">
+          <tr
+            v-for="(row, idx) in lines"
+            :key="row.rcvord_deta_id || row.frontTempId"
+            :class="{ editing: isEditing(row) }"
+          >
             <td class="text-center">
               <input type="checkbox" v-model="row._selected" />
             </td>
-            <td class="text-center">{{ idx + 1 }}</td>
-            <td>
+            <td class="cell-no">{{ idx + 1 }}</td>
+            <td class="cell-left">
               <span class="cell-text" :title="row.productName">{{ row.productName }}</span>
             </td>
-            <td>
+            <td class="cell-left">
               <span class="cell-text" :title="row.optionName">{{ row.optionName }}</span>
             </td>
-            <td class="text-end editable" @dblclick="startEdit(row, 'requestQty')">
+            <td class="cell-number editable" @dblclick="startEdit(row, 'requestQty')">
               <template v-if="isCellEditing(row, 'requestQty')">
                 <input
                   ref="qtyInputs"
@@ -102,22 +112,25 @@
                   @blur="commitEdit"
                   @keyup.esc="cancelEdit"
                   class="editor-input text-end"
+                  placeholder="입력"
                 />
               </template>
               <template v-else>
-                {{ formatNumber(row.requestQty) }}
+                <span :class="{ 'placeholder-text': !row.requestQty }">
+                  {{ row.requestQty ? formatNumber(row.requestQty) : '입력' }}
+                </span>
               </template>
             </td>
-            <td>
+            <td class="cell-left">
               <span class="cell-text" :title="row.spec">{{ row.spec }}</span>
             </td>
-            <td>
+            <td class="cell-left">
               <span class="cell-text" :title="row.unit">{{ row.unit }}</span>
             </td>
-            <td>
+            <td class="cell-left">
               <span class="cell-text" :title="row.producible">{{ row.producible }}</span>
             </td>
-            <td class="editable" @dblclick="startEdit(row, 'paprd_dt')">
+            <td class="cell-left editable" @dblclick="startEdit(row, 'paprd_dt')">
               <template v-if="isCellEditing(row, 'paprd_dt')">
                 <input
                   ref="dueDateInputs"
@@ -127,13 +140,20 @@
                   @blur="commitEdit"
                   @keyup.esc="cancelEdit"
                   class="editor-input"
+                  placeholder="입력"
                 />
               </template>
               <template v-else>
-                <span class="cell-text" :title="row.paprd_dt">{{ row.paprd_dt }}</span>
+                <span
+                  class="cell-text"
+                  :class="{ 'placeholder-text': !row.paprd_dt }"
+                  :title="row.paprd_dt || ''"
+                >
+                  {{ row.paprd_dt || '입력' }}
+                </span>
               </template>
             </td>
-            <td class="editable" @dblclick="startEdit(row, 'remark')">
+            <td class="cell-left editable" @dblclick="startEdit(row, 'remark')">
               <template v-if="isCellEditing(row, 'remark')">
                 <textarea
                   ref="remarkInputs"
@@ -142,10 +162,17 @@
                   @blur="commitEdit"
                   @keyup.esc="cancelEdit"
                   class="editor-textarea"
+                  placeholder="입력"
                 ></textarea>
               </template>
               <template v-else>
-                <div class="ellipsis" :title="row.remark">{{ row.remark }}</div>
+                <div
+                  class="ellipsis"
+                  :class="{ 'placeholder-text': !row.remark }"
+                  :title="row.remark || ''"
+                >
+                  {{ row.remark || '입력' }}
+                </div>
               </template>
             </td>
           </tr>
@@ -159,15 +186,21 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, nextTick } from 'vue'
+import { ref, reactive, computed, nextTick, watch } from 'vue'
 import axios from 'axios'
+import { useAuthStore } from '@/stores/auth.js'
 import RcvordModalOne from '../modal/rcvordModalOne.vue'
+import RcvordModalTwo from '../modal/rcvordModalTwo.vue'
+
+// Auth store (로그인 사용자 정보 활용)
+const auth = useAuthStore()
 
 // Header state
 const header = reactive({
   orderId: '',
   vendorName: '',
-  owner: '',
+  owner: '', // 수주 담당자 (사원명)
+  empId: '', // 내부 전송용 (선택적으로 사용)
   status: '',
   orderDate: '',
   note: '',
@@ -179,7 +212,11 @@ const lines = ref([])
 
 function createLine(partial = {}) {
   return {
-    id: lineSeq++,
+    // frontTempId: 프론트 임시 식별자 (백엔드 rcvord_deta_id와 구분)
+    frontTempId: lineSeq++,
+    rcvord_deta_id: null,
+    prdt_id: null,
+    prdt_opt_id: null,
     productName: '',
     optionName: '',
     requestQty: 0,
@@ -271,7 +308,7 @@ function formatNumber(val) {
 
 // Line operations
 function onAddLine() {
-  lines.value.push(createLine())
+  isProductModalVisible.value = true
 }
 function onDeleteSelected() {
   lines.value = lines.value.filter((l) => !l._selected)
@@ -284,20 +321,46 @@ function onResetLines() {
 }
 
 // Header button stubs
+function applyDefaultOwnerIfEmpty() {
+  // 신규 상태: orderId 없음
+  if (!header.orderId) {
+    // 담당자 기본 세팅
+    if (!header.owner && auth.user) {
+      header.owner = auth.user.emp_nm || ''
+      header.empId = auth.user.emp_id || ''
+    }
+    // 등록일자 기본 오늘 날짜
+    if (!header.orderDate) {
+      header.orderDate = new Date().toISOString().slice(0, 10)
+    }
+  }
+}
+
 function onNew() {
-  // TODO: 비즈니스 로직 연결
   Object.assign(header, {
     orderId: '',
     vendorName: '',
     owner: '',
+    empId: '',
     status: '',
-    orderDate: '',
+    orderDate: new Date().toISOString().slice(0, 10),
     note: '',
   })
+  applyDefaultOwnerIfEmpty()
   onResetLines()
 }
+
+// 로그인 사용자 정보가 나중에 도착하는 경우에도 기본 담당자 자동 세팅
+watch(
+  () => auth.user,
+  () => {
+    applyDefaultOwnerIfEmpty()
+  },
+  { immediate: true },
+)
 // 모달 표시 상태
 const isRcvordModalVisible = ref(false)
+const isProductModalVisible = ref(false)
 
 function onSearch() {
   isRcvordModalVisible.value = true
@@ -313,14 +376,18 @@ async function onSelectOrder(row) {
     header.orderId = h?.rcvord_id || ''
     header.vendorName = h?.co_nm || ''
     header.owner = h?.emp_nm || h?.emp_id || ''
+    header.empId = h?.emp_id || ''
     header.status = h?.status || '' // status 컬럼이 원본에 없으면 빈값 유지
     header.orderDate = h?.reg_dt ? formatDateStr(h.reg_dt) : ''
     header.note = h?.rm || ''
     lines.value = Array.isArray(ls)
       ? ls.map((l) =>
           createLine({
+            rcvord_deta_id: l.rcvord_deta_id || null,
+            prdt_id: l.prdt_id || null,
+            prdt_opt_id: l.prdt_opt_id || null,
             productName: l.prdt_nm || l.prdt_id || '',
-            optionName: l.opt_nm || l.prdt_opt_id || '',
+            optionName: l.opt_nm && l.opt_nm.trim() ? l.opt_nm : l.prdt_opt_id || '-',
             requestQty: l.rcvord_qy || 0,
             spec: l.spec || '',
             unit: l.unit || '',
@@ -340,13 +407,14 @@ async function onSelectOrder(row) {
 function formatDateStr(d) {
   if (!d) return ''
   try {
-    // d가 Date 객체 또는 문자열(YYYY-MM-DD HH:MM:SS) 형태일 수 있음
+    // 이미 'YYYY-MM-DD' 형식이면 그대로
+    if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d
     const date = new Date(d)
-    // 타임존 보정을 위해 로컬 기준 연-월-일 추출
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
+    if (isNaN(date.getTime())) return ''
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
+    return `${y}-${m}-${day}`
   } catch {
     return ''
   }
@@ -355,37 +423,85 @@ function onSave() {
   const payload = buildSavePayload()
   axios
     .post('/api/rcvords/save', payload)
-    .then(() => console.log('저장 성공'))
-    .catch((err) => console.error('저장 실패', err))
+    .then((res) => {
+      const newId = res?.data?.rcvord_id
+      if (newId) {
+        header.orderId = newId
+      }
+      alert('저장 성공')
+      // 저장 후 전체 초기화 요청에 따라 초기화
+      onNew()
+    })
+    .catch((err) => {
+      console.error('저장 실패', err)
+      alert('저장 실패: ' + (err?.response?.data?.error || err.message))
+    })
 }
 function onDelete() {
-  // TODO: 삭제 로직 연동
-  console.log('delete order')
+  if (!header.orderId) {
+    alert('삭제할 수주가 없습니다.')
+    return
+  }
+  if (!confirm(`수주 ${header.orderId} 를 삭제할까요?`)) return
+  axios
+    .delete(`/api/rcvords/${header.orderId}`)
+    .then(() => {
+      alert('삭제 성공')
+      onNew()
+    })
+    .catch((err) => {
+      console.error('삭제 실패', err)
+      alert('삭제 실패: ' + (err?.response?.data?.error || err.message))
+    })
 }
 
 function buildSavePayload() {
   const hdr = {
-    rcvord_id: header.orderId || generateTempId(),
-    co_id: null, // TODO: 업체 선택 시 설정
-    emp_id: header.owner || null, // 현재 owner에 이름이 들어가므로 ID/이름 분리 필요
-    reg_dt: header.orderDate || new Date().toISOString().slice(0, 10),
+    rcvord_id: header.orderId || '',
+    // 현재는 이름만 입력받고 있으므로 서버가 co_nm/emp_nm으로 ID 역매핑 하도록 전송
+    co_id: null,
+    emp_id: null,
+    co_nm: header.vendorName ? header.vendorName.trim() : '',
+    emp_nm: header.owner ? header.owner.trim() : '',
+    reg_dt: header.orderDate || formatDateStr(new Date()),
     st: header.status || null,
     rm: header.note || null,
   }
   const ls = lines.value.map((l) => ({
-    rcvord_deta_id: l.id,
+    rcvord_deta_id: l.rcvord_deta_id || null,
     prdt_id: l.prdt_id || null,
     prdt_opt_id: l.prdt_opt_id || null,
-    rcvord_qy: l.requestQty || 0,
+    rcvord_qy: Number(l.requestQty) || 0,
     paprd_dt: l.paprd_dt || null,
     rm: l.remark || null,
   }))
   return { header: hdr, lines: ls }
 }
 
-function generateTempId() {
-  return 'TEMP-' + Date.now()
+// 제품 선택 시 라인 추가
+async function onSelectProduct(product) {
+  try {
+    const newLine = createLine({
+      prdt_id: product.prdt_id,
+      prdt_opt_id: product.prdt_opt_id,
+      productName: product.prdt_nm,
+      optionName: product.opt_nm || '',
+      spec: product.spec,
+      unit: product.unit,
+      producible: product.prdt_st,
+      requestQty: 0, // 기본 수량 0
+      paprd_dt: '',
+      remark: product.rm || '',
+    })
+    lines.value.push(newLine)
+  } catch (err) {
+    console.error('product select error', err)
+  } finally {
+    isProductModalVisible.value = false
+  }
 }
+
+// generateTempId 제거: 서버 ID 자동 생성 사용
 </script>
 
 <style scoped>
@@ -545,7 +661,7 @@ function generateTempId() {
   border: 1px solid #bcbcbc;
   padding: 4px;
   font-weight: 600;
-  text-align: center;
+  text-align: center; /* 헤더 가운데 */
   height: var(--thead-h);
 }
 .data-grid thead th:first-child {
@@ -618,6 +734,15 @@ function generateTempId() {
 .remark-col {
   width: 450px; /* 비고: 확대 */
 }
+.cell-no {
+  text-align: center;
+}
+.cell-number {
+  text-align: right;
+}
+.cell-left {
+  text-align: left;
+}
 .text-center {
   text-align: center;
 }
@@ -643,6 +768,10 @@ function generateTempId() {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.placeholder-text {
+  color: #b5b5b5;
+  font-style: italic;
 }
 .empty {
   text-align: center;

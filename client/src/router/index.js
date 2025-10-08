@@ -1,5 +1,6 @@
 import { h, resolveComponent } from 'vue'
 import { createRouter, createWebHashHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth.js'
 
 import DefaultLayout from '@/layouts/DefaultLayout'
 
@@ -18,6 +19,11 @@ const routes = [
         // which is lazy-loaded when the route is visited.
         component: () =>
           import(/* webpackChunkName: "dashboard" */ '@/views/dashboard/Dashboard.vue'),
+      },
+      {
+        path: '/login',
+        name: 'login',
+        component: () => import('@/views/minsu/login.vue'),
       },
       {
         path: '/theme',
@@ -445,6 +451,27 @@ const router = createRouter({
       top: 0,
     }
   },
+})
+
+// 전역 인증 가드: rcvord 페이지 보호 (필요시 meta.requireAuth 로 확장 가능)
+router.beforeEach(async (to) => {
+  const auth = useAuthStore()
+  // 세션 미확인 상태라면 한번 조회
+  if (!auth.user && !auth.loading) {
+    // fetchSession 실패해도 user는 null 유지
+    try {
+      await auth.fetchSession()
+    } catch {}
+  }
+
+  // 보호할 경로 목록
+  const protectedPaths = ['/Minsu/rcvord', '/jamin/rsc-ordr']
+  if (protectedPaths.includes(to.path)) {
+    if (!auth.user) {
+      return { path: '/login', query: { redirect: to.fullPath } }
+    }
+  }
+  return true
 })
 
 export default router

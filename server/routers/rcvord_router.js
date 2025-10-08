@@ -1,94 +1,67 @@
-const express = require("express");
 // Express의 Router 모듈을 사용해서 라우팅 등록, 라우팅을 별도 파일로 관리
+const express = require("express");
 const router = express.Router();
 
 // 해당 라우터를 통해 제공할 서비스를 가져옴
 const rcvordService = require("../services/rcvord_service.js");
 
-// 수주 목록 (업체/납기/총수량 포함) + 수주ID 검색 쿼리파라미터 필터
 router.get("/rcvords", async (req, res) => {
+  // 1. 클라이언트가 보낸 검색어 (?rcvord_id=...) 추출, 없으면 빈 문자열
+  const searchId = req.query.rcvord_id || "";
   try {
-    const { rcvord_id } = req.query;
-    // 집계 포함 목록 사용
-    let list = await rcvordService.rcvordFindAllWithAgg();
-    if (rcvord_id) {
-      const key = String(rcvord_id).toLowerCase();
-      list = list.filter((row) =>
-        String(row.rcvord_id || "")
-          .toLowerCase()
-          .includes(key)
-      );
-    }
-    // r.st 컬럼을 status 별칭으로 포함 (쿼리에서 st 선택되어야 함)
-    list = list.map((row) => ({
-      ...row,
-      status: row.st ?? row.status ?? null,
-    }));
+    // 2. 서비스 호출 (DB 쿼리) - 결과는 배열
+    const list = await rcvordService.getRcvordList(searchId);
+    // 3. 프론트 모달은 순수 배열을 기대하므로 바로 배열만 반환
     res.json(list);
   } catch (err) {
-    console.error("/rcvords list error", err);
+    console.error("[GET /rcvords] error:", err);
     res
       .status(500)
-      .json({ message: "rcvords 목록 조회 실패", error: String(err) });
+      .json({ message: "수주 목록 조회 오류", error: err.message });
   }
 });
 
-// 수주 단건 상세 (헤더 + 라인)
+// 단건 상세 (모달에서 더블클릭 후 상세 불러오기)
 router.get("/rcvords/:id", async (req, res) => {
+  const { id } = req.params;
   try {
-    const { id } = req.params;
-    const header = await rcvordService.rcvordFindHeader(id);
-    if (!header)
-      return res.status(404).json({ message: "존재하지 않는 수주입니다." });
-    const lines = await rcvordService.rcvordFindLines(id);
-
-    // 클라이언트 편의를 위해 서버에서 합계/최소 납기 재계산 (원본 컬럼만 받은 상태)
-    let total_qty = 0;
-    let due_date = null;
-    for (const ln of lines) {
-      const qty = Number(ln.rcvord_qy) || 0;
-      total_qty += qty;
-      if (ln.paprd_dt) {
-        const ts = new Date(ln.paprd_dt).getTime();
-        if (!due_date || ts < new Date(due_date).getTime()) {
-          due_date = ln.paprd_dt;
-        }
-      }
+    const header = await rcvordService.getRcvordHeader(id);
+    if (!header) {
+      return res.status(404).json({ message: "수주를 찾을 수 없습니다." });
     }
-
-    // header.st가 존재하면 status로 노출(프론트 일관성)
-    const status = header.st ?? null;
-    res.json({ header: { ...header, total_qty, due_date, status }, lines });
+    const lines = await rcvordService.getRcvordLines(id);
+    // 프론트에서 status 필드 기대하므로 매핑
+    const headerOut = { ...header, status: header.st };
+    res.json({ header: headerOut, lines });
   } catch (err) {
-    console.error("/rcvords/:id detail error", err);
+    console.error("[GET /rcvords/:id] error:", err);
     res
       .status(500)
-      .json({ message: "rcvords 상세 조회 실패", error: String(err) });
+      .json({ message: "수주 상세 조회 오류", error: err.message });
   }
 });
 
-// 저장
+// 저장 (신규/수정)
 router.post("/rcvords/save", async (req, res) => {
   try {
     const { header, lines } = req.body || {};
-    if (!header || !header.rcvord_id) {
-      return res.status(400).json({ message: "rcvord_id 누락" });
-    }
-    const safeHeader = {
-      co_id: null,
-      emp_id: null,
-      reg_dt: new Date(),
-      st: header.st || header.status || null,
-      rm: null,
-      ...header,
-    };
-    const safeLines = Array.isArray(lines) ? lines : [];
-    const result = await rcvordService.rcvordSave(safeHeader, safeLines);
-    res.json({ ok: true, result });
+    const result = await rcvordService.saveRcvord(header, lines || []);
+    res.json(result);
   } catch (err) {
-    console.error("/rcvords/save error", err);
-    res.status(500).json({ message: "수주 저장 실패", error: String(err) });
+    console.error("[POST /rcvords/save] error:", err);
+    res.status(500).json({ error: err.message || "저장 실패" });
   }
 });
 
+// 삭제
+router.delete("/rcvords/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await rcvordService.deleteRcvord(id);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[DELETE /rcvords/:id] error:", err);
+    res.status(500).json({ error: err.message || "삭제 실패" });
+  }
+});
 module.exports = router;

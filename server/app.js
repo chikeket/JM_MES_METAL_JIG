@@ -1,5 +1,6 @@
 const express = require("express");
 const app = express();
+const session = require("express-session");
 
 const dotenv = require("dotenv");
 dotenv.config({ path: "./dbConfig.env" });
@@ -10,6 +11,16 @@ dotenv.config({ path: "./dbConfig.env" });
 app.use(express.urlencoded({ extended: false }));
 // content-type : application/json
 app.use(express.json());
+
+// 세션 미들웨어
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "mes-secret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { maxAge: 1000 * 60 * 60 }, // 1시간
+  })
+);
 
 // Server 실행
 app.listen(3000, () => {
@@ -30,6 +41,7 @@ const prdt = require("./routers/prdt_router.js"); // 제품
 const rsc = require("./routers/rsc_router.js"); // 자재
 const prodPlan = require("./routers/prodPlan_router.js"); // 생산계획
 const prodDrct = require("./routers/prodDrct_router.js"); // 생산지시
+const auth = require("./routers/auth_router.js"); // 로그인
 
 // 기본 라우팅
 app.get("/", (req, res) => {
@@ -45,3 +57,4 @@ app.use("/", rcvord); // 수주
 app.use("/", rsc); // 자재
 app.use("/", prodPlan); // 생산계획
 app.use("/", prodDrct); // 생산지시
+app.use("/", auth); // 로그인
