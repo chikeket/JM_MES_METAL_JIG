@@ -90,7 +90,11 @@ let prdtList = shallowRef([]) // <- 반응형 객체
 
 //날짜포멧
 const formatDate = (dateStr) => {
-  return new Date(dateStr).toISOString().split('T')[0];
+  const date = new Date(dateStr);
+const yyyy = date.getFullYear();
+const mm = String(date.getMonth() + 1).padStart(2, '0');
+const dd = String(date.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`
 };
 
 
@@ -129,7 +133,15 @@ const selectProduct = async (prdts) => {
   const params = { prod_plan_id: ''};
   params.prod_plan_id = prdts.prod_plan_id;
   let result = await axios.get('/api/prodPlanDetaSearch', { params }).catch((err) => console.log(err))
-  emit('select', result.data) // 부모에게 선택된 제품 전달
+  emit('select', {
+  detailData: result.data,
+  searchParams: {
+    prod_drct_nm: prdts.prod_plan_nm,
+    reg_dt: formatDate(prdts.reg_dt),
+    prod_expc_fr_dt: formatDate(prdts.prod_expc_fr_dt),
+    prod_expc_to_dt: formatDate(prdts.prod_expc_to_dt)
+  }
+}) // 부모에게 선택된 제품 전달
   close() // 모달 닫기
 }
 </script>
