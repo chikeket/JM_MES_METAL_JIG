@@ -66,6 +66,11 @@ export default [
         name: '생산지시',
         to: '/product/product-instructions',
       },
+      {
+        component: 'CNavItem',
+        name: '자재품질',
+        to: '/qlty/rscQltyInsp',
+      },
     ],
   },
   {

@@ -26,7 +26,7 @@ const Info = ref({
   ordrName1: '',
   regDate: new Date().toISOString().slice(0, 10),
   startDate: new Date().toISOString().slice(0, 10),
-  endDate: '',
+  endDate: null,
   remark: '',
 })
 
@@ -47,7 +47,7 @@ const insertRowsToDB = async () => {
     prod_plan_deta_id: row.prod_plan_deta_id,
     prdt_id: row.prdt_id,
     prdt_opt_id: row.prdt_opt_id,
-    drct_qy: row.drct_qy+row.base_quantity,
+    drct_qy: row.drct_qy,
     priort: row.priort,
     rm: row.rm,
   }))
@@ -56,7 +56,7 @@ const insertRowsToDB = async () => {
     masterInfo: master,
     detailList: detail,
   }
-
+console.log(payload)
   let result = await axios.post('/api/instruction', payload).catch((err) => console.log(err))
   let addRes = result.data
   if (addRes.isSuccessed) {
@@ -84,10 +84,14 @@ const rows = ref([
 
 const selectedPrdt = (prdts) => {
   console.log(prdts)
+Info.value.ordrName1 = prdts.searchParams.prod_drct_nm;
+Info.value.startDate = prdts.searchParams.prod_expc_fr_dt;
+Info.value.endDate = prdts.searchParams.prod_expc_to_dt;
+Info.value.regDate = prdts.searchParams.reg_dt;
   let new_id = rows.value.length > 0 ? Math.max(...rows.value.map((r) => r.id ?? 0)) + 1 : 1
-  if (Array.isArray(prdts)) {
+  if (Array.isArray(prdts.detailData)) {
     rows.value = [];
-    for(const prdt of prdts)
+    for(const prdt of prdts.detailData)
 rows.value.push({
     id: new_id++,
     prod_drct_deta_id: prdt.prod_drct_deta_id,
@@ -98,9 +102,9 @@ rows.value.push({
     spec: prdt.spec,
     unit: prdt.unit,
     plan_qy: prdt.plan_qy,
-    drct_qy: 0,
+    drct_qy: prdt.drct_qy ?? 0,
     base_quantity: prdt.drct_qy ?? 0,
-    unspecified_quantity: prdt.plan_qy,
+    unspecified_quantity: !prdt.drct_qy ? prdt.plan_qy : prdt.plan_qy-prdt.drct_qy,
     priort: prdt.priort,
     rm: '',
   })

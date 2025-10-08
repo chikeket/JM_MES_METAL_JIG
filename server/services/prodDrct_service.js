@@ -20,10 +20,17 @@ const prodDrctfindAll = async (Info) => {
 
 // 마스터정보로 상세내용 조회
 const prodDrctDetafindAll = async (Info) => {
-    let insertColumns = ["prod_drct_id"];
+    let insertColumns = ["prod_drct_id", "prod_drct_id"];
     // console.log("클라에서들어가는값 서비스");
     // console.log(Info);
-    let data = convertObjToAry(Info, insertColumns);
+    // let infoEdit = {
+    //     ...Info[0],
+    //     ...Info[0],
+    // }
+    // let data = convertObjToAry(infoEdit, insertColumns);
+    console.log('인포내용')
+    console.log(Info.prod_drct_id)
+    let data = [Info.prod_drct_id, Info.prod_drct_id,];
     console.log("service쪽");
     console.log(data);
     let list = await mariadb

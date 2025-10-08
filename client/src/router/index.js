@@ -108,6 +108,25 @@ const routes = [
       },
 
       {
+        path: '/qlty',
+        name: 'Qlty',
+        component: {
+          render() {
+            return h(resolveComponent('router-view'))
+          },
+        },
+        redirect: '/qlty/rscQltyInsp',
+
+        children: [
+          {
+            path: '/qlty/rscQltyInsp',
+            name: 'qlty',
+            component: () => import('@/views/qlty/rscQltyInsp.vue'),
+          },
+        ],
+      },
+
+      {
         path: '/zooE',
         name: 'zooE',
         component: {
