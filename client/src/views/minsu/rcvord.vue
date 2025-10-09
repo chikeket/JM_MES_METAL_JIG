@@ -201,7 +201,9 @@ const header = reactive({
   vendorName: '',
   owner: '', // 수주 담당자 (사원명)
   empId: '', // 내부 전송용 (선택적으로 사용)
+  // status(표시용 명칭), statusCode(저장용 코드) 분리
   status: '',
+  statusCode: '',
   orderDate: '',
   note: '',
 })
@@ -343,6 +345,7 @@ function onNew() {
     owner: '',
     empId: '',
     status: '',
+    statusCode: '',
     orderDate: new Date().toISOString().slice(0, 10),
     note: '',
   })
@@ -377,7 +380,8 @@ async function onSelectOrder(row) {
     header.vendorName = h?.co_nm || ''
     header.owner = h?.emp_nm || h?.emp_id || ''
     header.empId = h?.emp_id || ''
-    header.status = h?.status || '' // status 컬럼이 원본에 없으면 빈값 유지
+    header.status = h?.status || '' // 서비스에서 st_nm 매핑되어 status로 전달
+    header.statusCode = h?.st || '' // 원본 코드 별도 보관 (쿼리 결과에 st 포함 가정)
     header.orderDate = h?.reg_dt ? formatDateStr(h.reg_dt) : ''
     header.note = h?.rm || ''
     lines.value = Array.isArray(ls)
@@ -391,7 +395,7 @@ async function onSelectOrder(row) {
             requestQty: l.rcvord_qy || 0,
             spec: l.spec || '',
             unit: l.unit || '',
-            producible: l.prdt_st || '',
+            producible: l.prdt_st_nm || l.prdt_st || '',
             paprd_dt: l.paprd_dt ? formatDateStr(l.paprd_dt) : '',
             remark: l.rm || '',
           }),
@@ -464,7 +468,8 @@ function buildSavePayload() {
     co_nm: header.vendorName ? header.vendorName.trim() : '',
     emp_nm: header.owner ? header.owner.trim() : '',
     reg_dt: header.orderDate || formatDateStr(new Date()),
-    st: header.status || null,
+    // 표시용 status 는 명칭이므로, 저장 시에는 코드(statusCode)가 있으면 우선, 없으면 기본 'J2'
+    st: header.statusCode || 'J2',
     rm: header.note || null,
   }
   const ls = lines.value.map((l) => ({
@@ -488,7 +493,8 @@ async function onSelectProduct(product) {
       optionName: product.opt_nm || '',
       spec: product.spec,
       unit: product.unit,
-      producible: product.prdt_st,
+      // 생산 가능 여부: 명칭(prdt_st_nm) 우선, 없으면 코드(prdt_st)
+      producible: product.prdt_st_nm || product.prdt_st,
       requestQty: 0, // 기본 수량 0
       paprd_dt: '',
       remark: product.rm || '',

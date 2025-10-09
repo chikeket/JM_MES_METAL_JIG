@@ -7,13 +7,14 @@ const modalRcvordFind = `SELECT
   IFNULL(SUM(rcvord_qy),0) AS total_qty,
   r.reg_dt,
   r.st,
+  sc_st.sub_code_nm AS st_nm,
   r.rm
 FROM rcvord r
-    JOIN co c ON (r.co_id = c.co_id)
-	  JOIN emp e ON (r.emp_id = e.emp_id)
-	  LEFT JOIN rcvord_deta rd ON (r.rcvord_id = rd.rcvord_id)
-GROUP BY
-  r.rcvord_id
+  JOIN co c ON (r.co_id = c.co_id)
+  JOIN emp e ON (r.emp_id = e.emp_id)
+  LEFT JOIN rcvord_deta rd ON (r.rcvord_id = rd.rcvord_id)
+  LEFT JOIN sub_code sc_st ON sc_st.sub_code_id = r.st
+GROUP BY r.rcvord_id
 HAVING r.rcvord_id LIKE CONCAT('%', ?, '%')
 ORDER BY r.rcvord_id DESC`;
 
@@ -26,10 +27,12 @@ const rcvordFindHeader = `SELECT
   e.emp_nm,
   r.reg_dt,
   r.st,
+  sc_st.sub_code_nm AS st_nm,
   r.rm
 FROM rcvord r
   JOIN co c ON c.co_id = r.co_id
   JOIN emp e ON e.emp_id = r.emp_id
+  LEFT JOIN sub_code sc_st ON sc_st.sub_code_id = r.st
 WHERE r.rcvord_id = ?`;
 
 // 수주 상세 라인 목록
@@ -41,6 +44,7 @@ const rcvordFindLines = `SELECT
   p.spec,
   p.unit,
   p.prdt_st,
+  sc_pst.sub_code_nm AS prdt_st_nm,
   d.prdt_opt_id,
   o.opt_nm,
   d.rcvord_qy,
@@ -49,6 +53,7 @@ const rcvordFindLines = `SELECT
 FROM rcvord_deta d
   JOIN prdt p ON p.prdt_id = d.prdt_id
   JOIN prdt_opt o ON o.prdt_opt_id = d.prdt_opt_id
+  LEFT JOIN sub_code sc_pst ON sc_pst.sub_code_id = p.prdt_st
 WHERE d.rcvord_id = ?
 ORDER BY d.rcvord_deta_id`;
 
