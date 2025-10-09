@@ -54,7 +54,7 @@
               <CTableDataCell class="cell-left">{{ row.opt_nm || '-' }}</CTableDataCell>
               <CTableDataCell class="cell-left">{{ row.spec }}</CTableDataCell>
               <CTableDataCell class="cell-left">{{ row.unit }}</CTableDataCell>
-              <CTableDataCell class="cell-left">{{ row.prdt_st }}</CTableDataCell>
+              <CTableDataCell class="cell-left">{{ row.prdt_st_nm || row.prdt_st }}</CTableDataCell>
               <CTableDataCell class="cell-left">{{ row.rm || '' }}</CTableDataCell>
             </CTableRow>
             <CTableRow v-if="!loading && !errorMsg && !productList.length">

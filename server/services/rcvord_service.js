@@ -6,7 +6,10 @@ async function getRcvordList(searchId) {
   const rcvordId = (searchId ?? "").trim();
   const rows = await mariadb.query("modalRcvordFind", [rcvordId]);
   // 여기서는 별도 가공 없이 그대로 반환 (total_qty 컬럼 명 일치 주의)
-  return rows.map((r) => ({ ...r, status: r.st }));
+  return rows.map((r) => ({
+    ...r,
+    status: r.st_nm || r.st, // 코드명 우선 사용
+  }));
 }
 
 module.exports = {
@@ -14,11 +17,15 @@ module.exports = {
   async getRcvordHeader(id) {
     if (!id) return null;
     const rows = await mariadb.query("rcvordFindHeader", [id]);
-    return rows[0] || null;
+    if (!rows.length) return null;
+    const h = rows[0];
+    // status: 표시용 명칭, st: 코드 그대로
+    return { ...h, status: h.st_nm || h.st };
   },
   async getRcvordLines(id) {
     if (!id) return [];
-    return await mariadb.query("rcvordFindLines", [id]);
+    const ls = await mariadb.query("rcvordFindLines", [id]);
+    return ls.map((l) => ({ ...l, prdt_st_nm: l.prdt_st_nm || l.prdt_st }));
   },
   // 삭제 (라인 -> 헤더 순서)
   async deleteRcvord(id) {
@@ -31,7 +38,7 @@ module.exports = {
   async saveRcvord(header, lines) {
     if (!header) throw new Error("header 누락");
     if (!Array.isArray(lines)) throw new Error("lines 형식 오류");
-    header.st = header.st || "등록";
+    header.st = header.st || "J2";
     header.reg_dt = header.reg_dt || today();
 
     // 이름만 들어온 경우( co_id, emp_id 없음 ) 이름 -> ID 매핑 시도
