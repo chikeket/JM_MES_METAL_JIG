@@ -5,7 +5,10 @@ import axios from 'axios'
 import PrdtModal from '../modal/prdtModal.vue'
 import ProdPlanModal from '../modal/prodPlanModal.vue'
 import ProdDrctModal from '../modal/prodDrctModal.vue'
-
+import { useAuthStore } from '@/stores/auth.js'
+const auth = useAuthStore()
+// console.log('auth정보')
+// console.log(auth.user)
 //제품검색모달
 const isPrdtModalVisible = ref(false)
 const goToPrdtModal = () => {  isPrdtModalVisible.value = true}
@@ -19,11 +22,12 @@ const isProdDrctModalVisible = ref(false)
 const goToDrctPlan = () => {  isProdDrctModalVisible.value = true}
 const closeProdDrctModal = () => {  isProdDrctModalVisible.value = false}
 
-
-let empId = 'emp01'
+//로그인 세션기반으로 정보 등록함
+let empId = auth.user.emp_id
 
 const Info = ref({
   ordrName1: '',
+  prod_drct_id:'',
   regDate: new Date().toISOString().slice(0, 10),
   startDate: new Date().toISOString().slice(0, 10),
   endDate: null,
@@ -34,27 +38,27 @@ const insertRowsToDB = async () => {
   // console.log(Info.value)
   
   const master = {    
+    rm: Info.value.remark,
     prod_drct_nm: Info.value.ordrName1,
     emp_id: empId,
     prod_drct_fr_dt: Info.value.startDate,
     prod_drct_to_dt: Info.value.endDate,
     reg_dt: Info.value.regDate,
-    rm: Info.value.remark,
   }
 
   const detail = rows.value.map((row) => ({      
+    rm: row.rm,
     prod_drct_deta_id: row.prod_drct_deta_id,
     prod_plan_deta_id: row.prod_plan_deta_id,
     prdt_id: row.prdt_id,
     prdt_opt_id: row.prdt_opt_id,
     drct_qy: row.drct_qy,
     priort: row.priort,
-    rm: row.rm,
   }))
-
+  
   const payload = {
     masterInfo: master,
-    detailList: detail,
+    detailList: detail,    
   }
 console.log(payload)
   let result = await axios.post('/api/instruction', payload).catch((err) => console.log(err))
@@ -63,6 +67,55 @@ console.log(payload)
     console.log('생산지시가 등록되었습니다.')
   } else {
     console.log('생산지시에 실패했습니다.')
+  }
+}
+
+const updateRowsToDB = async () => {  
+  // console.log(Info.value)  
+  const master = {    
+    rm: Info.value.remark,
+    prod_drct_nm: Info.value.ordrName1,
+    emp_id: empId,
+    prod_drct_fr_dt: Info.value.startDate,
+    prod_drct_to_dt: Info.value.endDate,
+    reg_dt: Info.value.regDate,
+  }
+
+  const detail = rows.value.map((row) => ({      
+    rm: row.rm,
+    prod_drct_deta_id: row.prod_drct_deta_id,
+    prod_plan_deta_id: row.prod_plan_deta_id,
+    prdt_id: row.prdt_id,
+    prdt_opt_id: row.prdt_opt_id,
+    drct_qy: row.drct_qy,
+    priort: row.priort,
+  }))
+
+  //수정을 위한 prod_drct_id 정보
+  const editProdDrctId = {prod_drct_id: Info.value.prod_drct_id}
+  const payload = {
+    masterInfo: master,
+    detailList: detail,
+    editProdDrctId: editProdDrctId, 
+  }
+console.log(payload)
+  let result = await axios.post('/api/updateInstruction', payload).catch((err) => console.log(err))
+  let addRes = result.data
+  if (addRes.isSuccessed) {
+    console.log('생산지시수정이 등록되었습니다.')
+  } else {
+    console.log('생산지시수정이 실패했습니다.')
+  }
+}
+
+const deleteRowsToDB = async () => {
+  const payload = {prod_drct_id : Info.value.prod_drct_id}
+let result = await axios.post('/api/deleteInstruction', payload).catch((err) => console.log(err))
+  let addRes = result.data
+  if (addRes.isSuccessed) {
+    console.log('생산지시삭제가 성공되었습니다.')
+  } else {
+    console.log('생산지시삭제가 실패했습니다.')
   }
 }
 
@@ -84,16 +137,18 @@ const rows = ref([
 
 const selectedPrdt = (prdts) => {
   console.log(prdts)
-Info.value.ordrName1 = prdts.searchParams.prod_drct_nm;
-Info.value.startDate = prdts.searchParams.prod_expc_fr_dt;
-Info.value.endDate = prdts.searchParams.prod_expc_to_dt;
-Info.value.regDate = prdts.searchParams.reg_dt;
+Info.value.prod_drct_id = !prdts.searchParams.prod_drct_id ? Info.value.prod_drct_id : prdts.searchParams.prod_drct_id;
+Info.value.ordrName1 = !prdts.searchParams.prod_drct_nm ? Info.value.ordrName1 : prdts.searchParams.prod_drct_nm;
+Info.value.startDate = !prdts.searchParams.prod_expc_fr_dt ? Info.value.startDate : prdts.searchParams.prod_expc_fr_dt;
+Info.value.endDate = !prdts.searchParams.prod_expc_to_dt ? Info.value.endDate : prdts.searchParams.prod_expc_to_dt;
+Info.value.regDate = !prdts.searchParams.reg_dt ? Info.value.regDate : prdts.searchParams.reg_dt;
+Info.value.remark = !prdts.searchParams.remark ? Info.value.remark : prdts.searchParams.remark;
   let new_id = rows.value.length > 0 ? Math.max(...rows.value.map((r) => r.id ?? 0)) + 1 : 1
   if (Array.isArray(prdts.detailData)) {
     rows.value = [];
     for(const prdt of prdts.detailData)
 rows.value.push({
-    id: new_id++,
+    id: new_id++,    
     prod_drct_deta_id: prdt.prod_drct_deta_id,
     prod_plan_deta_id: prdt.prod_plan_deta_id,
     prdt_id: prdt.prdt_id,
@@ -103,20 +158,22 @@ rows.value.push({
     unit: prdt.unit,
     plan_qy: prdt.plan_qy,
     drct_qy: prdt.drct_qy ?? 0,
-    base_quantity: prdt.drct_qy ?? 0,
-    unspecified_quantity: !prdt.drct_qy ? prdt.plan_qy : prdt.plan_qy-prdt.drct_qy,
+    base_quantity: prdt.base_quantity ?? 0,
+    unspecified_quantity: !prdt.drct_qy ? prdt.plan_qy : prdt.plan_qy-prdt.base_quantity,
     priort: prdt.priort,
-    rm: '',
+    rm: prdt.rm,
   })
   } else {
+    console.log('제품조회할때')
+    console.log(prdts)
 rows.value.push({
     id: new_id,
     prod_plan_deta_id: 'none',
-    prdt_id: prdts.prdt_id,
-    prdt_nm: prdts.prdt_nm,
+    prdt_id: prdts.detailData.prdt_id,
+    prdt_nm: prdts.detailData.prdt_nm,
     prdt_opt_id: prdts.prdt_opt_id,
-    spec: prdts.spec,
-    unit: prdts.unit,
+    spec: prdts.detailData.spec,
+    unit: prdts.detailData.unit,
     plan_qy: 0,
     drct_qy: 0,
     base_quantity: 0,
@@ -129,6 +186,13 @@ rows.value.push({
   console.log(rows.value)
 }
 
+const masterReset = () => {
+  Info.value.ordrName1 = '';
+  Info.value.startDate = new Date().toISOString().slice(0, 10);
+  Info.value.endDate = null;
+  Info.value.regDate = new Date().toISOString().slice(0, 10);
+  Info.value.remark = '';
+}
 const reset = () => {
   rows.value = []
 }
@@ -189,12 +253,12 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
 <template>
   <CContainer fluid>
     <div class="d-flex justify-content-end gap-2 mb-3">
-      <CButton color="secondary">신규</CButton>
+      <CButton color="secondary" @click="masterReset()">신규</CButton>
       <CButton color="secondary" @click="goToDrctPlan()">생산지시서 조회</CButton>
       <ProdDrctModal :visible="isProdDrctModalVisible" @close="closeProdDrctModal" @select="selectedPrdt" />
       <CButton color="secondary" @click="insertRowsToDB">저장</CButton>
-      <CButton color="secondary">수정</CButton>
-      <CButton color="danger">삭제</CButton>
+      <CButton color="secondary" @click="updateRowsToDB">수정</CButton>
+      <CButton color="danger" @click="deleteRowsToDB()">삭제</CButton>
     </div>
 
     <CContainer fluid>

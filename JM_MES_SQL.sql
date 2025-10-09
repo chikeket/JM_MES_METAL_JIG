@@ -570,3 +570,20 @@ REFERENCES PRDT (
 	PRDT_ID
 );
 
+--251008 FK적용
+-- prcs_prog_precon → prod_drct_deta
+ALTER TABLE prcs_prog_precon
+DROP FOREIGN KEY FK_PPP__PDRCT_DETA;
+
+ALTER TABLE prcs_prog_precon
+ADD CONSTRAINT FK_PPP__PDRCT_DETA
+FOREIGN KEY (PROD_DRCT_DETA_ID) REFERENCES prod_drct_deta(PROD_DRCT_DETA_ID)
+ON DELETE CASCADE;
+
+ALTER TABLE prod_drct_deta DROP FOREIGN KEY FK_prod_drct_deta__prod_drct;
+
+ALTER TABLE prod_drct_deta
+ADD CONSTRAINT FK_prod_drct_deta__prod_drct
+FOREIGN KEY (PROD_DRCT_ID)
+REFERENCES prod_drct(PROD_DRCT_ID)
+ON DELETE CASCADE;

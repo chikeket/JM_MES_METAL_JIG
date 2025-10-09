@@ -20,14 +20,47 @@ CREATE TABLE RSC_ORDR_DETA (
 );
  */
 
-// 자재 발주 조회
-const selectRscOrdrList = `SELECT RSC_ORDR_ID,
-CO_ID,
-EMP_ID,
-REG_DT,
-RM
-FROM  RSC_ORDR O JOIN RSC_ORDR_DETA_ID D
-                  ON `;
+// 자재 발주 조회(rscOrdrModal.vue모달검색조회쿼리)
+const selectRscOrdrList = `
+SELECT
+ a.rsc_nm,
+ b.qy,
+ d.emp_nm,
+ d.emp_id,
+ e.co_nm,
+ c.reg_dt,
+ a.rsc_id,
+ b.rsc_ordr_deta_id
+FROM rsc a
+JOIN rsc_ordr_deta b
+ON a.rsc_id = b.rsc_id
+JOIN rsc_ordr c
+ON b.rsc_ordr_id = c.rsc_ordr_id
+JOIN emp d
+ON c.emp_id = d.emp_id
+JOIN co e
+ON c.co_id = e.co_id
+WHERE a.rsc_nm LIKE CONCAT('%', ?, '%')
+AND b.qy > ?
+AND d.emp_nm LIKE CONCAT('%', ?, '%')
+AND e.co_nm LIKE CONCAT('%', ?, '%')
+AND c.reg_dt >= ?`;
+
+// 자재 발주 상세조회(rscOrdrModal.vue모달검색조회쿼리)
+const selectRscOrdrDeta = `
+SELECT 
+ b.insp_item_nm,
+ b.basi_val,
+ b.unit,
+ b.eror_scope_min,
+ b.eror_scope_max
+FROM qlty_item_deta a
+JOIN qlty_item b
+ON a.qlty_item_mng_id = b.qlty_item_mng_id
+WHERE b.st = 'P1'
+AND a.rsc_id = ?`;
+
+
 
 // 자재 발주 등록
 const insertRscOrdr = `
@@ -49,7 +82,8 @@ VALUES (?, ?, ?, ?)`;
 
 //
 module.exports = {
-  selectRscOrdrList,
-  insertRscOrdr,
-  insertRscOrdrDeta,
+	selectRscOrdrList,
+	insertRscOrdr,
+	insertRscOrdrDeta,
+	selectRscOrdrDeta,
 };

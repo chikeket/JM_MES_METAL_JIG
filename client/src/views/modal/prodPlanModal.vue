@@ -49,9 +49,9 @@
           <tbody class="table table-bordered table-hover mb-0">            
             <tr v-for="(prdts, i) in prdtList" :key="i" @dblclick="selectProduct(prdts)">
               <td>{{  prdts.prod_plan_nm }}</td>
-              <td>{{ formatDate(prdts.prod_expc_fr_dt) }}</td>
-              <td>{{ formatDate(prdts.prod_expc_to_dt) }}</td>
-              <td>{{ formatDate(prdts.reg_dt) }}</td>
+              <td>{{ userDateUtils.dateFormat(prdts.prod_expc_fr_dt,'yyyy-MM-dd') }}</td>
+              <td>{{ userDateUtils.dateFormat(prdts.prod_expc_to_dt,'yyyy-MM-dd') }}</td>
+              <td>{{ userDateUtils.dateFormat(prdts.reg_dt,'yyyy-MM-dd') }}</td>
             </tr>
           </tbody>
         </table>        
@@ -66,7 +66,7 @@
 <script setup>
 import { ref, defineProps, defineEmits, shallowRef } from 'vue'
 import axios from 'axios'
-
+import userDateUtils from "@/utils/useDates.js";
 const props = defineProps({
   visible: Boolean,
 })
@@ -87,16 +87,6 @@ const prod_expc_fr_dt = ref('')
 const prod_expc_to_dt = ref('')
 
 let prdtList = shallowRef([]) // <- 반응형 객체
-
-//날짜포멧
-const formatDate = (dateStr) => {
-  const date = new Date(dateStr);
-const yyyy = date.getFullYear();
-const mm = String(date.getMonth() + 1).padStart(2, '0');
-const dd = String(date.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`
-};
-
 
 const prdtSearch = async () => {
   const params = { prod_plan_nm: '', reg_dt: '', prod_expc_fr_dt: '', prod_expc_to_dt: '' }
@@ -137,9 +127,9 @@ const selectProduct = async (prdts) => {
   detailData: result.data,
   searchParams: {
     prod_drct_nm: prdts.prod_plan_nm,
-    reg_dt: formatDate(prdts.reg_dt),
-    prod_expc_fr_dt: formatDate(prdts.prod_expc_fr_dt),
-    prod_expc_to_dt: formatDate(prdts.prod_expc_to_dt)
+    reg_dt: userDateUtils.dateFormat(prdts.reg_dt,'yyyy-MM-dd'),
+    prod_expc_fr_dt: userDateUtils.dateFormat(prdts.prod_expc_fr_dt,'yyyy-MM-dd'),
+    prod_expc_to_dt: userDateUtils.dateFormat(prdts.prod_expc_to_dt,'yyyy-MM-dd')
   }
 }) // 부모에게 선택된 제품 전달
   close() // 모달 닫기

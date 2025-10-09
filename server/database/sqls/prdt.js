@@ -13,7 +13,8 @@ const prdtSelect =
 FROM prdt a 
 JOIN prdt_opt b
 ON a.prdt_id = b.prdt_id
-WHERE b.st = '사용'
+WHERE a.prdt_st = 'P1'
+AND b.st = 'M1'
 AND a.prdt_id LIKE CONCAT('%', ?, '%')
 AND a.prdt_nm LIKE CONCAT('%', ?, '%')
 AND a.spec LIKE CONCAT('%', ?, '%')
