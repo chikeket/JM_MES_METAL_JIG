@@ -14,6 +14,23 @@ router.post("/instruction", async (req, res) => {
   res.send(result);
 });
 
+router.post("/updateInstruction", async (req, res) => {
+  let metalInfo = req.body;
+  // console.log(metalInfo);
+  let result = await instructionService
+    .updateInstruction(metalInfo)
+    .catch((err) => console.log(err));
+  res.send(result);
+});
+
+router.post("/deleteInstruction", async (req, res) => {
+  let metalInfo = req.body;
+  // console.log(metalInfo);
+  let result = await instructionService
+    .deleteInstruction(metalInfo)
+    .catch((err) => console.log(err));
+  res.send(result);
+});
 
 
 module.exports = router;

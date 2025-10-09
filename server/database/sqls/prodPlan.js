@@ -11,7 +11,10 @@ FROM prod_plan
 WHERE prod_plan_nm LIKE CONCAT('%', ?, '%')
 AND reg_dt >= ?
 AND prod_expc_fr_dt >= ?
-AND prod_expc_to_dt <= ?`;
+AND (
+  prod_expc_to_dt IS NULL
+  OR prod_expc_to_dt <= ?
+)`;
 
 const prodPlanDetaSelect =
   //
@@ -30,7 +33,7 @@ FROM prod_plan_deta a
 JOIN prdt b
 ON a.prdt_id = b.prdt_id
 JOIN prdt_opt c
-ON b.prdt_id = c.prdt_id
+ON a.prdt_opt_id = c.prdt_opt_id
 WHERE prod_plan_id = ?`;
 
 module.exports = {

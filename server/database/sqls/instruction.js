@@ -2,13 +2,14 @@
 const instructionInsert =
   //
   `INSERT INTO prod_drct (
-  prod_drct_id, 
-  prod_drct_nm, 
-  emp_id, 
-  prod_drct_fr_dt, 
-  prod_drct_to_dt, 
-  reg_dt, 
-  rm)
+    rm,
+    prod_drct_nm, 
+    emp_id, 
+    prod_drct_fr_dt, 
+    prod_drct_to_dt, 
+    reg_dt, 
+    prod_drct_id 
+  )
 VALUES (?, ?, ?, ?, ?, ?, ?)`;
 
 const prodDrctIdCreate =
@@ -21,14 +22,14 @@ FOR UPDATE`;
 const instructionInsertDetail =
   //
   `INSERT INTO prod_drct_deta (
-  prod_drct_deta_id,
-  prod_drct_id,
-  prod_plan_deta_id,
-  prdt_id,
-  prdt_opt_id,
-  drct_qy,
-  priort,
-  rm
+    rm,
+    prod_drct_id,
+    prod_plan_deta_id,
+    prdt_id,
+    prdt_opt_id,
+    drct_qy,
+    priort,
+    prod_drct_deta_id
   )
   VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
 
@@ -64,20 +65,70 @@ AND b.prcs_ord = 1`;
 const prcsProgPreconInsert =
   // 공정진행현황 정보입력 
   `INSERT INTO prcs_prog_precon (
-  prcs_prog_precon_id,
-  prod_drct_deta_id,
-  prcs_ord,
-  prcs_id,
-  prcs_nm,
-  drct_qy,
-  inpt_qy,
-  st,
-  rm
+    rm,
+    prod_drct_deta_id,
+    prcs_ord,
+    prcs_id,
+    prcs_nm,
+    drct_qy,
+    inpt_qy,
+    st,
+    prcs_prog_precon_id
   )
-  VALUES (?, ?, ?, ?, ?, ?, 0, '사용', ?)`;
+  VALUES (?, ?, ?, ?, ?, ?, 0, 'J1', ?)`;
 
+const instructionUpdate =
+  // 생산지시마스터 수정(업데이트)
+  `UPDATE prod_drct
+  SET    
+    rm = ?,
+    prod_drct_nm = ?, 
+    emp_id = ?, 
+    prod_drct_fr_dt = ?, 
+    prod_drct_to_dt = ?, 
+    reg_dt = ?
+  WHERE prod_drct_id = ?`;
 
+const instructionDetaUpdate =
+  // 생산지시디테일 수정
+  `UPDATE prod_drct_deta
+SET  
+  rm = ?,
+  prod_drct_id = ?,
+  prod_plan_deta_id = ?,
+  prdt_id = ?,
+  prdt_opt_id = ?,
+  drct_qy = ?,
+  priort = ?
+WHERE prod_drct_deta_id = ?`;
 
+const prcsProgPreconIdSearch =
+  // 공정진행현황 ID 검색
+  `SELECT prcs_prog_precon_id
+FROM prcs_prog_precon
+WHERE prod_drct_deta_id = ?
+ORDER BY prcs_ord DESC
+LIMIT 1`;
+
+const prcsProgPreconUpdate =
+  // 공정진행현황 수정
+  `UPDATE prcs_prog_precon 
+SET
+  rm = ? ,
+  prod_drct_deta_id = ? ,
+  prcs_ord = ? ,
+  prcs_id = ? ,
+  prcs_nm = ? ,
+  drct_qy = ? ,
+  inpt_qy = 0,
+  st = 'J1'
+WHERE prcs_prog_precon_id = ?`;
+
+const instructionDelete =
+  // 생산지시삭제
+  `DELETE 
+FROM prod_drct
+WHERE prod_drct_id = ?`;
 
 module.exports = {
   instructionInsert,
@@ -87,4 +138,9 @@ module.exports = {
   prcsProgPreconIdCreate,
   prcsSelect,
   prcsProgPreconInsert,
+  instructionUpdate,
+  instructionDetaUpdate,
+  prcsProgPreconIdSearch,
+  prcsProgPreconUpdate,
+  instructionDelete,
 };

@@ -28,6 +28,9 @@ const prodPlan = require("./sqls/prodPlan.js");
 // 생산지시
 const prodDrct = require("./sqls/prodDrct.js");
 
+// 자재품질검수
+const rscQltyInsp = require("./sqls/rscQltyInsp.js");
+
 // └───각 테이블 별로 실행한 SQL문을 별도 파일로 작성───┘
 
 module.exports = {
@@ -42,4 +45,5 @@ module.exports = {
   ...rsc,
   ...prodPlan,
   ...prodDrct,
+  ...rscQltyInsp,
 };

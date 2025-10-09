@@ -2,6 +2,7 @@
 const prdtSelect =
   //
   `SELECT
+
       a.prdt_id,
       a.prdt_nm,
       a.spec,
@@ -20,6 +21,7 @@ WHERE a.prdt_st = 'K1'
   AND a.prdt_nm LIKE CONCAT('%', ?, '%')
   AND a.spec LIKE CONCAT('%', ?, '%')
   AND b.opt_nm LIKE CONCAT('%', ?, '%')`;
+
 
 module.exports = {
   prdtSelect,

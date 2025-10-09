@@ -1,7 +1,35 @@
 const mariadb = require("../database/mapper.js");
 
 // 공통으로 사용하는 기능들 중 필요한 함수만 구조분해할당(Destructuring)으로 가져옴
-//const { convertObjToAry } = require("../utils/converts.js");
+const { convertObjToAry } = require("../utils/converts.js");
+let coFindAllColumns = [
+  "rsc_nm",
+  "qy",
+  "emp_nm",
+  "co_nm",
+  "reg_dt",
+];
+
+//rseOrdrModal.vue 자재발주서 마스터정보 조회
+const coFindAll = async (Info) => {
+  console.log('서비스쪽')
+  console.log(Info)
+  let result = null;
+  let data = convertObjToAry(Info, coFindAllColumns)
+  result = await mariadb
+    .query("selectRscOrdrList", data)
+  return result;
+}
+//rscOrdrModal.vue 자재발주서 상세정보 조회
+const coFindDeta = async (Info) => {
+  console.log('서비스쪽')
+  console.log(Info)
+  let result = null;
+
+  result = await mariadb
+    .query("selectRscOrdrDeta", [Info.rsc_id])
+  return result;
+}
 
 const insertRscOrdr = async () => {
   let conn;
@@ -24,4 +52,6 @@ const insertRscOrdr = async () => {
 
 module.exports = {
   insertRscOrdr,
+  coFindAll,
+  coFindDeta,
 };

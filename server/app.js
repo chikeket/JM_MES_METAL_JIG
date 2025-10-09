@@ -42,6 +42,7 @@ const rsc = require("./routers/rsc_router.js"); // 자재
 const prodPlan = require("./routers/prodPlan_router.js"); // 생산계획
 const prodDrct = require("./routers/prodDrct_router.js"); // 생산지시
 const auth = require("./routers/auth_router.js"); // 로그인
+const rscQltyInsp = require("./routers/rscQltyInsp_router.js"); // 자재품질검수
 
 // 기본 라우팅
 app.get("/", (req, res) => {
@@ -58,3 +59,4 @@ app.use("/", rsc); // 자재
 app.use("/", prodPlan); // 생산계획
 app.use("/", prodDrct); // 생산지시
 app.use("/", auth); // 로그인
+app.use("/", rscQltyInsp); // 자재품질검수
