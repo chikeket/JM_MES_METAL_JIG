@@ -30,8 +30,8 @@ router.get("/rcvords/:id", async (req, res) => {
       return res.status(404).json({ message: "수주를 찾을 수 없습니다." });
     }
     const lines = await rcvordService.getRcvordLines(id);
-    // 프론트에서 status 필드 기대하므로 매핑
-    const headerOut = { ...header, status: header.st };
+    // 프론트에서 status 필드 기대 (코드명/한글명 매핑 이미 서비스에서 수행)
+    const headerOut = { ...header };
     res.json({ header: headerOut, lines });
   } catch (err) {
     console.error("[GET /rcvords/:id] error:", err);
