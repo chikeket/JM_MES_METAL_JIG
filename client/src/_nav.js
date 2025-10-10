@@ -84,6 +84,11 @@ export default [
         name: '수주 관리',
         to: '/Minsu/rcvord',
       },
+      {
+        component: 'CNavItem',
+        name: '납품 관리',
+        to: '/Minsu/deli',
+      },
     ],
   },
   {

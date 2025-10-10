@@ -55,6 +55,11 @@ const routes = [
             name: 'rcvord',
             component: () => import('@/views/minsu/rcvord.vue'),
           },
+          {
+            path: '/Minsu/deli',
+            name: 'deli',
+            component: () => import('@/views/minsu/deli.vue'),
+          },
         ],
       },
       {
@@ -480,7 +485,7 @@ router.beforeEach(async (to) => {
     // fetchSession 실패해도 user는 null 유지
     try {
       await auth.fetchSession()
-    } catch { }
+    } catch {}
   }
 
   // 보호할 경로 목록

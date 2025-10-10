@@ -69,13 +69,29 @@ const rcvordInsertLine = `INSERT INTO rcvord_deta (rcvord_deta_id, rcvord_id, pr
 // 헤더 삭제 (라인 먼저 삭제 후 호출)
 const rcvordDeleteHeader = `DELETE FROM rcvord WHERE rcvord_id = ?`;
 
-// ID 생성 (월별 증가) - 학습용 (경합 상황 고려 X)
-const rcvordNewId = `SELECT CONCAT('RCV', DATE_FORMAT(NOW(), '%Y%m'), LPAD(IFNULL(MAX(SUBSTR(rcvord_id, -3)),0) + 1, 3, '0')) AS new_id
+// ID 생성 (월별 증가) - 형식: YYYYMMNNN (예: 202510001)
+// 현재 월에 해당하는 기존 rcvord_id의 마지막 3자리 시퀀스를 찾아 +1
+const rcvordNewId = `
+  SELECT CONCAT(
+           'RO',
+           DATE_FORMAT(NOW(), '%Y%m'),
+           LPAD(IFNULL(MAX(CAST(SUBSTR(rcvord_id, -3) AS UNSIGNED)), 0) + 1, 3, '0')
+         ) AS new_id
   FROM rcvord
-  WHERE SUBSTR(rcvord_id, 4, 6) = DATE_FORMAT(NOW(), '%Y%m')`;
-const rcvordDetaNewId = `SELECT CONCAT('RCV_DETA', DATE_FORMAT(NOW(), '%Y%m'), LPAD(IFNULL(MAX(SUBSTR(rcvord_deta_id, -3)),0) + 1, 3, '0')) AS new_id
+  WHERE (
+    SUBSTR(rcvord_id, 1, 6) = DATE_FORMAT(NOW(), '%Y%m') -- 무접두 형식(YYYYMMNNN)
+    OR SUBSTR(rcvord_id, 3, 6) = DATE_FORMAT(NOW(), '%Y%m') -- 'RO' 접두 형식(ROYYYYMMNNN)
+  )
+`;
+const rcvordDetaNewId = `
+  SELECT CONCAT(
+           'ROD',
+           DATE_FORMAT(NOW(), '%Y%m'),
+           LPAD(IFNULL(MAX(CAST(SUBSTR(rcvord_deta_id, -3) AS UNSIGNED)), 0) + 1, 3, '0')
+         ) AS new_id
   FROM rcvord_deta
-  WHERE SUBSTR(rcvord_deta_id, 9, 6) = DATE_FORMAT(NOW(), '%Y%m')`;
+  WHERE SUBSTR(rcvord_deta_id, 4, 6) = DATE_FORMAT(NOW(), '%Y%m')
+`;
 
 module.exports = {
   modalRcvordFind,
