@@ -3,21 +3,21 @@
   <div class="global-toolbar vars-scope">
     <div class="toolbar-buttons">
       <button class="btn btn-sm btn-outline-secondary" @click="onNew">신규</button>
-      <button class="btn btn-sm btn-outline-secondary" @click="onSearch">수주 조회</button>
+      <button class="btn btn-sm btn-outline-secondary" @click="onSearch">납품 조회</button>
       <button class="btn btn-sm btn-outline-secondary" @click="onSave">저장</button>
       <button class="btn btn-sm btn-outline-danger" @click="onDelete">삭제</button>
     </div>
-    <!-- 수주 조회 모달 -->
-    <RcvordModalOne
+    <!-- 납품 선택 모달 -->
+    <DeliModalOne
+      :visible="isDeliModalVisible"
+      @close="isDeliModalVisible = false"
+      @select="onSelectDeli"
+    />
+    <!-- 수주 선택 모달 -->
+    <DeliModalTwo
       :visible="isRcvordModalVisible"
       @close="isRcvordModalVisible = false"
-      @select="onSelectOrder"
-    />
-    <!-- 제품 선택 모달 -->
-    <RcvordModalTwo
-      :visible="isProductModalVisible"
-      @close="isProductModalVisible = false"
-      @select="onSelectProduct"
+      @select="onSelectRcvord"
     />
   </div>
 
@@ -26,28 +26,16 @@
     <div class="order-header card-like">
       <div class="form-grid">
         <div class="field">
-          <label>수주 ID</label>
+          <label>납품 ID</label>
           <input type="text" v-model="header.orderId" readonly />
         </div>
         <div class="field">
-          <label>납품업체 명</label>
+          <label>납품 담당자</label>
           <input type="text" v-model="header.vendorName" required />
         </div>
         <div class="field">
-          <label>수주 담당자</label>
+          <label>납품 등록 일자</label>
           <input type="text" v-model="header.owner" required />
-        </div>
-        <div class="field">
-          <label>수주 상태</label>
-          <input type="text" v-model="header.status" readonly />
-        </div>
-        <div class="field">
-          <label>수주 등록 일자</label>
-          <input type="date" v-model="header.orderDate" />
-        </div>
-        <div class="field">
-          <label>총 요청 수량</label>
-          <input type="text" :value="formattedTotalQty" readonly />
         </div>
         <div class="field field-col-span">
           <label>비고</label>
@@ -60,9 +48,9 @@
     <div class="sub-toolbar">
       <div class="sub-toolbar-buttons">
         <button class="btn btn-xs btn-outline-secondary" @click="onResetLines">초기화</button>
-        <button class="btn btn-xs btn-outline-primary" @click="onAddLine">제품 추가</button>
+        <button class="btn btn-xs btn-outline-primary" @click="onAddRcvord">수주 추가</button>
         <button class="btn btn-xs btn-outline-danger" @click="onDeleteSelected">
-          선택 제품 삭제
+          선택 수주 삭제
         </button>
       </div>
     </div>
@@ -76,14 +64,15 @@
               <input type="checkbox" v-model="allSelected" @change="toggleAll" />
             </th>
             <th class="no-col">No</th>
-            <th class="prod-col">제품 명</th>
-            <th class="opt-col">제품 옵션 명</th>
-            <th class="qty-col">요청 수량</th>
+            <th class="ro-col">수주 ID</th>
+            <th class="co-col">납품 업체 명</th>
+            <th class="trqy-col">총 요청 수량</th>
+            <th class="tdqy-col">당회 총 납품 수량</th>
+            <th class="dqy-col">기납품 수량</th>
+            <th class="unqy-col">미납품 수량</th>
             <th class="spec-col">규격</th>
             <th class="unit-col">단위</th>
-            <th class="producible-col">생산 가능 여부</th>
-            <th class="due-date-col">납품 예정 일자</th>
-            <th class="remark-col">비고</th>
+            <th class="rm-col">비고</th>
           </tr>
         </thead>
         <tbody>
@@ -177,7 +166,7 @@
             </td>
           </tr>
           <tr v-if="!lines.length">
-            <td colspan="10" class="empty">데이터가 없습니다.</td>
+            <td colspan="11" class="empty">데이터가 없습니다.</td>
           </tr>
         </tbody>
       </table>
@@ -189,8 +178,8 @@
 import { ref, reactive, computed, nextTick, watch } from 'vue'
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth.js'
-import RcvordModalOne from '../modal/rcvordModalOne.vue'
-import RcvordModalTwo from '../modal/rcvordModalTwo.vue'
+import DeliModalOne from '../modal/deliModalOne.vue'
+import DeliModalTwo from '../modal/deliModalTwo.vue'
 
 // Auth store (로그인 사용자 정보 활용)
 const auth = useAuthStore()
@@ -309,8 +298,8 @@ function formatNumber(val) {
 }
 
 // Line operations
-function onAddLine() {
-  isProductModalVisible.value = true
+function onAddRcvord() {
+  isRcvordModalVisible.value = true
 }
 function onDeleteSelected() {
   lines.value = lines.value.filter((l) => !l._selected)
@@ -362,15 +351,15 @@ watch(
   { immediate: true },
 )
 // 모달 표시 상태
+const isDeliModalVisible = ref(false)
 const isRcvordModalVisible = ref(false)
-const isProductModalVisible = ref(false)
 
 function onSearch() {
-  isRcvordModalVisible.value = true
+  isDeliModalVisible.value = true
 }
 
 // 수주 선택 시 상세 호출하여 헤더/라인 매핑
-async function onSelectOrder(row) {
+async function onSelectDeli(row) {
   try {
     const id = row.rcvord_id
     if (!id) return
@@ -402,9 +391,9 @@ async function onSelectOrder(row) {
         )
       : []
   } catch (err) {
-    console.error('order detail fetch error', err)
+    console.error('deli detail fetch error', err)
   } finally {
-    isRcvordModalVisible.value = false
+    isDeliModalVisible.value = false
   }
 }
 
@@ -484,7 +473,7 @@ function buildSavePayload() {
 }
 
 // 제품 선택 시 라인 추가
-async function onSelectProduct(product) {
+async function onSelectRcvord(product) {
   try {
     const newLine = createLine({
       prdt_id: product.prdt_id,
@@ -501,9 +490,9 @@ async function onSelectProduct(product) {
     })
     lines.value.push(newLine)
   } catch (err) {
-    console.error('product select error', err)
+    console.error('rcvord select error', err)
   } finally {
-    isProductModalVisible.value = false
+    isRcvordModalVisible.value = false
   }
 }
 
@@ -511,7 +500,6 @@ async function onSelectProduct(product) {
 </script>
 
 <style scoped>
-/* 변수 스코프를 위한 래퍼 클래스 (wrapper 제거 후) */
 .vars-scope {
   --radius-sm: 4px;
   --radius-md: 6px;
@@ -525,7 +513,6 @@ async function onSelectProduct(product) {
   --thead-h: 34px;
 }
 
-/* 제거된 rcvord-wrapper 관련 스타일 삭제 */
 .global-toolbar {
   display: flex;
   justify-content: flex-end;
@@ -667,7 +654,7 @@ async function onSelectProduct(product) {
   border: 1px solid #bcbcbc;
   padding: 4px;
   font-weight: 600;
-  text-align: center; /* 헤더 가운데 */
+  text-align: center;
   height: var(--thead-h);
 }
 .data-grid thead th:first-child {
@@ -716,29 +703,32 @@ async function onSelectProduct(product) {
 .no-col {
   width: 46px;
 }
-.qty-col {
-  width: 90px;
+.trqy-col {
+  width: 100px;
 }
-.spec-col {
-  width: 70px;
+.tdqy-col {
+  width: 250px;
 }
-.unit-col {
-  width: 55px;
+.dqy-col {
+  width: 100px;
 }
-.producible-col {
-  width: 90px;
+.unqy-col {
+  width: 100px;
 }
-.prod-col {
+.ro-col {
   width: 120px;
 }
-.opt-col {
+.co-col {
   width: 140px;
 }
-.due-date-col {
-  width: 110px; /* 납기 예정일: compact */
+.spec-col {
+  width: 80px;
 }
-.remark-col {
-  width: 450px; /* 비고: 확대 */
+.unit-col {
+  width: 80px;
+}
+.rm-col {
+  width: 450px;
 }
 .cell-no {
   text-align: center;
