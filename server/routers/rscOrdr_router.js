@@ -18,6 +18,7 @@ router.get("/rscOrdr", async (req, res) => {
   }
 });
 
+
 // 상세 조회
 router.get("/rscOrdrDeta", async (req, res) => {
   try {
@@ -28,6 +29,7 @@ router.get("/rscOrdrDeta", async (req, res) => {
     res.status(500).json([]);
   }
 });
+
 
 // 저장(신규/수정)
 router.post("/rscOrdr", async (req, res) => {

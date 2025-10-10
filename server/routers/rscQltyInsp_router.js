@@ -5,6 +5,13 @@ const router = express.Router();
 // 해당 라우터를 통해 제공할 서비스를 가져옴
 const rscOrdrService = require("../services/rscQltyInsp_service.js");
 
+router.get("/rscOrdrDeta", async (req, res) => {
+  let result = await rscOrdrService
+    .rscQltyDetaData(req.query)
+    .catch((err) => console.log(err));
+  res.send(result);
+});
+
 router.post("/rscQltyInspInsert", async (req, res) => {
   let Info = req.body;
   let result = await rscOrdrService
@@ -15,7 +22,23 @@ router.post("/rscQltyInspInsert", async (req, res) => {
 
 router.get("/rscQltyInspSelect", async (req, res) => {
   let result = await rscOrdrService
-    .coFindAll(req.query)
+    .rscQltyInspSelect(req.query)
+    .catch((err) => console.log(err));
+  res.send(result);
+});
+
+router.post("/rscQltyInspUpdate", async (req, res) => {
+  let Info = req.body;
+  let result = await rscOrdrService
+    .rscQltyInspUpdate(Info)
+    .catch((err) => console.log(err));
+  res.send(result);
+});
+
+router.post("/rscQltyInspDelete", async (req, res) => {
+  let Info = req.body;
+  let result = await rscOrdrService
+    .rscQltyInspDelete(Info)
     .catch((err) => console.log(err));
   res.send(result);
 });

@@ -67,7 +67,7 @@ ON a.prdt_id = c.prdt_id
 JOIN prdt_opt d
 ON a.prdt_opt_id = d.prdt_opt_id
 WHERE prod_drct_id = ?
-AND c.prdt_st = 'P1'
+AND c.prdt_st = 'K1'
 AND d.st = 'M1'`;
 
 

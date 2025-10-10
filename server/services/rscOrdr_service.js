@@ -35,6 +35,7 @@ const coFindAll = async (Info) => {
   console.log('[rscOrdr_service] coFindAll params ->', params);
   const result = await mariadb.query("selectRscOrdrList", params);
   return result;
+
 };
 
 const coFindDeta = async (Info) => {
@@ -52,6 +53,10 @@ const insertRscOrdr = async ({ master, detailList, rsc_ordr_id = null } = {}) =>
   const details = Array.isArray(detailList) ? detailList.map(d => toLowerKeys(d || {})) : [];
 
   if (!m) throw new Error('master is required');
+
+}
+
+
 
   let conn;
   try {
@@ -118,7 +123,9 @@ const deleteRscOrdr = async (rscOrdrId) => {
 
 module.exports = {
   coFindAll,
+
   coFindDeta,
   insertRscOrdr,
   deleteRscOrdr,
+
 };

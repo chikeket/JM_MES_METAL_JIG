@@ -21,6 +21,7 @@ ORDER BY c.reg_dt DESC
 LIMIT 500
 `;
 
+
 // 상세 조회 (발주서 아이디로 상세 리스트 반환)
 const selectRscOrdrDeta = `
 SELECT
@@ -36,6 +37,7 @@ FROM rsc_ordr_deta b
 LEFT JOIN rsc a ON b.rsc_id = a.rsc_id
 WHERE b.rsc_ordr_id = ?
 `;
+
 
 // master insert
 const insertRscOrdr = `
@@ -70,10 +72,12 @@ DELETE FROM rsc_ordr WHERE rsc_ordr_id = ?
 `;
 
 module.exports = {
+
   selectRscOrdrList,
   selectRscOrdrDeta,
   insertRscOrdr,
   insertRscOrdrDeta,
   deleteRscOrdrDetaByOrdr,
   deleteRscOrdr,
+
 };
