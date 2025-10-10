@@ -1,76 +1,83 @@
 // Table : rsc_ordr <자재 발주>
-// 각 변수별로 SQL문을 등록할 떄 백틱(``)을 사용하는 이유는 줄바꿈 허용을 허용하기 떄문.
-// ( 따옴표는 줄을 바꿀 경우 값이 깨지면서 에러발생 )
-/**
- * 
- * CREATE TABLE RSC_ORDR (
-	`RSC_ORDR_ID`	VARCHAR(100)	NOT NULL,
-	`CO_ID`	VARCHAR(100)	NOT NULL	COMMENT '업체 테이블 FK',
-	`EMP_ID`	VARCHAR(100)	NOT NULL	COMMENT '사원 테이블 FK (담당자))',
-	`REG_DT`	DATE	NOT NULL	DEFAULT CURRENT_TIMESTAMP,
-	`RM`	VARCHAR(1000)	NULL
-);
 
-CREATE TABLE RSC_ORDR_DETA (
-	`RSC_ORDR_DETA_ID`	VARCHAR(100)	NOT NULL	COMMENT '특정규칙 + 시퀀스',
-	`RSC_ORDR_ID`	VARCHAR(100)	NOT NULL,
-	`RSC_ID`	VARCHAR(100)	NOT NULL	COMMENT '자재 테이블 FK',
-	`QY`	FLOAT(15,5)	NOT NULL	COMMENT '규격, 단위는 자재 테이블에 있어서 제외',
-	`RM`	VARCHAR(1000)	NULL
-);
- */
-
-// 자재 발주 조회(rscOrdrModal.vue모달검색조회쿼리)
 const selectRscOrdrList = `
 SELECT
- a.rsc_nm,
- b.qy,
- d.emp_nm,
- d.emp_id,
- e.co_nm,
- c.reg_dt,
- a.rsc_id,
- b.rsc_ordr_deta_id
-FROM rsc a
-JOIN rsc_ordr_deta b
-ON a.rsc_id = b.rsc_id
-JOIN rsc_ordr c
-ON b.rsc_ordr_id = c.rsc_ordr_id
-JOIN emp d
-ON c.emp_id = d.emp_id
-JOIN co e
-ON c.co_id = e.co_id
-WHERE a.rsc_nm LIKE CONCAT('%', ?, '%')
-AND b.qy > ?
-AND d.emp_nm LIKE CONCAT('%', ?, '%')
-AND e.co_nm LIKE CONCAT('%', ?, '%')
-AND c.reg_dt >= ?`;
+  c.RSC_ORDR_ID AS rsc_ordr_id,
+  COALESCE(c.RM, '') AS rsc_ordr_nm,
+  e.co_nm AS co_nm,
+  d.emp_nm AS emp_nm,
+  c.reg_dt AS reg_dt
+FROM rsc_ordr c
+LEFT JOIN co e ON c.co_id = e.co_id
+LEFT JOIN emp d ON c.emp_id = d.emp_id
+LEFT JOIN rsc_ordr_deta b ON c.RSC_ORDR_ID = b.rsc_ordr_id
+LEFT JOIN rsc a ON b.rsc_id = a.rsc_id
+WHERE (? IS NULL OR c.RM LIKE CONCAT('%', ?, '%'))
+  AND (? IS NULL OR e.co_nm LIKE CONCAT('%', ?, '%'))
+  AND (? IS NULL OR d.emp_nm LIKE CONCAT('%', ?, '%'))
+  AND (? IS NULL OR c.reg_dt >= ?)
+GROUP BY c.RSC_ORDR_ID
+ORDER BY c.reg_dt DESC
+LIMIT 500
+`;
 
 
+// 상세 조회 (발주서 아이디로 상세 리스트 반환)
+const selectRscOrdrDeta = `
+SELECT
+  b.rsc_ordr_deta_id,
+  b.rsc_ordr_id,
+  b.rsc_id,
+  a.rsc_nm,
+  b.qy,
+  b.rm,
+  a.spec,
+  a.unit AS rsc_unit
+FROM rsc_ordr_deta b
+LEFT JOIN rsc a ON b.rsc_id = a.rsc_id
+WHERE b.rsc_ordr_id = ?
+`;
 
 
-
-// 자재 발주 등록
+// master insert
 const insertRscOrdr = `
-INSERT INTO rsc_ordr(
-										co_id,
-										emp_id,
-										reg_dt,
-										rm)
-VALUES (?, ?, ?, ?)`;
+INSERT INTO rsc_ordr (
+  rsc_ordr_id,
+  co_id,
+  emp_id,
+  reg_dt,
+  rm
+) VALUES (?, ?, ?, ?, ?)
+`;
 
-// 자재 발주 상세 등록
+// detail insert
 const insertRscOrdrDeta = `
-INSERT INTO rsc_ordr_deta(
-										rsc_ordr_id,
-										rsc_id,
-										qy,
-										rm)
-VALUES (?, ?, ?, ?)`;
+INSERT INTO rsc_ordr_deta (
+  rsc_ordr_deta_id,
+  rsc_ordr_id,
+  rsc_id,
+  qy,
+  rm
+) VALUES (?, ?, ?, ?, ?)
+`;
 
-//
+// delete detail by order id
+const deleteRscOrdrDetaByOrdr = `
+DELETE FROM rsc_ordr_deta WHERE rsc_ordr_id = ?
+`;
+
+// delete master
+const deleteRscOrdr = `
+DELETE FROM rsc_ordr WHERE rsc_ordr_id = ?
+`;
+
 module.exports = {
-	selectRscOrdrList,
-	insertRscOrdr,
-	insertRscOrdrDeta,
+
+  selectRscOrdrList,
+  selectRscOrdrDeta,
+  insertRscOrdr,
+  insertRscOrdrDeta,
+  deleteRscOrdrDetaByOrdr,
+  deleteRscOrdr,
+
 };
