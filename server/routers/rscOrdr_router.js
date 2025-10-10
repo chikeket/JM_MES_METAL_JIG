@@ -12,12 +12,7 @@ router.get("/rscOrdr", async (req, res) => {
   res.send(result);
 });
 
-router.get("/rscOrdrDeta", async (req, res) => {
-  let result = await rscOrdrService
-    .coFindDeta(req.query)
-    .catch((err) => console.log(err));
-  res.send(result);
-});
+
 
 
 

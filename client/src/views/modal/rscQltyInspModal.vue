@@ -36,10 +36,10 @@
           <tbody class="table table-bordered table-hover mb-0">
             <!-- v-for="(prdts, i) in prdtList" :key="i" -->
             <tr v-for="(prdts, i) in prdtList" :key="i" @dblclick="selectProduct(prdts)">
-              <td>{{ prdts.rsc_nm }}</td>
-              <td>{{ prdts.qy }}</td>
               <td>{{ prdts.emp_nm }}</td>
-              <td>{{ prdts.co_nm }}</td>
+              <td>{{ Math.floor(prdts.insp_qy) }}</td>
+              <td>{{ Math.floor(prdts.pass_qy) }}</td>
+              <td>{{ Math.floor(prdts.rtngud_qy) }}</td>
               <td>{{ userDateUtils.dateFormat(prdts.reg_dt,'yyyy-MM-dd') }}</td>
             </tr>
           </tbody>
@@ -75,7 +75,7 @@ let prdtList = shallowRef([]) // <- 반응형 객체
 const prdtSearch = async () => {
   const params = {    
     emp_nm: emp_nm.value || '',    
-    insp_dt: insp_dt.value || ''
+    insp_dt: insp_dt.value || '1970-01-01'
   }
   console.log(params)  
   let result = await axios.get('/api/rscQltyInspSelect', { params }).catch((err) => console.log(err))
