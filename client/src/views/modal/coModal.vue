@@ -7,18 +7,20 @@
       <div class="modal-body" style="max-height: 500px; overflow-y: auto">
         <!-- 검색 영역 -->
         <div class="d-flex gap-2 mb-3">
-          <select class="form-select" style="width: 150px">
+          <select class="form-select" style="width: 150px" v-model="coTy">
+            <option value="">전체유형</option>
             <option value="CO_TY_ID">업체 유형</option>
           </select>
-          <select class="form-select" style="width: 150px">
+          <select class="form-select" style="width: 150px" v-model="pickValue">
             <option value="CO_NM">업체 이름</option>
             <option value="RPSTR_NM">대표자 이름</option>
             <option value="RPSTR_TEL">대표자 연락처</option>
           </select>
-          <select class="form-select" style="width: 150px">
+          <select class="form-select" style="width: 150px" v-model="st">
+            <option value="">전체상태</option>
             <option value="ST">상태</option>
           </select>
-          <input type="text" class="form-control" placeholder="검색어 입력" />
+          <input type="text" class="form-control" placeholder="검색어 입력" v-model="searchKeyword" />
           <button class="btn btn-secondary" @click="coSearch()">검색</button>
         </div>
 
@@ -59,29 +61,42 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, shallowRef } from 'vue'
+import { ref, defineProps, defineEmits, shallowRef } from 'vue'
 import axios from 'axios'
 
-const props = defineProps({
-  visible: Boolean,
-})
-const emit = defineEmits(['close'])
+const props = defineProps({ visible: Boolean })
+const emit = defineEmits(['close', 'select'])
+
+const coTy = ref('') // 업체 유형 필터
+const pickValue = ref('CO_NM')
+const st = ref('') // 상태 필터
+const searchKeyword = ref('')
+let coList = shallowRef([])
+
 const close = () => {
+  coTy.value = ''
+  pickValue.value = 'CO_NM'
+  st.value = ''
+  searchKeyword.value = ''
+  coList.value = []
   emit('close')
 }
 
-let coList = shallowRef([]) // <- 반응형 객체
-
 const coSearch = async () => {
-  let result = await axios.get('/api/cos').catch((err) => console.log(err))
-  coList.value = result.data // 수정
+  const params = { co_ty_id: coTy.value || '', co_nm: '', rpstr_nm: '', rpstr_tel: '', st: st.value || '' }
+  if (pickValue.value === 'CO_NM') params.co_nm = searchKeyword.value
+  else if (pickValue.value === 'RPSTR_NM') params.rpstr_nm = searchKeyword.value
+  else if (pickValue.value === 'RPSTR_TEL') params.rpstr_tel = searchKeyword.value
+
+  let result = await axios.get('/api/cos', { params }).catch((err) => console.log(err))
+  coList.value = result?.data ?? []
 }
 
 const selectCo = (cos) => {
-  emit('select', cos) // 부모에게 선택된 제품 전달
-  close() // 모달 닫기
+  emit('select', cos)
+  close()
 }
 </script>
-
-<!-- CoOrdr.vue -->
-<CoModal :visible="isCoModalVisible" @close="closeCoModal" @select="selectedCo" />
+ 
+ <!-- CoOrdr.vue -->
+ <!-- 사용: <CoModal :visible="isCoModalVisible" @close="closeCoModal" @select="selectedCo" /> -->

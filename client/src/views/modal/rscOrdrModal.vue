@@ -1,69 +1,36 @@
 <template>
   <CModal :visible="visible" @close="close" size="xl">
     <CModalHeader>
-      <CModalTitle>자재발주서 검색</CModalTitle>
+      <CModalTitle>자재 발주서 조회</CModalTitle>
     </CModalHeader>
     <CModalBody>
-      <div class="modal-body" style="max-height: 400px; overflow-y: auto">
-        <!-- 검색 영역 -->
-         <div class="mb-3">         
-        <div class="d-flex gap-2 mb-3">
-          <select class="form-select" style="width: 150px" v-model="pickValue">
-            <option value="rsc_nm">자재명</option>
-            <option value="qy">자재수량</option>
-            <option value="emp_nm">작성자</option>
-            <option value="co_nm">발주처</option>            
-          </select>     
-          
-          <template v-if="pickValue == 'rsc_nm'">
-            <input type="text" class="form-control" v-model="rsc_nm" />
-          </template>    
-          <template v-else-if="pickValue == 'qy'">
-            <input type="text" class="form-control" v-model="qy" />
-          </template>
-          <template v-else-if="pickValue == 'emp_nm'">
-            <input type="text" class="form-control" v-model="emp_nm" />
-          </template>
-          <template v-else-if="pickValue == 'co_nm'">
-            <input type="text" class="form-control" v-model="co_nm" />
-          </template>
-          <button class="btn btn-secondary" @click="prdtSearch()">검색</button>
-        </div>
-        <!-- 날짜 입력창 -->
-    <input
-  type="text"
-  class="form-control"
-  v-model="reg_dt"
-  placeholder="발주등록일"
-  onfocus="(this.type='date')"
-  onblur="if(!this.value)this.type='text'"
-/>
+      <div class="d-flex gap-2 mb-3">
+        <select class="form-select" style="width:160px" v-model="pickValue">
+          <option value="rsc_ordr_nm">발주명</option>
+          <option value="co_nm">업체명</option>
+          <option value="emp_nm">담당자명</option>
+        </select>
+        <input class="form-control" type="text" v-model="searchKeyword" @keyup.enter="search" placeholder="검색어 입력" />
+        <input class="form-control" type="date" v-model="reg_dt" style="width:160px" />
+        <button class="btn btn-secondary" @click="search">검색</button>
       </div>
 
-        <!-- 결과 테이블 -->
-
-        <table class="table table-bordered table-hover">
-          <thead class="table-light">
-            <tr>
-              <th>자재명</th>
-              <th>자재수량</th>
-              <th>발주자명</th>
-              <th>발주처</th>
-              <th>발주날짜</th>
-            </tr>
+      <div style="max-height:480px; overflow:auto">
+        <table class="table table-sm table-hover mb-0">
+          <thead>
+            <tr><th>발주ID</th><th>발주명</th><th>업체</th><th>담당자</th><th>등록일</th></tr>
           </thead>
-
-          <tbody class="table table-bordered table-hover mb-0">
-            <!-- v-for="(prdts, i) in prdtList" :key="i" -->
-            <tr v-for="(prdts, i) in prdtList" :key="i" @dblclick="selectProduct(prdts)">
-              <td>{{ prdts.rsc_nm }}</td>
-              <td>{{ prdts.qy }}</td>
-              <td>{{ prdts.emp_nm }}</td>
-              <td>{{ prdts.co_nm }}</td>
-              <td>{{ userDateUtils.dateFormat(prdts.reg_dt,'yyyy-MM-dd') }}</td>
+          <tbody>
+            <tr v-for="(p, i) in list" :key="p.rsc_ordr_id || i" @dblclick="select(p)">
+              <td>{{ p.rsc_ordr_id }}</td>
+              <td>{{ p.rsc_ordr_nm }}</td>
+              <td>{{ p.co_nm }}</td>
+              <td>{{ p.emp_nm }}</td>
+              <td>{{ p.reg_dt }}</td>
             </tr>
+            <tr v-if="list.length === 0"><td colspan="5" class="text-center text-muted">검색결과 없음</td></tr>
           </tbody>
-        </table>        
+        </table>
       </div>
     </CModalBody>
     <CModalFooter>
@@ -73,65 +40,60 @@
 </template>
 
 <script setup>
-import { ref, defineProps, defineEmits, shallowRef, watch } from 'vue'
+import { ref, defineProps, defineEmits, shallowRef } from 'vue'
 import axios from 'axios'
-import userDateUtils from "@/utils/useDates.js";
-const props = defineProps({
-  visible: Boolean,
-})
-const emit = defineEmits(['close', 'select'])
-const close = () => {
-  rsc_nm.value = ''
-  qy.value = ''
-  emp_nm.value = ''
-  co_nm.value = ''
-  reg_dt.value = ''
-  pickValue.value = 'rsc_nm'
 
-  prdtList.value = []
+const props = defineProps({ visible: Boolean })
+const emit = defineEmits(['close','select'])
+
+const pickValue = ref('rsc_ordr_nm')
+const searchKeyword = ref('')
+const reg_dt = ref('')
+const list = shallowRef([])
+
+const close = () => {
+  pickValue.value = 'rsc_ordr_nm'
+  searchKeyword.value = ''
+  reg_dt.value = ''
+  list.value = []
   emit('close')
 }
 
-const pickValue = ref('rsc_nm') // 기본값: 코드
-const rsc_nm = ref('')
-const qy = ref('')
-const emp_nm = ref('')
-const co_nm = ref('')
-const reg_dt = ref('')
+const search = async () => {
+  try {
+    // 서버가 소문자 키를 기대하므로 소문자 필드로 전송
+    const params = { rsc_ordr_nm: null, co_nm: null, emp_nm: null, reg_dt: null }
+    if (pickValue.value === 'rsc_ordr_nm') params.rsc_ordr_nm = searchKeyword.value
+    else if (pickValue.value === 'co_nm') params.co_nm = searchKeyword.value
+    else if (pickValue.value === 'emp_nm') params.emp_nm = searchKeyword.value
+    if (reg_dt.value) params.reg_dt = reg_dt.value
 
-let prdtList = shallowRef([]) // <- 반응형 객체
-
-watch(pickValue, (newVal) => {
-  if (newVal !== 'rsc_nm') rsc_nm.value = ''
-  if (newVal !== 'qy') qy.value = ''
-  if (newVal !== 'emp_nm') emp_nm.value = ''
-  if (newVal !== 'co_nm') co_nm.value = ''
-})
-
-
-const prdtSearch = async () => {
-  const params = {
-    rsc_nm: rsc_nm.value || '',
-    qy: qy.value || '',
-    emp_nm: emp_nm.value || '',
-    co_nm: co_nm.value || '',
-    reg_dt: reg_dt.value || ''
+    console.log('[rscOrdrModal] request params:', params)
+    const res = await axios.get('/api/rscOrdr', { params }) // app.js에 '/api'로 마운트했다면 '/api/' 사용
+    const data = res?.data
+    console.log('[rscOrdrModal] raw response:', data)
+    // 방어 처리: 배열이면 그대로, 아니면 빈 배열
+    list.value = Array.isArray(data) ? data.map(it => ({
+      rsc_ordr_id: it.rsc_ordr_id ?? it.RSC_ORDR_ID ?? '',
+      rsc_ordr_nm: it.rsc_ordr_nm ?? it.RSC_ORDR_NM ?? '',
+      co_nm: it.co_nm ?? it.CO_NM ?? '',
+      emp_nm: it.emp_nm ?? it.EMP_NM ?? '',
+      reg_dt: it.reg_dt ? String(it.reg_dt).slice(0,10) : ''
+    })) : []
+  } catch (err) {
+    console.error('[rscOrdrModal] rscOrdr search error', err)
+    list.value = []
   }
-  console.log(params)  
-  let result = await axios.get('/api/rscOrdr', { params }).catch((err) => console.log(err))
-  console.log(result.data)
-  prdtList.value = result.data
 }
 
-const selectProduct = async  (prdts) => {  
-  const params = { rsc_id: ''};
-  params.rsc_id = prdts.rsc_id;
-  let result = await axios.get('/api/rscOrdrDeta', { params }).catch((err) => console.log(err))
-  console.log(result.data)
-  emit('select', {
-  detailData: result.data,
-  searchParams: prdts
-}) // 부모에게 선택된 제품 전달
-  close() // 모달 닫기
+const select = async (row) => {
+  try {
+    const res = await axios.get('/api/rscOrdrDeta', { params: { rsc_ordr_id: row.rsc_ordr_id } }).catch(()=>null)
+    const detail = res?.data ?? []
+    emit('select', { master: row, detailList: detail })
+    close()
+  } catch (err) {
+    console.error(err)
+  }
 }
 </script>
