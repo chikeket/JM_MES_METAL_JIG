@@ -20,16 +20,7 @@ const coFindAll = async (Info) => {
     .query("selectRscOrdrList", data)
   return result;
 }
-//rscOrdrModal.vue 자재발주서 상세정보 조회
-const coFindDeta = async (Info) => {
-  console.log('서비스쪽')
-  console.log(Info)
-  let result = null;
 
-  result = await mariadb
-    .query("selectRscOrdrDeta", [Info.rsc_id])
-  return result;
-}
 
 const insertRscOrdr = async () => {
   let conn;
@@ -53,5 +44,4 @@ const insertRscOrdr = async () => {
 module.exports = {
   insertRscOrdr,
   coFindAll,
-  coFindDeta,
 };

@@ -71,6 +71,11 @@ export default [
         name: '자재품질',
         to: '/qlty/rscQltyInsp',
       },
+      {
+        component: 'CNavItem',
+        name: '완제품품질',
+        to: '/qlty/endPrdtQltyInsp',
+      },
     ],
   },
   {

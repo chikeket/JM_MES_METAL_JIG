@@ -126,8 +126,13 @@ const routes = [
         children: [
           {
             path: '/qlty/rscQltyInsp',
-            name: 'qlty',
+            name: 'rscQltyInsp',
             component: () => import('@/views/qlty/rscQltyInsp.vue'),
+          },
+          {
+            path: '/qlty/endPrdtQltyInsp',
+            name: 'endPrdtQltyInsp',
+            component: () => import('@/views/qlty/endPrdtQltyInsp.vue'),
           },
         ],
       },

@@ -1,10 +1,10 @@
 <template>
   <CContainer fluid>
     <!-- 상단 버튼 -->
-    <div class="d-flex justify-content-end gap-2 mb-3">
+    <div class="d-flex justify-content-end gap-2 mb-3">완제품 품질검사 관리
       <CButton color="secondary" @click="newFunc()">신규</CButton>
-      <CButton color="secondary" @click="openOrderModal()">자재발주서 조회</CButton>
-      <rscOrdrModal :visible="isrscOrdrModalVisible" @close="closerscOrdrModal" @select="selectOrdr" />
+      <CButton color="secondary" @click="openEndPrdtQltyInspModal()">생산실적조회</CButton>
+      <endPrdtQltyInspModal :visible="isEndPrdtQltyInspModalVisible" @close="closeEndPrdtQltyInspModal" @select="selectOrdr" />
       <CButton color="secondary" @click="saveInspection()">저장</CButton>
       <CButton color="secondary" @click="update()">수정</CButton>
       <CButton color="danger" @click="deleteFunc()">삭제</CButton>
@@ -20,42 +20,17 @@
       </CCol>
       <CCol md="3">
         <CInputGroup>
-          <CInputGroupText style="min-width: 95px;">출고처</CInputGroupText>
-          <CFormInput v-model="form.co_nm" readonly class="bg-light"/>
-        </CInputGroup>
-      </CCol>
-      
-    </CRow>
-
-    <CRow class="g-3 mb-3">
-      <CCol md="3">
-        <CInputGroup>
-          <CInputGroupText style="min-width: 95px;">자재명</CInputGroupText>
-          <CFormInput v-model="form.rcs_nm" readonly class="bg-light"/>
+          <CInputGroupText style="min-width: 95px;">완제품명</CInputGroupText>
+          <CFormInput v-model="form.prdt_nm" readonly class="bg-light"/>
         </CInputGroup>
       </CCol>
       <CCol md="3">
         <CInputGroup>
-          <CInputGroupText>발주 수량</CInputGroupText>
+          <CInputGroupText>실적 수량</CInputGroupText>
           <CFormInput v-model.number="form.qy" readonly type="number" min="0" class="bg-light"/>
         </CInputGroup>
-      </CCol>
-      <CCol md="3">
-        <CInputGroup>
-          <CInputGroupText>기입고 수량</CInputGroupText>
-          <CFormInput v-model.number="form.receivedQty" type="number" min="0" />
-        </CInputGroup>
-      </CCol>
-      <CCol md="3">
-        <CInputGroup>
-          <CInputGroupText>미입고 수량</CInputGroupText>
-          <CFormInput :value="pendingQty" readonly type="number" class="bg-light" />
-        </CInputGroup>
-      </CCol>
-      
-      
+      </CCol>      
     </CRow>
-
     <CRow class="g-3 mb-3">
       <CCol md="3">
         <CInputGroup>
@@ -84,7 +59,7 @@
     </CRow>
     <CFormTextarea v-model="form.note" label="비고" rows="3" text="필요 시 기재"></CFormTextarea>
     <div class="d-flex justify-content-end gap-2 mb-3">
-    <CButton color="secondary" @click="openRscQltyInspModal()">자재품질 조회</CButton>
+    <CButton color="secondary" @click="openRscQltyInspModal()">완제품 품질조회</CButton>
     <rscQltyInspModal :visible="isRscQltyInspModalVisible" @close="closerRscQltyInspModal" @select="selectOrdr" />
     </div>
     <!-- 검사 항목 테이블 -->
@@ -113,16 +88,16 @@
 <script setup>
 import {  CRow,  CCol,    CFormInput,  CFormTextarea,  CButton,  CTable,  CTableHead,  CTableBody,  CTableRow,  CTableHeaderCell,  CTableDataCell,} from '@coreui/vue'
 import { ref, computed, watch } from 'vue'
-import rscOrdrModal from '../modal/rscOrdrModal.vue'
+import endPrdtQltyInspModal from '../modal/endPrdtQltyInspModal.vue'
 import rscQltyInspModal from '../modal/rscQltyInspModal.vue'
 import userDateUtils from "@/utils/useDates.js";
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth.js'
 const auth = useAuthStore()
 //자재발주서검색모달
-const isrscOrdrModalVisible = ref(false)
-const openOrderModal = () => {  isrscOrdrModalVisible.value = true}
-const closerscOrdrModal = () => {  isrscOrdrModalVisible.value = false}
+const isEndPrdtQltyInspModalVisible = ref(false)
+const openEndPrdtQltyInspModal = () => {  isEndPrdtQltyInspModalVisible.value = true}
+const closeEndPrdtQltyInspModal = () => {  isEndPrdtQltyInspModalVisible.value = false}
 
 //자재품질이력검색모달
 const isRscQltyInspModalVisible = ref(false)
@@ -131,26 +106,19 @@ const closerRscQltyInspModal = () => {  isRscQltyInspModalVisible.value = false}
 
 const form = ref({
   emp_id: auth.user.emp_id,
-  emp_nm: auth.user.emp_nm,
-  co_nm: '',
-  rcs_nm: '',  
+  emp_nm: auth.user.emp_nm,  
+  prdt_nm: '',  
   pass_qy: '',
-  qy: '',
-  receivedQty: '',  
+  qy: '',  
   insp_qy: '',
   insp_dt: userDateUtils.dateFormat(new Date(),'yyyy-MM-dd'),
   note: '',
-  rsc_ordr_deta_id: '',
-  rsc_qlty_insp_id: '',
+  prcs_ctrl_id: '',
+  end_prdt_qlty_insp_id: '',
 })
 const inspectItems = ref([
   // { name: '외관검사', standard: '1mm', tolerance: '2%' },  
 ])
-const pendingQty = computed(() => {
-  const order = Number(form.value.qy) || 0
-  const received = Number(form.value.receivedQty) || 0
-  return order - received
-})
 
 const defectQty = computed(() => {
   const order = Number(form.value.insp_qy) || 0
@@ -210,15 +178,14 @@ watch(
 )
 
 const selectOrdr = (prdts) => {
-  inspectItems.value = []  
-  form.value.co_nm = prdts.searchParams.co_nm
-  form.value.qy = Math.floor(prdts.searchParams.qy)  
-  form.value.insp_qy = Math.floor(prdts.searchParams.insp_qy) || 0
-  form.value.receivedQty = Math.floor(prdts.searchParams.qy) - Math.floor(prdts.searchParams.rtngud_qy) || 0  
+  console.log(prdts)
+  inspectItems.value = []    
+  form.value.prdt_nm = prdts.searchParams.prdt_nm
+  form.value.qy = Math.floor(prdts.searchParams.bePass_qy)-Math.floor(prdts.searchParams.beInsp_qy)  
+  form.value.insp_qy = Math.floor(prdts.searchParams.insp_qy) || 0  
   form.value.pass_qy = Math.floor(prdts.searchParams.pass_qy) || 0  
-  form.value.rcs_nm = prdts.searchParams.rsc_nm
-  form.value.rsc_ordr_deta_id = prdts.searchParams.rsc_ordr_deta_id
-  form.value.rsc_qlty_insp_id = prdts.searchParams.rsc_qlty_insp_id
+  form.value.prcs_ctrl_id = prdts.searchParams.prcs_ctrl_id
+  form.value.end_prdt_qlty_insp_id = prdts.searchParams.end_prdt_qlty_insp_id
   for(const prdt of prdts.detailData)inspectItems.value.push({
     name: prdt.insp_item_nm, standard: prdt.basi_val, tolerance: prdt.eror_scope_min+ '~'+prdt.eror_scope_max
       })  
@@ -227,13 +194,12 @@ const selectOrdr = (prdts) => {
 const saveInspection = async () => {    
   const payload = {
     rm: form.value.note,
-    rsc_ordr_deta_id: form.value.rsc_ordr_deta_id,
+    prcs_ctrl_id: form.value.prcs_ctrl_id,
     emp_id: form.value.emp_id,
     rtngud_qy: form.value.pendingQty,
     pass_qy: form.value.pass_qy,
     insp_qy: form.value.insp_qy,
-    insp_dt: form.value.insp_dt,
-    // rsc_qlty_insp_id: form.value.rsc_qlty_insp_id,       
+    insp_dt: form.value.insp_dt,         
   }
 console.log(payload)
   let result = await axios.post('/api/rscQltyInspInsert', payload).catch((err) => console.log(err))

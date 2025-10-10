@@ -46,19 +46,7 @@ AND d.emp_nm LIKE CONCAT('%', ?, '%')
 AND e.co_nm LIKE CONCAT('%', ?, '%')
 AND c.reg_dt >= ?`;
 
-// 자재 발주 상세조회(rscOrdrModal.vue모달검색조회쿼리)
-const selectRscOrdrDeta = `
-SELECT 
- b.insp_item_nm,
- b.basi_val,
- b.unit,
- b.eror_scope_min,
- b.eror_scope_max
-FROM qlty_item_deta a
-JOIN qlty_item b
-ON a.qlty_item_mng_id = b.qlty_item_mng_id
-WHERE b.st = 'P1'
-AND a.rsc_id = ?`;
+
 
 
 
@@ -85,5 +73,4 @@ module.exports = {
 	selectRscOrdrList,
 	insertRscOrdr,
 	insertRscOrdrDeta,
-	selectRscOrdrDeta,
 };
