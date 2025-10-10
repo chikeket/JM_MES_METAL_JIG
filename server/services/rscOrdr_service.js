@@ -35,7 +35,6 @@ const coFindAll = async (Info) => {
   console.log('[rscOrdr_service] coFindAll params ->', params);
   const result = await mariadb.query("selectRscOrdrList", params);
   return result;
-
 };
 
 const coFindDeta = async (Info) => {
@@ -54,10 +53,6 @@ const insertRscOrdr = async ({ master, detailList, rsc_ordr_id = null } = {}) =>
 
   if (!m) throw new Error('master is required');
 
-}
-
-
-
   let conn;
   try {
     conn = await mariadb.getConnection();
@@ -66,22 +61,24 @@ const insertRscOrdr = async ({ master, detailList, rsc_ordr_id = null } = {}) =>
     const ordrId = rsc_ordr_id || m.rsc_ordr_id || uuidv4();
     console.log('[rscOrdr_service] insert start ordrId=', ordrId);
 
-    // master insert via alias mapper
-    await mariadb.query("insertRscOrdr", [
+    // master insert via connection
+    // insertRscOrdr expects: (rsc_ordr_id, co_id, emp_id, reg_dt, rm, rsc_ordr_nm)
+    await conn.query("insertRscOrdr", [
       ordrId,
       m.co_id || null,
       m.emp_id || null,
       m.reg_dt || null,
       m.rm || null,
+      m.rsc_ordr_nm || m.rsc_nm || null,
     ]);
 
     // 기존 상세는 삭제 후 재삽입 (업데이트시 중복 방지)
-    await mariadb.query("deleteRscOrdrDetaByOrdr", [ordrId]);
+    await conn.query("deleteRscOrdrDetaByOrdr", [ordrId]);
 
     // detail insert: insertRscOrdrDeta expects (rsc_ordr_deta_id, rsc_ordr_id, rsc_id, qy, rm)
     for (const d of details) {
       const detaId = d.rsc_ordr_deta_id || uuidv4();
-      await mariadb.query("insertRscOrdrDeta", [
+      await conn.query("insertRscOrdrDeta", [
         detaId,
         ordrId,
         d.rsc_id || null,
@@ -109,8 +106,8 @@ const deleteRscOrdr = async (rscOrdrId) => {
   try {
     conn = await mariadb.getConnection();
     await conn.beginTransaction();
-    await mariadb.query("deleteRscOrdrDetaByOrdr", [rscOrdrId]);
-    await mariadb.query("deleteRscOrdr", [rscOrdrId]);
+    await conn.query("deleteRscOrdrDetaByOrdr", [rscOrdrId]);
+    await conn.query("deleteRscOrdr", [rscOrdrId]);
     await conn.commit();
     return { isSuccessed: true };
   } catch (err) {
@@ -123,9 +120,7 @@ const deleteRscOrdr = async (rscOrdrId) => {
 
 module.exports = {
   coFindAll,
-
   coFindDeta,
   insertRscOrdr,
   deleteRscOrdr,
-
 };
