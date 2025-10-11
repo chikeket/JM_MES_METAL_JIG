@@ -106,12 +106,13 @@
                   </CCol>
                   <CCol :md="8" class="ps-3">
                     <!-- 일반 텍스트 입력 -->
-                    <CFormInput
-                      v-if="field.type === 'text'"
-                      v-model="formData[field.key]"
-                      size="sm"
-                      placeholder="입력해주세요"
-                    />
+<CFormInput
+  v-if="field.type === 'text'"
+  v-model="formData[field.key]"
+  size="sm"
+  :placeholder="getPlaceholder(field.key)"
+/>
+
                     <!-- 날짜 입력 -->
                     <CFormInput
                       v-else-if="field.type === 'date'"
@@ -174,7 +175,23 @@ const formData = reactive({
   status: 'active'
 })
 
-// 폼 필드 정의 (순서 및 타입)
+const getPlaceholder = (key) => {
+  switch (key) {
+    case 'id': return 'C001'
+    case 'businessNo': return '123-45-67890'
+    case 'name': return '스타쉽엔터테인먼트'
+    case 'ceo': return '장원영'
+    case 'email': return 'jang@startship.com'
+    case 'ceoPhone': return '010-1234-5678'
+    case 'regDate': return '2025-10-11'
+    case 'managerName': return '김부장'
+    case 'managerPhone': return '010-2345-6789'
+    default: return '입력해주세요'
+  }
+}
+
+
+// 폼 필드 정의
 const formFields = [
   { key: 'id', label: '업체 ID', type: 'text' },
   { key: 'businessNo', label: '사업자 등록번호', type: 'text' },
@@ -203,11 +220,19 @@ const formFields = [
       { label: '비활성', value: 'inactive' }
     ]
   }
+  
 ]
 
-// 그리드 데이터 (localStorage 연동)
+// 그리드 데이터
 const gridData = ref([])
 
+// 선택된 행 인덱스
+const selectedRowIndex = ref(null)
+const originalId = ref('')
+
+// ============================================
+// Lifecycle
+// ============================================
 onMounted(() => {
   const savedData = localStorage.getItem('gridData')
   if (savedData) {
@@ -242,17 +267,13 @@ onMounted(() => {
         status: 'inactive'
       }
     ]
+    localStorage.setItem('gridData', JSON.stringify(gridData.value))
   }
 })
 
-// 선택된 행 인덱스
-const selectedRowIndex = ref(null)
-
 // ============================================
-// Computed (계산된 속성)
+// Computed
 // ============================================
-
-// 필터링된 데이터
 const filteredData = computed(() => {
   return gridData.value.filter(item => {
     const matchType = !searchFilters.type || item.type === searchFilters.type
@@ -262,45 +283,28 @@ const filteredData = computed(() => {
   })
 })
 
-// 화면에 표시할 데이터 (최대 10개)
 const displayedData = computed(() => filteredData.value.slice(0, 10))
-
-// 빈 행 개수 (10행 고정을 위해)
 const emptyRowCount = computed(() => Math.max(0, 10 - displayedData.value.length))
 
 // ============================================
-// 메서드 (이벤트 핸들러)
+// 메서드
 // ============================================
 
-// 조회 버튼 클릭
+// 검색/초기화
 const handleSearch = () => {
   selectedRowIndex.value = null
 }
 
-// 초기화 버튼 클릭
 const handleReset = () => {
   searchFilters.type = ''
   searchFilters.name = ''
   searchFilters.status = ''
   selectedRowIndex.value = null
-  
-  // localStorage 확인용 로그
-  console.log('현재 localStorage 데이터:', localStorage.getItem('gridData'))
 }
 
-// 선택된 원본 ID를 추적하기 위한 변수
-const originalId = ref('')
-
-// 그리드 행 선택
-const handleRowSelect = (item, index) => {
-  // 독립적인 복사본 생성하여 formData에 할당
-  Object.assign(formData, { ...item })
-  // 원본 ID 저장
-  originalId.value = item.id
-  selectedRowIndex.value = index
-}
-
-// 폼 데이터 초기화
+// -----------------------------
+// 폼 초기화
+// -----------------------------
 const resetFormData = () => {
   Object.assign(formData, {
     id: '',
@@ -319,60 +323,63 @@ const resetFormData = () => {
   selectedRowIndex.value = null
 }
 
-// 신규 버튼 클릭
+// -----------------------------
+// 행 선택
+// -----------------------------
+const handleRowSelect = (item, index) => {
+  Object.assign(formData, { ...item })
+  originalId.value = item.id
+  selectedRowIndex.value = index
+}
+
+// -----------------------------
+// 신규
+// -----------------------------
 const handleNew = () => {
   resetFormData()
 }
 
-// 저장 버튼 클릭
+// -----------------------------
+// 저장
+// -----------------------------
 const handleSave = () => {
-  // 필수 입력값 검증
   if (!formData.name || !formData.ceo) {
     alert('업체명과 대표자명은 필수 입력 항목입니다.')
     return
   }
 
-  // ID가 변경되었는지 확인
   const isIdChanged = originalId.value && originalId.value !== formData.id
 
-  // 변경된 ID가 이미 존재하는지 확인
   if (isIdChanged) {
     const isDuplicate = gridData.value.some(item => item.id === formData.id)
     if (isDuplicate) {
-      alert(`업체 ID "${formData.id}"는 이미 존재합니다. 다른 ID를 입력해주세요.`)
+      alert(`업체 ID "${formData.id}"는 이미 존재합니다.`)
       return
     }
   }
 
-  // 원본 ID로 기존 데이터 찾기
   const existingIndex = gridData.value.findIndex(item => item.id === originalId.value)
-  
+
   if (existingIndex >= 0) {
-    // 기존 데이터 수정
     if (isIdChanged) {
-      // ID가 변경된 경우: 기존 데이터 삭제하고 새 데이터 추가
       gridData.value.splice(existingIndex, 1)
       gridData.value.push({ ...formData })
       alert('업체 ID가 변경되어 저장되었습니다.')
     } else {
-      // ID가 변경되지 않은 경우: 그 자리에서 수정
       gridData.value[existingIndex] = { ...formData }
       alert('수정되었습니다.')
     }
   } else {
-    // 신규 데이터 추가
     if (!formData.id) {
-      // ID가 없으면 자동 생성
       const maxId = gridData.value.reduce((max, item) => {
-        const num = parseInt(item.id.replace(/\D/g, ''))
+        const num = parseInt(item.id.replace(/\D/g, '')) || 0
         return num > max ? num : max
       }, 0)
       formData.id = 'C' + String(maxId + 1).padStart(3, '0')
     } else {
-      // ID가 입력된 경우 중복 체크
       const isDuplicate = gridData.value.some(item => item.id === formData.id)
       if (isDuplicate) {
-        alert(`업체 ID "${formData.id}"는 이미 존재합니다. 다른 ID를 입력해주세요.`)
+        alert(`업체 ID "${formData.id}"는 이미 존재합니다.`)
         return
       }
     }
@@ -380,37 +387,39 @@ const handleSave = () => {
     alert('저장되었습니다.')
   }
 
-  // localStorage에 항상 저장
   localStorage.setItem('gridData', JSON.stringify(gridData.value))
   resetFormData()
 }
 
-// 삭제 버튼 클릭
+// -----------------------------
+// 삭제
+// -----------------------------
 const handleDelete = () => {
   if (!formData.id) {
     alert('삭제할 데이터를 선택해주세요.')
     return
   }
 
-  if (!confirm('정말 삭제하시겠습니까?')) {
-    return
-  }
+  if (!confirm('정말 삭제하시겠습니까?')) return
 
   const existingIndex = gridData.value.findIndex(item => item.id === formData.id)
-  
   if (existingIndex >= 0) {
     gridData.value.splice(existingIndex, 1)
+    localStorage.setItem('gridData', JSON.stringify(gridData.value))
     alert('삭제되었습니다.')
   }
 
   resetFormData()
 }
 
-// 업체유형 라벨 반환
+// -----------------------------
+// 라벨 반환
+// -----------------------------
 const getTypeLabel = (type) => {
   return type === 'customer' ? '고객사' : '공급업체'
 }
 </script>
+
 
 <style scoped>
 /* ============================================

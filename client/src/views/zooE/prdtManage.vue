@@ -5,8 +5,8 @@
 
         <!-- 상단 조회/초기화 버튼 -->
         <div class="d-flex justify-content-end gap-2 mb-2">
-          <CButton color="secondary" size="sm" class="custom-btn" @click="handleSearch">조회</CButton>
-          <CButton color="secondary" size="sm" class="custom-btn" @click="handleReset">초기화</CButton>
+          <CButton color="secondary" size="sm" @click="handleSearch">조회</CButton>
+          <CButton color="secondary" size="sm" @click="handleReset">초기화</CButton>
         </div>
 
         <!-- 상단폼 -->
@@ -34,8 +34,8 @@
 
         <!-- 신규/저장 버튼 -->
         <div class="d-flex justify-content-end gap-2 mb-2">
-          <CButton color="secondary" size="sm" class="custom-btn" @click="handleNew">신규</CButton>
-          <CButton color="secondary" size="sm" class="custom-btn" @click="handleSave">저장</CButton>
+          <CButton color="secondary" size="sm" @click="handleNew">신규</CButton>
+          <CButton color="secondary" size="sm" @click="handleSave">저장</CButton>
         </div>
 
         <!-- 하단 좌우 그리드 -->
@@ -45,7 +45,7 @@
           <CCol :md="6" class="d-flex flex-column overflow-hidden gap-2">
             <CCard class="flex-grow-1 d-flex flex-column overflow-hidden">
               <CCardHeader class="d-flex justify-content-end">
-                <CButton color="danger" size="sm" class="custom-btn" @click="handleLeftDelete">선택삭제</CButton>
+                <CButton color="danger" size="sm" @click="handleLeftDelete">선택삭제</CButton>
               </CCardHeader>
               <CCardBody class="p-2 flex-grow-1 d-flex flex-column">
                 <div class="table-wrapper">
@@ -63,12 +63,13 @@
                       </CTableRow>
                     </CTableHead>
                     <CTableBody>
-                      <CTableRow v-for="(item,index) in leftDisplayData" :key="index">
+                      <CTableRow v-for="(item,index) in leftDisplayData" :key="index"
+                        :class="{'selected-row': selectedProductId === item.productId}">
                         <CTableDataCell class="text-center" style="width:30px;">
                           <CFormCheck v-model="item.selected" />
                         </CTableDataCell>
                         <CTableDataCell class="text-end" style="width:40px;">{{ index + 1 }}</CTableDataCell>
-                        <CTableDataCell class="text-end text-primary" style="width:80px; cursor:pointer"
+                        <CTableDataCell class="text-end text-primary clickable" style="width:80px;"
                           @click="selectProduct(item)">{{ item.productId }}</CTableDataCell>
                         <CTableDataCell class="text-start" style="width:120px;">
                           <CFormInput v-model="item.productName" size="sm" placeholder="제품명 입력"/>
@@ -89,15 +90,8 @@
                           <CFormInput v-model="item.remark" size="sm" placeholder="비고 입력"/>
                         </CTableDataCell>
                       </CTableRow>
-                      <CTableRow v-for="i in leftEmptyRows" :key="'empty-'+i">
-                        <CTableDataCell>&nbsp;</CTableDataCell>
-                        <CTableDataCell>&nbsp;</CTableDataCell>
-                        <CTableDataCell>&nbsp;</CTableDataCell>
-                        <CTableDataCell>&nbsp;</CTableDataCell>
-                        <CTableDataCell>&nbsp;</CTableDataCell>
-                        <CTableDataCell>&nbsp;</CTableDataCell>
-                        <CTableDataCell>&nbsp;</CTableDataCell>
-                        <CTableDataCell>&nbsp;</CTableDataCell>
+                      <CTableRow v-for="i in leftEmptyRows" :key="'empty-'+i" class="empty-row">
+                        <CTableDataCell colspan="8">&nbsp;</CTableDataCell>
                       </CTableRow>
                     </CTableBody>
                   </CTable>
@@ -110,7 +104,7 @@
           <CCol :md="6" class="d-flex flex-column overflow-hidden gap-2">
             <CCard class="flex-grow-1 d-flex flex-column overflow-hidden">
               <CCardHeader class="d-flex justify-content-end">
-                <CButton color="danger" size="sm" class="custom-btn" @click="handleRightDelete">선택삭제</CButton>
+                <CButton color="danger" size="sm" @click="handleRightDelete">선택삭제</CButton>
               </CCardHeader>
               <CCardBody class="p-2 flex-grow-1 d-flex flex-column">
                 <div class="table-wrapper">
@@ -138,14 +132,8 @@
                         </CTableDataCell>
                         <CTableDataCell class="text-start">{{ item.remark }}</CTableDataCell>
                       </CTableRow>
-                      <!-- 빈 행 채우기: 항상 10행 표시 -->
-                      <CTableRow v-for="i in rightEmptyRows" :key="'empty-right-'+i">
-                        <CTableDataCell>&nbsp;</CTableDataCell>
-                        <CTableDataCell>&nbsp;</CTableDataCell>
-                        <CTableDataCell>&nbsp;</CTableDataCell>
-                        <CTableDataCell>&nbsp;</CTableDataCell>
-                        <CTableDataCell>&nbsp;</CTableDataCell>
-                        <CTableDataCell>&nbsp;</CTableDataCell>
+                      <CTableRow v-for="i in rightEmptyRows" :key="'empty-right-'+i" class="empty-row">
+                        <CTableDataCell colspan="6">&nbsp;</CTableDataCell>
                       </CTableRow>
                     </CTableBody>
                   </CTable>
@@ -265,46 +253,276 @@ const handleRightDelete = ()=>{
 </script>
 
 <style scoped>
-:deep(*){ font-family:'맑은 고딕','Malgun Gothic',sans-serif; box-sizing:border-box; color:#000; line-height:1.4;}
-:deep(.form-label){ font-size:11px; margin-bottom:0; color:#444;}
-:deep(.form-control),:deep(.form-select){ font-size:12px; padding:0.25rem 0.5rem; height:28px;}
-:deep(input[type="date"]){ font-size:12px; }
-
-.custom-btn {
-  font-size:11px !important;
-  padding:0.25rem 0.5rem !important;
-  color:#fff !important;
+/* ============================================
+   전역 스타일 - 2025 Modern Design
+   ============================================ */
+:deep(*) {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  line-height: 1.5;
+  box-sizing: border-box;
 }
 
-.d-flex.gap-2 { gap:0.5rem !important; }
-.CRow.g-2 { gap:0.5rem !important; }
+/* 전체 컨테이너 높이 조정 */
+:deep(.container-fluid) {
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+  padding: 0.75rem !important;
+  height: 100vh;
+  overflow: hidden;
+}
 
+:deep(.card) {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  background: #ffffff;
+  transition: all 0.3s ease;
+}
+
+:deep(.card:hover) {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+:deep(.card-body) {
+  padding: 1rem;
+}
+
+:deep(.card-header) {
+  background: #f8f9fa;
+  border-bottom: 2px solid #e9ecef;
+  padding: 0.75rem;
+  border-radius: 12px 12px 0 0;
+}
+
+/* ============================================
+   버튼 스타일 - Modern & Clean
+   ============================================ */
+:deep(.btn) {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0.5rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  letter-spacing: -0.3px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.btn-secondary) {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+  color: #fff !important;
+}
+
+:deep(.btn-secondary:hover) {
+  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+:deep(.btn-danger) {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  color: #fff !important;
+}
+
+:deep(.btn-danger:hover) {
+  background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+:deep(.btn:active) {
+  transform: translateY(0);
+}
+
+/* ============================================
+   폼 요소 스타일 - Clean & Modern
+   ============================================ */
+:deep(.form-label) {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.25rem;
+  letter-spacing: -0.2px;
+}
+
+:deep(.form-control),
+:deep(.form-select) {
+  font-size: 12px;
+  font-weight: 400;
+  padding: 0.4rem 0.75rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  background-color: #f8f9fa;
+  height: 34px;
+}
+
+:deep(.form-control:focus),
+:deep(.form-select:focus) {
+  border-color: #6c757d;
+  box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.15);
+  background-color: #ffffff;
+}
+
+/* 검색 필터 영역 압축 */
+:deep(.g-2) {
+  --bs-gutter-y: 0.5rem;
+  --bs-gutter-x: 0.75rem;
+}
+
+/* ============================================
+   테이블 스타일 - Modern & Clean
+   ============================================ */
 .table-wrapper {
   flex: 1;
-  overflow-y: scroll; 
-  min-height: 0;
+  overflow-y: auto;
+  border-radius: 10px;
+  max-height: calc(100vh - 350px);
 }
 
-.data-table{ 
-  margin-bottom:0; 
-  border-collapse:collapse; 
-  table-layout: fixed; 
-  width:100%;
+:deep(.data-table) {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  width: 100%;
 }
-.data-table thead{ 
-  position:sticky; top:0; z-index:1; background-color:#e9ecef;
+
+:deep(.data-table thead) {
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
-.data-table th,
-.data-table td{
-  font-size:11px; 
-  vertical-align:middle; 
-  padding:0.25rem; 
-  border: 1px solid #dee2e6;
+
+:deep(.data-table th) {
+  font-size: 12px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+  color: #ffffff;
+  text-align: center;
+  padding: 0.65rem 0.5rem;
+  border: none;
+  letter-spacing: -0.2px;
+}
+
+:deep(.data-table th:first-child) {
+  border-top-left-radius: 10px;
+}
+
+:deep(.data-table th:last-child) {
+  border-top-right-radius: 10px;
+}
+
+:deep(.data-table td) {
+  font-size: 12px;
+  font-weight: 400;
+  vertical-align: middle;
+  padding: 0.55rem 0.5rem;
+  border-bottom: 1px solid #e9ecef;
+  color: #2c3e50;
   word-break: break-word;
-  text-align:center;
 }
-.data-table td.text-end{ text-align:right; }
-.data-table td.text-start{ text-align:left; }
 
-.selected-row{ background-color:#d9edf7 !important; }
+:deep(.data-table tbody tr) {
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+}
+
+:deep(.data-table tbody tr:hover:not(.empty-row)) {
+  background-color: #f8f9fa;
+  transform: scale(1.005);
+}
+
+/* 클릭 가능한 셀 */
+.clickable {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.clickable:hover {
+  text-decoration: underline;
+}
+
+/* 선택된 행 스타일 - 모던 그레이 테마 */
+:deep(.selected-row) {
+  background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%) !important;
+  font-weight: 600;
+  box-shadow: inset 0 0 0 2px #6c757d;
+}
+
+:deep(.selected-row td) {
+  border-bottom: 2px solid #495057;
+  color: #212529;
+}
+
+/* 빈 행 스타일 */
+.empty-row td {
+  height: 34px;
+  background-color: #fafbfc;
+}
+
+/* 텍스트 정렬 */
+:deep(.text-end) {
+  text-align: right;
+}
+
+:deep(.text-start) {
+  text-align: left;
+}
+
+:deep(.text-center) {
+  text-align: center;
+}
+
+:deep(.text-primary) {
+  color: #0d6efd !important;
+}
+
+/* ============================================
+   스크롤바 스타일
+   ============================================ */
+.table-wrapper::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+  background: #f1f3f5;
+  border-radius: 8px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+  background: #adb5bd;
+  border-radius: 8px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #868e96;
+}
+
+/* 간격 조정 */
+:deep(.mb-2) {
+  margin-bottom: 0.5rem !important;
+}
+
+:deep(.gap-2) {
+  gap: 0.5rem !important;
+}
+
+/* ============================================
+   반응형
+   ============================================ */
+@media (max-width: 1600px) {
+  :deep(.form-label),
+  :deep(.form-control),
+  :deep(.form-select),
+  :deep(.btn),
+  :deep(th),
+  :deep(td) {
+    font-size: 11px !important;
+  }
+  
+  :deep(.btn) {
+    padding: 0.4rem 1rem;
+  }
+}
 </style>
