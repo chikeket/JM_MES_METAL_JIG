@@ -13,6 +13,13 @@
       </div>
     </div>
 
+    <!-- 검사서 선택 모달 -->
+    <InspectionModal 
+      :isOpen="isInspectionModalOpen" 
+      @close="closeInspectionModal" 
+      @select="onSelectInspection" 
+    />
+
     <!-- 요약(상단 소형 테이블) -->
     <div class="card mb-3">
       <div class="card-body p-3">
@@ -113,6 +120,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import axios from 'axios'
+import InspectionModal from '../modal/inspectionModal.vue'
 import {
   CTable,
   CTableHead,
@@ -135,6 +143,9 @@ const rows = ref([])
 
 // 선택 관리
 const selectedIds = ref([])
+
+// 모달 상태
+const isInspectionModalOpen = ref(false)
 
 const isSelected = (id) => {
   if (id == null) return false
@@ -179,28 +190,99 @@ const deleteSelectedRows = () => {
 }
 
 const onReset = () => {
+  // 모든 상태 초기화
   summaryRows.value = []
   rows.value = []
   selectedIds.value = []
   mode.value = 'in'
+  console.log('[wrhousdlvr] 전체 초기화 완료')
 }
 
+// 검사서 모달 관련 함수들
 const openInspectionSearch = () => {
-  console.log('open inspection search')
+  console.log('[wrhousdlvr] 검사서 조회 모달 열기')
+  isInspectionModalOpen.value = true
+}
+
+const closeInspectionModal = () => {
+  console.log('[wrhousdlvr] 검사서 조회 모달 닫기')
+  isInspectionModalOpen.value = false
+}
+
+const onSelectInspection = (inspection) => {
+  console.log('[wrhousdlvr] 검사서 선택됨:', inspection)
+  
+  // 요약 테이블에 선택된 검사서 정보 표시
+  summaryRows.value = [{
+    id: inspection.insp_no,
+    inspect_id: inspection.insp_no,
+    type: inspection.item_type || '자재', // 기본값 설정
+    code: inspection.item_code,
+    name: inspection.item_name,
+    spec: inspection.item_spec || '',
+    unit: inspection.item_unit || 'EA',
+    qty: inspection.pass_qty || inspection.insp_qty || 0
+  }]
+  
+  // 메인 그리드에 새 행 추가 (검사서 정보 기반)
+  const newRow = {
+    id: Date.now().toString(36) + Math.floor(Math.random() * 1000),
+    txn_id: '', // 자동 생성될 ID
+    type: inspection.item_type || '자재',
+    code: inspection.item_code,
+    name: inspection.item_name,
+    spec: inspection.item_spec || '',
+    unit: inspection.item_unit || 'EA',
+    qty: mode.value === 'in' ? (inspection.pass_qty || inspection.insp_qty || 0) : 0,
+    // 검사서 관련 정보 저장 (백엔드 저장 시 사용)
+    insp_no: inspection.insp_no,
+    insp_date: inspection.insp_date
+  }
+  
+  rows.value.push(newRow)
+  
+  alert(`검사서 ${inspection.insp_no}의 품목이 추가되었습니다.`)
 }
 
 const onSave = async () => {
   try {
-    const payload = {
-      mode: mode.value,
-      master: { /* 필요 필드 추가 */ },
-      detailList: rows.value.map(r => ({ code: r.code, name: r.name, spec: r.spec, unit: r.unit, qty: r.qty })),
+    if (rows.value.length === 0) {
+      alert('저장할 데이터가 없습니다.')
+      return
     }
-    console.log('[wrhousdlvr] save payload', payload)
-    alert('저장 요청 (콘솔 로그 확인)')
+    
+    // 거래 유형별 데이터 변환
+    const transactionList = rows.value.map(row => ({
+      txn_type: mode.value, // 'in' 또는 'out'
+      item_code: row.code,
+      item_name: row.name,
+      item_spec: row.spec || '',
+      item_unit: row.unit || 'EA',
+      qty: Number(row.qty) || 0,
+      insp_no: row.insp_no || null, // 검사서 번호 (입고 시 필수)
+      txn_date: new Date().toISOString().split('T')[0], // 오늘 날짜
+      remark: `${mode.value === 'in' ? '입고' : '출고'} 처리`
+    }))
+    
+    const payload = {
+      transactionList,
+      emp_id: 'current_user', // 실제로는 로그인 세션에서 가져와야 함
+    }
+    
+    console.log('[wrhousdlvr] 저장 요청 데이터:', payload)
+    
+    const response = await axios.post('/api/warehouse/transactions', payload)
+    
+    if (response.data?.isSuccessed) {
+      alert(`${mode.value === 'in' ? '입고' : '출고'} 처리가 완료되었습니다.`)
+      // 저장 성공 시 초기화
+      onReset()
+    } else {
+      alert('저장 실패: ' + (response.data?.error || '알 수 없는 오류'))
+    }
   } catch (err) {
-    console.error(err)
-    alert('저장 실패')
+    console.error('[wrhousdlvr] 저장 오류:', err)
+    alert('저장 중 오류가 발생했습니다.')
   }
 }
 </script>

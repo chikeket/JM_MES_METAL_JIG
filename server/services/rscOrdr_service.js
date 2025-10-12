@@ -1,16 +1,17 @@
 const mariadb = require("../database/mapper.js");
 const sqlList = require("../database/sqlList.js");
 
-// 안전한 uuid 생성 (uuid 패키지 미설치 대비)
+// 안전한 UUID 생성 (uuid 패키지 미설치 상황 대비)
 let uuidv4;
 try {
   uuidv4 = require("uuid").v4;
 } catch (err) {
   const crypto = require("crypto");
+  // crypto.randomUUID가 있으면 사용, 없으면 타임스탬프 기반 ID 생성
   uuidv4 = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.floor(Math.random()*1000000)}`);
 }
 
-// helper: 객체 키를 소문자로 정규화
+// 도우미 함수: 객체의 키를 소문자로 정규화 (클라이언트 대소문자 호환성)
 const toLowerKeys = (obj) => {
   if (!obj || typeof obj !== "object") return {};
   return Object.keys(obj).reduce((acc, k) => {
@@ -19,12 +20,12 @@ const toLowerKeys = (obj) => {
   }, {});
 };
 
-// robust number parser for qty (handles strings like "1,000" or whitespace)
+// 안전한 숫자 변환 함수 (쉼표가 포함된 문자열 등 처리)
 const toNumberSafe = (v, def = 0) => {
   if (v == null) return def;
   if (typeof v === 'number') return Number.isFinite(v) ? v : def;
   if (typeof v === 'string') {
-    const s = v.replace(/,/g, '').trim();
+    const s = v.replace(/,/g, '').trim(); // 쉼표 제거 후 공백 제거
     const n = Number(s);
     return Number.isFinite(n) ? n : def;
   }
@@ -32,18 +33,22 @@ const toNumberSafe = (v, def = 0) => {
   return Number.isFinite(n) ? n : def;
 };
 
+// 자재 발주서 목록 조회 (로그인 사용자 기준 필터링)
 const coFindAll = async (Info) => {
   const info = toLowerKeys(Info || {});
   const rsc_ordr_nm = (info.rsc_ordr_nm ?? "").trim() || null;
   const emp_nm = (info.emp_nm ?? "").trim() || null;
   const co_nm = (info.co_nm ?? "").trim() || null;
   const reg_dt = (info.reg_dt ?? "").trim() || null;
+  const emp_id = (info.emp_id ?? "").trim() || null; // 로그인 사용자 ID 추가
 
+  // SQL 파라미터 배열 (각 조건이 2개씩 들어감: IS NULL 체크용과 실제 값 비교용)
   const params = [
     rsc_ordr_nm, rsc_ordr_nm,
     co_nm, co_nm,
     emp_nm, emp_nm,
     reg_dt, reg_dt,
+    emp_id, emp_id, // 로그인 사용자 ID 파라미터 추가
   ];
 
   console.log('[rscOrdr_service] coFindAll params ->', params);
@@ -51,15 +56,17 @@ const coFindAll = async (Info) => {
   return result;
 };
 
+// 자재 발주서 상세 목록 조회
 const coFindDeta = async (Info) => {
   const info = toLowerKeys(Info || {});
-  const id = info.rsc_ordr_id ?? info.rsc_id ?? null;
+  const raw = info.rsc_ordr_id ?? info.rsc_id ?? null;
+  const id = (raw == null ? '' : String(raw)).trim() || null;
   if (!id) {
     console.log('[rscOrdr_service] coFindDeta missing id from Info:', Info)
     return [];
   }
   console.log('[rscOrdr_service] coFindDeta param id ->', id)
-  const result = await mariadb.query("selectRscOrdrDeta", [id]);
+  const result = await mariadb.query("selectRscOrdrDetailList", [id]);
   return result;
 };
 
@@ -170,7 +177,7 @@ const saveRscOrdr = async ({ master, detailList, rsc_ordr_id = null } = {}) => {
       await conn.query(sqlList.updateRscOrdr, [
         m.co_id || null,
         m.emp_id || null,
-        m.reg_dt || null,
+        (m.reg_dt == null ? null : m.reg_dt),
         m.rsc_ordr_nm || m.rm || m.rsc_nm || null,
         ordrId,
       ]);

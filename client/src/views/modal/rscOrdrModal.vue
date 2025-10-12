@@ -43,9 +43,12 @@
 <script setup>
 import { ref, defineProps, defineEmits, shallowRef } from 'vue'
 import axios from 'axios'
+import { useAuthStore } from '@/stores/auth.js'
 
 const props = defineProps({ visible: Boolean })
 const emit = defineEmits(['close','select'])
+
+const auth = useAuthStore()
 
 const pickValue = ref('rsc_ordr_nm')
 const searchKeyword = ref('')
@@ -62,18 +65,39 @@ const close = () => {
 
 const search = async () => {
   try {
-     // 서버가 소문자 키를 기대하므로 소문자 필드로 전송
-    const params = { rsc_ordr_nm: null, co_nm: null, emp_nm: null, reg_dt: null }
+    // 로그인 사용자 정보 가져오기
+    const currentUser = auth.user
+    if (!currentUser) {
+      alert('로그인이 필요합니다.')
+      return
+    }
+    
+    const empId = currentUser.emp_id ?? currentUser.id
+    if (!empId) {
+      alert('사용자 정보를 찾을 수 없습니다.')
+      return
+    }
+
+    // 서버가 소문자 키를 기대하므로 소문자 필드로 전송
+    const params = { 
+      rsc_ordr_nm: null, 
+      co_nm: null, 
+      emp_nm: null, 
+      reg_dt: null,
+      emp_id: empId // 로그인 사용자 ID 추가
+    }
+    
     if (pickValue.value === 'rsc_ordr_nm') params.rsc_ordr_nm = searchKeyword.value
     else if (pickValue.value === 'co_nm') params.co_nm = searchKeyword.value
     else if (pickValue.value === 'emp_nm') params.emp_nm = searchKeyword.value
     if (reg_dt.value) params.reg_dt = reg_dt.value
 
     console.log('[rscOrdrModal] request params:', params)
-    const res = await axios.get('/api/rscOrdr', { params }) // app.js에 '/api'로 마운트했다면 '/api/' 사용
+    const res = await axios.get('/api/rscOrdr', { params })
     const data = res?.data
     console.log('[rscOrdrModal] raw response:', data)
-     // 방어 처리: 배열이면 그대로, 아니면 빈 배열
+    
+    // 방어 처리: 배열이면 그대로, 아니면 빈 배열
     list.value = Array.isArray(data) ? data.map(it => ({
       rsc_ordr_id: it.rsc_ordr_id ?? it.RSC_ORDR_ID ?? '',
       co_id: it.co_id ?? it.CO_ID ?? '',
@@ -93,7 +117,7 @@ const select = async (row) => {
   try {
     console.log('[rscOrdrModal] select row ->', row)
     const res = await axios.get('/api/rscOrdrDeta', { params: { rsc_ordr_id: row.rsc_ordr_id } })
-    const detail = Array.isArray(res?.data) ? res.data : []
+    const detail = Array.isArray(res.data) ? res.data : []
     console.log('[rscOrdrModal] detail length ->', detail.length)
     emit('select', { master: row, detailList: detail })
     close()

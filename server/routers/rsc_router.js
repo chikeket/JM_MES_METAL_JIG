@@ -7,7 +7,7 @@ const rscService = require("../services/rsc_service.js");
 
 router.get("/rscs", async (req, res) => {
   let rscList = await rscService
-    .rscfindAll()
+    .rscfindAll(req.query)
     .catch((err) => console.log(err));
 
   res.send(rscList);
