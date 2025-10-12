@@ -53,6 +53,11 @@ export default [
         name: '공정 라우팅',
         to: '/zzun/Routing',
       },
+      {
+        component: 'CNavItem',
+        name: 'Sample',
+        to: '/zzun/Sample',
+      },
     ],
   },
   {
