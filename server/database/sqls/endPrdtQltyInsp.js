@@ -37,22 +37,75 @@ AND a.wk_to_dt >= ?
 GROUP BY a.prcs_ctrl_id, a.prdt_id, d.prdt_nm, f.prdt_opt_id, a.prcs_ord, a.pass_qy, a.wk_to_dt, a.prcs_routing_id
 `;
 
-// 제품 품질 상세항목조회 (endPrdtQltyInspModal.vue모달검색조회쿼리)
-const endPrdtQltyDeta = `
+// 완제품 품질검사 관리 조회
+const endPrdtQltyInspSearch = `
 SELECT 
- b.insp_item_nm,
- b.basi_val,
- b.unit,
- b.eror_scope_min,
- b.eror_scope_max
-FROM qlty_item_deta a
-JOIN qlty_item b
-ON a.qlty_item_mng_id = b.qlty_item_mng_id
-WHERE b.st = 'P1'
-AND a.prdt_id = ?
-AND a.prdt_opt_id = ?`;
+ b.emp_nm,
+ c.pass_qy "qy",
+ a.prcs_ctrl_id,
+ a.end_prdt_qlty_insp_id,
+ a.insp_qy,
+ a.pass_qy,
+ a.infer_qy,
+ a.insp_dt,
+ a.rm,
+ e.prdt_id,
+ e.prdt_opt_id,
+ f.prdt_nm
+FROM end_prdt_qlty_insp a
+JOIN emp b
+ON a.emp_id = b.emp_id
+JOIN proc_ctrl c
+ON a.prcs_ctrl_id = c.prcs_ctrl_id
+JOIN prcs_prog_precon d
+ON c.prcs_prog_precon_id = d.prcs_prog_precon_id
+JOIN prod_drct_deta e
+ON d.prod_drct_deta_id = e.prod_drct_deta_id
+JOIN prdt f
+ON e.prdt_id = f.prdt_id
+WHERE b.emp_nm LIKE CONCAT('%',? ,'%')
+AND a.insp_dt >= ?`;
+
+// 완제품 품질 검수 ID생성 쿼리
+const endPrdtQltyInspCreateId = `
+SELECT CONCAT('END_PRDT_QLTY_INSP', CONCAT(DATE_FORMAT(NOW(), '%y%m'),LPAD(IFNULL(MAX(SUBSTR(end_prdt_qlty_insp_id, -3)),0) + 1, 3, '0'))) "end_prdt_qlty_insp_id"
+FROM end_prdt_qlty_insp
+WHERE SUBSTR(end_prdt_qlty_insp_id, 19, 4) = DATE_FORMAT(NOW(), '%y%m')`;
+
+const endPrdtQltyInspInsert = `
+INSERT INTO end_prdt_qlty_insp(
+ rm,
+ prcs_ctrl_id,
+ emp_id,
+ infer_qy,
+ pass_qy,
+ insp_qy,
+ insp_dt,
+ end_prdt_qlty_insp_id)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?)`;
+
+const endPrdtQltyInspUpdate = `
+UPDATE end_prdt_qlty_insp
+SET
+ rm = ?,
+ prcs_ctrl_id = ?,
+ emp_id = ?,
+ infer_qy = ?,
+ pass_qy = ?,
+ insp_qy = ?,
+ insp_dt = ?
+WHERE end_prdt_qlty_insp_id = ?`;
+
+const endPrdtQltyInspDelete = `
+DELETE
+FROM end_prdt_qlty_insp
+WHERE end_prdt_qlty_insp_id = ?`;
 
 module.exports = {
     waitingFinishedPrdt,
-    endPrdtQltyDeta,
+    endPrdtQltyInspSearch,
+    endPrdtQltyInspCreateId,
+    endPrdtQltyInspInsert,
+    endPrdtQltyInspUpdate,
+    endPrdtQltyInspDelete,
 };

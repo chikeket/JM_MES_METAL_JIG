@@ -45,6 +45,7 @@ const prodDrct = require("./routers/prodDrct_router.js"); // 생산지시
 const auth = require("./routers/auth_router.js"); // 로그인
 const rscQltyInsp = require("./routers/rscQltyInsp_router.js"); // 자재품질검수
 const endPrdtQltyInsp = require("./routers/endPrdtQltyInsp_router.js"); // 완제품 품질검수
+const qltyItem = require("./routers/qltyItem_router.js"); // 품질항목 기준정보
 
 // 기본 라우팅
 app.get("/", (req, res) => {
@@ -64,3 +65,4 @@ app.use("/", prodDrct); // 생산지시
 app.use("/", auth); // 로그인
 app.use("/", rscQltyInsp); // 자재품질검수
 app.use("/", endPrdtQltyInsp); // 완제품 품질검수
+app.use("/", qltyItem); // 품질항목 기준정보

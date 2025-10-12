@@ -1,18 +1,30 @@
 //자재품질검수
 
-// 자재 품질 상세조회(rscOrdrModal.vue모달검색조회쿼리)
-const selectRscOrdrDeta = `
-SELECT 
- b.insp_item_nm,
- b.basi_val,
- b.unit,
- b.eror_scope_min,
- b.eror_scope_max
-FROM qlty_item_deta a
-JOIN qlty_item b
-ON a.qlty_item_mng_id = b.qlty_item_mng_id
-WHERE b.st = 'P1'
-AND a.rsc_id = ?`;
+//자재발주서 조회
+const rscOrdrQltyList = `
+SELECT
+ a.rsc_nm,
+ b.qy,
+ d.emp_nm,
+ d.emp_id,
+ e.co_nm,
+ c.reg_dt,
+ a.rsc_id,
+ b.rsc_ordr_deta_id
+FROM rsc a
+JOIN rsc_ordr_deta b
+ON a.rsc_id = b.rsc_id
+JOIN rsc_ordr c
+ON b.rsc_ordr_id = c.rsc_ordr_id
+JOIN emp d
+ON c.emp_id = d.emp_id
+JOIN co e
+ON c.co_id = e.co_id
+WHERE a.rsc_nm LIKE CONCAT('%', ?, '%')
+AND b.qy > ?
+AND d.emp_nm LIKE CONCAT('%', ?, '%')
+AND e.co_nm LIKE CONCAT('%', ?, '%')
+AND c.reg_dt >= ?`;
 
 //자재 품질 검수 ID생성 쿼리
 const rscQltyInspCreateId = `
@@ -81,7 +93,7 @@ WHERE rsc_qlty_insp_id = ?
 `
 
 module.exports = {
-    selectRscOrdrDeta,
+    rscOrdrQltyList,
     rscQltyInspCreateId,
     rscQltyInspInsert,
     rscQltyInspSelect,

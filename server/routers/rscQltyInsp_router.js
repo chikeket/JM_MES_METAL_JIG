@@ -5,12 +5,13 @@ const router = express.Router();
 // 해당 라우터를 통해 제공할 서비스를 가져옴
 const rscOrdrService = require("../services/rscQltyInsp_service.js");
 
-router.get("/rscOrdrDeta", async (req, res) => {
+router.get("/rscOrdrQltyList", async (req, res) => {
   let result = await rscOrdrService
-    .rscQltyDetaData(req.query)
+    .rscOrdrQltyList(req.query)
     .catch((err) => console.log(err));
   res.send(result);
 });
+
 
 router.post("/rscQltyInspInsert", async (req, res) => {
   let Info = req.body;

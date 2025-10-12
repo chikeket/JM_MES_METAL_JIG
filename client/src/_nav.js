@@ -76,6 +76,11 @@ export default [
         name: '완제품품질',
         to: '/qlty/endPrdtQltyInsp',
       },
+      {
+        component: 'CNavItem',
+        name: '생산계획조회',
+        to: '/product/prodPlanBoardList',
+      },
     ],
   },
   {
