@@ -1,4 +1,6 @@
-// 업체 전체 조회
+// 업체 테이블 관련 SQL 쿼리들
+
+// 업체 전체 목록 조회 (ID 순으로 정렬)
 const coFindAll = `SELECT
       co_id,
       co_nm,

@@ -6,10 +6,10 @@
         <div class="d-flex gap-2 mb-3">
           <select class="form-select" style="width:150px" v-model="pickValue">
             <option value="rsc_id">자재 코드</option>
-            <option value="rsc_ty">자재 분류</option>
+            <option value="rsc_clsf_id">자재 분류</option>
             <option value="rsc_nm">자재 명</option>
             <option value="spec">규격</option>
-            <option value="rsc_unit">단위</option>
+            <option value="unit">단위</option>
           </select>
           <input type="text" class="form-control" v-model="searchKeyword" @keyup.enter="rscSearch" placeholder="검색어 입력" />
           <button class="btn btn-secondary" @click="rscSearch">검색</button>
@@ -56,10 +56,16 @@ const close = () => {
 
 const rscSearch = async () => {
   try {
-    const params = { rsc_id:'', rsc_ty:'', rsc_nm:'', spec:'', rsc_unit:'' }
-    params[pickValue.value] = searchKeyword.value || ''
+    const params = { rsc_id:'', rsc_clsf_id:'', rsc_nm:'', spec:'', unit:'' }
+    
+    // 선택된 검색 조건에 따라 파라미터 설정
+    if (pickValue.value === 'rsc_id') params.rsc_id = searchKeyword.value || ''
+    else if (pickValue.value === 'rsc_clsf_id') params.rsc_clsf_id = searchKeyword.value || ''
+    else if (pickValue.value === 'rsc_nm') params.rsc_nm = searchKeyword.value || ''
+    else if (pickValue.value === 'spec') params.spec = searchKeyword.value || ''
+    else if (pickValue.value === 'unit') params.unit = searchKeyword.value || ''
+    
     console.log('[rscModal] request params:', params)
-    // prdtModal과 동일한 형태로 서버 호출 (app.js에 '/api'로 mount 했다면 '/api/rscs')
     const res = await axios.get('/api/rscs', { params }).catch(err => { throw err })
     const data = res?.data
     console.log('[rscModal] raw response:', data)
@@ -79,10 +85,10 @@ const selectRsc = (r) => {
   // 정규화된 페이로드로 emit
   const item = {
     rsc_id: r?.rsc_id ?? r?.RSC_ID ?? r?.rscId ?? '',
-    rsc_clsf_id: r?.rsc_clsf_id ?? r?.rsc_ty ?? r?.RSC_CLSF_ID ?? '',
+    rsc_clsf_id: r?.rsc_clsf_id ?? r?.rsc_ty ?? '',
     rsc_nm: r?.rsc_nm ?? r?.RSC_NM ?? r?.rscNm ?? '',
     spec: r?.spec ?? r?.SPEC ?? '',
-    rsc_unit: r?.rsc_unit ?? r?.unit ?? r?.RSC_UNIT ?? '',
+    unit: r?.unit ?? r?.rsc_unit ?? '',
     rsc_ordr_deta_id: r?.rsc_ordr_deta_id ?? null
   }
   console.log('[rscModal] emit select payload:', item)

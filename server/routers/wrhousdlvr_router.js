@@ -1,0 +1,165 @@
+const express = require("express");
+// Express의 Router 모듈을 사용해서 라우팅 등록, 라우팅을 별도 파일로 관리
+const router = express.Router();
+
+// 해당 라우터를 통해 제공할 서비스를 가져옴
+const wrhousdlvrService = require("../services/wrhousdlvr_service.js");
+
+// 창고 입출고 거래 목록 조회 (마스터 목록)
+router.get("/warehouse/transactions", async (req, res) => {
+  try {
+    console.log('[wrhousdlvr_router] incoming query:', req.query);
+    const result = await wrhousdlvrService.getTransactionList(req.query);
+    res.json(result);
+  } catch (err) {
+    console.error('[wrhousdlvr_router] error stack:', err && err.stack ? err.stack : err);
+    // 상세 에러를 개발용으로 응답에 포함 (운영시 제거)
+    res.status(500).json({ error: err?.message ?? 'server error', stack: err?.stack ?? null });
+  }
+});
+
+// 검사서 목록 조회 (입출고 가능한 검사 완료 품목들)
+router.get("/warehouse/inspections", async (req, res) => {
+  try {
+    console.log('[wrhousdlvr_router] /inspections query:', req.query);
+    const result = await wrhousdlvrService.getInspectionList(req.query);
+    console.log('[wrhousdlvr_router] /inspections result length:', Array.isArray(result) ? result.length : 'N/A');
+    res.json(result);
+  } catch (err) {
+    console.error('[wrhousdlvr_router] /inspections error:', err);
+    res.status(500).json([]);
+  }
+});
+
+// 품질검사서 목록 조회 (기존 API와 호환)
+router.get("/qltyInsp/list", async (req, res) => {
+  try {
+    console.log('[wrhousdlvr_router] /qltyInsp/list query:', req.query);
+    const result = await wrhousdlvrService.getQualityInspectionList(req.query);
+    res.json(result);
+  } catch (err) {
+    console.error('[wrhousdlvr_router] /qltyInsp/list error:', err);
+    res.status(500).json([]);
+  }
+});
+
+// 납품서 기반 검사서 목록 조회
+router.get("/delivery/inspections", async (req, res) => {
+  try {
+    console.log('[wrhousdlvr_router] /delivery/inspections query:', req.query);
+    const result = await wrhousdlvrService.getDeliveryInspectionList(req.query);
+    res.json(result);
+  } catch (err) {
+    console.error('[wrhousdlvr_router] /delivery/inspections error:', err);
+    res.status(500).json([]);
+  }
+});
+
+// 발주서 기반 검사서 목록 조회
+router.get("/order/inspections", async (req, res) => {
+  try {
+    console.log('[wrhousdlvr_router] /order/inspections query:', req.query);
+    const result = await wrhousdlvrService.getOrderInspectionList(req.query);
+    res.json(result);
+  } catch (err) {
+    console.error('[wrhousdlvr_router] /order/inspections error:', err);
+    res.status(500).json([]);
+  }
+});
+
+// 지시서 기반 검사서 목록 조회
+router.get("/instruction/inspections", async (req, res) => {
+  try {
+    console.log('[wrhousdlvr_router] /instruction/inspections query:', req.query);
+    const result = await wrhousdlvrService.getInstructionInspectionList(req.query);
+    res.json(result);
+  } catch (err) {
+    console.error('[wrhousdlvr_router] /instruction/inspections error:', err);
+    res.status(500).json([]);
+  }
+});
+
+// 품목별 현재 재고 조회
+router.get("/warehouse/inventory/:itemCode", async (req, res) => {
+  try {
+    const itemCode = req.params.itemCode;
+    console.log('[wrhousdlvr_router] /inventory itemCode:', itemCode);
+    const result = await wrhousdlvrService.getInventoryStatus(itemCode);
+    res.json(result);
+  } catch (err) {
+    console.error('[wrhousdlvr_router] /inventory error:', err);
+    res.status(500).json([]);
+  }
+});
+
+// 품목별 입출고 이력 조회
+router.get("/warehouse/history/:itemCode", async (req, res) => {
+  try {
+    const itemCode = req.params.itemCode;
+    console.log('[wrhousdlvr_router] /history itemCode:', itemCode);
+    const result = await wrhousdlvrService.getItemTransactionHistory(itemCode);
+    res.json(result);
+  } catch (err) {
+    console.error('[wrhousdlvr_router] /history error:', err);
+    res.status(500).json([]);
+  }
+});
+
+// 창고 입출고 거래 저장 (신규/수정)
+router.post("/warehouse/transactions", async (req, res) => {
+  try {
+    console.log('[wrhousdlvr_router] POST body:', JSON.stringify(req.body).slice(0, 2000));
+    
+    // 요청 본문에서 거래 목록과 사용자 정보 추출
+    const { transactionList, emp_id } = req.body;
+    
+    if (Array.isArray(transactionList)) {
+      const preview = transactionList.slice(0, 5).map(t => ({ 
+        txn_type: t.txn_type, 
+        item_code: t.item_code, 
+        qty: t.qty 
+      }));
+      console.log('[wrhousdlvr_router] transaction preview (first 5):', preview);
+    }
+    
+    // 서비스를 통해 저장 처리
+    const result = await wrhousdlvrService.saveTransaction({ 
+      transactionList, 
+      emp_id 
+    });
+    
+    res.json(result);
+  } catch (err) {
+    console.error('[wrhousdlvr_router] POST error:', err && err.stack ? err.stack : err);
+    res.status(500).json({ isSuccessed: false, error: err?.message ?? 'server error' });
+  }
+});
+
+// 창고 입출고 거래 삭제 (단일)
+router.delete("/warehouse/transactions/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    console.log('[wrhousdlvr_router] DELETE /transactions id=', id);
+    const result = await wrhousdlvrService.deleteTransaction(id);
+    console.log('[wrhousdlvr_router] DELETE result=', result);
+    res.json(result);
+  } catch (err) {
+    console.error('[wrhousdlvr_router] DELETE error:', err);
+    res.status(500).json({ isSuccessed: false, error: err.message });
+  }
+});
+
+// 선택된 거래들 일괄 삭제 (body: { ids: [] })
+router.post("/warehouse/transactions/delete", async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
+    console.log('[wrhousdlvr_router] bulk delete ids:', ids);
+    const result = await wrhousdlvrService.deleteSelectedTransactions(ids);
+    res.json(result);
+  } catch (err) {
+    console.error('[wrhousdlvr_router] bulk delete error:', err);
+    res.status(500).json({ isSuccessed: false, error: err?.message ?? 'server error' });
+  }
+});
+
+module.exports = router;

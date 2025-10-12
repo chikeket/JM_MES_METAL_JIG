@@ -6,7 +6,7 @@ const router = express.Router();
 const coService = require("../services/co_service.js");
 
 router.get("/cos", async (req, res) => {
-  let cosInfo = req.body;
+  let cosInfo = req.query; // GET 요청이므로 query 파라미터 사용
   let result = await coService
     .coFindAll(cosInfo)
     .catch((err) => console.log(err));
