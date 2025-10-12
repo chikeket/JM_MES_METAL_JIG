@@ -1,20 +1,20 @@
 <template>
   <CModal :visible="visible" @close="close" size="xl">
     <CModalHeader class="modal-header-custom">
-      <CModalTitle>제품 조회</CModalTitle>
+      <CModalTitle>수주 조회</CModalTitle>
     </CModalHeader>
     <CModalBody>
       <!-- 검색 영역 -->
       <div class="search-bar mb-3">
         <div class="left-controls d-flex gap-2 align-items-center">
-          <label class="search-label">제품명</label>
-          <CFormInput v-model="searchPrdtNm" style="width: 200px" />
-          <label class="search-label ml-3">제품옵션명</label>
-          <CFormInput v-model="searchOptNm" style="width: 200px" />
+          <label class="search-label">수주 ID</label>
+          <CFormInput v-model="searchRoNm" style="width: 200px" />
+          <!-- <label class="search-label ml-3">제품옵션명</label>
+          <CFormInput v-model="searchOptNm" style="width: 200px" /> -->
         </div>
         <div class="flex-spacer"></div>
         <div class="right-controls">
-          <CButton color="secondary" @click="searchProducts">조회</CButton>
+          <CButton color="secondary" @click="searchRcvords">조회</CButton>
           <CButton color="secondary" @click="reset">초기화</CButton>
         </div>
       </div>
@@ -25,11 +25,15 @@
           <CTableHead color="dark">
             <CTableRow>
               <CTableHeaderCell class="text-center" style="width: 50px">No</CTableHeaderCell>
+              <CTableHeaderCell class="text-center">수주 ID</CTableHeaderCell>
+              <CTableHeaderCell class="text-center">납품 업체 명</CTableHeaderCell>
               <CTableHeaderCell class="text-center">제품 명</CTableHeaderCell>
               <CTableHeaderCell class="text-center">제품 옵션 명</CTableHeaderCell>
+              <CTableHeaderCell class="text-center">총 요청 수량</CTableHeaderCell>
+              <CTableHeaderCell class="text-center">기납품 수량</CTableHeaderCell>
+              <CTableHeaderCell class="text-center">미납품 수량</CTableHeaderCell>
               <CTableHeaderCell class="text-center">규격</CTableHeaderCell>
               <CTableHeaderCell class="text-center">단위</CTableHeaderCell>
-              <CTableHeaderCell class="text-center">생산 가능 여부</CTableHeaderCell>
               <CTableHeaderCell class="text-center">비고</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
@@ -53,9 +57,13 @@
               <CTableDataCell class="cell-left">{{ row.prdt_nm }}</CTableDataCell>
               <CTableDataCell class="cell-left">{{ row.opt_nm || '-' }}</CTableDataCell>
               <CTableDataCell class="cell-left">{{ row.spec }}</CTableDataCell>
+              <CTableDataCell class="cell-left">{{}}</CTableDataCell>
               <CTableDataCell class="cell-left">{{ row.unit }}</CTableDataCell>
               <CTableDataCell class="cell-left">{{ row.prdt_st_nm || row.prdt_st }}</CTableDataCell>
-              <CTableDataCell class="cell-left">{{ row.rm || '' }}</CTableDataCell>
+              <CTableDataCell class="cell-left">{{}}</CTableDataCell>
+              <CTableDataCell class="cell-left">{{}}</CTableDataCell>
+              <CTableDataCell class="cell-left">{{}}</CTableDataCell>
+              <CTableDataCell class="cell-left">{{}}</CTableDataCell>
             </CTableRow>
             <CTableRow v-if="!loading && !errorMsg && !productList.length">
               <CTableDataCell colspan="7" class="text-center text-muted py-3">
@@ -116,7 +124,7 @@ const fetchAll = async () => {
 }
 
 // 조회 버튼 - 서버에서 검색어 기반 조회
-const searchProducts = async () => {
+const searchRcvords = async () => {
   await fetchAll()
 }
 

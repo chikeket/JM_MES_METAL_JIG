@@ -31,11 +31,11 @@
         </div>
         <div class="field">
           <label>납품 담당자</label>
-          <input type="text" v-model="header.vendorName" required />
+          <input type="text" v-model="header.owner" required />
         </div>
         <div class="field">
           <label>납품 등록 일자</label>
-          <input type="text" v-model="header.owner" required />
+          <input type="date" v-model="header.orderDate" />
         </div>
         <div class="field field-col-span">
           <label>비고</label>
@@ -66,6 +66,8 @@
             <th class="no-col">No</th>
             <th class="ro-col">수주 ID</th>
             <th class="co-col">납품 업체 명</th>
+            <th class="pr-col">제품 명</th>
+            <th class="op-col">제품 옵션 명</th>
             <th class="trqy-col">총 요청 수량</th>
             <th class="tdqy-col">당회 총 납품 수량</th>
             <th class="dqy-col">기납품 수량</th>
@@ -78,7 +80,7 @@
         <tbody>
           <tr
             v-for="(row, idx) in lines"
-            :key="row.rcvord_deta_id || row.frontTempId"
+            :key="row.frontTempId || idx"
             :class="{ editing: isEditing(row) }"
           >
             <td class="text-center">
@@ -86,13 +88,28 @@
             </td>
             <td class="cell-no">{{ idx + 1 }}</td>
             <td class="cell-left">
+              <span class="cell-text" :title="row.rcvord_id">{{ row.rcvord_id }}</span>
+            </td>
+            <td class="cell-left">
+              <span class="cell-text" :title="row.co_nm">{{ row.co_nm }}</span>
+            </td>
+            <td class="cell-left">
               <span class="cell-text" :title="row.productName">{{ row.productName }}</span>
             </td>
             <td class="cell-left">
               <span class="cell-text" :title="row.optionName">{{ row.optionName }}</span>
             </td>
-            <td class="cell-number editable" @dblclick="startEdit(row, 'requestQty')">
-              <template v-if="isCellEditing(row, 'requestQty')">
+            <td class="cell-number">
+              <span>{{ formatNumber(row.total_req_qty || 0) }}</span>
+            </td>
+            <td
+              class="cell-number editable"
+              @dblclick="row.remaining_qty > 0 && startEdit(row, 'requestQty')"
+            >
+              <template v-if="row.remaining_qty === 0">
+                <span>납품 완료</span>
+              </template>
+              <template v-else-if="isCellEditing(row, 'requestQty')">
                 <input
                   ref="qtyInputs"
                   type="text"
@@ -110,6 +127,12 @@
                 </span>
               </template>
             </td>
+            <td class="cell-number">
+              <span>{{ formatNumber(row.delivered_qty || 0) }}</span>
+            </td>
+            <td class="cell-number">
+              <span>{{ formatNumber(row.remaining_qty || 0) }}</span>
+            </td>
             <td class="cell-left">
               <span class="cell-text" :title="row.spec">{{ row.spec }}</span>
             </td>
@@ -117,56 +140,13 @@
               <span class="cell-text" :title="row.unit">{{ row.unit }}</span>
             </td>
             <td class="cell-left">
-              <span class="cell-text" :title="row.producible">{{ row.producible }}</span>
-            </td>
-            <td class="cell-left editable" @dblclick="startEdit(row, 'paprd_dt')">
-              <template v-if="isCellEditing(row, 'paprd_dt')">
-                <input
-                  ref="dueDateInputs"
-                  type="date"
-                  v-model="editValue"
-                  @keyup.enter="commitEdit"
-                  @blur="commitEdit"
-                  @keyup.esc="cancelEdit"
-                  class="editor-input"
-                  placeholder="입력"
-                />
-              </template>
-              <template v-else>
-                <span
-                  class="cell-text"
-                  :class="{ 'placeholder-text': !row.paprd_dt }"
-                  :title="row.paprd_dt || ''"
-                >
-                  {{ row.paprd_dt || '입력' }}
-                </span>
-              </template>
-            </td>
-            <td class="cell-left editable" @dblclick="startEdit(row, 'remark')">
-              <template v-if="isCellEditing(row, 'remark')">
-                <textarea
-                  ref="remarkInputs"
-                  v-model="editValue"
-                  @keyup.enter.exact.prevent="commitEdit"
-                  @blur="commitEdit"
-                  @keyup.esc="cancelEdit"
-                  class="editor-textarea"
-                  placeholder="입력"
-                ></textarea>
-              </template>
-              <template v-else>
-                <div
-                  class="ellipsis"
-                  :class="{ 'placeholder-text': !row.remark }"
-                  :title="row.remark || ''"
-                >
-                  {{ row.remark || '입력' }}
-                </div>
-              </template>
+              <div class="ellipsis" :title="row.remark || ''">
+                {{ row.remark || '' }}
+              </div>
             </td>
           </tr>
           <tr v-if="!lines.length">
-            <td colspan="11" class="empty">데이터가 없습니다.</td>
+            <td colspan="13" class="empty">데이터가 없습니다.</td>
           </tr>
         </tbody>
       </table>
@@ -358,35 +338,34 @@ function onSearch() {
   isDeliModalVisible.value = true
 }
 
-// 수주 선택 시 상세 호출하여 헤더/라인 매핑
+// 납품 선택 시 상세 호출하여 폼/그리드 매핑
 async function onSelectDeli(row) {
   try {
-    const id = row.rcvord_id
+    const id = row.deli_id
     if (!id) return
-    const { data } = await axios.get(`/api/rcvords/${id}`)
+    const { data } = await axios.get(`/api/delis/${id}`)
     const { header: h, lines: ls } = data || {}
-    header.orderId = h?.rcvord_id || ''
-    header.vendorName = h?.co_nm || ''
+    // 폼
+    header.orderId = h?.deli_id || ''
     header.owner = h?.emp_nm || h?.emp_id || ''
     header.empId = h?.emp_id || ''
-    header.status = h?.status || '' // 서비스에서 st_nm 매핑되어 status로 전달
-    header.statusCode = h?.st || '' // 원본 코드 별도 보관 (쿼리 결과에 st 포함 가정)
-    header.orderDate = h?.reg_dt ? formatDateStr(h.reg_dt) : ''
+    header.orderDate = h?.deli_dt ? formatDateStr(h.deli_dt) : ''
     header.note = h?.rm || ''
+    // 그리드
     lines.value = Array.isArray(ls)
       ? ls.map((l) =>
           createLine({
-            rcvord_deta_id: l.rcvord_deta_id || null,
-            prdt_id: l.prdt_id || null,
-            prdt_opt_id: l.prdt_opt_id || null,
-            productName: l.prdt_nm || l.prdt_id || '',
-            optionName: l.opt_nm && l.opt_nm.trim() ? l.opt_nm : l.prdt_opt_id || '-',
-            requestQty: l.rcvord_qy || 0,
+            rcvord_id: l.rcvord_id || '',
+            co_nm: l.co_nm || '',
+            productName: l.prdt_nm || '',
+            optionName: l.opt_nm || '',
+            total_req_qty: l.total_req_qty || 0,
+            delivered_qty: l.delivered_qty || 0,
+            remaining_qty: l.remaining_qty || 0,
             spec: l.spec || '',
             unit: l.unit || '',
-            producible: l.prdt_st_nm || l.prdt_st || '',
-            paprd_dt: l.paprd_dt ? formatDateStr(l.paprd_dt) : '',
-            remark: l.rm || '',
+            requestQty: 0,
+            remark: h?.rm || '',
           }),
         )
       : []
@@ -413,39 +392,7 @@ function formatDateStr(d) {
   }
 }
 function onSave() {
-  const payload = buildSavePayload()
-  axios
-    .post('/api/rcvords/save', payload)
-    .then((res) => {
-      const newId = res?.data?.rcvord_id
-      if (newId) {
-        header.orderId = newId
-      }
-      alert('저장 성공')
-      // 저장 후 전체 초기화 요청에 따라 초기화
-      onNew()
-    })
-    .catch((err) => {
-      console.error('저장 실패', err)
-      alert('저장 실패: ' + (err?.response?.data?.error || err.message))
-    })
-}
-function onDelete() {
-  if (!header.orderId) {
-    alert('삭제할 수주가 없습니다.')
-    return
-  }
-  if (!confirm(`수주 ${header.orderId} 를 삭제할까요?`)) return
-  axios
-    .delete(`/api/rcvords/${header.orderId}`)
-    .then(() => {
-      alert('삭제 성공')
-      onNew()
-    })
-    .catch((err) => {
-      console.error('삭제 실패', err)
-      alert('삭제 실패: ' + (err?.response?.data?.error || err.message))
-    })
+  alert('납품 저장 기능은 준비중입니다.')
 }
 
 function buildSavePayload() {
@@ -703,11 +650,17 @@ async function onSelectRcvord(product) {
 .no-col {
   width: 46px;
 }
+.pr-col {
+  width: 100px;
+}
+.op-col {
+  width: 100px;
+}
 .trqy-col {
   width: 100px;
 }
 .tdqy-col {
-  width: 250px;
+  width: 110px;
 }
 .dqy-col {
   width: 100px;

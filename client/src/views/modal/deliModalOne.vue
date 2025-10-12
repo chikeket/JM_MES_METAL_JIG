@@ -12,7 +12,7 @@
         </div>
         <div class="flex-spacer"></div>
         <div class="right-controls">
-          <CButton color="secondary" @click="searchRcvord">조회</CButton>
+          <CButton color="secondary" @click="searchDeli">조회</CButton>
           <CButton color="secondary" @click="reset">초기화</CButton>
         </div>
       </div>
@@ -35,18 +35,18 @@
           </CTableHead>
           <CTableBody>
             <CTableRow
-              v-for="(row, idx) in rcvordList"
-              :key="row.rcvord_id"
-              @dblclick="selectRcvord(row)"
+              v-for="(row, idx) in deliList"
+              :key="row.deli_id"
+              @dblclick="selectDeli(row)"
               style="cursor: pointer"
             >
               <CTableDataCell class="cell-no">{{ idx + 1 }}</CTableDataCell>
-              <CTableDataCell class="cell-left">{{ row.rcvord_id }}</CTableDataCell>
-              <CTableDataCell class="cell-left">{{ row.co_nm }}</CTableDataCell>
-              <CTableDataCell class="cell-left">{{ formatDate(row.reg_dt) }}</CTableDataCell>
+              <CTableDataCell class="cell-left">{{ row.deli_id }}</CTableDataCell>
+              <CTableDataCell class="cell-left">{{ row.emp_nm }}</CTableDataCell>
+              <CTableDataCell class="cell-left">{{ formatDate(row.deli_dt) }}</CTableDataCell>
               <CTableDataCell class="cell-left">{{ row.rm }}</CTableDataCell>
             </CTableRow>
-            <CTableRow v-if="!rcvordList.length">
+            <CTableRow v-if="!deliList.length">
               <CTableDataCell colspan="9" class="text-center text-muted py-3">
                 데이터가 없습니다.
               </CTableDataCell>
@@ -69,7 +69,7 @@ const emit = defineEmits(['close', 'select'])
 
 // 상태
 const searchOrderId = ref('')
-let rcvordList = shallowRef([])
+let deliList = shallowRef([])
 
 // 닫기
 const close = () => {
@@ -98,19 +98,18 @@ const fetchAll = async () => {
   try {
     const params = {}
     const keyword = (searchOrderId.value || '').trim()
-    if (keyword) params.rcvord_id = keyword
-
-    const { data } = await axios.get('/api/rcvords', { params })
-    rcvordList.value = Array.isArray(data) ? data : []
+    if (keyword) params.deli_id = keyword
+    const { data } = await axios.get('/api/delis', { params })
+    deliList.value = Array.isArray(data) ? data : []
   } catch (err) {
-    console.error('rcvords fetch error', err)
+    console.error('delis fetch error', err)
   }
 }
 
 // 필터 적용 함수 제거 (서버에서 처리)
 
 // 조회 버튼 - 서버에서 검색어 기반 조회
-const searchRcvord = async () => {
+const searchDeli = async () => {
   await fetchAll()
 }
 
@@ -121,7 +120,7 @@ const reset = async () => {
 }
 
 // 행 선택 (더블클릭)
-const selectRcvord = (row) => {
+const selectDeli = (row) => {
   emit('select', row)
   close()
 }
@@ -140,7 +139,7 @@ watch(
 
 // 수동 초기 로드 (이미 열려 있는 상태로 mount될 가능성)
 onMounted(() => {
-  if (props.visible && !rcvordList.value.length) fetchAll()
+  if (props.visible && !deliList.value.length) fetchAll()
 })
 
 // rcvordList 직접 사용 (서버가 필터 처리)
