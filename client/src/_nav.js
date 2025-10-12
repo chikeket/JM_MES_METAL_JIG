@@ -40,6 +40,11 @@ export default [
         name: '자재 발주',
         to: '/jamin/rsc-ordr',
       },
+      {
+        component: 'CNavItem',
+        name: '창고 입출고 관리',
+        to: '/jamin/wrhousdlvr',
+      },
     ],
   },
   {

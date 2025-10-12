@@ -22,10 +22,12 @@ router.get("/rscOrdr", async (req, res) => {
 // 상세 조회
 router.get("/rscOrdrDeta", async (req, res) => {
   try {
+    console.log('[rscOrdr_router] /rscOrdrDeta query:', req.query)
     const result = await rscOrdrService.coFindDeta(req.query);
+    console.log('[rscOrdr_router] /rscOrdrDeta result length:', Array.isArray(result) ? result.length : 'N/A')
     res.json(result);
   } catch (err) {
-    console.error(err);
+    console.error('[rscOrdr_router] /rscOrdrDeta error:', err);
     res.status(500).json([]);
   }
 });
@@ -35,7 +37,12 @@ router.get("/rscOrdrDeta", async (req, res) => {
 router.post("/rscOrdr", async (req, res) => {
   try {
     console.log('[rscOrdr_router] POST body:', JSON.stringify(req.body).slice(0,2000));
-    const result = await rscOrdrService.insertRscOrdr(req.body);
+    if (Array.isArray(req.body?.detailList)) {
+      const preview = req.body.detailList.slice(0, 5).map(d => ({ rsc_id: d.rsc_id, qy: d.qy, rm: d.rm }))
+      console.log('[rscOrdr_router] detail preview (first 5):', preview)
+    }
+    // use upsert-style save
+    const result = await rscOrdrService.saveRscOrdr(req.body);
     res.json(result);
   } catch (err) {
     console.error('[rscOrdr_router] POST error:', err && err.stack ? err.stack : err);
@@ -47,11 +54,25 @@ router.post("/rscOrdr", async (req, res) => {
 router.delete("/rscOrdr/:id", async (req, res) => {
   try {
     const id = req.params.id;
+    console.log('[rscOrdr_router] DELETE /rscOrdr id=', id)
     const result = await rscOrdrService.deleteRscOrdr(id);
+    console.log('[rscOrdr_router] DELETE result=', result)
     res.json(result);
   } catch (err) {
-    console.error(err);
+    console.error('[rscOrdr_router] DELETE error:', err);
     res.status(500).json({ isSuccessed: false, error: err.message });
+  }
+});
+
+// delete selected detail rows (body: { ids: [] })
+router.post("/rscOrdr/deta/delete", async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
+    const result = await rscOrdrService.deleteRscOrdrDetaSelected(ids);
+    res.json(result);
+  } catch (err) {
+    console.error('[rscOrdr_router] deta delete error:', err);
+    res.status(500).json({ isSuccessed: false, error: err?.message ?? 'server error' });
   }
 });
 

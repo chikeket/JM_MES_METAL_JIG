@@ -74,9 +74,13 @@ const routes = [
         children: [
           {
             path: '/jamin/rsc-ordr',
-
             name: '자재발주',
             component: () => import('@/views/jamin/RscOrdr.vue'),
+          },
+          {
+            path: '/jamin/wrhousdlvr',
+            name: '창고 입출 관리',
+            component: () => import('@/views/jamin/wrhousdlvr.vue'),
           },
         ],
       },
