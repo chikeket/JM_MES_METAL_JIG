@@ -2,7 +2,7 @@
   <CContainer fluid>
     <!-- 상단 버튼 -->
     <div class="d-flex justify-content-end gap-2 mb-3">
-      <CButton color="secondary" @click="newFunc()">신규</CButton>
+      <CButton color="secondary" @click="newFunc()">신b규</CButton>
       <CButton color="secondary" @click="openOrderModal()">자재발주서 조회</CButton>
       <rscOrdrModal :visible="isrscOrdrModalVisible" @close="closerscOrdrModal" @select="selectOrdr" />
       <CButton color="secondary" @click="saveInspection()">저장</CButton>
@@ -89,7 +89,7 @@
     </div>
     <!-- 검사 항목 테이블 -->
     <CTable hover bordered small class="align-middle mt-4">
-      <CTableHead color="light">
+      <CTableHead color="dark">
         <CTableRow>
           <CTableHeaderCell class="text-center">검사항목</CTableHeaderCell>
           <CTableHeaderCell class="text-center">기준치</CTableHeaderCell>
@@ -113,7 +113,7 @@
 <script setup>
 import {  CRow,  CCol,    CFormInput,  CFormTextarea,  CButton,  CTable,  CTableHead,  CTableBody,  CTableRow,  CTableHeaderCell,  CTableDataCell,} from '@coreui/vue'
 import { ref, computed, watch } from 'vue'
-import rscOrdrModal from '../modal/rscOrdrModal.vue'
+import rscOrdrModal from '../modal/waitingRscQltyInspModal.vue'
 import rscQltyInspModal from '../modal/rscQltyInspModal.vue'
 import userDateUtils from "@/utils/useDates.js";
 import axios from 'axios'

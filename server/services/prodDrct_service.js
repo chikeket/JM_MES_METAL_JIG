@@ -40,7 +40,31 @@ const prodDrctDetafindAll = async (Info) => {
     return list;
 };
 
+// 생산계획 조회페이지 다중검색조회
+const prodDrctBoardListSearch = async (Info) => {
+    let insertColumns = [
+        "prod_plan_id"
+        , "prod_plan_nm"
+        , "prod_expc_fr_dt"
+        , "prod_expc_to_dt"
+        , "prdt_id"
+        , "prdt_nm"
+        , "opt_nm"
+        , "reg_dt"
+    ];
+
+    let data = convertObjToAry(Info, insertColumns);
+    console.log("service쪽");
+    console.log(data);
+    let list = await mariadb
+        .query("prodPlanBoardListSearch", data)
+        .catch((err) => console.log(err));
+    // console.log("조회 결과:", list);
+    return list;
+};
+
 module.exports = {
     prodDrctfindAll,
     prodDrctDetafindAll,
+    prodDrctBoardListSearch,
 };

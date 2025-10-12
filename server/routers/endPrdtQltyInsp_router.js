@@ -19,18 +19,42 @@ router.get("/waitingFinishedPrdt", async (req, res) => {
     // res.json(prdtList);
 });
 
-//완제품 품질상세리스트 열람
-router.get("/waitingEndPrdtQltyDeta", async (req, res) => {
+//제품 품질검사 열람
+router.get("/endPrdtQltyInspSearch", async (req, res) => {
     // console.log("클라에서온값");
     // console.log(req.query);
     // req.query;
     let prdtList = await Service
-        .waitingEndPrdtQltyDeta(req.query)
+        .endPrdtQltyInspSearch(req.query)
         .catch((err) => console.log(err));
     // console.log("클라로갈값");
     // console.log(prdtList);
     res.send(prdtList);
     // res.json(prdtList);
+});
+
+router.post("/endPrdtQltyInspInsert", async (req, res) => {
+    let Info = req.body;
+    let result = await Service
+        .endPrdtQltyInspInsert(Info)
+        .catch((err) => console.log(err));
+    res.send(result);
+});
+
+router.post("/endPrdtQltyInspUpdate", async (req, res) => {
+    let Info = req.body;
+    let result = await Service
+        .endPrdtQltyInspUpdate(Info)
+        .catch((err) => console.log(err));
+    res.send(result);
+});
+
+router.post("/endPrdtQltyInspDelete", async (req, res) => {
+    let Info = req.body;
+    let result = await Service
+        .endPrdtQltyInspDelete(Info)
+        .catch((err) => console.log(err));
+    res.send(result);
 });
 
 module.exports = router;
