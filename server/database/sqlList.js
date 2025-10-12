@@ -37,6 +37,9 @@ const rscQltyInsp = require("./sqls/rscQltyInsp.js");
 // 완제품 품질 검수
 const endPrdtQltyInsp = require("./sqls/endPrdtQltyInsp.js");
 
+// 품질항목 기준정보
+const qltyItem = require("./sqls/qltyItem.js");
+
 // └───각 테이블 별로 실행한 SQL문을 별도 파일로 작성───┘
 
 module.exports = {
@@ -54,4 +57,6 @@ module.exports = {
   ...rscQltyInsp,
   ...endPrdtQltyInsp,
   ...deli,
+  ...qltyItem,
+
 };

@@ -31,4 +31,17 @@ router.get("/prodDrctDetaSearch", async (req, res) => {
   // res.json(prdtList);
 });
 
+router.get("/prodDrctBoardListSearch", async (req, res) => {
+  console.log("클라에서온값");
+  console.log(req.query);
+  // req.query;
+  let prdtList = await prodDrctService
+    .prodDrctBoardListSearch(req.query)
+    .catch((err) => console.log(err));
+  // console.log("클라로갈값");
+  // console.log(prdtList);
+  res.send(prdtList);
+  // res.json(prdtList);
+});
+
 module.exports = router;
