@@ -6,12 +6,15 @@ const co = require("./sqls/co.js");
 //생산지시에서 공정관리 넘어가는것들 관련
 const instructions = require("./sqls/instruction.js");
 
-//수주
+// 수주
 const rcvord = require("./sqls/rcvord.js");
-// 사원
-const emp = require("./sqls/emp.js");
+// 납품
+const deli = require("./sqls/deli.js");
 // 계정
 const acct = require("./sqls/acct.js");
+
+// 사원
+const emp = require("./sqls/emp.js");
 
 //제품
 const prdt = require("./sqls/prdt.js");
@@ -53,5 +56,7 @@ module.exports = {
   ...prodDrct,
   ...rscQltyInsp,
   ...endPrdtQltyInsp,
+  ...deli,
   ...qltyItem,
+
 };

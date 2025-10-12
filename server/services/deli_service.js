@@ -1,15 +1,19 @@
 const mariadb = require("../database/mapper.js");
 
-// 공통으로 사용하는 기능들 중 필요한 함수만 구조분해할당(Destructuring)으로 가져옴
-//const { convertObjToAry } = require("../utils/converts.js");
-
-// 조건 없이 전체조회
-const coFindAll = async () => {
-  let list = await mariadb.query("coFindAll").catch((err) => console.log(err));
-  console.log("조회 결과:", list);
-  return list;
-};
-
 module.exports = {
-  coFindAll,
+  // 모달 목록: 검색어(optional)
+  async getDeliList(searchId) {
+    const kw = (searchId ?? "").trim();
+    // deliModalFind는 (?='', OR LIKE) 패턴으로 전체/검색을 처리
+    return await mariadb.query("deliModalFind", [kw, kw]);
+  },
+  // 단건 헤더 + 라인
+  async getDeliDetail(deliId) {
+    if (!deliId) throw new Error("deliId 누락");
+    const headerRows = await mariadb.query("deliFindHeader", [deliId]);
+    if (!headerRows.length) return null;
+    const header = headerRows[0];
+    const lines = await mariadb.query("deliFindLines", [deliId, deliId]);
+    return { header, lines };
+  },
 };
