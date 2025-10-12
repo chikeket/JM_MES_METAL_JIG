@@ -1,308 +1,126 @@
 <template>
   <CContainer fluid>
-    <CCol :xs="12">
-      <CCard class="mb-4">
-        <CCardBody class="p-4">
-          <!-- 기존 상단 툴바 / 버튼 중 발주서 조회를 모달 열도록 변경 -->
-          <div class="d-grid gap-2 d-md-flex justify-content-md-end mb-3">
-            <CButton color="secondary" class="me-md-2" @click="goToRscOrdrModal">자재 발주서 조회</CButton>
-            <CButton color="secondary" class="me-md-2" @click="resetForm">초기화</CButton>
-          </div>
+    <div class="d-flex justify-content-end gap-2 mb-3">
+      <CButton color="secondary" @click="masterReset()">초기화</CButton>
+      <CButton color="secondary" @click="goToRscOrdrModal()">자재 발주서 조회</CButton>
+      <RscOrdrModal :visible="isRscOrdrModalVisible" @close="closeRscOrdrModal" @select="onSelectRscOrdr" />
+      <CButton color="secondary" @click="insertRowsToDB">등록</CButton>
+      <CButton color="secondary" @click="updateRowsToDB">수정</CButton>
+      <CButton color="danger" @click="deleteRowsToDB()">삭제</CButton>
+    </div>
 
-          <!-- 모달 컴포넌트 -->
-          <RscOrdrModal :visible="isRscOrdrModalVisible" @close="closeRscOrdrModal" @select="onSelectRscOrdr" />
+    <CContainer fluid>
+      <CRow class="g-3 mb-3">
+        <CCol md="3">
+          <CInputGroup>
+            <CInputGroupText id="addon-ordr-name-1">자재 발주서 명</CInputGroupText>
+            <CFormInput v-model="Info.ordrName1" placeholder="자재 발주서 명" />
+          </CInputGroup>
+        </CCol>
+        <CCol md="3">
+          <CInputGroup>
+            <CInputGroupText id="addon-ordr-name-2">등록 일자</CInputGroupText>
+            <CFormInput type="date" v-model="Info.regDate" />
+          </CInputGroup>
+        </CCol>
+        <CCol md="3">
+          <CInputGroup>
+            <CInputGroupText id="addon-ordr-name-2">공급 업체 명</CInputGroupText>
+            <CFormInput v-model="Info.co_nm" placeholder="공급 업체 명" />
+            <CIcon :icon="cilMagnifyingGlass" size="xl" @click="goToCo()" />
+            <CoModal :visible="isCoModalVisible" @close="closeCoModal" @select="selectedCo" />
+          </CInputGroup>
+        </CCol>
+        <CCol md="3">
+          <CInputGroup>
+            <CInputGroupText id="addon-ordr-name-1">담당자</CInputGroupText>
+            <CFormInput type="text" v-model="ownerName" disabled tabindex="-1" aria-readonly="true" />
+          </CInputGroup>
+        </CCol>
+      </CRow>
+    </CContainer>
 
-          <CRow class="g-3 mb-3">
-            <CCol md="4">
-              <CInputGroup>
-                <CInputGroupText id="addon-ordr-name-1">자재 발주서 명</CInputGroupText>
-                <CFormInput
-                  v-model="ordrName1"
-                  placeholder="자재 발주서 명"
-                  aria-label="Rsc-ordr-name-1"
-                  aria-describedby="addon-ordr-name-1"
-                />
-              </CInputGroup>
-            </CCol>
+    <CFormTextarea v-model="Info.remark" label="비고" rows="3" text="필요 시 기재" class="mb-3" />
 
-            <CCol md="6">
-              <CInputGroup>
-                <CInputGroupText id="addon-ordr-name-2">자재 발주서 등록 일자</CInputGroupText>
-                <CFormInput type="date" id="publication_date" />
-                <CFormInput type="date" id="publication_date" />
-              </CInputGroup>
-            </CCol>
-          </CRow>
+    <div class="d-flex justify-content-end gap-2 mb-3">
+      <CButton color="secondary" @click="goToRsc()">자재 조회</CButton>
+      <RscModal :visible="isRscModalVisible" @close="closeRscModal" @select="selectedRsc" />
+      <CButton color="danger" @click="deleteSelectedRows">삭제</CButton>
+    </div>
 
-          <hr />
-
-          <div class="d-grid gap-2 d-md-flex justify-content-md-end mb-3">
-            <CButton color="secondary" class="me-md-2" @click="resetForm()">신규</CButton>
-            <CButton color="secondary" class="me-md-2" @click="saveRscOrdr()">저장</CButton>
-            <CButton color="danger" @click="deleteRscOrdr()">삭제</CButton>
-          </div>
-
-          <CRow class="g-3 mb-3">
-            <CCol md="3">
-              <CInputGroup>
-                <CInputGroupText id="addon-ordr-name-1">자재 발주서 명</CInputGroupText>
-                <CFormInput
-                  v-model="ordrName1"
-                  placeholder="자재 발주서 명"
-                  aria-label="Rsc-ordr-name-1"
-                  aria-describedby="addon-ordr-name-1"
-                />
-              </CInputGroup>
-            </CCol>
-
-            <CCol md="3">
-              <CInputGroup>
-                <CInputGroupText id="addon-ordr-name-1">자재 발주서 등록 일자</CInputGroupText>
-                <CFormInput type="date" id="publication_date" />
-              </CInputGroup>
-            </CCol>
-
-            <CCol md="3">
-              <CInputGroup>
-                <CInputGroupText id="addon-ordr-name-2">공급 업체 명</CInputGroupText>
-                <CFormInput
-                  v-model="ordrName2"
-                  placeholder="공급 업체 명"
-                  aria-label="co-ordr-name-1"
-                  aria-describedby="addon-ordr-name-1"
-                />
-                <CIcon :icon="cilMagnifyingGlass" size="xl" @click="goToCo()" />
-                <CoModal :visible="isCoModalVisible" @close="closeCoModal" @select="selectedCo" />
-              </CInputGroup>
-            </CCol>
-
-            <CCol md="3">
-              <CInputGroup>
-                <CInputGroupText id="addon-ordr-name-1">담당자 명</CInputGroupText>
-                <CFormInput
-                  type="text"
-                  id="login-session"
-                  v-model="ownerName"
-                  disabled
-                  tabindex="-1"
-                  aria-label="owner-name"
-                  aria-readonly="true"
-                />
-              </CInputGroup>
-            </CCol>
-          </CRow>
-
-          <CFormTextarea
-            id="exampleFormControlTextarea1"
-            label="비고"
-            rows="3"
-            text="필요 시 기재"
-            class="mb-3"
-          ></CFormTextarea>
-
-          <hr />
-
-          <div class="d-grid gap-2 d-md-flex justify-content-md-end mb-3">
-            <CButton color="secondary" class="me-md-2" @click="goToRsc()">자재 조회</CButton>
-            <RscModal :visible="isRscModalVisible" @close="closeRscModal" @select="selectedRsc" />
-            <CButton color="danger" @click="deleteSelectedRows">삭제</CButton>
-          </div>
-
-          <CTable hover bordered small class="align-middle">
-            <CTableHead color="dark">
-              <CTableRow>
-                <CTableHeaderCell scope="col" class="text-center" style="width:56px"></CTableHeaderCell>
-                <CTableHeaderCell scope="col" class="text-center" style="width:56px">No</CTableHeaderCell>
-                <CTableHeaderCell scope="col" class="text-center">자재 코드</CTableHeaderCell>
-                <CTableHeaderCell scope="col" class="text-center">자재 이름</CTableHeaderCell>
-                <CTableHeaderCell scope="col" class="text-center">규격</CTableHeaderCell>
-                <CTableHeaderCell scope="col" class="text-center" style="width:120px">단위</CTableHeaderCell>
-                <CTableHeaderCell scope="col" class="text-center" style="width:140px">수량</CTableHeaderCell>
-                <CTableHeaderCell scope="col" class="text-center">비고</CTableHeaderCell>
-              </CTableRow>
-            </CTableHead>
-
-            <CTableBody>
-              <CTableRow v-for="(row, idx) in displayRows" :key="row.__empty ? 'empty-' + idx : row.id" :class="row.__empty ? 'table-secondary' : ''">
-                <CTableDataCell>
-                  <template v-if="!row.__empty">
-                    <CFormCheck :checked="isSelected(row.id)" @change="toggleRow(row.id, $event)" />
-                  </template>
-                </CTableDataCell>
-
-                <CTableDataCell class="text-end">{{ row.__empty ? '' : row.id }}</CTableDataCell>
-
-                <CTableDataCell>{{ row.code || '' }}</CTableDataCell>
-
-                <CTableDataCell>{{ row.name || '' }}</CTableDataCell>
-
-                <CTableDataCell>{{ row.spec || '' }}</CTableDataCell>
-
-                <CTableDataCell class="text-center">{{ row.unit || '' }}</CTableDataCell>
-
-                <CTableDataCell class="text-end" v-if="!row.__empty" @dblclick="startEdit(row, 'qty')">
-                  <template v-if="isEditing(row, 'qty')">
-                    <CFormInput
-                      v-model.number="editDraft"
-                      type="number"
-                      min="0"
-                      size="sm"
-                      class="text-end"
-                      @keyup.enter="commitEdit(row, 'qty')"
-                      @keyup.esc="cancelEdit"
-                      @blur="commitEdit(row, 'qty')"
-                      placeholder="0"
-                    />
-                  </template>
-                  <template v-else>{{ fmtQty(row.qty) }}</template>
-                </CTableDataCell>
-                <CTableDataCell class="text-end" v-else>&nbsp;</CTableDataCell>
-
-                <CTableDataCell v-if="!row.__empty" @dblclick="startEdit(row, 'note')">
-                  <template v-if="isEditing(row, 'note')">
-                    <CFormInput
-                      v-model="editDraft"
-                      type="text"
-                      size="sm"
-                      @keyup.enter="commitEdit(row, 'note')"
-                      @keyup.esc="cancelEdit"
-                      @blur="commitEdit(row, 'note')"
-                      placeholder="비고 입력"
-                    />
-                  </template>
-                  <template v-else>{{ row.note || '—' }}</template>
-                </CTableDataCell>
-                <CTableDataCell v-else>&nbsp;</CTableDataCell>
-              </CTableRow>
-            </CTableBody>
-          </CTable>
-        </CCardBody>
-      </CCard>
-    </CCol>
+    <CTable hover bordered small class="align-middle">
+      <CTableHead color="dark">
+        <CTableRow>
+          <CTableHeaderCell scope="col" class="text-center" style="width:56px">
+            <CFormCheck :checked="allSelected" @change="toggleAll($event)" />
+          </CTableHeaderCell>
+          <CTableHeaderCell scope="col" class="text-center" style="width:56px">No</CTableHeaderCell>
+          <CTableHeaderCell scope="col" class="text-center">자재 코드</CTableHeaderCell>
+          <CTableHeaderCell scope="col" class="text-center">자재 명</CTableHeaderCell>
+          <CTableHeaderCell scope="col" class="text-center">규격</CTableHeaderCell>
+          <CTableHeaderCell scope="col" class="text-center" style="width:120px">단위</CTableHeaderCell>
+          <CTableHeaderCell scope="col" class="text-center" style="width:140px">수량</CTableHeaderCell>
+          <CTableHeaderCell scope="col" class="text-center">비고</CTableHeaderCell>
+        </CTableRow>
+      </CTableHead>
+      <CTableBody>
+        <CTableRow v-for="(row, idx) in displayRows" :key="row.__empty ? 'empty-' + idx : row.id" :class="row.__empty ? 'table-secondary' : ''">
+          <CTableDataCell class="text-center">
+            <template v-if="!row.__empty">
+              <CFormCheck :checked="isSelected(row.id)" @change="toggleRow(row.id, $event)" />
+            </template>
+          </CTableDataCell>
+          <CTableDataCell class="text-end">{{ row.__empty ? '' : row.id }}</CTableDataCell>
+          <CTableDataCell>{{ row.code || '' }}</CTableDataCell>
+          <CTableDataCell>{{ row.name || '' }}</CTableDataCell>
+          <CTableDataCell>{{ row.spec || '' }}</CTableDataCell>
+          <CTableDataCell class="text-center">{{ row.unit || '' }}</CTableDataCell>
+          <CTableDataCell class="text-end" v-if="!row.__empty" @dblclick="startEdit(row, 'qty')">
+            <template v-if="isEditing(row, 'qty')">
+              <CFormInput v-model.number="editDraft" type="number" min="0" size="sm" class="text-end" @keydown.enter.prevent="commitAndBlur(row, 'qty', $event)" @keyup.esc="cancelEdit" @blur="commitEdit(row, 'qty')" placeholder="0" />
+            </template>
+            <template v-else>{{ fmtQty(row.qty) }}</template>
+          </CTableDataCell>
+          <CTableDataCell class="text-end" v-else>&nbsp;</CTableDataCell>
+          <CTableDataCell v-if="!row.__empty" @dblclick="startEdit(row, 'note')">
+            <template v-if="isEditing(row, 'note')">
+              <CFormInput v-model="editDraft" type="text" size="sm" @keydown.enter.prevent="commitAndBlur(row, 'note', $event)" @keyup.esc="cancelEdit" @blur="commitEdit(row, 'note')" placeholder="비고 입력" />
+            </template>
+            <template v-else>{{ row.note || '' }}</template>
+          </CTableDataCell>
+          <CTableDataCell v-else>&nbsp;</CTableDataCell>
+        </CTableRow>
+      </CTableBody>
+    </CTable>
   </CContainer>
 </template>
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
+import axios from 'axios'
 
-// 돋보기 아이콘
 import { CIcon } from '@coreui/icons-vue'
 import { cilMagnifyingGlass } from '@coreui/icons'
 
-// 모달 기능
 import RscModal from '../modal/rscModal.vue'
 import CoModal from '../modal/coModal.vue'
-import RscOrdrModal from '../modal/rscOrdrModal.vue' // 추가
-// 세션
-import { useAuthStore } from '@/stores/auth.js'
-import axios from 'axios' // 추가
+import RscOrdrModal from '../modal/rscOrdrModal.vue'
 
+import { useAuthStore } from '@/stores/auth.js'
 const auth = useAuthStore()
 
-const isRscModalVisible = ref(false)
-const isCoModalVisible = ref(false) // 추가
-const isRscOrdrModalVisible = ref(false) // 모달 (rscOrdr 조회용)
-const currentOrdrId = ref(null) // 선택된 발주서 id (편집/삭제 시 사용)
-
-const goToRsc = () => { isRscModalVisible.value = true }
-
-const closeRscModal = () => { isRscModalVisible.value = false }
-
-const goToCo = () => { isCoModalVisible.value = true }
-
-const closeCoModal = () => { isCoModalVisible.value = false }
-
-const goToRscOrdrModal = () => { isRscOrdrModalVisible.value = true }
-const closeRscOrdrModal = () => { isRscOrdrModalVisible.value = false }
-
-const rows = ref([]) // 배열로 변경
-
-// 선택 상태 관리 추가
-const selectedIds = ref([])
-
-// id 단위로 선택 여부 확인 (템플릿에서 isSelected(row.id)로 사용)
-const isSelected = (id) => {
-  if (id === '' || id == null) return false
-  return selectedIds.value.includes(id)
-}
-
-// 체크박스 변화에 따라 선택 토글 (템플릿에서 toggleRow(row.id, $event)로 사용)
-const toggleRow = (id, ev) => {
-  const checked = ev && ev.target ? !!ev.target.checked : !selectedIds.value.includes(id)
-  if (checked) {
-    if (!selectedIds.value.includes(id)) selectedIds.value.push(id)
-  } else {
-    selectedIds.value = selectedIds.value.filter(x => x !== id)
-  }
-}
-
-const selectedRsc = (r) => {
-  console.log('[RscOrdr] selectedRsc payload:', r)
-  if (!r) return
-  // 정규화: modal에서 어떤 키로 와도 displayRows에 맞는 필드로 매핑
-  const code = r.rsc_id ?? r.code ?? r.RSC_ID ?? r.rscId ?? ''
-  const name = r.rsc_nm ?? r.name ?? r.RSC_NM ?? r.rscNm ?? ''
-  const spec = r.spec ?? r.SPEC ?? ''
-  const unit = r.rsc_unit ?? r.unit ?? r.RSC_UNIT ?? ''
-  if (!code) {
-    console.warn('[RscOrdr] selected payload has no code/rsc_id, ignore.')
-    return
-  }
-  const newId = rows.value.length > 0 ? Math.max(...rows.value.map(x => x.id || 0)) + 1 : 1
-  rows.value.push({
-    id: newId,
-    rsc_ordr_deta_id: r.rsc_ordr_deta_id ?? null,
-    code: String(code),
-    name: name,
-    spec: spec,
-    unit: unit,
-    qty: 0,
-    note: ''
-  })
-  // 모달은 자체에서 close emit 하므로 여기서는 추가만 수행
-}
-
-const ordrName1 = ref('') // 자재 발주서 명
-const ordrName2 = ref('') // 공급 업체 명 변수 선언
-
-const selectedCo = (co) => {
-  // 모달에서 업체 선택
-  if (!co) return
-  ordrName2.value = co.co_nm
-  // 필요하면 co_id 저장
-  selectedCoId.value = co.co_id
-}
-
-const selectedCoId = ref(null)
-
-// 모달에서 발주서 선택 시 호출: 마스터/라인 매핑
-const onSelectRscOrdr = (ordr) => {
-  if (!ordr) return
-  currentOrdrId.value = ordr.master?.rsc_ordr_id ?? null
-  ordrName1.value = ordr.master?.rsc_ordr_nm ?? ordrName1.value
-  ordrName2.value = ordr.master?.co_nm ?? ordrName2.value
-  ownerName.value = ordr.master?.emp_nm ?? ownerName.value
-
-  rows.value = (ordr.detailList ?? []).map((d, i) => ({
-    id: i + 1,
-    code: d.rsc_id,
-    name: d.rsc_nm ?? '',
-    spec: d.spec ?? '',
-    unit: d.unit ?? '',
-    qty: Number(d.qy ?? 0),
-    note: d.rm ?? '',
-    rsc_ordr_deta_id: d.rsc_ordr_deta_id ?? null,
-  }))
-
-  closeRscOrdrModal()
-}
+const Info = ref({
+  ordrName1: '',
+  regDate: new Date().toISOString().slice(0, 10),
+  co_nm: '',
+  remark: '',
+})
 
 // 로그인 세션 기반 담당자
-const authStore = useAuthStore()
 const ownerName = ref('')
 const ownerEmpId = ref('')
 watch(
-  () => authStore.user,
+  () => auth.user,
   (u) => {
     if (!u) {
       ownerName.value = ''
@@ -315,87 +133,213 @@ watch(
   { immediate: true }
 )
 
-// 그리드 편집 관련 (기존 로직 유지)
+// 연결 키 / 상태
+const currentOrdrId = ref(null)
+const selectedCoId = ref(null)
+
+// 모달 상태
+const isRscModalVisible = ref(false)
+const isCoModalVisible = ref(false)
+const isRscOrdrModalVisible = ref(false)
+
+const goToRsc = () => { isRscModalVisible.value = true }
+const closeRscModal = () => { isRscModalVisible.value = false }
+
+const goToCo = () => { isCoModalVisible.value = true }
+const closeCoModal = () => { isCoModalVisible.value = false }
+
+const goToRscOrdrModal = () => { isRscOrdrModalVisible.value = true }
+const closeRscOrdrModal = () => { isRscOrdrModalVisible.value = false }
+
+// 상세 행 데이터
+const rows = ref([])
+
+// 체크 선택 상태
+const selectedIds = ref([])
+const isSelected = (id) => {
+  if (id === '' || id == null) return false
+  return selectedIds.value.includes(id)
+}
+const toggleRow = (id, ev) => {
+  const checked = ev && ev.target ? !!ev.target.checked : !selectedIds.value.includes(id)
+  if (checked) {
+    if (!selectedIds.value.includes(id)) selectedIds.value.push(id)
+  } else {
+    selectedIds.value = selectedIds.value.filter(x => x !== id)
+  }
+}
+
+// 전체 선택 상태
+const allSelected = computed({
+  get() {
+    return rows.value.length > 0 && selectedIds.value.length > 0 && rows.value.every(r => !r.__empty && selectedIds.value.includes(r.id))
+  },
+  set(checked) {
+    if (checked) {
+      selectedIds.value = rows.value.filter(r => !r.__empty).map(r => r.id)
+    } else {
+      selectedIds.value = []
+    }
+  }
+})
+const toggleAll = (ev) => {
+  const checked = ev && ev.target ? !!ev.target.checked : false
+  allSelected.value = checked
+}
+
+// 모달 선택 핸들러
+const selectedRsc = (r) => {
+  if (!r) return
+  const code = r.rsc_id ?? r.code ?? r.RSC_ID ?? r.rscId ?? ''
+  const name = r.rsc_nm ?? r.name ?? r.RSC_NM ?? r.rscNm ?? ''
+  const spec = r.spec ?? r.SPEC ?? ''
+  const unit = r.rsc_unit ?? r.unit ?? r.RSC_UNIT ?? ''
+  if (!code) return
+  const newId = rows.value.length > 0 ? Math.max(...rows.value.map(x => x.id || 0)) + 1 : 1
+  rows.value.push({
+    id: newId,
+    rsc_ordr_deta_id: r.rsc_ordr_deta_id ?? null,
+    code: String(code),
+    name,
+    spec,
+    unit,
+    qty: 0,
+    note: ''
+  })
+}
+
+const selectedCo = (co) => {
+  if (!co) return
+  Info.value.co_nm = co.co_nm || ''
+  selectedCoId.value = co.co_id || null
+}
+
+// 자재 발주서 조회 모달에서 더블클릭 선택 시 채우기
+const onSelectRscOrdr = (ordr) => {
+  if (!ordr) return
+  currentOrdrId.value = ordr.master?.rsc_ordr_id ?? null
+  Info.value.ordrName1 = ordr.master?.rsc_ordr_nm ?? Info.value.ordrName1
+  Info.value.co_nm = ordr.master?.co_nm ?? Info.value.co_nm
+  if (ordr.master?.reg_dt) {
+    Info.value.regDate = String(ordr.master.reg_dt).slice(0, 10)
+  }
+  // 담당자는 세션 유지
+  const detail = Array.isArray(ordr.detailList) ? ordr.detailList : []
+  console.log('[RscOrdr] detail length:', detail.length, detail)
+  rows.value = detail.map((d, i) => ({
+    id: i + 1,
+    code: d.rsc_id ?? d.RSC_ID ?? '',
+    name: d.rsc_nm ?? d.RSC_NM ?? '',
+    spec: d.spec ?? d.SPEC ?? '',
+    unit: d.rsc_unit ?? d.unit ?? d.RSC_UNIT ?? d.UNIT ?? '',
+    qty: Number((d.qy ?? d.QY ?? 0) || 0),
+    note: d.rm ?? d.RM ?? '',
+    rsc_ordr_deta_id: d.rsc_ordr_deta_id ?? d.RSC_ORDR_DETA_ID ?? null,
+  }))
+  selectedCoId.value = ordr.master?.co_id ?? selectedCoId.value
+  closeRscOrdrModal()
+}
+
+// 표 편집 상태
 const editing = reactive({ id: null, field: null })
 const editDraft = ref(null)
 const isEditing = (row, field) => editing.id === row.id && editing.field === field
-
 function startEdit(row, field) {
   if (!row || row.__empty) return
   editing.id = row.id
   editing.field = field
-  // 필드별 초기값
   if (field === 'qty') editDraft.value = row.qty ?? 0
   else if (field === 'note') editDraft.value = row.note ?? ''
 }
-
 function commitEdit(row, field) {
   if (!row) return
+  const idx = rows.value.findIndex(x => x.id === row.id)
   if (field === 'qty') {
-    const v = Number(editDraft.value)
-    row.qty = Number.isNaN(v) ? 0 : v
+    const v = parseQty(editDraft.value)
+    const val = Number.isFinite(v) ? v : 0
+    if (idx >= 0) rows.value[idx].qty = val
+    row.qty = val
   } else if (field === 'note') {
+    if (idx >= 0) rows.value[idx].note = editDraft.value ?? ''
     row.note = editDraft.value ?? ''
   }
   cancelEdit()
 }
-
 function cancelEdit() {
   editing.id = null
   editing.field = null
   editDraft.value = null
 }
-
+// qty 파싱 및 현재 편집값 우선 반영을 위한 유틸
+function parseQty(val) {
+  if (val == null) return NaN
+  if (typeof val === 'number') return val
+  const n = Number(String(val).replace(/,/g, '').trim())
+  return n
+}
+function effectiveQty(row) {
+  if (!row || row.__empty) return NaN
+  if (isEditing(row, 'qty')) return parseQty(editDraft.value)
+  return parseQty(row.qty)
+}
 const fmtQty = (n) => (n ?? 0).toLocaleString()
 
-// 기본으로 표시할 최소 빈행 수
+// 표시 최소 빈행
 const MIN_DISPLAY_ROWS = 10
-
-// rows가 이미 선언되어 있어야 합니다: const rows = ref([])
 const displayRows = computed(() => {
-  const arr = (rows.value || []).map(r => ({ ...r, __empty: false }))
+  const arr = (rows.value || []).slice()
   while (arr.length < MIN_DISPLAY_ROWS) {
-    arr.push({
-      __empty: true,
-      id: '',
-      code: '',
-      name: '',
-      spec: '',
-      unit: '',
-      qty: null,
-      note: '',
-    })
+    arr.push({ __empty: true, id: '', code: '', name: '', spec: '', unit: '', qty: null, note: '' })
   }
   return arr
 })
 
-// 저장(신규/수정)
+// 저장: 등록/수정(업서트)
+// 저장(업서트) - 기존 ID가 있으면 수정, 없으면 생성
+const insertRowsToDB = async () => { await saveRscOrdr() }
+const updateRowsToDB = async () => { await saveRscOrdr() }
+
 const saveRscOrdr = async () => {
   try {
+    // 편집 중인 셀이 있으면 우선 반영
+    if (editing.id && editing.field) {
+      const row = rows.value.find(r => r.id === editing.id)
+      if (row) commitEdit(row, editing.field)
+    }
+    // 수량 유효성 검사 및 전송 대상 행 구성
+    const candidateRows = rows.value.filter(r => !r.__empty)
+    if (!candidateRows.length) { alert('저장할 행이 없습니다.'); return }
+    const qtyCheck = candidateRows.map(r => ({ id: r.id, code: r.code, raw: r.qty, eff: effectiveQty(r) }))
+    console.log('[RscOrdr] qty check:', qtyCheck)
+    // 0 또는 비정상 수량 행은 전송에서 제외
+    const validRows = candidateRows.filter(r => Number.isFinite(effectiveQty(r)) && effectiveQty(r) > 0 && !!r.code)
+    if (!validRows.length) { alert('수량이 0입니다. 수량을 입력하세요.'); return }
     const master = {
       co_id: selectedCoId.value || null,
       emp_id: ownerEmpId.value || null,
-      reg_dt: new Date().toISOString().slice(0,10),
-      rm: '', // 필요하면 바인딩
-      rsc_ordr_nm: ordrName1.value || '',
+      reg_dt: Info.value.regDate || new Date().toISOString().slice(0,10),
+      rm: Info.value.remark || null,
+      rsc_ordr_nm: Info.value.ordrName1 || '',
     }
-    const detailList = rows.value.filter(r => !r.__empty).map(r => ({
-      rsc_id: r.code,
-      qy: Number(r.qty ?? 0),
-      rm: r.note ?? '',
-      rsc_ordr_deta_id: r.rsc_ordr_deta_id ?? null,
-    }))
+    const detailList = validRows
+      .map(r => {
+        const q = effectiveQty(r)
+        return ({
+          rsc_id: r.code,
+          qy: Number.isFinite(q) ? q : 0,
+          rm: r.note ?? '',
+          rsc_ordr_deta_id: r.rsc_ordr_deta_id ?? null,
+        })
+      })
 
-    const payload = {
-      master,
-      detailList,
-      rsc_ordr_id: currentOrdrId.value || null,
-    }
-
+    const payload = { master, detailList, rsc_ordr_id: currentOrdrId.value || null }
+    console.log('[RscOrdr] save payload master:', master)
+    console.log('[RscOrdr] save payload detailList:', detailList)
     const res = await axios.post('/api/rscOrdr', payload)
     if (res.data?.isSuccessed) {
       alert('저장되었습니다.')
       if (res.data.id) currentOrdrId.value = res.data.id
+      await reloadDetails()
     } else {
       alert('저장 실패')
     }
@@ -405,12 +349,10 @@ const saveRscOrdr = async () => {
   }
 }
 
-// 삭제 (마스터 전체 삭제)
+// 마스터 삭제
+const deleteRowsToDB = async () => { await deleteRscOrdr() }
 const deleteRscOrdr = async () => {
-  if (!currentOrdrId.value) {
-    alert('삭제할 발주서를 먼저 선택하세요.')
-    return
-  }
+  if (!currentOrdrId.value) { alert('삭제할 발주서를 먼저 선택하세요.'); return }
   if (!confirm('선택한 자재 발주서를 삭제하시겠습니까?')) return
   try {
     const res = await axios.delete(`/api/rscOrdr/${encodeURIComponent(currentOrdrId.value)}`)
@@ -418,6 +360,9 @@ const deleteRscOrdr = async () => {
       alert('삭제되었습니다.')
       currentOrdrId.value = null
       rows.value = []
+      Info.value.ordrName1 = ''
+      Info.value.co_nm = ''
+      Info.value.remark = ''
     } else {
       alert('삭제 실패')
     }
@@ -427,22 +372,63 @@ const deleteRscOrdr = async () => {
   }
 }
 
-// form 초기화(신규 리셋)
-const resetForm = () => {
-  if (!confirm('초기화하면 현재 편집중인 내용이 모두 사라집니다. 계속하시겠습니까?')) return
-  currentOrdrId.value = null
-  ordrName1.value = ''
-  ordrName2.value = ''
-  selectedCoId.value = null
-  rows.value = []
-  // 추가 필드가 있다면 여기에 초기화 항목을 더 추가하세요.
+// 상세 선택 삭제
+function deleteSelectedRows() {
+  if (!selectedIds.value.length) { alert('삭제할 행을 선택하세요.'); return }
+  if (!confirm('선택된 상세 행을 삭제하시겠습니까?')) return
+
+  const toDeleteUiIds = new Set(selectedIds.value)
+  const idsForDb = rows.value
+    .filter(r => !r.__empty && toDeleteUiIds.has(r.id) && r.rsc_ordr_deta_id)
+    .map(r => r.rsc_ordr_deta_id)
+
+  const removeLocally = () => {
+    rows.value = rows.value.filter(r => !(toDeleteUiIds.has(r.id)))
+    selectedIds.value = []
+  }
+
+  if (idsForDb.length && currentOrdrId.value) {
+    axios.post('/api/rscOrdr/deta/delete', { ids: idsForDb })
+      .then(() => { removeLocally() })
+      .catch((err) => { console.error(err); alert('상세 삭제 중 오류') })
+  } else {
+    removeLocally()
+  }
 }
 
-// 아래 경고 해결용 빈 함수(선택된 행 삭제가 필요하면 로직 추가)
-function deleteSelectedRows() {
-  // 선택 로직이 없으면 전체 초기화 혹은 간단 알림
-  // TODO: row selection 상태가 있으면 해당 row들을 삭제하도록 구현하세요.
-  if (!confirm('선택된 행을 삭제하시겠습니까? (현재 선택 기능이 없으면 전체 초기화)')) return
-  rows.value = []
+// 상세 재조회
+async function reloadDetails() {
+  if (!currentOrdrId.value) return
+  try {
+    const res = await axios.get('/api/rscOrdrDeta', { params: { rsc_ordr_id: currentOrdrId.value } })
+    const detail = Array.isArray(res.data) ? res.data : []
+    rows.value = detail.map((d, i) => ({
+      id: i + 1,
+      code: d.rsc_id,
+      name: d.rsc_nm ?? '',
+      spec: d.spec ?? '',
+      unit: d.rsc_unit ?? d.unit ?? '',
+      qty: Number(d.qy ?? 0),
+      note: d.rm ?? '',
+      rsc_ordr_deta_id: d.rsc_ordr_deta_id ?? null,
+    }))
+  } catch (err) {
+    console.error(err)
+  }
 }
+
+// 초기화
+const masterReset = () => {
+  Info.value.ordrName1 = ''
+  Info.value.co_nm = ''
+  Info.value.remark = ''
+  Info.value.regDate = new Date().toISOString().slice(0, 10)
+
+  // 그리드 및 선택 상태 초기화 추가
+  rows.value = []
+  selectedIds.value = []
+  currentOrdrId.value = null
+  selectedCoId.value = null
+}
+const reset = () => { rows.value = [] }
 </script>

@@ -1,10 +1,11 @@
 <template>
-  <CModal :visible="visible" @close="close">
+  <CModal :visible="visible" @close="close" size="xl" alignment="center">
     <CModalHeader>
       <CModalTitle>업체 검색</CModalTitle>
     </CModalHeader>
+    <!-- 본문 높이를 뷰포트 기준으로 계산하고 내부 스크롤 사용 -->
     <CModalBody>
-      <div class="modal-body" style="max-height: 500px; overflow-y: auto">
+      <div class="modal-body" style="max-height: calc(100vh - 200px); overflow-y: auto; padding-right:8px;">
         <!-- 검색 영역 -->
         <div class="d-flex gap-2 mb-3">
           <select class="form-select" style="width: 150px" v-model="coTy">
@@ -20,7 +21,8 @@
             <option value="">전체상태</option>
             <option value="ST">상태</option>
           </select>
-          <input type="text" class="form-control" placeholder="검색어 입력" v-model="searchKeyword" />
+          <!-- 검색어 입력 너비 축소 -->
+          <input type="text" class="form-control" placeholder="검색어 입력" v-model="searchKeyword" style="width: 180px;" />
           <button class="btn btn-secondary" @click="coSearch()">검색</button>
         </div>
 
