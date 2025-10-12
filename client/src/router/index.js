@@ -100,6 +100,11 @@ const routes = [
             name: 'prcsRouting',
             component: () => import('@/views/zzun/Routing.vue'),
           },
+          {
+            path: '/zzun/Sample',
+            name: 'sample',
+            component: () => import('@/views/zzun/Sample.vue'),
+          },
         ],
       },
 
