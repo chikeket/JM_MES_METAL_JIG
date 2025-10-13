@@ -4,7 +4,8 @@
 const selectRscOrdrList = `
 SELECT
   c.RSC_ORDR_ID AS rsc_ordr_id,
-  COALESCE(c.RM, '') AS rsc_ordr_nm,
+  COALESCE(c.RSC_ORDR_NM, '') AS rsc_ordr_nm,
+  COALESCE(c.RM, '') AS rm,
   c.co_id AS co_id,
   e.co_nm AS co_nm,
   d.emp_nm AS emp_nm,
@@ -15,16 +16,15 @@ LEFT JOIN co e ON c.co_id = e.co_id
 LEFT JOIN emp d ON c.emp_id = d.emp_id
 LEFT JOIN rsc_ordr_deta b ON c.RSC_ORDR_ID = b.rsc_ordr_id
 LEFT JOIN rsc a ON b.rsc_id = a.rsc_id
-WHERE (? IS NULL OR c.RM LIKE CONCAT('%', ?, '%'))
+WHERE (? IS NULL OR c.RSC_ORDR_NM LIKE CONCAT('%', ?, '%'))
   AND (? IS NULL OR e.co_nm LIKE CONCAT('%', ?, '%'))
   AND (? IS NULL OR d.emp_nm LIKE CONCAT('%', ?, '%'))
   AND (? IS NULL OR c.reg_dt >= ?)
   AND (? IS NULL OR c.emp_id = ?)
 GROUP BY c.RSC_ORDR_ID
-ORDER BY c.reg_dt DESC
+ORDER BY substr(c.rsc_ordr_id,-6) desc
 LIMIT 500
 `;
-
 
 // 자재 발주서 상세 조회 (발주서 ID로 상세 리스트 반환)
 const selectRscOrdrDetailList = `
@@ -34,6 +34,7 @@ SELECT
   b.rsc_id           AS rsc_id,
   a.rsc_nm           AS rsc_nm,
   b.qy               AS qy,
+  b.deli_expc_dt     AS deli_dt,
   b.rm               AS rm,
   a.spec             AS spec,
   a.unit             AS rsc_unit
@@ -42,16 +43,16 @@ LEFT JOIN rsc a ON b.rsc_id = a.rsc_id
 WHERE b.rsc_ordr_id = ?
 `;
 
-
 // 마스터 등록 (신규 발주서 생성)
 const insertRscOrdr = `
 INSERT INTO rsc_ordr (
   rsc_ordr_id,
+  rsc_ordr_nm,
   co_id,
   emp_id,
   reg_dt,
   rm
-) VALUES (?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?)
 `;
 
 // 마스터 존재 여부 확인
@@ -62,7 +63,8 @@ SELECT 1 FROM rsc_ordr WHERE rsc_ordr_id = ? LIMIT 1
 // 마스터 수정
 const updateRscOrdr = `
 UPDATE rsc_ordr
-SET co_id = ?,
+SET rsc_ordr_nm = ?,
+    co_id = ?,
     emp_id = ?,
     reg_dt = COALESCE(?, reg_dt),
     rm = ?
@@ -76,8 +78,9 @@ INSERT INTO rsc_ordr_deta (
   rsc_ordr_id,
   rsc_id,
   qy,
+  deli_expc_dt,
   rm
-) VALUES (?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?)
 `;
 
 // 발주서별 상세 일괄 삭제
@@ -113,7 +116,6 @@ WHERE SUBSTR(rsc_ordr_deta_id, 14, 4) = DATE_FORMAT(NOW(), '%y%m')
 `;
 
 module.exports = {
-
   selectRscOrdrList,
   selectRscOrdrDetailList,
   insertRscOrdr,
@@ -125,5 +127,4 @@ module.exports = {
   deleteRscOrdrDetaById,
   rscOrdrCreateId,
   rscOrdrDetaCreateId,
-
 };
