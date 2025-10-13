@@ -79,9 +79,11 @@
           <CTableHeaderCell scope="col" class="text-center" style="width: 140px"
             >수량</CTableHeaderCell
           >
+
           <CTableHeaderCell scope="col" class="text-center" style="width: 140px"
             >납품 예정 일</CTableHeaderCell
           >
+
           <CTableHeaderCell scope="col" class="text-center">비고</CTableHeaderCell>
         </CTableRow>
       </CTableHead>
@@ -264,10 +266,12 @@ const selectedRsc = (r) => {
   const unit = r.rsc_unit ?? r.unit ?? r.RSC_UNIT ?? ''
   if (!code) return
 
+
   // 기본 납품 예정일을 7일 후로 설정
   const defaultDeliDt = new Date()
   defaultDeliDt.setDate(defaultDeliDt.getDate() + 7)
   const deliDtStr = defaultDeliDt.toISOString().slice(0, 10)
+
 
   const newId = rows.value.length > 0 ? Math.max(...rows.value.map((x) => x.id || 0)) + 1 : 1
   rows.value.push({
@@ -278,7 +282,9 @@ const selectedRsc = (r) => {
     spec,
     unit,
     qty: 0,
+
     deli_dt: deliDtStr,
+
     note: '',
   })
 }
@@ -295,7 +301,9 @@ const onSelectRscOrdr = async (ordr) => {
   if (!ordr) return
 
   console.log('[RscOrdr] onSelectRscOrdr received:', ordr)
+
   console.log('[RscOrdr] master data:', ordr.master)
+
 
   // 마스터 정보 설정
   currentOrdrId.value = ordr.master?.rsc_ordr_id ?? null
@@ -303,8 +311,10 @@ const onSelectRscOrdr = async (ordr) => {
   Info.value.co_nm = ordr.master?.co_nm ?? Info.value.co_nm
   Info.value.remark = ordr.master?.rm ?? ordr.master?.remark ?? Info.value.remark
 
+
   console.log('[RscOrdr] mapped remark:', Info.value.remark)
   console.log('[RscOrdr] source rm:', ordr.master?.rm)
+
 
   if (ordr.master?.reg_dt) {
     const v = ordr.master.reg_dt
@@ -335,11 +345,13 @@ const onSelectRscOrdr = async (ordr) => {
         unit: d.rsc_unit ?? d.unit ?? '',
         qty: Number(d.qy ?? 0),
         note: d.rm ?? '',
+
         deli_dt:
           d.deli_dt &&
           (typeof d.deli_dt === 'string'
             ? d.deli_dt.slice(0, 10)
             : dateFormat(d.deli_dt, 'yyyy-MM-dd')),
+
         rsc_ordr_deta_id: d.rsc_ordr_deta_id ?? null,
       }))
     } catch (e) {
@@ -380,6 +392,8 @@ function startEdit(row, field) {
   if (!row || row.__empty) return
   editing.id = row.id
   editing.field = field
+
+  
   if (field === 'qty') {
     editDraft.value = row.qty ?? 0
   } else if (field === 'deli_dt') {
@@ -387,6 +401,7 @@ function startEdit(row, field) {
   } else if (field === 'note') {
     editDraft.value = row.note ?? ''
   }
+
 }
 function commitEdit(row, field) {
   if (!row) return
@@ -425,6 +440,7 @@ const MIN_DISPLAY_ROWS = 10
 const displayRows = computed(() => {
   const arr = (rows.value || []).slice()
   while (arr.length < MIN_DISPLAY_ROWS)
+
     arr.push({
       __empty: true,
       id: '',
@@ -436,6 +452,7 @@ const displayRows = computed(() => {
       deli_dt: '',
       note: '',
     })
+
   return arr
 })
 
@@ -466,6 +483,7 @@ const saveRscOrdr = async () => {
     if (invalidQtyRows.length) {
       alert('수량이 0입니다. 수량을 입력하세요.')
       return
+
     }
 
     // 납품 예정일 검증 추가
@@ -490,6 +508,7 @@ const saveRscOrdr = async () => {
       return
     }
 
+
     // 마스터/상세 구성(디테일은 여러 건 가능)
     const master = {
       rsc_ordr_nm: Info.value.ordrName1 || '',
@@ -506,7 +525,9 @@ const saveRscOrdr = async () => {
       .map((r) => ({
         rsc_id: r.code,
         qy: Number(r.qty ?? 0),
+
         deli_dt: r.deli_dt && String(r.deli_dt).trim() ? String(r.deli_dt).slice(0, 10) : null,
+
         rm: r.note ?? '',
         rsc_ordr_deta_id: r.rsc_ordr_deta_id ?? null,
       }))
@@ -604,11 +625,13 @@ async function reloadDetails() {
       spec: d.spec ?? '',
       unit: d.rsc_unit ?? d.unit ?? '',
       qty: Number(d.qy ?? 0),
+
       deli_dt: d.deli_dt
         ? typeof d.deli_dt === 'string'
           ? d.deli_dt.slice(0, 10)
           : dateFormat(d.deli_dt, 'yyyy-MM-dd')
         : '',
+
       note: d.rm ?? '',
       rsc_ordr_deta_id: d.rsc_ordr_deta_id ?? null,
     }))

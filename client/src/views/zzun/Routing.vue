@@ -1,86 +1,114 @@
 <template>
-  <CContainer fluid>
-    <CCol :xs="12">
-      <CCard class="mb-4">
-        <CCardBody class="p-4">
-          <!-- 맨 위 입력창(disabled)과 버튼 -->
-          <CRow class="g-3 mb-3">
-            <CCol md="4">
-              <CInputGroup>
-                <CInputGroupText id="addon-prod-name">제품명</CInputGroupText>
-                <CFormInput
-                  v-model="productId"
-                  aria-label="input-product-id"
-                  aria-describedby="addon-ordr-name-1"
-                  disabled
-                />
-              </CInputGroup>
-            </CCol>
+  <!-- 검색 영역 -->
+  <CCard md="4" class="mb-3" style="overflow-y: auto">
+    <CCardBody class="p-2 flex-column">
+      <div class="table-wrapper" style="display: flex; align-items: center">
+        <select class="form-select" style="width: 130px; margin-right: 8px" v-model="pickValue">
+          <option value="prdt_id">코드</option>
+          <option value="prdt_nm">제품명</option>
+        </select>
+        <!-- 검색어 입력창 -->
+        <input
+          type="text"
+          class="form-control"
+          style="width: 150px; margin-right: 8px"
+          v-model="searchKeyword"
+          placeholder="검색어 입력"
+        />
+        <CButton color="secondary" class="me-2" @click="masterReset()">초기화</CButton>
+        <button class="btn btn-secondary" @click="prdtSearch">검색</button>
+      </div>
+    </CCardBody>
+  </CCard>
 
-            <CCol md="4" class="d-flex align-items-center">
-              <CButton color="secondary" class="me-2">초기화</CButton>
-              <CButton color="secondary">조회</CButton>
-            </CCol>
-          </CRow>
-
-          <!-- 상단 제목: 공정 라우팅관리 -->
-          <CRow class="mb-3">
-            <CCol md="4">
-              <h6 class="fw-semibold mb-2">공정 라우팅관리</h6>
-            </CCol>
-          </CRow>
-
-          <!-- 가로 분할: 왼쪽영역/ 오른쪽영역 / 영역크기 다름 -->
-          <CRow style="height: 400px">
-            <!-- 부모 높이 지정 -->
-            <!-- 왼쪽 영역 -->
-            <CCol md="4" class="d-flex">
-              <CCard class="p-3 mb-3 flex-fill" style="overflow-x: auto; overflow-y: auto">
-                <CTable striped hover>
-                  <CTableHead color="dark">
-                    <CTableRow>
-                      <CTableHeaderCell scope="col" class="text-center" style="width: 56px">
-                        제품명
-                      </CTableHeaderCell>
-                    </CTableRow>
-                  </CTableHead>
-                  <CTableBody>
-                    <CTableRow><CTableDataCell>제품 A</CTableDataCell></CTableRow>
-                    <CTableRow><CTableDataCell>제품 B</CTableDataCell></CTableRow>
-                    <CTableRow><CTableDataCell>제품 C</CTableDataCell></CTableRow>
-                    <CTableRow><CTableDataCell>제품 D</CTableDataCell></CTableRow>
-                    <CTableRow><CTableDataCell>제품 E</CTableDataCell></CTableRow>
-                    <CTableRow><CTableDataCell>제품 F</CTableDataCell></CTableRow>
-                    <CTableRow><CTableDataCell>제품 G</CTableDataCell></CTableRow>
-                    <CTableRow><CTableDataCell>제품 H</CTableDataCell></CTableRow>
-                  </CTableBody>
-                </CTable>
-              </CCard>
-            </CCol>
-
-            <!-- 오른쪽 영역 / GPT 버전 -->
-            <CCol md="3">
-              <CInputGroup>
-                <CInputGroupText id="addon-ordr-name-1">제품명</CInputGroupText>
-                <CFormInput
-                  v-model="ordrName1"
-                  aria-label="Rsc-ordr-name-1"
-                  aria-describedby="addon-ordr-name-1"
-                />
-              </CInputGroup>
-
-              <h6 class="fw-semibold mb-2">3번영역: Form형태의 상세정보</h6>
-              <p>제품명/제품코드/option/규격/등록일</p>
-            </CCol>
-          </CRow>
-        </CCardBody>
-      </CCard>
+  <CRow class="mb-3">
+    <CCol md="4">
+      <h6 class="fw-semibold mb-3">공정 라우팅관리</h6>
     </CCol>
-  </CContainer>
+  </CRow>
+
+  <!-- 왼쪽영역 그리드 : 검색 결과 테이블 -->
+  <CRow>
+    <CCol md="5">
+      <table class="table table-bordered table-hover">
+        <thead>
+          <tr>
+            <th>코드</th>
+            <th>제품명</th>
+            <th>규격</th>
+            <th>제품명</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="(prdts, i) in prdtList"
+            :key="i"
+            @dblclick="selectProduct(prdts)"
+            style="cursor: pointer"
+          >
+            <td>{{ prdts.prdt_id }}</td>
+            <td>{{ prdts.prdt_nm }}</td>
+            <td>{{ prdts.spec }}</td>
+            <td>{{ prdts.opt_nm }}</td>
+          </tr>
+          <tr v-if="prdtList.length === 0">
+            <td colspan="4" class="text-center text-muted">검색 결과가 없습니다.</td>
+          </tr>
+        </tbody>
+      </table>
+    </CCol>
+  </CRow>
+
+  <!-- 가로 분할: 왼쪽영역/ 오른쪽영역 / 영역크기 다름 -->
+  <CRow style="height: 400px">
+    <!-- 좌측: 데이터 그리드 -->
+    <CCol md="4" class="d-flex"> </CCol>
+  </CRow>
+  <!-- 신규/저장/삭제 버튼 -->
+  <!--<div class="d-flex justify-content-end gap-2 mb-2">
+    <CButton color="secondary" size="sm" @click="handleSearch">조회</CButton>
+    <CButton color="secondary" size="sm" @click="handleNew">신규</CButton>
+    <CButton color="secondary" size="sm" @click="handleSave">저장</CButton>
+    <CButton color="danger" size="sm" @click="handleDelete">삭제</CButton>
+  </div> -->
 </template>
 
 <script setup>
 import { ref } from 'vue'
+import axios from 'axios'
 
-const ordrName1 = ref('')
+const pickValue = ref('prdt_nm') // 검색 기준 (기본값: 제품명)
+const searchKeyword = ref('') // 검색어
+const prdtList = ref([]) // 검색 결과 리스트
+
+// 🔍 검색 함수
+const prdtSearch = async () => {
+  const params = { prdt_id: '', prdt_nm: '', spec: '', opt_nm: '' }
+
+  if (pickValue.value == 'prdt_id') {
+    params.prdt_id = searchKeyword.value
+  } else if (pickValue.value == 'prdt_nm') {
+    params.prdt_nm = searchKeyword.value
+  } else if (pickValue.value == 'spec') {
+    params.spec = searchKeyword.value
+  } else {
+    params.opt_nm = searchKeyword.value
+  }
+
+  try {
+    const result = await axios.get('/api/prdts', { params })
+    prdtList.value = result.data
+  } catch (err) {
+    console.error('검색 오류:', err)
+  }
+}
+
+function masterReset() {
+  prdtList.value = ''
+}
+
+// ✅ 더블클릭 시 선택 이벤트 (추가 기능용)
+const selectProduct = (prdts) => {
+  ;`선택된 제품: ${prdts.prdt_nm}`
+}
 </script>
