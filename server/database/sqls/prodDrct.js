@@ -1,6 +1,6 @@
 const prodDrctMasterSearch =
-	// 생산지시서 마스터 조회 
-	`SELECT  
+  // 생산지시서 마스터 조회
+  `SELECT  
  prod_drct_id,
  prod_drct_nm,
  prod_drct_fr_dt,
@@ -18,10 +18,9 @@ WHERE prod_drct_id IN (
 							 b.plan_qy
 							FROM prod_drct_deta a
 							JOIN prod_plan_deta b
-							ON a.prod_plan_deta_id = b.prod_plan_deta_id
-							WHERE a.prod_plan_deta_id <> 'none'
+							ON a.prod_plan_deta_id = b.prod_plan_deta_id							
 							GROUP BY a.prod_plan_deta_id, b.plan_qy
-							HAVING SUM(a.drct_qy) < b.plan_qy) b
+							) b
 						ON a.prod_plan_deta_id = b.prod_plan_deta_id)
 AND prod_drct_nm LIKE CONCAT('%', ?, '%')
 AND reg_dt >= ?
@@ -32,8 +31,8 @@ AND (
 )`;
 
 const prodDrctDetailSearch =
-	// 생산지시서 디테일 조회 
-	`SELECT 
+  // 생산지시서 디테일 조회
+  `SELECT 
  a.prod_drct_deta_id,
  a.prod_drct_id,
  a.prod_plan_deta_id, 
@@ -70,8 +69,7 @@ WHERE prod_drct_id = ?
 AND c.prdt_st = 'K1'
 AND d.st = 'M1'`;
 
-
 module.exports = {
-	prodDrctMasterSearch,
-	prodDrctDetailSearch,
+  prodDrctMasterSearch,
+  prodDrctDetailSearch,
 };

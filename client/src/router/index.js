@@ -153,6 +153,11 @@ const routes = [
             name: 'endPrdtQltyInsp',
             component: () => import('@/views/qlty/endPrdtQltyInsp.vue'),
           },
+          {
+            path: '/qlty/semiPrdtQltyInsp',
+            name: 'semiPrdtQltyInsp',
+            component: () => import('@/views/qlty/semiPrdtQltyInsp.vue'),
+          },
         ],
       },
 
@@ -504,7 +509,7 @@ router.beforeEach(async (to) => {
     // fetchSession 실패해도 user는 null 유지
     try {
       await auth.fetchSession()
-    } catch { }
+    } catch {}
   }
 
   // 보호할 경로 목록

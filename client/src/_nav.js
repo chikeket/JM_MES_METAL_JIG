@@ -91,6 +91,11 @@ export default [
         name: '생산계획조회',
         to: '/product/prodPlanBoardList',
       },
+      {
+        component: 'CNavItem',
+        name: '반제품품질',
+        to: '/qlty/semiPrdtQltyInsp',
+      },
     ],
   },
   {
