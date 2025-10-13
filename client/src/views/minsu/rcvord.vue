@@ -78,9 +78,9 @@
             <th class="no-col">No</th>
             <th class="prod-col">제품 명</th>
             <th class="opt-col">제품 옵션 명</th>
-            <th class="qty-col">요청 수량</th>
             <th class="spec-col">규격</th>
             <th class="unit-col">단위</th>
+            <th class="qty-col">요청 수량</th>
             <th class="producible-col">생산 가능 여부</th>
             <th class="due-date-col">납품 예정 일자</th>
             <th class="remark-col">비고</th>
@@ -102,6 +102,12 @@
             <td class="cell-left">
               <span class="cell-text" :title="row.optionName">{{ row.optionName }}</span>
             </td>
+            <td class="cell-left">
+              <span class="cell-text" :title="row.spec">{{ row.spec }}</span>
+            </td>
+            <td class="cell-left">
+              <span class="cell-text" :title="row.unit">{{ row.unit }}</span>
+            </td>
             <td class="cell-number editable" @dblclick="startEdit(row, 'requestQty')">
               <template v-if="isCellEditing(row, 'requestQty')">
                 <input
@@ -120,12 +126,6 @@
                   {{ row.requestQty ? formatNumber(row.requestQty) : '입력' }}
                 </span>
               </template>
-            </td>
-            <td class="cell-left">
-              <span class="cell-text" :title="row.spec">{{ row.spec }}</span>
-            </td>
-            <td class="cell-left">
-              <span class="cell-text" :title="row.unit">{{ row.unit }}</span>
             </td>
             <td class="cell-left">
               <span class="cell-text" :title="row.producible">{{ row.producible }}</span>
