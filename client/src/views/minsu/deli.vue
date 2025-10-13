@@ -68,12 +68,12 @@
             <th class="co-col">납품 업체 명</th>
             <th class="pr-col">제품 명</th>
             <th class="op-col">제품 옵션 명</th>
-            <th class="trqy-col">총 요청 수량</th>
-            <th class="tdqy-col">당회 총 납품 수량</th>
-            <th class="dqy-col">기납품 수량</th>
-            <th class="unqy-col">미납품 수량</th>
             <th class="spec-col">규격</th>
             <th class="unit-col">단위</th>
+            <th class="trqy-col">총 요청 수량</th>
+            <th class="dqy-col">기납품 수량</th>
+            <th class="unqy-col">미납품 수량</th>
+            <th class="tdqy-col">당회 총 납품 수량</th>
             <th class="rm-col">비고</th>
           </tr>
         </thead>
@@ -99,8 +99,20 @@
             <td class="cell-left">
               <span class="cell-text" :title="row.optionName">{{ row.optionName }}</span>
             </td>
+            <td class="cell-left">
+              <span class="cell-text" :title="row.spec">{{ row.spec }}</span>
+            </td>
+            <td class="cell-left">
+              <span class="cell-text" :title="row.unit">{{ row.unit }}</span>
+            </td>
             <td class="cell-number">
               <span>{{ formatNumber(row.total_req_qty || 0) }}</span>
+            </td>
+            <td class="cell-number">
+              <span>{{ formatNumber(row.delivered_qty || 0) }}</span>
+            </td>
+            <td class="cell-number">
+              <span>{{ formatNumber(row.remaining_qty || 0) }}</span>
             </td>
             <td
               class="cell-number editable"
@@ -126,18 +138,6 @@
                   {{ row.requestQty ? formatNumber(row.requestQty) : '입력' }}
                 </span>
               </template>
-            </td>
-            <td class="cell-number">
-              <span>{{ formatNumber(row.delivered_qty || 0) }}</span>
-            </td>
-            <td class="cell-number">
-              <span>{{ formatNumber(row.remaining_qty || 0) }}</span>
-            </td>
-            <td class="cell-left">
-              <span class="cell-text" :title="row.spec">{{ row.spec }}</span>
-            </td>
-            <td class="cell-left">
-              <span class="cell-text" :title="row.unit">{{ row.unit }}</span>
             </td>
             <td class="cell-left">
               <div class="ellipsis" :title="row.remark || ''">
@@ -185,6 +185,8 @@ function createLine(partial = {}) {
   return {
     // frontTempId: 프론트 임시 식별자 (백엔드 rcvord_deta_id와 구분)
     frontTempId: lineSeq++,
+    // 기존 저장 라인 식별자(수정/업데이트 시 사용)
+    deli_deta_id: null,
     rcvord_deta_id: null,
     prdt_id: null,
     prdt_opt_id: null,
@@ -291,6 +293,27 @@ function onResetLines() {
   cancelEdit()
 }
 
+// 삭제: 현재 폼의 납품 ID(header.orderId) 기준으로 삭제
+async function onDelete() {
+  const id = (header.orderId || '').trim()
+  if (!id) {
+    alert('삭제할 납품 ID가 없습니다. 먼저 납품을 조회하세요.')
+    return
+  }
+  const ok = confirm(`납품서 [${id}] 를 삭제하시겠습니까?`)
+  if (!ok) return
+  try {
+    await axios.delete(`/api/delis/${encodeURIComponent(id)}`)
+    alert('삭제되었습니다.')
+    // 초기화
+    onNew()
+  } catch (err) {
+    console.error('deli delete error', err)
+    const msg = err?.response?.data?.message || '삭제 중 오류가 발생했습니다.'
+    alert(msg)
+  }
+}
+
 // Header button stubs
 function applyDefaultOwnerIfEmpty() {
   // 신규 상태: orderId 없음
@@ -355,6 +378,8 @@ async function onSelectDeli(row) {
     lines.value = Array.isArray(ls)
       ? ls.map((l) =>
           createLine({
+            rcvord_deta_id: l.rcvord_deta_id || null,
+            deli_deta_id: l.deli_deta_id || null,
             rcvord_id: l.rcvord_id || '',
             co_nm: l.co_nm || '',
             productName: l.prdt_nm || '',
@@ -391,51 +416,137 @@ function formatDateStr(d) {
     return ''
   }
 }
-function onSave() {
-  alert('납품 저장 기능은 준비중입니다.')
+
+function buildCutoffDt(dateOnly) {
+  try {
+    const base = (dateOnly || '').trim()
+    if (!base) return new Date().toISOString().slice(0, 19).replace('T', ' ')
+    if (/^\d{4}-\d{2}-\d{2}$/.test(base)) {
+      const now = new Date()
+      const hh = String(now.getHours()).padStart(2, '0')
+      const mm = String(now.getMinutes()).padStart(2, '0')
+      const ss = String(now.getSeconds()).padStart(2, '0')
+      return `${base} ${hh}:${mm}:${ss}`
+    }
+    // 이미 시분초 포함된 경우 표준화
+    const dt = new Date(base)
+    if (!isNaN(dt.getTime())) return dt.toISOString().slice(0, 19).replace('T', ' ')
+  } catch (e) {}
+  return new Date().toISOString().slice(0, 19).replace('T', ' ')
+}
+async function onSave() {
+  try {
+    const payload = buildSavePayload()
+    const { data } = await axios.post('/api/delis/save', payload)
+    if (data?.ok) {
+      // 저장 성공 시 신규 버튼과 동일하게 초기화
+      alert('저장되었습니다.')
+      onNew()
+    } else {
+      alert('저장 실패')
+    }
+  } catch (err) {
+    console.error('deli save error', err)
+    alert('저장 중 오류가 발생했습니다.')
+  }
 }
 
 function buildSavePayload() {
   const hdr = {
-    rcvord_id: header.orderId || '',
-    // 현재는 이름만 입력받고 있으므로 서버가 co_nm/emp_nm으로 ID 역매핑 하도록 전송
-    co_id: null,
-    emp_id: null,
-    co_nm: header.vendorName ? header.vendorName.trim() : '',
+    deli_id: header.orderId || '',
+    emp_id: header.empId || null, // 서버에서 emp_nm으로도 역매핑 시도
     emp_nm: header.owner ? header.owner.trim() : '',
-    reg_dt: header.orderDate || formatDateStr(new Date()),
-    // 표시용 status 는 명칭이므로, 저장 시에는 코드(statusCode)가 있으면 우선, 없으면 기본 'J2'
-    st: header.statusCode || 'J2',
+    deli_dt: header.orderDate || formatDateStr(new Date()),
     rm: header.note || null,
   }
   const ls = lines.value.map((l) => ({
+    deli_deta_id: l.deli_deta_id || null,
     rcvord_deta_id: l.rcvord_deta_id || null,
-    prdt_id: l.prdt_id || null,
-    prdt_opt_id: l.prdt_opt_id || null,
-    rcvord_qy: Number(l.requestQty) || 0,
-    paprd_dt: l.paprd_dt || null,
-    rm: l.remark || null,
+    delivered_qty: Number(l.delivered_qty) || 0,
+    requestQty: Number(l.requestQty) || 0,
+    remark: l.remark || null,
   }))
   return { header: hdr, lines: ls }
 }
-
-// 제품 선택 시 라인 추가
-async function onSelectRcvord(product) {
+// 수주 선택 시 (행 더블클릭) -> 해당 수주의 상세를 조회하여 라인들 추가
+async function onSelectRcvord(rcvordRow) {
   try {
-    const newLine = createLine({
-      prdt_id: product.prdt_id,
-      prdt_opt_id: product.prdt_opt_id,
-      productName: product.prdt_nm,
-      optionName: product.opt_nm || '',
-      spec: product.spec,
-      unit: product.unit,
-      // 생산 가능 여부: 명칭(prdt_st_nm) 우선, 없으면 코드(prdt_st)
-      producible: product.prdt_st_nm || product.prdt_st,
-      requestQty: 0, // 기본 수량 0
-      paprd_dt: '',
-      remark: product.rm || '',
-    })
-    lines.value.push(newLine)
+    const id = rcvordRow?.rcvord_id
+    if (!id) return
+    // 수주 헤더/라인 조회
+    const { data } = await axios.get(`/api/rcvords/${id}`)
+    const { header: h, lines: ls } = data || {}
+
+    // 필요 시 헤더 일부 반영 (여기서는 비고만 덮어쓰기 예시)
+    if (h) {
+      header.note = h.rm || header.note
+    }
+
+    // 상세 라인을 그리드에 추가하고, 추가된 rcvord_deta_id들의 기납품 누계를 조회하여 즉시 반영
+    if (Array.isArray(ls)) {
+      const addedIds = []
+      ls.forEach((l) => {
+        if (lines.value.some((x) => x.rcvord_deta_id === l.rcvord_deta_id)) {
+          return
+        }
+        const newLine = createLine({
+          rcvord_deta_id: l.rcvord_deta_id,
+          rcvord_id: id,
+          co_nm: h?.co_nm || rcvordRow?.co_nm || '',
+          prdt_id: l.prdt_id,
+          prdt_opt_id: l.prdt_opt_id,
+          productName: l.prdt_nm,
+          optionName: l.opt_nm || '',
+          spec: l.spec,
+          unit: l.unit,
+          producible: l.prdt_st_nm || l.prdt_st || '',
+          total_req_qty: l.rcvord_qy || 0,
+          delivered_qty: 0,
+          remaining_qty: Number(l.rcvord_qy || 0),
+          requestQty: 0,
+          remark: l.rm || '',
+        })
+        lines.value.push(newLine)
+        addedIds.push(l.rcvord_deta_id)
+      })
+      // 기납품 누계 조회 API 호출하여 방금 추가된 라인들에 반영
+      if (addedIds.length) {
+        try {
+          const cutoffDt = buildCutoffDt(header.orderDate)
+          let map = {}
+          try {
+            const { data: sumRes } = await axios.get(`/api/delis/delivered-sum-before`, {
+              params: { ids: addedIds.join(','), cutoffDt },
+            })
+            map = sumRes?.data || {}
+          } catch (e1) {
+            console.warn('delivered-sum-before failed, fallback to total sum', e1)
+          }
+          // 폴백: 결과가 비어있으면 전체 누계 API 사용
+          if (!map || Object.keys(map).length === 0) {
+            try {
+              const { data: sumRes2 } = await axios.get(`/api/delis/delivered-sum`, {
+                params: { ids: addedIds.join(',') },
+              })
+              map = sumRes2?.data || {}
+            } catch (e2) {
+              console.error('delivered-sum fallback error', e2)
+            }
+          }
+          lines.value = lines.value.map((row) => {
+            if (addedIds.includes(row.rcvord_deta_id)) {
+              const delivered = Number(map?.[row.rcvord_deta_id] || 0)
+              const total = Number(row.total_req_qty || 0)
+              const remaining = Math.max(total - delivered, 0)
+              return { ...row, delivered_qty: delivered, remaining_qty: remaining }
+            }
+            return row
+          })
+        } catch (e) {
+          console.error('delivered-sum fetch error', e)
+        }
+      }
+    }
   } catch (err) {
     console.error('rcvord select error', err)
   } finally {
@@ -654,19 +765,19 @@ async function onSelectRcvord(product) {
   width: 100px;
 }
 .op-col {
-  width: 100px;
-}
-.trqy-col {
-  width: 100px;
-}
-.tdqy-col {
   width: 110px;
 }
+.trqy-col {
+  width: 110px;
+}
+.tdqy-col {
+  width: 160px;
+}
 .dqy-col {
-  width: 100px;
+  width: 110px;
 }
 .unqy-col {
-  width: 100px;
+  width: 110px;
 }
 .ro-col {
   width: 120px;
