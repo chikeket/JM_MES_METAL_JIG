@@ -153,6 +153,11 @@ const routes = [
             name: 'endPrdtQltyInsp',
             component: () => import('@/views/qlty/endPrdtQltyInsp.vue'),
           },
+          {
+            path: '/qlty/semiPrdtQltyInsp',
+            name: 'semiPrdtQltyInsp',
+            component: () => import('@/views/qlty/semiPrdtQltyInsp.vue'),
+          },
         ],
       },
 

@@ -24,7 +24,8 @@ WHERE a.rsc_nm LIKE CONCAT('%', ?, '%')
 AND b.qy > ?
 AND d.emp_nm LIKE CONCAT('%', ?, '%')
 AND e.co_nm LIKE CONCAT('%', ?, '%')
-AND c.reg_dt >= ?`;
+AND c.reg_dt >= ?
+ORDER BY c.reg_dt DESC`;
 
 //자재 품질 검수 ID생성 쿼리
 const rscQltyInspCreateId = `
@@ -53,6 +54,7 @@ SELECT
  a.rsc_ordr_deta_id,
  a.emp_id,
  b.emp_nm,
+ f.co_nm,
  d.rsc_nm,
  c.rsc_id,
  c.qy,
@@ -68,8 +70,12 @@ JOIN rsc_ordr_deta c
 ON a.rsc_ordr_deta_id = c.rsc_ordr_deta_id
 JOIN rsc d
 ON c.rsc_id = d.rsc_id
+JOIN rsc_ordr e
+ON c.rsc_ordr_id = e.rsc_ordr_id
+JOIN co f
+ON e.co_id = f.co_id
 WHERE b.emp_nm LIKE CONCAT('%', ?, '%')
-AND a.insp_dt >= ?`
+AND a.insp_dt >= ?`;
 
 //자재 품질 검사 테이블 수정
 const rscQltyInspUpdate = `
@@ -83,20 +89,20 @@ SET
  insp_qy = ?,
  insp_dt = ?
 WHERE rsc_qlty_insp_id = ?
-`
+`;
 
 //자재 품질 검사 테이블 삭제
 const rscQltyInspDelete = `
 DELETE
 FROM rsc_qlty_insp
 WHERE rsc_qlty_insp_id = ?
-`
+`;
 
 module.exports = {
-    rscOrdrQltyList,
-    rscQltyInspCreateId,
-    rscQltyInspInsert,
-    rscQltyInspSelect,
-    rscQltyInspUpdate,
-    rscQltyInspDelete,
+  rscOrdrQltyList,
+  rscQltyInspCreateId,
+  rscQltyInspInsert,
+  rscQltyInspSelect,
+  rscQltyInspUpdate,
+  rscQltyInspDelete,
 };
