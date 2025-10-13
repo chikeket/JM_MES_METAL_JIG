@@ -67,4 +67,4 @@ app.use("/", auth); // 로그인
 app.use("/", rscQltyInsp); // 자재품질검수
 app.use("/", endPrdtQltyInsp); // 완제품 품질검수
 app.use("/", qltyItem); // 품질항목 기준정보
-app.use("/api", wrhousdlvr); // 창고 입출고
+app.use("/", wrhousdlvr); // 창고 입출고

@@ -79,6 +79,11 @@
           <CTableHeaderCell scope="col" class="text-center" style="width: 140px"
             >수량</CTableHeaderCell
           >
+
+          <CTableHeaderCell scope="col" class="text-center" style="width: 140px"
+            >납품 예정 일</CTableHeaderCell
+          >
+
           <CTableHeaderCell scope="col" class="text-center">비고</CTableHeaderCell>
         </CTableRow>
       </CTableHead>
@@ -115,6 +120,23 @@
             <template v-else>{{ fmtQty(row.qty) }}</template>
           </CTableDataCell>
           <CTableDataCell class="text-end" v-else>&nbsp;</CTableDataCell>
+
+          <CTableDataCell v-if="!row.__empty" @dblclick="startEdit(row, 'deli_dt')">
+            <template v-if="isEditing(row, 'deli_dt')">
+              <CFormInput
+                v-model="editDraft"
+                type="date"
+                size="sm"
+                @keydown.enter.prevent="commitAndBlur(row, 'deli_dt', $event)"
+                @keyup.esc="cancelEdit"
+                @blur="commitEdit(row, 'deli_dt')"
+                placeholder="납품 예정 일 입력"
+              />
+            </template>
+            <template v-else>{{ row.deli_dt || '' }}</template>
+          </CTableDataCell>
+          <CTableDataCell v-else>&nbsp;</CTableDataCell>
+
           <CTableDataCell v-if="!row.__empty" @dblclick="startEdit(row, 'note')">
             <template v-if="isEditing(row, 'note')">
               <CFormInput
@@ -147,6 +169,7 @@ import CoModal from '../modal/coModal.vue'
 import RscOrdrModal from '../modal/rscOrdrModal.vue'
 import { useAuthStore } from '@/stores/auth.js'
 import useDates from '@/utils/useDates.js'
+import { CTableDataCell } from '@coreui/vue'
 
 const { dateFormat } = useDates
 const auth = useAuthStore()
@@ -242,6 +265,14 @@ const selectedRsc = (r) => {
   const spec = r.spec ?? r.SPEC ?? ''
   const unit = r.rsc_unit ?? r.unit ?? r.RSC_UNIT ?? ''
   if (!code) return
+
+
+  // 기본 납품 예정일을 7일 후로 설정
+  const defaultDeliDt = new Date()
+  defaultDeliDt.setDate(defaultDeliDt.getDate() + 7)
+  const deliDtStr = defaultDeliDt.toISOString().slice(0, 10)
+
+
   const newId = rows.value.length > 0 ? Math.max(...rows.value.map((x) => x.id || 0)) + 1 : 1
   rows.value.push({
     id: newId,
@@ -251,6 +282,9 @@ const selectedRsc = (r) => {
     spec,
     unit,
     qty: 0,
+
+    deli_dt: deliDtStr,
+
     note: '',
   })
 }
@@ -268,11 +302,19 @@ const onSelectRscOrdr = async (ordr) => {
 
   console.log('[RscOrdr] onSelectRscOrdr received:', ordr)
 
+  console.log('[RscOrdr] master data:', ordr.master)
+
+
   // 마스터 정보 설정
   currentOrdrId.value = ordr.master?.rsc_ordr_id ?? null
   Info.value.ordrName1 = ordr.master?.rsc_ordr_nm ?? Info.value.ordrName1
   Info.value.co_nm = ordr.master?.co_nm ?? Info.value.co_nm
   Info.value.remark = ordr.master?.rm ?? ordr.master?.remark ?? Info.value.remark
+
+
+  console.log('[RscOrdr] mapped remark:', Info.value.remark)
+  console.log('[RscOrdr] source rm:', ordr.master?.rm)
+
 
   if (ordr.master?.reg_dt) {
     const v = ordr.master.reg_dt
@@ -303,6 +345,13 @@ const onSelectRscOrdr = async (ordr) => {
         unit: d.rsc_unit ?? d.unit ?? '',
         qty: Number(d.qy ?? 0),
         note: d.rm ?? '',
+
+        deli_dt:
+          d.deli_dt &&
+          (typeof d.deli_dt === 'string'
+            ? d.deli_dt.slice(0, 10)
+            : dateFormat(d.deli_dt, 'yyyy-MM-dd')),
+
         rsc_ordr_deta_id: d.rsc_ordr_deta_id ?? null,
       }))
     } catch (e) {
@@ -320,6 +369,11 @@ const onSelectRscOrdr = async (ordr) => {
         spec: d.spec ?? d.SPEC ?? '',
         unit: d.rsc_unit ?? d.unit ?? d.RSC_UNIT ?? d.UNIT ?? '',
         qty: Number((d.qy ?? d.QY ?? 0) || 0),
+        deli_dt:
+          d.deli_dt &&
+          (typeof d.deli_dt === 'string'
+            ? d.deli_dt.slice(0, 10)
+            : dateFormat(d.deli_dt, 'yyyy-MM-dd')),
         note: d.rm ?? d.RM ?? '',
         rsc_ordr_deta_id: d.rsc_ordr_deta_id ?? d.RSC_ORDR_DETA_ID ?? null,
       }
@@ -338,7 +392,16 @@ function startEdit(row, field) {
   if (!row || row.__empty) return
   editing.id = row.id
   editing.field = field
-  editDraft.value = field === 'qty' ? row.qty ?? 0 : row.note ?? ''
+
+  
+  if (field === 'qty') {
+    editDraft.value = row.qty ?? 0
+  } else if (field === 'deli_dt') {
+    editDraft.value = row.deli_dt ?? ''
+  } else if (field === 'note') {
+    editDraft.value = row.note ?? ''
+  }
+
 }
 function commitEdit(row, field) {
   if (!row) return
@@ -348,6 +411,10 @@ function commitEdit(row, field) {
     const val = Number.isFinite(v) ? v : 0
     if (idx >= 0) rows.value[idx].qty = val
     row.qty = val
+  } else if (field === 'deli_dt') {
+    const dateVal = editDraft.value ?? ''
+    if (idx >= 0) rows.value[idx].deli_dt = dateVal
+    row.deli_dt = dateVal
   } else if (field === 'note') {
     if (idx >= 0) rows.value[idx].note = editDraft.value ?? ''
     row.note = editDraft.value ?? ''
@@ -373,7 +440,19 @@ const MIN_DISPLAY_ROWS = 10
 const displayRows = computed(() => {
   const arr = (rows.value || []).slice()
   while (arr.length < MIN_DISPLAY_ROWS)
-    arr.push({ __empty: true, id: '', code: '', name: '', spec: '', unit: '', qty: null, note: '' })
+
+    arr.push({
+      __empty: true,
+      id: '',
+      code: '',
+      name: '',
+      spec: '',
+      unit: '',
+      qty: null,
+      deli_dt: '',
+      note: '',
+    })
+
   return arr
 })
 
@@ -404,17 +483,41 @@ const saveRscOrdr = async () => {
     if (invalidQtyRows.length) {
       alert('수량이 0입니다. 수량을 입력하세요.')
       return
+
     }
+
+    // 납품 예정일 검증 추가
+    const invalidDeliDtRows = candidateRows.filter((r) => {
+      return !r.deli_dt || String(r.deli_dt).trim() === ''
+    })
+    if (invalidDeliDtRows.length) {
+      alert('납품 예정일을 입력하세요.')
+      return
+    }
+
+    if (!Info.value.ordrName1 || !Info.value.ordrName1.trim()) {
+      alert('자재 발주서 명을 입력하세요.')
+      return
+    }
+    if (!Info.value.regDate) {
+      alert('등록 일자를 입력하세요.')
+      return
+    }
+    if (!selectedCoId.value) {
+      alert('공급 업체를 선택하세요.')
+      return
+    }
+
 
     // 마스터/상세 구성(디테일은 여러 건 가능)
     const master = {
+      rsc_ordr_nm: Info.value.ordrName1 || '',
       co_id: selectedCoId.value || null,
       emp_id: ownerEmpId.value || null,
       reg_dt:
         (Info.value.regDate && String(Info.value.regDate).slice(0, 10)) ||
         (!currentOrdrId.value ? dateFormat(null, 'yyyy-MM-dd') : null),
       rm: Info.value.remark || null,
-      rsc_ordr_nm: Info.value.ordrName1 || '',
     }
 
     const detailList = candidateRows
@@ -422,6 +525,9 @@ const saveRscOrdr = async () => {
       .map((r) => ({
         rsc_id: r.code,
         qy: Number(r.qty ?? 0),
+
+        deli_dt: r.deli_dt && String(r.deli_dt).trim() ? String(r.deli_dt).slice(0, 10) : null,
+
         rm: r.note ?? '',
         rsc_ordr_deta_id: r.rsc_ordr_deta_id ?? null,
       }))
@@ -519,6 +625,13 @@ async function reloadDetails() {
       spec: d.spec ?? '',
       unit: d.rsc_unit ?? d.unit ?? '',
       qty: Number(d.qy ?? 0),
+
+      deli_dt: d.deli_dt
+        ? typeof d.deli_dt === 'string'
+          ? d.deli_dt.slice(0, 10)
+          : dateFormat(d.deli_dt, 'yyyy-MM-dd')
+        : '',
+
       note: d.rm ?? '',
       rsc_ordr_deta_id: d.rsc_ordr_deta_id ?? null,
     }))

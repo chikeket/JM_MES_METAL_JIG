@@ -4,8 +4,18 @@
     <div class="d-flex align-items-center mb-3 gap-2">
       <div>
         <!-- 선택된 버튼은 짙은 회색(btn-secondary), 선택안된 버튼은 outline 회색 -->
-        <CButton :class="mode === 'in' ? 'btn-secondary' : 'btn-outline-secondary'" size="sm" @click="mode = 'in'">입고</CButton>
-        <CButton :class="mode === 'out' ? 'btn-secondary' : 'btn-outline-secondary'" size="sm" @click="mode = 'out'">출고</CButton>
+        <CButton
+          :class="mode === 'in' ? 'btn-secondary' : 'btn-outline-secondary'"
+          size="sm"
+          @click="mode = 'in'"
+          >입고</CButton
+        >
+        <CButton
+          :class="mode === 'out' ? 'btn-secondary' : 'btn-outline-secondary'"
+          size="sm"
+          @click="mode = 'out'"
+          >출고</CButton
+        >
       </div>
       <div class="ms-auto d-flex gap-2">
         <CButton color="secondary" size="sm" @click="onReset">초기화</CButton>
@@ -14,10 +24,10 @@
     </div>
 
     <!-- 검사서 선택 모달 -->
-    <InspectionModal 
-      :isOpen="isInspectionModalOpen" 
-      @close="closeInspectionModal" 
-      @select="onSelectInspection" 
+    <InspectionModal
+      :isOpen="isInspectionModalOpen"
+      @close="closeInspectionModal"
+      @select="onSelectInspection"
     />
 
     <!-- 요약(상단 소형 테이블) -->
@@ -46,7 +56,9 @@
               <CTableDataCell class="text-end">{{ r.qty ?? '' }}</CTableDataCell>
             </CTableRow>
             <CTableRow v-if="summaryRows.length === 0">
-              <CTableDataCell colspan="7" class="text-center text-muted">데이터 없음</CTableDataCell>
+              <CTableDataCell colspan="7" class="text-center text-muted"
+                >데이터 없음</CTableDataCell
+              >
             </CTableRow>
           </CTableBody>
         </CTable>
@@ -64,20 +76,24 @@
         </div>
       </div>
 
-      <div class="card-body" style="overflow:auto; max-height:60vh;">
+      <div class="card-body" style="overflow: auto; max-height: 60vh">
         <CTable hover bordered small class="mb-0 align-middle">
           <CTableHead color="dark">
             <CTableRow>
-              <CTableHeaderCell scope="col" class="text-center" style="width:56px">
+              <CTableHeaderCell scope="col" class="text-center" style="width: 56px">
                 <CFormCheck :checked="allSelected" @change="toggleAll($event)" />
               </CTableHeaderCell>
-              <CTableHeaderCell class="text-center" style="width:90px">수불 ID</CTableHeaderCell>
-              <CTableHeaderCell class="text-center" style="width:120px">품목 유형</CTableHeaderCell>
-              <CTableHeaderCell class="text-center" style="width:120px">품목 코드</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 90px">수불 ID</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 120px"
+                >품목 유형</CTableHeaderCell
+              >
+              <CTableHeaderCell class="text-center" style="width: 120px"
+                >품목 코드</CTableHeaderCell
+              >
               <CTableHeaderCell class="text-center">품목 이름</CTableHeaderCell>
-              <CTableHeaderCell class="text-center" style="width:100px">규격</CTableHeaderCell>
-              <CTableHeaderCell class="text-center" style="width:80px">단위</CTableHeaderCell>
-              <CTableHeaderCell class="text-center" style="width:100px">수량</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 100px">규격</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 80px">단위</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 100px">수량</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
 
@@ -108,7 +124,9 @@
             </CTableRow>
 
             <CTableRow v-if="rows.length === 0">
-              <CTableDataCell colspan="8" class="text-center text-muted">행을 추가하세요</CTableDataCell>
+              <CTableDataCell colspan="8" class="text-center text-muted"
+                >행을 추가하세요</CTableDataCell
+              >
             </CTableRow>
           </CTableBody>
         </CTable>
@@ -131,7 +149,7 @@ import {
   CButton,
   CFormCheck,
   CFormInput,
-  CContainer
+  CContainer,
 } from '@coreui/vue'
 
 // 상태
@@ -157,23 +175,23 @@ const toggleRow = (id, ev) => {
   if (checked) {
     if (!selectedIds.value.includes(id)) selectedIds.value.push(id)
   } else {
-    selectedIds.value = selectedIds.value.filter(x => x !== id)
+    selectedIds.value = selectedIds.value.filter((x) => x !== id)
   }
 }
 
 const allSelected = computed(() => {
-  const ids = rows.value.map(r => r.id)
+  const ids = rows.value.map((r) => r.id)
   if (ids.length === 0) return false
-  return ids.every(id => selectedIds.value.includes(id))
+  return ids.every((id) => selectedIds.value.includes(id))
 })
 
 const toggleAll = (ev) => {
   const checked = ev && ev.target ? !!ev.target.checked : !allSelected.value
-  const ids = rows.value.map(r => r.id)
+  const ids = rows.value.map((r) => r.id)
   if (checked) {
     for (const id of ids) if (!selectedIds.value.includes(id)) selectedIds.value.push(id)
   } else {
-    selectedIds.value = selectedIds.value.filter(id => !ids.includes(id))
+    selectedIds.value = selectedIds.value.filter((id) => !ids.includes(id))
   }
 }
 
@@ -185,7 +203,7 @@ const addRow = () => {
 
 const deleteSelectedRows = () => {
   if (!selectedIds.value.length) return
-  rows.value = rows.value.filter(r => !selectedIds.value.includes(r.id))
+  rows.value = rows.value.filter((r) => !selectedIds.value.includes(r.id))
   selectedIds.value = []
 }
 
@@ -211,19 +229,21 @@ const closeInspectionModal = () => {
 
 const onSelectInspection = (inspection) => {
   console.log('[wrhousdlvr] 검사서 선택됨:', inspection)
-  
+
   // 요약 테이블에 선택된 검사서 정보 표시
-  summaryRows.value = [{
-    id: inspection.insp_no,
-    inspect_id: inspection.insp_no,
-    type: inspection.item_type || '자재', // 기본값 설정
-    code: inspection.item_code,
-    name: inspection.item_name,
-    spec: inspection.item_spec || '',
-    unit: inspection.item_unit || 'EA',
-    qty: inspection.pass_qty || inspection.insp_qty || 0
-  }]
-  
+  summaryRows.value = [
+    {
+      id: inspection.insp_no,
+      inspect_id: inspection.insp_no,
+      type: inspection.item_type, // 기본값 설정
+      code: inspection.item_code,
+      name: inspection.item_name,
+      spec: inspection.item_spec,
+      unit: inspection.item_unit,
+      qty: inspection.pass_qty || inspection.insp_qty || 0,
+    },
+  ]
+
   // 메인 그리드에 새 행 추가 (검사서 정보 기반)
   const newRow = {
     id: Date.now().toString(36) + Math.floor(Math.random() * 1000),
@@ -233,14 +253,14 @@ const onSelectInspection = (inspection) => {
     name: inspection.item_name,
     spec: inspection.item_spec || '',
     unit: inspection.item_unit || 'EA',
-    qty: mode.value === 'in' ? (inspection.pass_qty || inspection.insp_qty || 0) : 0,
+    qty: mode.value === 'in' ? inspection.pass_qty || inspection.insp_qty || 0 : 0,
     // 검사서 관련 정보 저장 (백엔드 저장 시 사용)
     insp_no: inspection.insp_no,
-    insp_date: inspection.insp_date
+    insp_date: inspection.insp_date,
   }
-  
+
   rows.value.push(newRow)
-  
+
   alert(`검사서 ${inspection.insp_no}의 품목이 추가되었습니다.`)
 }
 
@@ -250,9 +270,9 @@ const onSave = async () => {
       alert('저장할 데이터가 없습니다.')
       return
     }
-    
+
     // 거래 유형별 데이터 변환
-    const transactionList = rows.value.map(row => ({
+    const transactionList = rows.value.map((row) => ({
       txn_type: mode.value, // 'in' 또는 'out'
       item_code: row.code,
       item_name: row.name,
@@ -261,18 +281,18 @@ const onSave = async () => {
       qty: Number(row.qty) || 0,
       insp_no: row.insp_no || null, // 검사서 번호 (입고 시 필수)
       txn_date: new Date().toISOString().split('T')[0], // 오늘 날짜
-      remark: `${mode.value === 'in' ? '입고' : '출고'} 처리`
+      remark: `${mode.value === 'in' ? '입고' : '출고'} 처리`,
     }))
-    
+
     const payload = {
       transactionList,
       emp_id: 'current_user', // 실제로는 로그인 세션에서 가져와야 함
     }
-    
+
     console.log('[wrhousdlvr] 저장 요청 데이터:', payload)
-    
+
     const response = await axios.post('/api/warehouse/transactions', payload)
-    
+
     if (response.data?.isSuccessed) {
       alert(`${mode.value === 'in' ? '입고' : '출고'} 처리가 완료되었습니다.`)
       // 저장 성공 시 초기화

@@ -8,49 +8,203 @@ const wrhousdlvrService = require("../services/wrhousdlvr_service.js");
 // 창고 입출고 거래 목록 조회 (마스터 목록)
 router.get("/warehouse/transactions", async (req, res) => {
   try {
-    console.log('[wrhousdlvr_router] incoming query:', req.query);
+    console.log("[wrhousdlvr_router] incoming query:", req.query);
     const result = await wrhousdlvrService.getTransactionList(req.query);
     res.json(result);
   } catch (err) {
-    console.error('[wrhousdlvr_router] error stack:', err && err.stack ? err.stack : err);
+    console.error(
+      "[wrhousdlvr_router] error stack:",
+      err && err.stack ? err.stack : err
+    );
     // 상세 에러를 개발용으로 응답에 포함 (운영시 제거)
-    res.status(500).json({ error: err?.message ?? 'server error', stack: err?.stack ?? null });
+    res.status(500).json({
+      error: err?.message ?? "server error",
+      stack: err?.stack ?? null,
+    });
   }
 });
 
 // 검사서 목록 조회 (입출고 가능한 검사 완료 품목들)
 router.get("/warehouse/inspections", async (req, res) => {
   try {
-    console.log('[wrhousdlvr_router] /inspections query:', req.query);
+    console.log("[wrhousdlvr_router] /inspections query:", req.query);
     const result = await wrhousdlvrService.getInspectionList(req.query);
-    console.log('[wrhousdlvr_router] /inspections result length:', Array.isArray(result) ? result.length : 'N/A');
+    console.log(
+      "[wrhousdlvr_router] /inspections result length:",
+      Array.isArray(result) ? result.length : "N/A"
+    );
     res.json(result);
   } catch (err) {
-    console.error('[wrhousdlvr_router] /inspections error:', err);
+    console.error("[wrhousdlvr_router] /inspections error:", err);
     res.status(500).json([]);
   }
 });
 
 // 품질검사서 목록 조회 (기존 API와 호환)
 router.get("/qltyInsp/list", async (req, res) => {
+  console.log("[wrhousdlvr_router] /qltyInsp/list 요청 받음");
+  console.log("[wrhousdlvr_router] query:", req.query);
+
   try {
-    console.log('[wrhousdlvr_router] /qltyInsp/list query:', req.query);
-    const result = await wrhousdlvrService.getQualityInspectionList(req.query);
-    res.json(result);
-  } catch (err) {
-    console.error('[wrhousdlvr_router] /qltyInsp/list error:', err);
-    res.status(500).json([]);
+    const { item_code = "", item_name = "", insp_status = "" } = req.query;
+
+    const results = await wrhousdlvrService.getQualityInspectionList(
+      item_code,
+      item_name,
+      insp_status
+    );
+
+    console.log("[wrhousdlvr_router] 완제품 검사서 응답 건수:", results.length);
+    res.json(results);
+  } catch (error) {
+    console.error("[wrhousdlvr_router] 완제품 검사서 조회 실패:", error);
+    res.status(500).json({
+      error: "검사서 목록 조회 실패",
+      message: error.message,
+    });
+  }
+});
+
+// 자재 품질검사서 목록 조회
+router.get("/qltyInsp/rsc/list", async (req, res) => {
+  console.log("[wrhousdlvr_router] /qltyInsp/rsc/list 요청 받음");
+  console.log("[wrhousdlvr_router] query:", req.query);
+
+  try {
+    const { item_code = "", item_name = "", insp_status = "" } = req.query;
+
+    const results = await wrhousdlvrService.getRscQualityInspectionList(
+      item_code,
+      item_name,
+      insp_status
+    );
+
+    console.log("[wrhousdlvr_router] 자재 검사서 응답 건수:", results.length);
+    res.json(results);
+  } catch (error) {
+    console.error("[wrhousdlvr_router] 자재 검사서 조회 실패:", error);
+    res.status(500).json({
+      error: "자재 검사서 목록 조회 실패",
+      message: error.message,
+    });
+  }
+});
+
+// 완제품 품질검사서 목록 조회
+router.get("/qltyInsp/finished/list", async (req, res) => {
+  console.log("[wrhousdlvr_router] /qltyInsp/finished/list 요청 받음");
+  console.log("[wrhousdlvr_router] query:", req.query);
+
+  try {
+    const { item_code = "", item_name = "", insp_status = "" } = req.query;
+
+    const results = await wrhousdlvrService.getFinishedQualityInspectionList(
+      item_code,
+      item_name,
+      insp_status
+    );
+
+    console.log("[wrhousdlvr_router] 완제품 검사서 응답 건수:", results.length);
+    res.json(results);
+  } catch (error) {
+    console.error("[wrhousdlvr_router] 완제품 검사서 조회 실패:", error);
+    res.status(500).json({
+      error: "완제품 검사서 목록 조회 실패",
+      message: error.message,
+    });
+  }
+});
+
+// 반제품 품질검사서 목록 조회
+router.get("/qltyInsp/semi/list", async (req, res) => {
+  console.log("[wrhousdlvr_router] /qltyInsp/semi/list 요청 받음");
+  console.log("[wrhousdlvr_router] query:", req.query);
+
+  try {
+    const { item_code = "", item_name = "", insp_status = "" } = req.query;
+
+    const results = await wrhousdlvrService.getSemiQualityInspectionList(
+      item_code,
+      item_name,
+      insp_status
+    );
+
+    console.log("[wrhousdlvr_router] 반제품 검사서 응답 건수:", results.length);
+    res.json(results);
+  } catch (error) {
+    console.error("[wrhousdlvr_router] 반제품 검사서 조회 실패:", error);
+    res.status(500).json({
+      error: "반제품 검사서 목록 조회 실패",
+      message: error.message,
+    });
+  }
+});
+
+// 납품 상세 목록 조회
+router.get("/delivery/detail/list", async (req, res) => {
+  console.log("[wrhousdlvr_router] /delivery/detail/list 요청 받음");
+  console.log("[wrhousdlvr_router] query:", req.query);
+
+  try {
+    const { item_code = "", item_name = "", delivery_status = "" } = req.query;
+
+    const results = await wrhousdlvrService.getDeliveryDetailList(
+      item_code,
+      item_name,
+      delivery_status
+    );
+
+    console.log("[wrhousdlvr_router] 납품 상세 응답 건수:", results.length);
+    res.json(results);
+  } catch (error) {
+    console.error("[wrhousdlvr_router] 납품 상세 조회 실패:", error);
+    res.status(500).json({
+      error: "납품 상세 목록 조회 실패",
+      message: error.message,
+    });
+  }
+});
+
+// 자재 불출 대상 목록 조회
+router.get("/material/withdrawal/list", async (req, res) => {
+  console.log("[wrhousdlvr_router] /material/withdrawal/list 요청 받음");
+  console.log("[wrhousdlvr_router] query:", req.query);
+
+  try {
+    const {
+      item_code = "",
+      item_name = "",
+      withdrawal_status = "",
+    } = req.query;
+
+    const results = await wrhousdlvrService.getMaterialWithdrawalList(
+      item_code,
+      item_name,
+      withdrawal_status
+    );
+
+    console.log(
+      "[wrhousdlvr_router] 자재 불출 대상 응답 건수:",
+      results.length
+    );
+    res.json(results);
+  } catch (error) {
+    console.error("[wrhousdlvr_router] 자재 불출 대상 조회 실패:", error);
+    res.status(500).json({
+      error: "자재 불출 대상 목록 조회 실패",
+      message: error.message,
+    });
   }
 });
 
 // 납품서 기반 검사서 목록 조회
 router.get("/delivery/inspections", async (req, res) => {
   try {
-    console.log('[wrhousdlvr_router] /delivery/inspections query:', req.query);
+    console.log("[wrhousdlvr_router] /delivery/inspections query:", req.query);
     const result = await wrhousdlvrService.getDeliveryInspectionList(req.query);
     res.json(result);
   } catch (err) {
-    console.error('[wrhousdlvr_router] /delivery/inspections error:', err);
+    console.error("[wrhousdlvr_router] /delivery/inspections error:", err);
     res.status(500).json([]);
   }
 });
@@ -58,11 +212,11 @@ router.get("/delivery/inspections", async (req, res) => {
 // 발주서 기반 검사서 목록 조회
 router.get("/order/inspections", async (req, res) => {
   try {
-    console.log('[wrhousdlvr_router] /order/inspections query:', req.query);
+    console.log("[wrhousdlvr_router] /order/inspections query:", req.query);
     const result = await wrhousdlvrService.getOrderInspectionList(req.query);
     res.json(result);
   } catch (err) {
-    console.error('[wrhousdlvr_router] /order/inspections error:', err);
+    console.error("[wrhousdlvr_router] /order/inspections error:", err);
     res.status(500).json([]);
   }
 });
@@ -70,11 +224,16 @@ router.get("/order/inspections", async (req, res) => {
 // 지시서 기반 검사서 목록 조회
 router.get("/instruction/inspections", async (req, res) => {
   try {
-    console.log('[wrhousdlvr_router] /instruction/inspections query:', req.query);
-    const result = await wrhousdlvrService.getInstructionInspectionList(req.query);
+    console.log(
+      "[wrhousdlvr_router] /instruction/inspections query:",
+      req.query
+    );
+    const result = await wrhousdlvrService.getInstructionInspectionList(
+      req.query
+    );
     res.json(result);
   } catch (err) {
-    console.error('[wrhousdlvr_router] /instruction/inspections error:', err);
+    console.error("[wrhousdlvr_router] /instruction/inspections error:", err);
     res.status(500).json([]);
   }
 });
@@ -83,11 +242,11 @@ router.get("/instruction/inspections", async (req, res) => {
 router.get("/warehouse/inventory/:itemCode", async (req, res) => {
   try {
     const itemCode = req.params.itemCode;
-    console.log('[wrhousdlvr_router] /inventory itemCode:', itemCode);
+    console.log("[wrhousdlvr_router] /inventory itemCode:", itemCode);
     const result = await wrhousdlvrService.getInventoryStatus(itemCode);
     res.json(result);
   } catch (err) {
-    console.error('[wrhousdlvr_router] /inventory error:', err);
+    console.error("[wrhousdlvr_router] /inventory error:", err);
     res.status(500).json([]);
   }
 });
@@ -96,11 +255,11 @@ router.get("/warehouse/inventory/:itemCode", async (req, res) => {
 router.get("/warehouse/history/:itemCode", async (req, res) => {
   try {
     const itemCode = req.params.itemCode;
-    console.log('[wrhousdlvr_router] /history itemCode:', itemCode);
+    console.log("[wrhousdlvr_router] /history itemCode:", itemCode);
     const result = await wrhousdlvrService.getItemTransactionHistory(itemCode);
     res.json(result);
   } catch (err) {
-    console.error('[wrhousdlvr_router] /history error:', err);
+    console.error("[wrhousdlvr_router] /history error:", err);
     res.status(500).json([]);
   }
 });
@@ -108,30 +267,41 @@ router.get("/warehouse/history/:itemCode", async (req, res) => {
 // 창고 입출고 거래 저장 (신규/수정)
 router.post("/warehouse/transactions", async (req, res) => {
   try {
-    console.log('[wrhousdlvr_router] POST body:', JSON.stringify(req.body).slice(0, 2000));
-    
+    console.log(
+      "[wrhousdlvr_router] POST body:",
+      JSON.stringify(req.body).slice(0, 2000)
+    );
+
     // 요청 본문에서 거래 목록과 사용자 정보 추출
     const { transactionList, emp_id } = req.body;
-    
+
     if (Array.isArray(transactionList)) {
-      const preview = transactionList.slice(0, 5).map(t => ({ 
-        txn_type: t.txn_type, 
-        item_code: t.item_code, 
-        qty: t.qty 
+      const preview = transactionList.slice(0, 5).map((t) => ({
+        txn_type: t.txn_type,
+        item_code: t.item_code,
+        qty: t.qty,
       }));
-      console.log('[wrhousdlvr_router] transaction preview (first 5):', preview);
+      console.log(
+        "[wrhousdlvr_router] transaction preview (first 5):",
+        preview
+      );
     }
-    
+
     // 서비스를 통해 저장 처리
-    const result = await wrhousdlvrService.saveTransaction({ 
-      transactionList, 
-      emp_id 
+    const result = await wrhousdlvrService.saveTransaction({
+      transactionList,
+      emp_id,
     });
-    
+
     res.json(result);
   } catch (err) {
-    console.error('[wrhousdlvr_router] POST error:', err && err.stack ? err.stack : err);
-    res.status(500).json({ isSuccessed: false, error: err?.message ?? 'server error' });
+    console.error(
+      "[wrhousdlvr_router] POST error:",
+      err && err.stack ? err.stack : err
+    );
+    res
+      .status(500)
+      .json({ isSuccessed: false, error: err?.message ?? "server error" });
   }
 });
 
@@ -139,12 +309,12 @@ router.post("/warehouse/transactions", async (req, res) => {
 router.delete("/warehouse/transactions/:id", async (req, res) => {
   try {
     const id = req.params.id;
-    console.log('[wrhousdlvr_router] DELETE /transactions id=', id);
+    console.log("[wrhousdlvr_router] DELETE /transactions id=", id);
     const result = await wrhousdlvrService.deleteTransaction(id);
-    console.log('[wrhousdlvr_router] DELETE result=', result);
+    console.log("[wrhousdlvr_router] DELETE result=", result);
     res.json(result);
   } catch (err) {
-    console.error('[wrhousdlvr_router] DELETE error:', err);
+    console.error("[wrhousdlvr_router] DELETE error:", err);
     res.status(500).json({ isSuccessed: false, error: err.message });
   }
 });
@@ -153,12 +323,14 @@ router.delete("/warehouse/transactions/:id", async (req, res) => {
 router.post("/warehouse/transactions/delete", async (req, res) => {
   try {
     const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
-    console.log('[wrhousdlvr_router] bulk delete ids:', ids);
+    console.log("[wrhousdlvr_router] bulk delete ids:", ids);
     const result = await wrhousdlvrService.deleteSelectedTransactions(ids);
     res.json(result);
   } catch (err) {
-    console.error('[wrhousdlvr_router] bulk delete error:', err);
-    res.status(500).json({ isSuccessed: false, error: err?.message ?? 'server error' });
+    console.error("[wrhousdlvr_router] bulk delete error:", err);
+    res
+      .status(500)
+      .json({ isSuccessed: false, error: err?.message ?? "server error" });
   }
 });
 
