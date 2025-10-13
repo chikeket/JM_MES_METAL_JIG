@@ -3,6 +3,9 @@
 // 업체 관련 쿼리
 const co = require("./sqls/co.js");
 
+// 업체관리 관련 쿼리 (추가!)
+const companyManage = require("./sqls/companyManage.js");
+
 // 생산지시에서 공정관리로 넘어가는 관련 쿼리들
 const instructions = require("./sqls/instruction.js");
 
@@ -52,6 +55,7 @@ module.exports = {
   ...prdt,
   ...rscOrdr,
   ...co,
+  ...companyManage,  // 추가!
   ...rcvord,
   ...emp,
   ...acct,

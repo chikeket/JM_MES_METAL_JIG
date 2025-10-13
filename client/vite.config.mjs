@@ -39,7 +39,7 @@ export default defineConfig(() => {
         '^/api': {
           target: server,
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api/, ''),
+          // rewrite 제거! (이 줄 삭제)
         },
       },
     },

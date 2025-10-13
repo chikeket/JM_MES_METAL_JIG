@@ -31,6 +31,7 @@ app.listen(3000, () => {
 // 라우팅 등록 영역
 
 const co = require("./routers/co_router.js"); // 업체(테스트 완료 주익이 나중에 쓰면 됨)
+const companyManage = require("./routers/companyManage_router.js"); // 업체관리 추가!
 
 const instruction = require("./routers/instruction_router.js"); // 생산지시
 
@@ -67,4 +68,6 @@ app.use("/", auth); // 로그인
 app.use("/", rscQltyInsp); // 자재품질검수
 app.use("/", endPrdtQltyInsp); // 완제품 품질검수
 app.use("/", qltyItem); // 품질항목 기준정보
+app.use("/", companyManage); // 업체관리 추가!
 app.use("/", wrhousdlvr); // 창고 입출고
+
