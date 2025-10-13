@@ -1,176 +1,132 @@
 <template>
-  <teleport to="body">
-    <div
-      v-if="isOpen"
-      class="modal-backdrop"
-      @click="closeModal"
-    >
-      <div
-        class="modal-container"
-        @click.stop
-      >
-        <div class="modal-header">
-          <h5>검사서 목록</h5>
-          <button
-            type="button"
-            class="btn-close"
-            @click="closeModal"
-          ></button>
-        </div>
+  <div v-if="isOpen" class="modal-backdrop" @click="closeModal">
+    <div class="modal-container" @click.stop>
+      <div class="modal-header">
+        <h5>검사서 목록</h5>
+        <button type="button" class="btn-close" @click="closeModal"></button>
+      </div>
 
-        <div class="modal-body">
-          <!-- 검색 조건 영역 -->
-          <div class="search-area">
-            <div class="row g-3">
-              <div class="col-md-3">
-                <label class="form-label">품목코드</label>
-                <input
-                  v-model="searchCondition.item_code"
-                  type="text"
-                  class="form-control"
-                  placeholder="품목코드 입력"
-                  @keyup.enter="onSearch"
-                />
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">품목명</label>
-                <input
-                  v-model="searchCondition.item_name"
-                  type="text"
-                  class="form-control"
-                  placeholder="품목명 입력"
-                  @keyup.enter="onSearch"
-                />
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">검사서 종류</label>
-                <select
-                  v-model="searchCondition.insp_type"
-                  class="form-select"
-                >
-                  <option value="">전체</option>
-                  <option value="delivery">납품서</option>
-                  <option value="order">발주서</option>
-                  <option value="instruction">지시서</option>
-                  <option value="quality">품질검사서</option>
-                </select>
-              </div>
-              <div class="col-md-3 d-flex align-items-end">
-                <button
-                  type="button"
-                  class="btn btn-primary me-2"
-                  @click="onSearch"
-                >
-                  조회
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-secondary"
-                  @click="onReset"
-                >
-                  초기화
-                </button>
-              </div>
+      <div class="modal-body">
+        <!-- 검색 조건 영역 -->
+        <div class="search-area">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">품목코드</label>
+              <input
+                v-model="searchCondition.item_code"
+                type="text"
+                class="form-control"
+                placeholder="품목코드 입력"
+                @keyup.enter="onSearch"
+              />
             </div>
-          </div>
-
-          <!-- 검사서 목록 테이블 -->
-          <div class="table-area mt-3">
-            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-              <table class="table table-sm table-hover">
-                <thead class="table-light">
-                  <tr>
-                    <th style="width: 50px;">선택</th>
-                    <th style="width: 120px;">검사서번호</th>
-                    <th style="width: 100px;">품목코드</th>
-                    <th style="width: 150px;">품목명</th>
-                    <th style="width: 80px;">검사수량</th>
-                    <th style="width: 80px;">합격수량</th>
-                    <th style="width: 80px;">불합격수량</th>
-                    <th style="width: 80px;">검사상태</th>
-                    <th style="width: 100px;">검사일자</th>
-                    <th style="width: 100px;">검사자</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="item in inspectionList"
-                    :key="item.insp_no"
-                    @click="selectInspection(item)"
-                    class="cursor-pointer"
-                    :class="{ 'table-active': selectedInspection?.insp_no === item.insp_no }"
-                  >
-                    <td>
-                      <input
-                        type="radio"
-                        :value="item.insp_no"
-                        v-model="selectedInspectionNo"
-                        @change="selectInspection(item)"
-                      />
-                    </td>
-                    <td>{{ item.insp_no }}</td>
-                    <td>{{ item.item_code }}</td>
-                    <td>{{ item.item_name }}</td>
-                    <td class="text-end">{{ Number(item.insp_qty || 0).toLocaleString() }}</td>
-                    <td class="text-end">{{ Number(item.pass_qty || 0).toLocaleString() }}</td>
-                    <td class="text-end">{{ Number(item.fail_qty || 0).toLocaleString() }}</td>
-                    <td>
-                      <span 
-                        :class="{
-                          'badge bg-success': item.insp_status === '완료',
-                          'badge bg-warning': item.insp_status === '대기',
-                          'badge bg-secondary': !item.insp_status
-                        }"
-                      >
-                        {{ item.insp_status || '미정' }}
-                      </span>
-                    </td>
-                    <td>{{ item.insp_date ? formatDate(item.insp_date) : '' }}</td>
-                    <td>{{ item.insp_emp_name }}</td>
-                  </tr>
-                  <tr v-if="!inspectionList || inspectionList.length === 0">
-                    <td colspan="10" class="text-center text-muted py-4">
-                      검색 결과가 없습니다.
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+            <div class="col-md-3">
+              <label class="form-label">품목명</label>
+              <input
+                v-model="searchCondition.item_name"
+                type="text"
+                class="form-control"
+                placeholder="품목명 입력"
+                @keyup.enter="onSearch"
+              />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">검사서 종류</label>
+              <select v-model="searchCondition.insp_type" class="form-select">
+                <option value="">전체</option>
+                <option value="finishedQuality">완제품 품질 검사</option>
+                <option value="semiQuality">반제품 품질 검사</option>
+                <option value="deliveryDetail">납품 상세</option>
+                <option value="materialQuality">자재 품질 검사</option>
+                <option value="materialWithdrawal">자재 불출 대상</option>
+              </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+              <button type="button" class="btn btn-secondary me-2" @click="onSearch">조회</button>
+              <button type="button" class="btn btn-secondary" @click="onReset">초기화</button>
             </div>
           </div>
         </div>
 
-        <div class="modal-footer">
-          <button
-            type="button"
-            class="btn btn-primary"
-            @click="onSelect"
-            :disabled="!selectedInspection"
-          >
-            선택
-          </button>
-          <button
-            type="button"
-            class="btn btn-secondary"
-            @click="closeModal"
-          >
-            취소
-          </button>
+        <!-- 검사서 목록 테이블 -->
+        <div class="table-area mt-3">
+          <div class="table-responsive" style="max-height: 400px; overflow-y: auto">
+            <table class="table table-sm table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 120px">검사서번호</th>
+                  <th style="width: 100px">품목코드</th>
+                  <th style="width: 150px">품목명</th>
+                  <th style="width: 80px">검사수량</th>
+                  <th style="width: 80px">합격수량</th>
+                  <th style="width: 80px">불합격수량</th>
+                  <th style="width: 80px">검사상태</th>
+                  <th style="width: 100px">검사일자</th>
+                  <th style="width: 100px">검사자</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="item in inspectionList"
+                  :key="item.insp_no"
+                  @click="selectInspection(item)"
+                  class="cursor-pointer"
+                  :class="{ 'table-active': selectedInspection?.insp_no === item.insp_no }"
+                >
+                  <td>{{ item.insp_no }}</td>
+                  <td>{{ item.item_code }}</td>
+                  <td>{{ item.item_name }}</td>
+                  <td class="text-end">{{ Number(item.insp_qty || 0).toLocaleString() }}</td>
+                  <td class="text-end">{{ Number(item.pass_qty || 0).toLocaleString() }}</td>
+                  <td class="text-end">{{ Number(item.fail_qty || 0).toLocaleString() }}</td>
+                  <td>
+                    <span
+                      :class="{
+                        'badge bg-success': item.insp_status === '완료',
+                        'badge bg-warning': item.insp_status === '대기',
+                        'badge bg-secondary': !item.insp_status,
+                      }"
+                    >
+                      {{ item.insp_status || '미정' }}
+                    </span>
+                  </td>
+                  <td>{{ item.insp_date ? formatDate(item.insp_date) : '' }}</td>
+                  <td>{{ item.insp_emp_name }}</td>
+                </tr>
+                <tr v-if="!inspectionList || inspectionList.length === 0">
+                  <td colspan="10" class="text-center text-muted py-4">검색 결과가 없습니다.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
+
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          @click="onSelect"
+          :disabled="!selectedInspection"
+        >
+          선택
+        </button>
+        <button type="button" class="btn btn-secondary" @click="closeModal">취소</button>
+      </div>
     </div>
-  </teleport>
+  </div>
 </template>
 
 <script setup>
-import { ref, reactive, watch, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import axios from 'axios'
 
 // Props 정의
 const props = defineProps({
   isOpen: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 })
 
 // Emit 정의
@@ -185,66 +141,68 @@ const selectedInspectionNo = ref('')
 const searchCondition = reactive({
   item_code: '',
   item_name: '',
-  insp_type: 'quality' // 기본값: 품질검사서
-})
-
-// 모달이 열릴 때 자동으로 데이터 조회
-watch(() => props.isOpen, (newVal) => {
-  if (newVal) {
-    onSearch()
-  } else {
-    // 모달이 닫힐 때 선택 상태 초기화
-    resetSelection()
-  }
+  insp_type: 'finishedQuality', // 기본값: 완제품 품질 검사
 })
 
 // 검사서 목록 조회
 const onSearch = async () => {
   try {
-    console.log('[inspectionModal] 검사서 조회 요청:', searchCondition)
-    
-    // 검사서 종류별로 다른 API 엔드포인트 호출
+    const params = {
+      item_code: searchCondition.item_code?.trim() || '',
+      item_name: searchCondition.item_name?.trim() || '',
+      insp_status: '완료', // 기본적으로 완료된 검사서만 조회
+    }
+
+    console.log('[inspectionModal] 전송 파라미터:', params)
+    console.log('[inspectionModal] 검사서 종류:', searchCondition.insp_type)
+
+    // 검사서 종류에 따라 다른 API 호출
     let apiUrl = ''
+
     switch (searchCondition.insp_type) {
-      case 'delivery':
-        apiUrl = '/api/delivery/inspections'
+      case 'finishedQuality':
+        // 완제품 품질 검사
+        apiUrl = '/api/qltyInsp/finished/list'
         break
-      case 'order':
-        apiUrl = '/api/order/inspections' 
+
+      case 'semiQuality':
+        // 반제품 품질 검사
+        apiUrl = '/api/qltyInsp/semi/list'
         break
-      case 'instruction':
-        apiUrl = '/api/instruction/inspections'
+
+      case 'deliveryDetail':
+        // 납품 상세
+        apiUrl = '/api/delivery/detail/list'
         break
-      case 'quality':
+
+      case 'materialQuality':
+        // 자재 품질 검사
+        apiUrl = '/api/qltyInsp/rsc/list'
+        break
+
+      case 'materialWithdrawal':
+        // 자재 불출 대상
+        apiUrl = '/api/material/withdrawal/list'
+        break
+
       default:
-        apiUrl = '/api/qltyInsp/list' // 기존 품질검사 API 사용
+        // 전체 조회 (완제품 품질검사 기본)
+        apiUrl = '/api/qltyInsp/finished/list'
         break
     }
-    
-    console.log('[inspectionModal] API 호출 URL:', apiUrl)
-    console.log('[inspectionModal] 요청 파라미터:', {
-      item_code: searchCondition.item_code || '',
-      item_name: searchCondition.item_name || '',
-      insp_status: '완료'
-    })
-    
-    const response = await axios.get(apiUrl, {
-      params: {
-        item_code: searchCondition.item_code || '',
-        item_name: searchCondition.item_name || '',
-        insp_status: '완료' // 완료된 검사서만 조회
-      }
-    })
-    
-    console.log('[inspectionModal] API 응답:', response)
-    console.log('[inspectionModal] 응답 데이터:', response.data)
-    
+
+    console.log('[inspectionModal] 호출 API:', apiUrl)
+
+    const response = await axios.get(apiUrl, { params })
+
+    console.log('[inspectionModal] 응답 건수:', response.data?.length)
+
+    if (response.data?.length > 100) {
+      console.warn('[inspectionModal] 조회 결과가 100건을 초과합니다!')
+    }
+
     inspectionList.value = response.data || []
-    console.log('[inspectionModal] 검사서 조회 결과:', inspectionList.value.length + '건')
-    
-    // 검색 후 선택 상태 초기화
     resetSelection()
-    
   } catch (error) {
     console.error('[inspectionModal] 검사서 조회 실패:', error)
     console.error('[inspectionModal] 에러 상세:', {
@@ -252,14 +210,8 @@ const onSearch = async () => {
       status: error.response?.status,
       statusText: error.response?.statusText,
       data: error.response?.data,
-      config: error.config
     })
-    
-    const errorMsg = error.response?.status === 404 
-      ? '검사서 API를 찾을 수 없습니다. 서버 설정을 확인해주세요.'
-      : `검사서 목록 조회 중 오류가 발생했습니다: ${error.message}`
-    
-    alert(errorMsg)
+    alert(`검사서 목록 조회 중 오류가 발생했습니다: ${error.message}`)
     inspectionList.value = []
   }
 }
@@ -268,7 +220,7 @@ const onSearch = async () => {
 const onReset = () => {
   searchCondition.item_code = ''
   searchCondition.item_name = ''
-  searchCondition.insp_type = 'quality'
+  searchCondition.insp_type = 'finishedQuality'
   resetSelection()
 }
 
@@ -288,7 +240,7 @@ const resetSelection = () => {
 // 날짜 포맷팅
 const formatDate = (dateStr) => {
   if (!dateStr) return ''
-  
+
   try {
     const date = new Date(dateStr)
     return date.toISOString().split('T')[0] // YYYY-MM-DD 형식
@@ -303,7 +255,7 @@ const onSelect = () => {
     alert('검사서를 선택해주세요.')
     return
   }
-  
+
   console.log('[inspectionModal] 최종 선택된 검사서:', selectedInspection.value)
   emit('select', selectedInspection.value)
   closeModal()
@@ -311,7 +263,8 @@ const onSelect = () => {
 
 // 모달 닫기
 const closeModal = () => {
-  resetSelection()
+  onReset()
+  inspectionList.value = []
   emit('close')
 }
 
