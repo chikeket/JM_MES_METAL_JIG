@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, watch } from 'vue'
 
 import axios from 'axios'
 import PrdtModal from '../modal/prdtModal.vue'
@@ -191,7 +191,7 @@ const selectedPrdt = (prdts) => {
       prod_plan_deta_id: 'none',
       prdt_id: prdts.detailData.prdt_id,
       prdt_nm: prdts.detailData.prdt_nm,
-      prdt_opt_id: prdts.prdt_opt_id,
+      prdt_opt_id: prdts.detailData.prdt_opt_id,
       spec: prdts.detailData.spec,
       unit: prdts.detailData.unit,
       plan_qy: 0,
@@ -245,15 +245,7 @@ function commitEdit(row, field) {
         return
       }
     }
-
-    row.drct_qy = validQty
-
-    //미지시수량 출력 조건
-    if (row.plan_qy == 0) {
-      row.unspecified_quantity = 0
-    } else {
-      row.unspecified_quantity = row.plan_qy - row.base_quantity
-    }
+    row.drct_qy = validQty    
   } else if (field === 'producible') {
     row.producible = v === 'true' || v === true
   } else if (field === 'unit') {
@@ -263,6 +255,20 @@ function commitEdit(row, field) {
   }
   cancelEdit()
 }
+
+//미지시수량 검증
+watch(
+  rows,
+  (newRows) => {
+    for (const row of newRows) {
+      const order = Number(row.base_quantity) || 0
+      const received = Number(row.plan_qy) || 0
+      row.unspecified_quantity = received - order
+    }
+  },
+  { deep: true }
+)
+
 
 function cancelEdit() {
   editing.id = null
