@@ -161,16 +161,14 @@ module.exports = {
         if (base) {
           // 기존 라인 보존: 삭제 대상에서 제거
           if (lineId && byId.has(lineId)) byId.delete(lineId);
-          if (hasInput) {
-            await conn.query(sqlList.deliUpdateLine, [
-              ln.rcvord_deta_id,
-              nextQty,
-              ln.remark || base.rm || null,
-              lineId,
-            ]);
-          } else {
-            // 입력이 없으면 유지 (업데이트 생략)
-          }
+          // 수량 입력이 없어도 비고 변경(또는 비우기/null)만으로 업데이트 가능해야 함
+          const newRm = ln.remark !== undefined ? ln.remark : base.rm || null;
+          await conn.query(sqlList.deliUpdateLine, [
+            ln.rcvord_deta_id,
+            nextQty,
+            newRm,
+            lineId,
+          ]);
         } else {
           // 기존 라인이 없으면, 입력이 있는 경우에만 신규 생성
           if (hasInput) {

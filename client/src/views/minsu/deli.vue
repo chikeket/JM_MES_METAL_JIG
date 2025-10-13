@@ -139,10 +139,25 @@
                 </span>
               </template>
             </td>
-            <td class="cell-left">
-              <div class="ellipsis" :title="row.remark || ''">
-                {{ row.remark || '' }}
-              </div>
+            <td class="cell-left editable" @dblclick="startEdit(row, 'remark')">
+              <template v-if="isCellEditing(row, 'remark')">
+                <textarea
+                  ref="remarkInputs"
+                  v-model="editValue"
+                  @keyup.enter="commitEdit"
+                  @blur="commitEdit"
+                  @keyup.esc="cancelEdit"
+                  class="editor-textarea"
+                  placeholder="입력"
+                ></textarea>
+              </template>
+              <template v-else>
+                <div class="ellipsis" :title="row.remark || ''">
+                  <span :class="{ 'placeholder-text': !row.remark }">
+                    {{ row.remark || '입력' }}
+                  </span>
+                </div>
+              </template>
             </td>
           </tr>
           <tr v-if="!lines.length">
@@ -250,8 +265,23 @@ function isCellEditing(row, field) {
 function commitEdit() {
   if (!editingRow.value) return
   if (editingField.value === 'requestQty') {
-    const num = Number(editValue.value.replace(/[,\s]/g, ''))
-    editingRow.value.requestQty = Number.isFinite(num) ? num : 0
+    const raw = (editValue.value ?? '').toString().trim()
+    const cleaned = raw.replace(/[\,\s]/g, '')
+    const num = Number(cleaned)
+    // 유효 숫자만 허용, 아니면 빈값 처리
+    if (!Number.isFinite(num)) {
+      editingRow.value.requestQty = ''
+    } else {
+      const remain = Number(editingRow.value.remaining_qty || 0)
+      if (num > remain) {
+        alert('총 요청 수량을 초과하였습니다.')
+        editingRow.value.requestQty = ''
+      } else if (num < 0) {
+        editingRow.value.requestQty = ''
+      } else {
+        editingRow.value.requestQty = num
+      }
+    }
   } else if (editingField.value === 'remark') {
     editingRow.value.remark = editValue.value.trim()
   } else if (editingField.value === 'paprd_dt') {
@@ -389,8 +419,10 @@ async function onSelectDeli(row) {
             remaining_qty: l.remaining_qty || 0,
             spec: l.spec || '',
             unit: l.unit || '',
-            requestQty: 0,
-            remark: h?.rm || '',
+            // 당회 총 납품 수량: 현재 문서의 라인 수량을 표시
+            requestQty: Number(l.doc_line_qty || l.doc_delivered_qty || 0),
+            // 라인 비고만 사용 (문서 비고와 독립)
+            remark: l.line_rm || '',
           }),
         )
       : []
