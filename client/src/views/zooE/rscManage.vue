@@ -1,135 +1,126 @@
 <template>
-  <CContainer fluid class="h-100 d-flex flex-column p-0 m-0">
-    <CCard class="flex-grow-1 d-flex flex-column overflow-hidden m-0 h-100">
-      <CCardBody class="p-2 d-flex flex-column overflow-hidden flex-grow-1">
+  <CContainer fluid class="h-100 d-flex flex-column p-3">
+    <!-- 상단 조회/초기화 버튼 -->
+    <div class="d-flex justify-content-end mb-2 gap-2">
+      <CButton color="secondary" size="sm" @click="handleSearch">조회</CButton>
+      <CButton color="secondary" size="sm" @click="handleReset">초기화</CButton>
+    </div>
 
-        <!-- 상단 조회/초기화 버튼 -->
-        <div class="d-flex justify-content-end mb-2 gap-2">
-          <CButton color="secondary" size="sm" @click="handleSearch">조회</CButton>
-          <CButton color="secondary" size="sm" @click="handleReset">초기화</CButton>
+    <!-- 검색 필터 영역 -->
+    <div class="search-filter-box mb-2">
+      <CRow class="g-3">
+        <CCol :md="4">
+          <CFormLabel class="form-label">자재명</CFormLabel>
+          <CFormInput v-model="searchFilters.materialName" size="sm" placeholder="입력해주세요" />
+        </CCol>
+        <CCol :md="4">
+          <CFormLabel class="form-label">자재분류타입</CFormLabel>
+          <CFormInput v-model="searchFilters.materialType" size="sm" placeholder="입력해주세요" />
+        </CCol>
+      </CRow>
+    </div>
+
+    <!-- 메인 컨텐츠 영역 -->
+    <CRow class="flex-grow-1 overflow-hidden g-2">
+      
+      <!-- 좌측: 데이터 그리드 -->
+      <CCol :md="6" class="d-flex flex-column overflow-hidden">
+        <!-- 높이 맞추기용 투명 버튼 영역 -->
+        <div class="button-spacer mb-2">
+          <CButton color="secondary" size="sm">신규</CButton>
+          <CButton color="secondary" size="sm">저장</CButton>
+          <CButton color="danger" size="sm">삭제</CButton>
+        </div>
+        
+        <!-- 그리드 테이블 -->
+        <div class="grid-box flex-grow-1 overflow-hidden d-flex flex-column">
+          <div class="table-wrapper">
+            <CTable bordered hover class="data-table">
+              <CTableHead>
+                <CTableRow>
+                  <CTableHeaderCell>자재코드</CTableHeaderCell>
+                  <CTableHeaderCell>자재분류타입</CTableHeaderCell>
+                  <CTableHeaderCell>자재명</CTableHeaderCell>
+                  <CTableHeaderCell>규격</CTableHeaderCell>
+                  <CTableHeaderCell>수량단위</CTableHeaderCell>
+                  <CTableHeaderCell>비고</CTableHeaderCell>
+                </CTableRow>
+              </CTableHead>
+              <CTableBody>
+                <!-- 데이터 행 -->
+                <CTableRow
+                  v-for="(item, index) in displayedData"
+                  :key="index"
+                  @click="handleRowSelect(item, index)"
+                  :class="{ 'selected-row': selectedRowIndex === index }"
+                >
+                  <CTableDataCell class="text-end">{{ item.materialCode }}</CTableDataCell>
+                  <CTableDataCell>{{ item.materialType }}</CTableDataCell>
+                  <CTableDataCell>{{ item.materialName }}</CTableDataCell>
+                  <CTableDataCell>{{ item.spec }}</CTableDataCell>
+                  <CTableDataCell>{{ item.unit }}</CTableDataCell>
+                  <CTableDataCell>{{ item.remark }}</CTableDataCell>
+                </CTableRow>
+                <!-- 빈 행 채우기 (10행 고정) -->
+                <CTableRow v-for="i in emptyRowCount" :key="'empty-' + i" class="empty-row">
+                  <CTableDataCell colspan="6">&nbsp;</CTableDataCell>
+                </CTableRow>
+              </CTableBody>
+            </CTable>
+          </div>
+        </div>
+      </CCol>
+
+      <!-- 우측: 상세 입력 폼 -->
+      <CCol :md="6" class="d-flex flex-column overflow-hidden">
+        <!-- 신규/저장/삭제 버튼 -->
+        <div class="d-flex justify-content-end gap-2 mb-2">
+          <CButton color="secondary" size="sm" @click="handleNew">신규</CButton>
+          <CButton color="secondary" size="sm" @click="handleSave">저장</CButton>
+          <CButton color="danger" size="sm" @click="handleDelete">삭제</CButton>
         </div>
 
-        <!-- 검색 필터 영역 -->
-        <CCard class="mb-2">
-          <CCardBody>
-            <CRow class="g-3">
-              <CCol :md="4">
-                <CFormLabel class="form-label">자재명</CFormLabel>
-                <CFormInput v-model="searchFilters.materialName" size="sm" placeholder="입력해주세요" />
-              </CCol>
-              <CCol :md="4">
-                <CFormLabel class="form-label">자재분류타입</CFormLabel>
-                <CFormInput v-model="searchFilters.materialType" size="sm" placeholder="입력해주세요" />
-              </CCol>
-            </CRow>
-          </CCardBody>
-        </CCard>
-
-        <!-- 메인 컨텐츠 영역 -->
-        <CRow class="flex-grow-1 overflow-hidden g-2">
-          
-          <!-- 좌측: 데이터 그리드 -->
-          <CCol :md="6" class="d-flex flex-column overflow-hidden">
-            <!-- 높이 맞추기용 투명 버튼 영역 -->
-            <div class="button-spacer mb-2">
-              <CButton color="secondary" size="sm">신규</CButton>
-              <CButton color="secondary" size="sm">저장</CButton>
-              <CButton color="danger" size="sm">삭제</CButton>
-            </div>
-            
-            <!-- 그리드 테이블 -->
-            <CCard class="flex-grow-1 overflow-hidden d-flex flex-column">
-              <CCardBody class="p-0 d-flex flex-column">
-                <div class="table-wrapper">
-                  <CTable bordered hover class="data-table">
-                    <CTableHead>
-                      <CTableRow>
-                        <CTableHeaderCell>자재코드</CTableHeaderCell>
-                        <CTableHeaderCell>자재분류타입</CTableHeaderCell>
-                        <CTableHeaderCell>자재명</CTableHeaderCell>
-                        <CTableHeaderCell>규격</CTableHeaderCell>
-                        <CTableHeaderCell>수량단위</CTableHeaderCell>
-                        <CTableHeaderCell>비고</CTableHeaderCell>
-                      </CTableRow>
-                    </CTableHead>
-                    <CTableBody>
-                      <!-- 데이터 행 -->
-                      <CTableRow
-                        v-for="(item, index) in displayedData"
-                        :key="index"
-                        @click="handleRowSelect(item, index)"
-                        :class="{ 'selected-row': selectedRowIndex === index }"
-                      >
-                        <CTableDataCell class="text-end">{{ item.materialCode }}</CTableDataCell>
-                        <CTableDataCell>{{ item.materialType }}</CTableDataCell>
-                        <CTableDataCell>{{ item.materialName }}</CTableDataCell>
-                        <CTableDataCell>{{ item.spec }}</CTableDataCell>
-                        <CTableDataCell>{{ item.unit }}</CTableDataCell>
-                        <CTableDataCell>{{ item.remark }}</CTableDataCell>
-                      </CTableRow>
-                      <!-- 빈 행 채우기 (10행 고정) -->
-                      <CTableRow v-for="i in emptyRowCount" :key="'empty-' + i" class="empty-row">
-                        <CTableDataCell colspan="6">&nbsp;</CTableDataCell>
-                      </CTableRow>
-                    </CTableBody>
-                  </CTable>
-                </div>
-              </CCardBody>
-            </CCard>
-          </CCol>
-
-          <!-- 우측: 상세 입력 폼 -->
-          <CCol :md="6" class="d-flex flex-column overflow-hidden">
-            <!-- 신규/저장/삭제 버튼 -->
-            <div class="d-flex justify-content-end gap-2 mb-2">
-              <CButton color="secondary" size="sm" @click="handleNew">신규</CButton>
-              <CButton color="secondary" size="sm" @click="handleSave">저장</CButton>
-              <CButton color="danger" size="sm" @click="handleDelete">삭제</CButton>
-            </div>
-
-            <!-- 입력 폼 (2열 구조) -->
-            <CCard class="flex-grow-1 d-flex flex-column overflow-hidden">
-              <CCardBody class="p-3 flex-grow-1 overflow-auto">
-                <CRow>
-                  <!-- 좌측 열 -->
-                  <CCol :md="6">
-                    <CRow class="mb-2" v-for="field in leftFields" :key="field.key">
-                      <CCol :md="4" class="text-end pe-2">
-                        <CFormLabel class="form-label pt-1">{{ field.label }}</CFormLabel>
-                      </CCol>
-                      <CCol :md="8" class="ps-2">
-                        <CFormInput
-                          v-model="formData[field.key]"
-                          size="sm"
-                          placeholder="입력해주세요"
-                        />
-                      </CCol>
-                    </CRow>
+        <!-- 입력 폼 (2열 구조) -->
+        <div class="form-box flex-grow-1 d-flex flex-column overflow-hidden">
+          <div class="p-3 flex-grow-1 overflow-auto">
+            <CRow>
+              <!-- 좌측 열 -->
+              <CCol :md="6">
+                <CRow class="mb-2" v-for="field in leftFields" :key="field.key">
+                  <CCol :md="4" class="text-end pe-2">
+                    <CFormLabel class="form-label pt-1">{{ field.label }}</CFormLabel>
                   </CCol>
-
-                  <!-- 우측 열 -->
-                  <CCol :md="6">
-                    <CRow class="mb-2" v-for="field in rightFields" :key="field.key">
-                      <CCol :md="4" class="text-end pe-2">
-                        <CFormLabel class="form-label pt-1">{{ field.label }}</CFormLabel>
-                      </CCol>
-                      <CCol :md="8" class="ps-2">
-                        <CFormInput
-                          v-model="formData[field.key]"
-                          size="sm"
-                          placeholder="입력해주세요"
-                        />
-                      </CCol>
-                    </CRow>
+                  <CCol :md="8" class="ps-2">
+                    <CFormInput
+                      v-model="formData[field.key]"
+                      size="sm"
+                      placeholder="입력해주세요"
+                    />
                   </CCol>
                 </CRow>
-              </CCardBody>
-            </CCard>
-          </CCol>
-        </CRow>
+              </CCol>
 
-      </CCardBody>
-    </CCard>
+              <!-- 우측 열 -->
+              <CCol :md="6">
+                <CRow class="mb-2" v-for="field in rightFields" :key="field.key">
+                  <CCol :md="4" class="text-end pe-2">
+                    <CFormLabel class="form-label pt-1">{{ field.label }}</CFormLabel>
+                  </CCol>
+                  <CCol :md="8" class="ps-2">
+                    <CFormInput
+                      v-model="formData[field.key]"
+                      size="sm"
+                      placeholder="입력해주세요"
+                    />
+                  </CCol>
+                </CRow>
+              </CCol>
+            </CRow>
+          </div>
+        </div>
+      </CCol>
+    </CRow>
+
   </CContainer>
 </template>
 
@@ -282,22 +273,84 @@ const handleDelete = () => {
 
 <style scoped>
 /* ============================================
-   전역 스타일
+   전역 스타일 - 2025 Modern Design
    ============================================ */
 :deep(*) {
-  font-family: '맑은 고딕', 'Malgun Gothic', sans-serif;
-  line-height: 1.4;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  line-height: 1.5;
   box-sizing: border-box;
-  color: #000;
+}
+
+/* 전체 컨테이너 - 흰색 배경 */
+:deep(.container-fluid) {
+  background: #ffffff;
+  padding: 1rem !important;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* 검색 필터 박스 - 얇은 회색 테두리 */
+.search-filter-box {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1rem;
+  background: #ffffff;
+}
+
+/* 그리드 박스 - 얇은 회색 테두리 */
+.grid-box {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+/* 폼 박스 - 얇은 회색 테두리 */
+.form-box {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
 }
 
 /* ============================================
-   버튼 스타일
+   버튼 스타일 - Modern & Clean
    ============================================ */
 :deep(.btn) {
-  font-size: 11px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0.5rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  letter-spacing: -0.3px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.btn-secondary) {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
   color: #fff !important;
-  padding: 0.5rem 2rem;
+}
+
+:deep(.btn-secondary:hover) {
+  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+:deep(.btn-danger) {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  color: #fff !important;
+}
+
+:deep(.btn-danger:hover) {
+  background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+:deep(.btn:active) {
+  transform: translateY(0);
 }
 
 /* 높이 맞추기용 투명 버튼 영역 */
@@ -306,75 +359,162 @@ const handleDelete = () => {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
+  height: 38px;
 }
 
 /* ============================================
-   폼 요소 스타일
+   폼 요소 스타일 - Clean & Modern
    ============================================ */
 :deep(.form-label) {
-  font-size: 11px;
-  font-weight: normal;
-  color: #444;
-  margin-bottom: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.25rem;
+  letter-spacing: -0.2px;
 }
 
 :deep(.form-control),
 :deep(.form-select) {
   font-size: 12px;
-  font-weight: normal;
-  padding: 0.25rem 0.5rem;
+  font-weight: 400;
+  padding: 0.4rem 0.75rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  background-color: #f8f9fa;
+  height: 34px;
+}
+
+:deep(.form-control:focus),
+:deep(.form-select:focus) {
+  border-color: #6c757d;
+  box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.15);
+  background-color: #ffffff;
+}
+
+/* 검색 필터 영역 압축 */
+:deep(.g-3) {
+  --bs-gutter-y: 0.5rem;
+  --bs-gutter-x: 0.75rem;
 }
 
 /* ============================================
-   테이블 스타일
+   테이블 스타일 - Modern & Clean
    ============================================ */
 .table-wrapper {
   flex: 1;
   overflow-y: auto;
+  max-height: calc(100vh - 350px);
 }
 
 :deep(.data-table) {
   margin-bottom: 0;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 :deep(.data-table thead) {
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 10;
 }
 
 :deep(.data-table th) {
   font-size: 12px;
-  font-weight: bold;
-  background-color: #e9ecef;
-  color: #212529;
+  font-weight: 700;
+  background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+  color: #ffffff;
   text-align: center;
+  padding: 0.65rem 0.5rem;
+  border: none;
+  letter-spacing: -0.2px;
+}
+
+:deep(.data-table th:first-child) {
+  border-top-left-radius: 10px;
+}
+
+:deep(.data-table th:last-child) {
+  border-top-right-radius: 10px;
 }
 
 :deep(.data-table td) {
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 400;
   vertical-align: middle;
+  padding: 0.55rem 0.5rem;
+  border-bottom: 1px solid #e9ecef;
+  color: #2c3e50;
 }
 
 :deep(.data-table tbody tr) {
   cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #ffffff;
 }
 
-/* 선택된 행 스타일 */
+:deep(.data-table tbody tr:hover:not(.empty-row)) {
+  background-color: #f8f9fa;
+  transform: scale(1.005);
+}
+
+/* 선택된 행 스타일 - 모던 그레이 테마 */
 :deep(.selected-row) {
-  background-color: #d9edf7 !important;
+  background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%) !important;
+  font-weight: 600;
+  box-shadow: inset 0 0 0 2px #6c757d;
+}
+
+:deep(.selected-row td) {
+  border-bottom: 2px solid #495057;
+  color: #212529;
 }
 
 /* 빈 행 스타일 */
 .empty-row td {
-  height: 32px;
+  height: 34px;
+  background-color: #fafbfc;
+}
+
+/* ============================================
+   스크롤바 스타일
+   ============================================ */
+.table-wrapper::-webkit-scrollbar,
+:deep(.overflow-auto)::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.table-wrapper::-webkit-scrollbar-track,
+:deep(.overflow-auto)::-webkit-scrollbar-track {
+  background: #f1f3f5;
+  border-radius: 8px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb,
+:deep(.overflow-auto)::-webkit-scrollbar-thumb {
+  background: #adb5bd;
+  border-radius: 8px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover,
+:deep(.overflow-auto)::-webkit-scrollbar-thumb:hover {
+  background: #868e96;
+}
+
+/* 간격 조정 */
+:deep(.mb-2) {
+  margin-bottom: 0.5rem !important;
+}
+
+:deep(.gap-2) {
+  gap: 0.5rem !important;
 }
 
 /* ============================================
    반응형
    ============================================ */
-@media (max-width: 768px) {
+@media (max-width: 1600px) {
   :deep(.form-label),
   :deep(.form-control),
   :deep(.form-select),
@@ -382,6 +522,10 @@ const handleDelete = () => {
   :deep(th),
   :deep(td) {
     font-size: 11px !important;
+  }
+  
+  :deep(.btn) {
+    padding: 0.4rem 1rem;
   }
 }
 </style>
