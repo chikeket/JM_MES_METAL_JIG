@@ -292,8 +292,11 @@ const selectedRsc = (r) => {
 // 공급업체 모달 선택
 const selectedCo = (co) => {
   if (!co) return
+  console.log('[RscOrdr] 업체 선택:', co)
   Info.value.co_nm = co.co_nm || ''
   selectedCoId.value = co.co_id || null
+  console.log('[RscOrdr] 선택된 업체 ID:', selectedCoId.value)
+  closeCoModal()
 }
 
 // 발주서 조회 모달 선택(상세가 비면 폴백 재조회)

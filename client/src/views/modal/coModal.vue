@@ -27,10 +27,13 @@
             class="form-control" 
             placeholder="검색어 입력" 
             v-model="searchKeyword" 
-            style="width: 180px;"
+            style="width: 250px;"
             @keyup.enter="coSearch" 
           />
-          <button class="btn btn-secondary" @click="coSearch">검색</button>
+          <div class="ms-auto d-flex gap-2">
+            <button class="btn btn-secondary" @click="resetSearch()">초기화</button>
+            <button class="btn btn-secondary" @click="coSearch()">검색</button>
+          </div>
         </div>
 
         <!-- 결과 테이블 -->
@@ -60,6 +63,11 @@
               <td>{{ cos.rpstr_tel }}</td>
               <td>{{ cos.bizr_reg_no }}</td>
               <td>{{ getStatusName(cos.st) }}</td>
+            </tr>
+            <tr v-if="coList.length === 0">
+              <td colspan="7" class="text-center text-muted py-3">
+                검색 결과가 없습니다. 다른 조건으로 검색해보세요.
+              </td>
             </tr>
           </tbody>
         </table>
@@ -95,40 +103,70 @@ const getStatusName = (st) => {
 
 const getCoTypeName = (type) => {
   const typeMap = {
-    'VENDOR': '협력업체',
-    'CUSTOMER': '고객사'
+    'VENDOR': '공급업체',
+    'CUSTOMER': '납품업체'
   }
   return typeMap[type] || type
 }
 
 const close = () => {
+  resetSearch()
+  emit('close')
+}
+
+const resetSearch = () => {
+  console.log('[coModal] 검색 조건 초기화')
   coTy.value = ''
   pickValue.value = 'CO_NM'
   st.value = ''
   searchKeyword.value = ''
   coList.value = []
-  emit('close')
 }
 
 const coSearch = async () => {
   try {
+    console.log('[coModal] 검색 시작')
+    
     const params = {
-      co_ty_id: coTy.value,
+      co_ty_id: coTy.value || '',
       co_nm: '',
       rpstr_nm: '',
       rpstr_tel: '',
-      st: st.value
+      st: st.value || ''
     }
 
-    if (pickValue.value === 'CO_NM') params.co_nm = searchKeyword.value
-    else if (pickValue.value === 'RPSTR_NM') params.rpstr_nm = searchKeyword.value
-    else if (pickValue.value === 'RPSTR_TEL') params.rpstr_tel = searchKeyword.value
+    // 검색어를 해당 필드에 설정
+    if (pickValue.value === 'CO_NM') {
+      params.co_nm = searchKeyword.value || ''
+    } else if (pickValue.value === 'RPSTR_NM') {
+      params.rpstr_nm = searchKeyword.value || ''
+    } else if (pickValue.value === 'RPSTR_TEL') {
+      params.rpstr_tel = searchKeyword.value || ''
+    }
 
+    console.log('[coModal] 검색 파라미터:', params)
+    
     const response = await axios.get('/api/cos', { params })
-    coList.value = response.data.data || []
+    console.log('[coModal] API 응답:', response.data)
+    
+    // 서비스에서 직접 배열을 반환하므로 response.data를 사용
+    coList.value = Array.isArray(response.data) ? response.data : []
+    console.log('[coModal] 검색 결과:', coList.value.length, '건')
+    
   } catch (error) {
-    console.error('업체 검색 중 오류 발생:', error)
+    console.error('[coModal] 업체 검색 중 오류 발생:', error)
+    console.error('[coModal] 에러 상세:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data
+    })
     coList.value = []
+    
+    if (error.response?.status === 404) {
+      alert('업체 검색 API를 찾을 수 없습니다. 서버 설정을 확인해주세요.')
+    } else {
+      alert('업체 검색 중 오류가 발생했습니다.')
+    }
   }
 }
 
