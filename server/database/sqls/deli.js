@@ -28,7 +28,10 @@ delivered AS (
   FROM deli_deta dd
   JOIN deli dh ON dh.deli_id = dd.deli_id
   JOIN cur c ON 1=1
-  WHERE dh.deli_dt < c.deli_dt
+  WHERE (
+    dh.deli_dt < c.deli_dt
+    OR (dh.deli_dt = c.deli_dt AND dh.deli_id < c.deli_id)
+  )
   GROUP BY dd.rcvord_deta_id
 ),
 doc AS (
@@ -47,6 +50,7 @@ SELECT
   o.opt_nm,
   p.spec,
   p.unit,
+    dd.rm AS line_rm,
   rd.rcvord_qy AS total_req_qty,
   IFNULL(delivered.delivered_qty, 0) AS delivered_qty,
   IFNULL(doc.doc_delivered_qty, 0) AS doc_delivered_qty,
