@@ -5,21 +5,34 @@
     </CModalHeader>
     <CModalBody>
       <div class="d-flex gap-2 mb-3">
-        <select class="form-select" style="width:160px" v-model="pickValue">
+        <select class="form-select" style="width: 160px" v-model="pickValue">
           <option value="rsc_ordr_nm">자재 발주서명</option>
           <option value="co_nm">업체명</option>
           <option value="emp_nm">담당자명</option>
         </select>
         <!-- 검색어 입력 너비 축소 -->
-        <input class="form-control" type="text" v-model="searchKeyword" @keyup.enter="search" placeholder="검색어 입력" style="width:180px;" />
-        <input class="form-control" type="date" v-model="reg_dt" style="width:160px" />
+        <input
+          class="form-control"
+          type="text"
+          v-model="searchKeyword"
+          @keyup.enter="search"
+          placeholder="검색어 입력"
+          style="width: 180px"
+        />
+        <input class="form-control" type="date" v-model="reg_dt" style="width: 160px" />
         <button class="btn btn-secondary" @click="search">검색</button>
       </div>
 
-      <div style="max-height:480px; overflow:auto">
+      <div style="max-height: 480px; overflow: auto">
         <table class="table table-sm table-hover mb-0">
           <thead>
-            <tr><th>자재 발주서ID</th><th>자재 발주서명</th><th>업체명</th><th>담당자명</th><th>등록일</th></tr>
+            <tr>
+              <th>자재 발주서ID</th>
+              <th>자재 발주서명</th>
+              <th>업체명</th>
+              <th>담당자명</th>
+              <th>등록일</th>
+            </tr>
           </thead>
           <tbody>
             <tr v-for="(p, i) in list" :key="p.rsc_ordr_id || i" @dblclick="select(p)">
@@ -29,7 +42,9 @@
               <td>{{ p.emp_nm }}</td>
               <td>{{ p.reg_dt }}</td>
             </tr>
-            <tr v-if="list.length === 0"><td colspan="5" class="text-center text-muted">검색 결과 없음</td></tr>
+            <tr v-if="list.length === 0">
+              <td colspan="5" class="text-center text-muted">검색 결과 없음</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -46,7 +61,7 @@ import axios from 'axios'
 import { useAuthStore } from '@/stores/auth.js'
 
 const props = defineProps({ visible: Boolean })
-const emit = defineEmits(['close','select'])
+const emit = defineEmits(['close', 'select'])
 
 const auth = useAuthStore()
 
@@ -71,7 +86,7 @@ const search = async () => {
       alert('로그인이 필요합니다.')
       return
     }
-    
+
     const empId = currentUser.emp_id ?? currentUser.id
     if (!empId) {
       alert('사용자 정보를 찾을 수 없습니다.')
@@ -79,14 +94,14 @@ const search = async () => {
     }
 
     // 서버가 소문자 키를 기대하므로 소문자 필드로 전송
-    const params = { 
-      rsc_ordr_nm: null, 
-      co_nm: null, 
-      emp_nm: null, 
+    const params = {
+      rsc_ordr_nm: null,
+      co_nm: null,
+      emp_nm: null,
       reg_dt: null,
-      emp_id: empId // 로그인 사용자 ID 추가
+      emp_id: empId, // 로그인 사용자 ID 추가
     }
-    
+
     if (pickValue.value === 'rsc_ordr_nm') params.rsc_ordr_nm = searchKeyword.value
     else if (pickValue.value === 'co_nm') params.co_nm = searchKeyword.value
     else if (pickValue.value === 'emp_nm') params.emp_nm = searchKeyword.value
@@ -96,17 +111,20 @@ const search = async () => {
     const res = await axios.get('/api/rscOrdr', { params })
     const data = res?.data
     console.log('[rscOrdrModal] raw response:', data)
-    
+
     // 방어 처리: 배열이면 그대로, 아니면 빈 배열
-    list.value = Array.isArray(data) ? data.map(it => ({
-      rsc_ordr_id: it.rsc_ordr_id ?? it.RSC_ORDR_ID ?? '',
-      co_id: it.co_id ?? it.CO_ID ?? '',
-      rsc_ordr_nm: it.rsc_ordr_nm ?? it.RSC_ORDR_NM ?? '',
-      co_nm: it.co_nm ?? it.CO_NM ?? '',
-      emp_nm: it.emp_nm ?? it.EMP_NM ?? '',
-      reg_dt: it.reg_dt ? String(it.reg_dt).slice(0,10) : '',
-      deta_count: Number(it.deta_count ?? it.DETA_COUNT ?? 0),
-    })) : []
+    list.value = Array.isArray(data)
+      ? data.map((it) => ({
+          rsc_ordr_id: it.rsc_ordr_id ?? it.RSC_ORDR_ID ?? '',
+          co_id: it.co_id ?? it.CO_ID ?? '',
+          rsc_ordr_nm: it.rsc_ordr_nm ?? it.RSC_ORDR_NM ?? '',
+          rm: it.rm ?? it.RM ?? '', // 비고 필드 추가
+          co_nm: it.co_nm ?? it.CO_NM ?? '',
+          emp_nm: it.emp_nm ?? it.EMP_NM ?? '',
+          reg_dt: it.reg_dt ? String(it.reg_dt).slice(0, 10) : '',
+          deta_count: Number(it.deta_count ?? it.DETA_COUNT ?? 0),
+        }))
+      : []
   } catch (err) {
     console.error('[rscOrdrModal] rscOrdr search error', err)
     list.value = []
