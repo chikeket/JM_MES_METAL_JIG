@@ -13,7 +13,7 @@
       <CFormLabel class="form-label">업체유형</CFormLabel>
       <CFormSelect v-model="searchFilters.type" size="sm">
         <option value="">전체</option>
-        <option value="VENDOR">협력업체</option>
+        <option value="VENDOR">공급업체</option>
         <option value="CUSTOMER">고객사</option>
       </CFormSelect>
     </CCol>
@@ -50,11 +50,11 @@
                 <CTable bordered hover class="data-table">
                   <CTableHead>
                     <CTableRow>
-                      <CTableHeaderCell>업체 ID</CTableHeaderCell>
-                      <CTableHeaderCell>업체유형</CTableHeaderCell>
-                      <CTableHeaderCell>업체명</CTableHeaderCell>
-                      <CTableHeaderCell>대표자명</CTableHeaderCell>
-                      <CTableHeaderCell>담당자명</CTableHeaderCell>
+                      <CTableHeaderCell style="width: 15%;">업체 ID</CTableHeaderCell>
+                      <CTableHeaderCell style="width: 15%;">업체유형</CTableHeaderCell>
+                      <CTableHeaderCell style="width: 30%;">업체명</CTableHeaderCell>
+                      <CTableHeaderCell style="width: 15%;">대표자명</CTableHeaderCell>
+                      <CTableHeaderCell style="width: 15%;">담당자명</CTableHeaderCell>
                     </CTableRow>
                   </CTableHead>
                   <CTableBody>
@@ -217,10 +217,20 @@ const formFields = [
 
 // 그리드 데이터
 const gridData = ref([])
-
-// 선택된 행 인덱스
 const selectedRowIndex = ref(null)
 const originalId = ref('')
+
+// ===== 이 부분 추가 =====
+// 표시할 데이터 (최대 10행)
+const displayedData = computed(() => {
+  return gridData.value.slice(0, 10)
+})
+
+// 빈 행 개수 계산
+const emptyRowCount = computed(() => {
+  const dataCount = displayedData.value.length
+  return dataCount < 10 ? 10 - dataCount : 0
+})
 
 // ============================================
 // Lifecycle
@@ -234,16 +244,26 @@ onMounted(() => {
 
 // 검색/초기화
 const handleSearch = async () => {
-    const params = {
-      type: searchFilters.type || '',
-      name: searchFilters.name || '',
-      status: searchFilters.status || '',
-    }
-    console.log(params);
+  const params = {
+    type: searchFilters.type || '',
+    name: searchFilters.name || '',
+    status: searchFilters.status || '',
+  }
+  console.log(params);
+  
+  try {
     let result = await axios.get('/api/co_list_view', { params })
     console.log(result.data)
+    
+    // ===== 이 부분 추가! =====
+    gridData.value = result.data  // 받아온 데이터를 gridData에 할당!
+    // ========================
+    
     selectedRowIndex.value = null
-
+  } catch (error) {
+    console.error('조회 오류:', error)
+    gridData.value = []  // 에러 시 빈 배열
+  }
 }
 
 // 초기화 함수 수정
@@ -570,6 +590,8 @@ const getTypeLabel = (type) => {
   margin-bottom: 0;
   border-collapse: separate;
   border-spacing: 0;
+  user-select: none;   /* ✅ 텍스트 선택 방지 */
+  cursor: default;     /* ✅ 클릭 시 일반 커서 유지 */
 }
 
 :deep(.data-table thead) {
@@ -641,38 +663,47 @@ const getTypeLabel = (type) => {
 }
 
 /* ============================================
-   스크롤바 스타일
+   모던 스크롤바 스타일 (Glass / Minimal)
    ============================================ */
+.table-wrapper,
+:deep(.overflow-auto) {
+  overflow-y: scroll;          /* 항상 스크롤바 표시(내용 유무와 상관없이) */
+  overflow-x: hidden; /* ✅ 좌우 스크롤 완전 차단 */
+  scrollbar-gutter: stable;    /* 스크롤바 공간을 항상 예약 (레이아웃 흔들림 방지) */
+  -webkit-overflow-scrolling: touch; /* 모바일/터치 스무스 스크롤 보완(선택) */
+}
+
+/* 모던 스크롤바 스타일 (Glass / Minimal) */
 .table-wrapper::-webkit-scrollbar,
 :deep(.overflow-auto)::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
 }
 
 .table-wrapper::-webkit-scrollbar-track,
 :deep(.overflow-auto)::-webkit-scrollbar-track {
-  background: #f1f3f5;
-  border-radius: 8px;
+  background: rgba(240, 240, 240, 0.6); /* 트랙이 보이도록 불투명도를 약간 높임 */
+  border-radius: 10px;
 }
 
 .table-wrapper::-webkit-scrollbar-thumb,
 :deep(.overflow-auto)::-webkit-scrollbar-thumb {
-  background: #adb5bd;
-  border-radius: 8px;
+  background: linear-gradient(180deg, #bfc2c7, #9ea2a8);
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(2px);
+  transition: all 0.2s ease;
 }
 
 .table-wrapper::-webkit-scrollbar-thumb:hover,
 :deep(.overflow-auto)::-webkit-scrollbar-thumb:hover {
-  background: #868e96;
+  background: linear-gradient(180deg, #a4a8ae, #7e838a);
 }
 
-/* 간격 조정 */
-:deep(.mb-2) {
-  margin-bottom: 0.5rem !important;
-}
-
-:deep(.gap-2) {
-  gap: 0.5rem !important;
+/* Firefox 대응 */
+.table-wrapper,
+:deep(.overflow-auto) {
+  scrollbar-width: thin;
+  scrollbar-color: #9ea2a8 rgba(240, 240, 240, 0.6);
 }
 
 /* ============================================
@@ -692,4 +723,6 @@ const getTypeLabel = (type) => {
     padding: 0.4rem 1rem;
   }
 }
+
+
 </style>
