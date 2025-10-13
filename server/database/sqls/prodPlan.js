@@ -38,7 +38,8 @@ const prodPlanDetaSelect =
  ,a.prod_plan_deta_id
  ,a.prdt_id
  ,a.prdt_opt_id
- ,a.plan_qy - SUM(b.drct_qy) "plan_qy" 
+ ,a.plan_qy
+ ,SUM(b.drct_qy) "base_quantity" 
  ,a.priort
  ,c.prdt_nm
  ,c.spec
