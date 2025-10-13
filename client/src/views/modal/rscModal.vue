@@ -1,18 +1,28 @@
 <template>
-  <CModal :visible="visible" @close="close">
+  <CModal :visible="visible" @close="close" size="xl">
     <CModalHeader><CModalTitle>자재 검색</CModalTitle></CModalHeader>
     <CModalBody>
-      <div class="modal-body" style="max-height:400px; overflow-y:auto">
-        <div class="d-flex gap-2 mb-3">
-          <select class="form-select" style="width:150px" v-model="pickValue">
+      <div class="modal-body" style="max-height:500px; overflow-y:auto">
+        <div class="d-flex gap-2 mb-3 align-items-center flex-wrap">
+          <select class="form-select" style="width:150px; flex-shrink: 0;" v-model="pickValue">
             <option value="rsc_id">자재 코드</option>
             <option value="rsc_clsf_id">자재 분류</option>
             <option value="rsc_nm">자재 명</option>
             <option value="spec">규격</option>
             <option value="unit">단위</option>
           </select>
-          <input type="text" class="form-control" v-model="searchKeyword" @keyup.enter="rscSearch" placeholder="검색어 입력" />
-          <button class="btn btn-secondary" @click="rscSearch">검색</button>
+          <input 
+            type="text" 
+            class="form-control" 
+            v-model="searchKeyword" 
+            @keyup.enter="rscSearch" 
+            placeholder="검색어 입력"
+            style="width: 300px; flex-shrink: 0;"
+          />
+          <div class="d-flex gap-2" style="flex-shrink: 0;">
+            <button class="btn btn-secondary" @click="resetSearch">초기화</button>
+            <button class="btn btn-secondary" @click="rscSearch">검색</button>
+          </div>
         </div>
 
         <table class="table table-bordered table-hover">
@@ -48,10 +58,15 @@ const searchKeyword = ref('')
 const rscList = shallowRef([])
 
 const close = () => {
+  resetSearch()
+  emit('close')
+}
+
+const resetSearch = () => {
+  console.log('[rscModal] 검색 조건 초기화')
   pickValue.value = 'rsc_nm'
   searchKeyword.value = ''
   rscList.value = []
-  emit('close')
 }
 
 const rscSearch = async () => {

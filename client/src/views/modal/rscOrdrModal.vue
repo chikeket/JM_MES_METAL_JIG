@@ -17,10 +17,13 @@
           v-model="searchKeyword"
           @keyup.enter="search"
           placeholder="검색어 입력"
-          style="width: 180px"
+          style="width: 250px"
         />
         <input class="form-control" type="date" v-model="reg_dt" style="width: 160px" />
-        <button class="btn btn-secondary" @click="search">검색</button>
+        <div class="ms-auto d-flex gap-2">
+          <button class="btn btn-secondary" @click="resetSearch">초기화</button>
+          <button class="btn btn-secondary" @click="search">검색</button>
+        </div>
       </div>
 
       <div style="max-height: 480px; overflow: auto">
@@ -71,11 +74,16 @@ const reg_dt = ref('')
 const list = shallowRef([])
 
 const close = () => {
+  resetSearch()
+  emit('close')
+}
+
+const resetSearch = () => {
+  console.log('[rscOrdrModal] 검색 조건 초기화')
   pickValue.value = 'rsc_ordr_nm'
   searchKeyword.value = ''
   reg_dt.value = ''
   list.value = []
-  emit('close')
 }
 
 const search = async () => {

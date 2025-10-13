@@ -83,7 +83,7 @@
               <CTableHeaderCell scope="col" class="text-center" style="width: 56px">
                 <CFormCheck :checked="allSelected" @change="toggleAll($event)" />
               </CTableHeaderCell>
-              <CTableHeaderCell class="text-center" style="width: 90px">수불 ID</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 90px">수불 명</CTableHeaderCell>
               <CTableHeaderCell class="text-center" style="width: 120px"
                 >품목 유형</CTableHeaderCell
               >
@@ -227,28 +227,43 @@ const closeInspectionModal = () => {
   isInspectionModalOpen.value = false
 }
 
-const onSelectInspection = (inspection) => {
-  console.log('[wrhousdlvr] 검사서 선택됨:', inspection)
+const onSelectInspection = (inspectionList) => {
+  console.log('[wrhousdlvr] 검사서 선택됨:', inspectionList)
 
-  // 요약 테이블에 선택된 검사서 정보 표시
-  summaryRows.value = [
-    {
-      id: inspection.insp_no,
-      inspect_id: inspection.insp_no,
-      type: inspection.item_type, // 기본값 설정
-      code: inspection.item_code,
-      name: inspection.item_name,
-      spec: inspection.item_spec,
-      unit: inspection.item_unit,
-      qty: inspection.pass_qty || inspection.insp_qty || 0,
-    },
-  ]
+  if (!Array.isArray(inspectionList) || inspectionList.length === 0) {
+    alert('선택된 검사서가 없습니다.')
+    return
+  }
 
-  // 메인 그리드에 새 행 추가 (검사서 정보 기반)
-  const newRow = {
+  // 검사서 종류에 따라 입고/출고 모드 자동 설정
+  const firstInspection = inspectionList[0]
+  const inspType = firstInspection.insp_type
+
+  // 입고: 자재품질검사, 반제품품질검사, 완제품품질검사
+  // 출고: 자재불출, 완제품납품
+  if (['materialQuality', 'semiQuality', 'finishedQuality'].includes(inspType)) {
+    mode.value = 'in'
+  } else if (['materialWithdrawal', 'deliveryDetail'].includes(inspType)) {
+    mode.value = 'out'
+  }
+
+  // 요약 테이블에 선택된 검사서들 정보 표시
+  summaryRows.value = inspectionList.map((inspection) => ({
+    id: inspection.insp_no,
+    inspect_id: inspection.insp_no,
+    type: getItemTypeByInspType(inspection.insp_type),
+    code: inspection.item_code,
+    name: inspection.item_name,
+    spec: inspection.item_spec,
+    unit: inspection.item_unit,
+    qty: inspection.pass_qty || inspection.insp_qty || 0,
+  }))
+
+  // 메인 그리드에 새 행들 추가 (검사서 정보 기반)
+  const newRows = inspectionList.map((inspection) => ({
     id: Date.now().toString(36) + Math.floor(Math.random() * 1000),
     txn_id: '', // 자동 생성될 ID
-    type: inspection.item_type || '자재',
+    type: getItemTypeByInspType(inspection.insp_type),
     code: inspection.item_code,
     name: inspection.item_name,
     spec: inspection.item_spec || '',
@@ -257,11 +272,28 @@ const onSelectInspection = (inspection) => {
     // 검사서 관련 정보 저장 (백엔드 저장 시 사용)
     insp_no: inspection.insp_no,
     insp_date: inspection.insp_date,
+    insp_type: inspection.insp_type,
+  }))
+
+  rows.value.push(...newRows)
+
+  alert(`${inspectionList.length}건의 검사서 품목이 추가되었습니다.`)
+}
+
+// 검사서 종류에 따른 품목 유형 반환
+const getItemTypeByInspType = (inspType) => {
+  switch (inspType) {
+    case 'materialQuality':
+    case 'materialWithdrawal':
+      return '자재'
+    case 'semiQuality':
+      return '반제품'
+    case 'finishedQuality':
+    case 'deliveryDetail':
+      return '완제품'
+    default:
+      return '자재'
   }
-
-  rows.value.push(newRow)
-
-  alert(`검사서 ${inspection.insp_no}의 품목이 추가되었습니다.`)
 }
 
 const onSave = async () => {
@@ -274,12 +306,14 @@ const onSave = async () => {
     // 거래 유형별 데이터 변환
     const transactionList = rows.value.map((row) => ({
       txn_type: mode.value, // 'in' 또는 'out'
+      item_type: row.type, // 자재/반제품/완제품
       item_code: row.code,
       item_name: row.name,
       item_spec: row.spec || '',
       item_unit: row.unit || 'EA',
       qty: Number(row.qty) || 0,
-      insp_no: row.insp_no || null, // 검사서 번호 (입고 시 필수)
+      insp_no: row.insp_no || null, // 검사서 번호
+      insp_type: row.insp_type || null, // 검사서 종류 (LOT 번호 생성용)
       txn_date: new Date().toISOString().split('T')[0], // 오늘 날짜
       remark: `${mode.value === 'in' ? '입고' : '출고'} 처리`,
     }))
@@ -291,7 +325,7 @@ const onSave = async () => {
 
     console.log('[wrhousdlvr] 저장 요청 데이터:', payload)
 
-    const response = await axios.post('/api/warehouse/transactions', payload)
+    const response = await axios.post('/api/wrhousdlvr/transactions', payload)
 
     if (response.data?.isSuccessed) {
       alert(`${mode.value === 'in' ? '입고' : '출고'} 처리가 완료되었습니다.`)
