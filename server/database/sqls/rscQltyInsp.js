@@ -2,30 +2,38 @@
 
 //자재발주서 조회
 const rscOrdrQltyList = `
-SELECT
- a.rsc_nm,
- b.qy,
- d.emp_nm,
- d.emp_id,
- e.co_nm,
- c.reg_dt,
- a.rsc_id,
- b.rsc_ordr_deta_id
-FROM rsc a
-JOIN rsc_ordr_deta b
-ON a.rsc_id = b.rsc_id
-JOIN rsc_ordr c
-ON b.rsc_ordr_id = c.rsc_ordr_id
-JOIN emp d
-ON c.emp_id = d.emp_id
-JOIN co e
-ON c.co_id = e.co_id
-WHERE a.rsc_nm LIKE CONCAT('%', ?, '%')
-AND b.qy > ?
-AND d.emp_nm LIKE CONCAT('%', ?, '%')
-AND e.co_nm LIKE CONCAT('%', ?, '%')
-AND c.reg_dt >= ?
-ORDER BY c.reg_dt DESC`;
+select
+ c.rsc_nm 
+ ,a.qy - COALESCE(b.insp_qy, 0) "qy"
+ ,e.emp_nm
+ ,e.emp_id
+ ,f.co_nm
+ ,c.rsc_id
+ ,d.reg_dt
+ ,a.rsc_ordr_deta_id
+from rsc_ordr_deta a
+LEFT JOIN (
+		select 
+		 rsc_ordr_deta_id
+		 ,SUM(insp_qy) "insp_qy"
+		from rsc_qlty_insp		
+		GROUP BY rsc_ordr_deta_id) b
+ON a.rsc_ordr_deta_id = b.rsc_ordr_deta_id
+JOIN rsc c
+ON a.rsc_id = c.rsc_id
+JOIN rsc_ordr d
+ON a.rsc_ordr_id = d.rsc_ordr_id
+JOIN emp e
+ON d.emp_id = e.emp_id
+JOIN co f
+ON d.co_id = f.co_id
+WHERE a.qy > COALESCE(b.insp_qy, 0)
+AND c.rsc_nm LIKE CONCAT('%', ?, '%')
+AND a.qy - COALESCE(b.insp_qy, 0) > ?
+AND e.emp_nm LIKE CONCAT('%', ?, '%')
+AND f.co_nm LIKE CONCAT('%', ?, '%')
+AND d.reg_dt >= ?
+ORDER BY d.reg_dt DESC`;
 
 //자재 품질 검수 ID생성 쿼리
 const rscQltyInspCreateId = `
@@ -46,6 +54,14 @@ INSERT INTO rsc_qlty_insp(
  insp_dt,
  rsc_qlty_insp_id)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?)`;
+
+//자재 품질 검수 검사항목별 불량수량관리 인서트쿼리
+const rscQltyInspInferInsert = `
+INSERT INTO rsc_qlty_insp_infer_qy(
+infer_qy
+,qlty_item_mng_id
+,rsc_qlty_insp_id)
+VALUES(?, ?, ?)`;
 
 //자재 품질 검사 테이블 조회
 const rscQltyInspSelect = `
@@ -77,6 +93,22 @@ ON e.co_id = f.co_id
 WHERE b.emp_nm LIKE CONCAT('%', ?, '%')
 AND a.insp_dt >= ?`;
 
+//자재품질검수 항목별 불량수량 테이블 불러오는 쿼리
+const rscQltyInspInferSearch = `
+SELECT
+ c.insp_item_nm,
+ c.basi_val,
+ a.qlty_item_mng_id,
+ a.rsc_qlty_insp_id,
+ c.eror_scope_min,
+ c.eror_scope_max,
+ a.infer_qy 
+FROM rsc_qlty_insp_infer_qy a
+JOIN qlty_item c
+ON a.qlty_item_mng_id = c.qlty_item_mng_id
+WHERE c.st = 'P1'
+AND a.rsc_qlty_insp_id = ?`;
+
 //자재 품질 검사 테이블 수정
 const rscQltyInspUpdate = `
 UPDATE rsc_qlty_insp
@@ -102,7 +134,9 @@ module.exports = {
   rscOrdrQltyList,
   rscQltyInspCreateId,
   rscQltyInspInsert,
+  rscQltyInspInferInsert,
   rscQltyInspSelect,
+  rscQltyInspInferSearch,
   rscQltyInspUpdate,
   rscQltyInspDelete,
 };
