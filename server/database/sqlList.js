@@ -46,6 +46,9 @@ const qltyItem = require("./sqls/qltyItem.js");
 // 창고 입출고 관련 쿼리
 const wrhousdlvr = require("./sqls/wrhousdlvr.js");
 
+// 공정 라우팅 관련 쿼리
+const routingInfo = require("./sqls/routingInfo.js");
+
 // └───각 테이블별 SQL 쿼리들을 모아놓은 중앙 관리 파일───┘
 
 module.exports = {
@@ -55,7 +58,7 @@ module.exports = {
   ...prdt,
   ...rscOrdr,
   ...co,
-  ...companyManage,  // 추가!
+  ...companyManage, // 추가!
   ...rcvord,
   ...emp,
   ...acct,
@@ -67,4 +70,5 @@ module.exports = {
   ...deli,
   ...qltyItem,
   ...wrhousdlvr,
+  ...routingInfo,
 };
