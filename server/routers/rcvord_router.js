@@ -49,6 +49,18 @@ router.post("/rcvords/save", async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error("[POST /rcvords/save] error:", err);
+    const msg = String((err && err.message) || "");
+    if (
+      msg.includes("ER_ROW_IS_REFERENCED_2") ||
+      msg.toLowerCase().includes("foreign key") ||
+      msg.includes("외부 참조")
+    ) {
+      return res.status(409).json({
+        message:
+          "연동된 출고/재고 이력이 있어 일부 라인을 삭제/수정할 수 없습니다.",
+        error: err.message,
+      });
+    }
     res.status(500).json({ error: err.message || "저장 실패" });
   }
 });
