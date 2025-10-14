@@ -1,8 +1,3 @@
-// ❌ 이 줄들 삭제!
-// const mariadb = require("../database/mapper.js");
-// const { convertObjToAry } = require("../utils/converts.js");
-
-// ✅ 바로 이렇게 시작!
 const coListView = `
   SELECT
     co_id AS id,
@@ -41,6 +36,7 @@ const coInsert = `
 
 const coUpdate = `
   UPDATE co SET
+    co_id = ?,
     bizr_reg_no = ?,
     co_nm = ?,
     rpstr_nm = ?,
@@ -61,4 +57,17 @@ module.exports = {
   coInsert,
   coUpdate,
   coDelete
+};
+
+const coCheckDuplicate = `
+  SELECT co_id FROM co WHERE co_id = ?
+`;
+
+module.exports = {
+  coListView,
+  coCreateId,
+  coInsert,
+  coUpdate,
+  coDelete,
+  coCheckDuplicate  // 이거 추가
 };
