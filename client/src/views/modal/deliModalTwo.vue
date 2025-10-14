@@ -28,15 +28,16 @@
                 <CTableHeaderCell class="text-center col-co">납품 업체 명</CTableHeaderCell>
                 <CTableHeaderCell class="text-center col-emp">수주 담당자</CTableHeaderCell>
                 <CTableHeaderCell class="text-center col-date">수주 등록 일자</CTableHeaderCell>
+                <CTableHeaderCell class="text-center col-status">수주 상태</CTableHeaderCell>
                 <CTableHeaderCell class="text-center col-rm">비고</CTableHeaderCell>
               </CTableRow>
             </CTableHead>
             <CTableBody>
               <CTableRow v-if="loading">
-                <CTableDataCell colspan="6" class="text-center py-3">로딩중...</CTableDataCell>
+                <CTableDataCell colspan="7" class="text-center py-3">로딩중...</CTableDataCell>
               </CTableRow>
               <CTableRow v-else-if="errorMsg">
-                <CTableDataCell colspan="6" class="text-center text-danger py-3">{{
+                <CTableDataCell colspan="7" class="text-center text-danger py-3">{{
                   errorMsg
                 }}</CTableDataCell>
               </CTableRow>
@@ -54,10 +55,13 @@
                 <CTableDataCell class="cell-left col-date">{{
                   formatDate(row.reg_dt)
                 }}</CTableDataCell>
+                <CTableDataCell class="cell-left col-status">{{
+                  row.status || '진행 중'
+                }}</CTableDataCell>
                 <CTableDataCell class="cell-left col-rm">{{ row.rm }}</CTableDataCell>
               </CTableRow>
               <CTableRow v-if="!loading && !errorMsg && !rcvordList.length">
-                <CTableDataCell colspan="6" class="text-center text-muted py-3">
+                <CTableDataCell colspan="7" class="text-center text-muted py-3">
                   데이터가 없습니다.
                 </CTableDataCell>
               </CTableRow>
@@ -161,12 +165,19 @@ onMounted(() => {
 </script>
 
 <style scoped>
+:deep(*) {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
+    sans-serif;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
 .vars {
   --w-no: 40px;
   --w-id: 140px;
   --w-co: 130px;
   --w-emp: 80px;
   --w-date: 110px;
+  --w-status: 90px;
   --w-rm: 260px;
 }
 
@@ -224,6 +235,10 @@ onMounted(() => {
   width: var(--w-date);
   min-width: var(--w-date);
 }
+.col-status {
+  width: var(--w-status);
+  min-width: var(--w-status);
+}
 .col-rm {
   width: var(--w-rm);
   min-width: var(--w-rm);
@@ -236,5 +251,84 @@ onMounted(() => {
 }
 .cell-left {
   text-align: left !important;
+}
+
+/* CompanyManage 스타일 적용 */
+:deep(.btn) {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0.5rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  letter-spacing: -0.3px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+:deep(.btn-secondary) {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+  color: #fff !important;
+}
+:deep(.btn-secondary:hover) {
+  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.25);
+}
+
+/* 테이블 헤더/바디 스타일 (CompanyManage 준용) */
+:deep(.table-responsive) {
+  border-radius: 10px;
+}
+:deep(.table-responsive thead) {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+:deep(.table-responsive thead th) {
+  font-size: 13px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #495057 0%, #343a40 100%) !important;
+  color: #ffffff !important;
+  text-align: center;
+  padding: 0.6rem 0.5rem;
+  border: none;
+}
+:deep(.table-responsive tbody td) {
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+/* Row hover - match prdtManage look */
+:deep(.table-responsive tbody tr) {
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+}
+:deep(.table-responsive tbody tr:hover) {
+  background-color: #f8f9fa !important;
+  transform: scale(1.005);
+}
+/* Ensure cell background also changes to the same tone */
+:deep(.table-responsive tbody tr:hover) td {
+  background-color: #f8f9fa !important;
+}
+
+/* 모던 스크롤바 (CompanyManage 준용) */
+:deep(.table-responsive) {
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+:deep(.table-responsive::-webkit-scrollbar) {
+  width: 8px;
+}
+:deep(.table-responsive::-webkit-scrollbar-track) {
+  background: rgba(240, 240, 240, 0.6);
+  border-radius: 10px;
+}
+:deep(.table-responsive::-webkit-scrollbar-thumb) {
+  background: linear-gradient(180deg, #bfc2c7, #9ea2a8);
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+}
+:deep(.table-responsive::-webkit-scrollbar-thumb:hover) {
+  background: linear-gradient(180deg, #a4a8ae, #7e838a);
 }
 </style>

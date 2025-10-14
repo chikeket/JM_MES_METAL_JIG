@@ -56,6 +56,11 @@ const routes = [
             component: () => import('@/views/minsu/rcvord.vue'),
           },
           {
+            path: '/Minsu/rcvord_search',
+            name: 'rcvord_search',
+            component: () => import('@/views/minsu/rcvordSearch.vue'),
+          },
+          {
             path: '/Minsu/deli',
             name: 'deli',
             component: () => import('@/views/minsu/deli.vue'),

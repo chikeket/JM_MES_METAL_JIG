@@ -59,9 +59,9 @@
     <!-- 하단 버튼 -->
     <div class="sub-toolbar">
       <div class="sub-toolbar-buttons">
-        <button class="btn btn-xs btn-outline-secondary" @click="onResetLines">초기화</button>
-        <button class="btn btn-xs btn-outline-primary" @click="onAddLine">제품 추가</button>
-        <button class="btn btn-xs btn-outline-danger" @click="onDeleteSelected">
+        <button class="btn btn-sm btn-outline-secondary" @click="onResetLines">초기화</button>
+        <button class="btn btn-sm btn-outline-secondary" @click="onAddLine">제품 추가</button>
+        <button class="btn btn-sm btn-outline-danger" @click="onDeleteSelected">
           선택 제품 삭제
         </button>
       </div>
@@ -83,6 +83,7 @@
             <th class="qty-col">요청 수량</th>
             <th class="producible-col">생산 가능 여부</th>
             <th class="due-date-col">납품 예정 일자</th>
+            <th class="st-col">출고 상태</th>
             <th class="remark-col">비고</th>
           </tr>
         </thead>
@@ -108,7 +109,7 @@
             <td class="cell-left">
               <span class="cell-text" :title="row.unit">{{ row.unit }}</span>
             </td>
-            <td class="cell-number editable" @dblclick="startEdit(row, 'requestQty')">
+            <td class="cell-number editable" @click="startEdit(row, 'requestQty')">
               <template v-if="isCellEditing(row, 'requestQty')">
                 <input
                   ref="qtyInputs"
@@ -122,15 +123,17 @@
                 />
               </template>
               <template v-else>
-                <span :class="{ 'placeholder-text': !row.requestQty }">
-                  {{ row.requestQty ? formatNumber(row.requestQty) : '입력' }}
-                </span>
+                <div class="input-like input-like--compact input-like--number">
+                  <span class="value" :class="{ 'placeholder-text': !row.requestQty }">
+                    {{ row.requestQty ? formatNumber(row.requestQty) : '입력' }}
+                  </span>
+                </div>
               </template>
             </td>
             <td class="cell-left">
               <span class="cell-text" :title="row.producible">{{ row.producible }}</span>
             </td>
-            <td class="cell-left editable" @dblclick="startEdit(row, 'paprd_dt')">
+            <td class="cell-left editable" @click="startEdit(row, 'paprd_dt')">
               <template v-if="isCellEditing(row, 'paprd_dt')">
                 <input
                   ref="dueDateInputs"
@@ -144,16 +147,23 @@
                 />
               </template>
               <template v-else>
-                <span
-                  class="cell-text"
-                  :class="{ 'placeholder-text': !row.paprd_dt }"
-                  :title="row.paprd_dt || ''"
-                >
-                  {{ row.paprd_dt || '입력' }}
-                </span>
+                <div class="input-like input-like--compact">
+                  <span
+                    class="value"
+                    :class="{ 'placeholder-text': !row.paprd_dt }"
+                    :title="row.paprd_dt || ''"
+                  >
+                    {{ row.paprd_dt || '입력' }}
+                  </span>
+                </div>
               </template>
             </td>
-            <td class="cell-left editable" @dblclick="startEdit(row, 'remark')">
+            <td class="cell-left status-cell" :class="{ empty: !(row.statusName || '').trim() }">
+              <span class="cell-text" :title="row.statusName || ''">{{
+                row.statusName || ''
+              }}</span>
+            </td>
+            <td class="cell-left editable" @click="startEdit(row, 'remark')">
               <template v-if="isCellEditing(row, 'remark')">
                 <textarea
                   ref="remarkInputs"
@@ -166,18 +176,20 @@
                 ></textarea>
               </template>
               <template v-else>
-                <div
-                  class="ellipsis"
-                  :class="{ 'placeholder-text': !row.remark }"
-                  :title="row.remark || ''"
-                >
-                  {{ row.remark || '입력' }}
+                <div class="input-like input-like--textarea">
+                  <div
+                    class="ellipsis"
+                    :class="{ 'placeholder-text': !row.remark }"
+                    :title="row.remark || ''"
+                  >
+                    {{ row.remark || '입력' }}
+                  </div>
                 </div>
               </template>
             </td>
           </tr>
-          <tr v-if="!lines.length">
-            <td colspan="10" class="empty">데이터가 없습니다.</td>
+          <tr v-for="n in emptyRowCount" :key="'empty-' + n" class="empty-row">
+            <td colspan="11">&nbsp;</td>
           </tr>
         </tbody>
       </table>
@@ -226,6 +238,8 @@ function createLine(partial = {}) {
     unit: '',
     producible: '',
     paprd_dt: '',
+    st: '',
+    statusName: '',
     remark: '',
     _selected: false,
     ...partial,
@@ -299,6 +313,10 @@ const totalQty = computed(() =>
   lines.value.reduce((sum, l) => sum + (Number(l.requestQty) || 0), 0),
 )
 const formattedTotalQty = computed(() => formatNumber(totalQty.value))
+
+// 표준 높이를 위한 최소 빈행 (행 수가 적을 때만 채움)
+const GRID_VISIBLE_ROWS = 15
+const emptyRowCount = computed(() => Math.max(0, GRID_VISIBLE_ROWS - lines.value.length))
 
 // Formatting helper
 function formatNumber(val) {
@@ -397,6 +415,8 @@ async function onSelectOrder(row) {
             unit: l.unit || '',
             producible: l.prdt_st_nm || l.prdt_st || '',
             paprd_dt: l.paprd_dt ? formatDateStr(l.paprd_dt) : '',
+            st: l.st || '',
+            statusName: l.deta_st_nm || '',
             remark: l.rm || '',
           }),
         )
@@ -511,6 +531,12 @@ async function onSelectProduct(product) {
 </script>
 
 <style scoped>
+:deep(*) {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
+    sans-serif;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
 /* 변수 스코프를 위한 래퍼 클래스 (wrapper 제거 후) */
 .vars-scope {
   --radius-sm: 4px;
@@ -561,48 +587,50 @@ async function onSelectProduct(product) {
 }
 .btn {
   cursor: pointer;
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
-  background: var(--color-btn-gray);
+  border-radius: 8px;
+  border: none;
   color: var(--color-btn-text);
-  font-weight: 500;
-  transition: background 0.15s, filter 0.15s;
-  height: 32px;
-  line-height: 1;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: -0.3px;
+  transition: all 0.3s ease;
+  line-height: 1.5; /* rcvordSearch와 동일한 라인하이트로 높이 통일 */
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 0 14px;
-  font-size: 13px;
+  padding: 0.5rem 1.2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 .btn-sm,
 .btn-xs {
-  height: 32px;
-  padding: 0 14px;
+  height: auto;
+  padding: 0.5rem 1.2rem;
   font-size: 13px;
 }
 .btn-outline-secondary {
-  background: var(--color-btn-gray);
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
   color: var(--color-btn-text);
-  border-color: var(--color-btn-gray-hover);
 }
 .btn-outline-secondary:hover {
-  background: var(--color-btn-gray-hover);
+  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
 }
 .btn-outline-danger,
 .btn.btn-outline-danger,
 .btn-danger {
-  background: var(--color-btn-danger);
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
   color: var(--color-btn-text);
-  border-color: var(--color-btn-danger-hover);
 }
 .btn-outline-danger:hover,
 .btn-danger:hover {
-  background: var(--color-btn-danger-hover);
+  background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
 }
 .btn.btn-sm,
 .btn.btn-xs {
-  line-height: 1.2;
+  line-height: 1.5; /* rcvordSearch 상속값에 맞춤 */
 }
 .form-grid {
   display: grid;
@@ -618,17 +646,22 @@ async function onSelectProduct(product) {
   grid-column: 1 / -1;
 }
 .field label {
-  font-weight: 500;
+  font-weight: 600;
   margin-bottom: 4px;
+  font-size: 12px;
+  color: #2c3e50;
+  letter-spacing: -0.2px;
 }
 .field input[type='text'],
 .field input[type='date'],
 .field textarea {
-  border: 1px solid #bbb;
-  border-radius: var(--radius-sm);
-  padding: 4px 6px;
-  background: #fff;
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 400;
+  padding: 0.4rem 0.75rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  background-color: #f8f9fa;
 }
 .field input[readonly],
 .field input[readonly='readonly'] {
@@ -639,10 +672,22 @@ async function onSelectProduct(product) {
   min-height: 78px;
   resize: vertical;
 }
+.field input[type='text'],
+.field input[type='date'] {
+  height: 34px;
+}
+.field input[type='text']:focus,
+.field input[type='date']:focus,
+.field textarea:focus {
+  border-color: #6c757d;
+  box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.15);
+  background-color: #ffffff;
+}
 
 .table-wrapper {
   height: calc(var(--row-h) * var(--table-visible-rows) + var(--thead-h));
   overflow-y: auto;
+  overflow-x: hidden;
   border: 1px solid #bcbcbc;
   border-radius: var(--radius-md);
 }
@@ -655,18 +700,18 @@ async function onSelectProduct(product) {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  table-layout: auto;
+  table-layout: fixed;
   font-size: 12px;
 }
 .data-grid thead th {
   position: sticky;
   top: 0;
-  background: #212631;
+  background: linear-gradient(135deg, #495057 0%, #343a40 100%);
   color: #fff;
-  z-index: 2;
-  border: 1px solid #bcbcbc;
-  padding: 4px;
-  font-weight: 600;
+  z-index: 10;
+  border: none;
+  padding: 0.65rem 0.5rem;
+  font-weight: 700;
   text-align: center; /* 헤더 가운데 */
   height: var(--thead-h);
 }
@@ -677,13 +722,28 @@ async function onSelectProduct(product) {
   border-top-right-radius: var(--radius-sm);
 }
 .data-grid tbody td {
-  border: 1px solid #d4d4d4;
-  padding: 2px 4px;
+  border: none;
+  border-bottom: 1px solid #e9ecef;
+  border-right: 2px solid #e9ecef; /* 열과 열 사이 세로 구분선 */
+  padding: 0.55rem 0.5rem;
   background: #fff;
   height: var(--row-h);
 }
+.data-grid tbody td:last-child {
+  border-right: none; /* 마지막 컬럼은 우측 선 제거 */
+}
 .data-grid tbody tr {
   height: var(--row-h);
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+}
+.data-grid tbody tr:hover:not(.empty-row) {
+  background-color: #f8f9fa;
+  transform: scale(1.005);
+}
+/* Hover 색상이 td 배경에 가려지지 않도록, hover 시 셀 배경도 변경 */
+.data-grid tbody tr:hover:not(.empty-row) td {
+  background-color: #f8f9fa !important;
 }
 .data-grid input,
 .data-grid select,
@@ -737,6 +797,9 @@ async function onSelectProduct(product) {
 .due-date-col {
   width: 110px; /* 납기 예정일: compact */
 }
+.st-col {
+  width: 110px; /* 납기 예정일: compact */
+}
 .remark-col {
   width: 450px; /* 비고: 확대 */
 }
@@ -779,6 +842,9 @@ async function onSelectProduct(product) {
   color: #b5b5b5;
   font-style: italic;
 }
+.status-cell.empty {
+  background: #e9e9e9;
+}
 .empty {
   text-align: center;
   padding: 24px 0;
@@ -793,20 +859,67 @@ async function onSelectProduct(product) {
 .data-grid td:not(.editable) {
   cursor: default;
 }
+.input-like {
+  display: block;
+  width: 100%;
+  background-color: #ffffff; /* 기본은 흰색으로 두어 hover 대비가 생기도록 */
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 0.25rem 0.5rem;
+  min-height: 28px;
+  line-height: 1.2;
+}
+.input-like--compact {
+  padding: 0.2rem 0.5rem;
+  min-height: 26px;
+}
+.input-like--number {
+  text-align: right;
+}
+.input-like--textarea {
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+}
+.input-like .value {
+  display: inline-block;
+  color: #2c3e50;
+}
+.input-like .placeholder-text {
+  color: #b5b5b5;
+}
+.empty-row td {
+  background-color: #fafbfc;
+}
+.table-wrapper {
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
 .table-wrapper::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
 }
 .table-wrapper::-webkit-scrollbar-track {
-  background: #f0f0f0;
-  border-radius: var(--radius-sm);
+  background: rgba(240, 240, 240, 0.6);
+  border-radius: 10px;
 }
 .table-wrapper::-webkit-scrollbar-thumb {
-  background: #c0c0c0;
-  border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, #bfc2c7, #9ea2a8);
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
 }
 .table-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #a0a0a0;
+  background: linear-gradient(180deg, #a4a8ae, #7e838a);
+}
+/* 행 hover 시 내부 input-like 배경도 동일 톤으로 변경 */
+.data-grid tbody tr:hover:not(.empty-row) .input-like {
+  background-color: #f8f9fa !important;
+}
+/* rcvordSearch와 동일한 버튼 크기 반응형 규칙 */
+@media (max-width: 1600px) {
+  .btn {
+    font-size: 11px !important;
+    padding: 0.4rem 1rem;
+  }
 }
 @media (max-height: 900px) {
   .table-wrapper {

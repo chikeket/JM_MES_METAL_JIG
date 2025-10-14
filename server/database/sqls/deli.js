@@ -1,6 +1,21 @@
 // 납품 목록(모달) 조회: 검색어가 비어있으면 전체, 있으면 LIKE 검색
+// 상태(status)는 상관 서브쿼리로 계산하여 GROUP BY 없이 안전하게 반환
 const deliModalFind = `
-SELECT d.deli_id, e.emp_nm, d.deli_dt, d.rm
+SELECT 
+  d.deli_id, 
+  e.emp_nm, 
+  d.deli_dt, 
+  d.rm,
+  (
+    SELECT CASE 
+             WHEN COUNT(*) > 0 
+                  AND SUM(CASE WHEN dd.deli_st = 'J3' THEN 1 ELSE 0 END) = COUNT(*)
+               THEN '출고 완료' 
+             ELSE '진행 중' 
+           END
+    FROM deli_deta dd
+    WHERE dd.deli_id = d.deli_id
+  ) AS status
 FROM deli d
 JOIN emp e ON e.emp_id = d.emp_id
 WHERE (? = '' OR d.deli_id LIKE CONCAT('%', ?, '%'))
@@ -45,17 +60,19 @@ SELECT
   rd.rcvord_deta_id,
   dd.deli_deta_id AS deli_deta_id,
   dd.deli_qy AS doc_line_qty,
+  dd.deli_st AS deli_st,
   c.co_nm,
   p.prdt_nm,
   o.opt_nm,
   p.spec,
   p.unit,
-    dd.rm AS line_rm,
+  dd.rm AS line_rm,
   rd.rcvord_qy AS total_req_qty,
   IFNULL(delivered.delivered_qty, 0) AS delivered_qty,
   IFNULL(doc.doc_delivered_qty, 0) AS doc_delivered_qty,
   GREATEST(rd.rcvord_qy - IFNULL(delivered.delivered_qty, 0), 0) AS remaining_qty,
-  h.rm AS deli_rm
+  h.rm AS deli_rm,
+  sc_dst.sub_code_nm AS deli_st_nm
 FROM deli_deta dd
 JOIN rcvord_deta rd ON rd.rcvord_deta_id = dd.rcvord_deta_id
 JOIN rcvord r ON r.rcvord_id = rd.rcvord_id
@@ -63,10 +80,11 @@ JOIN co c ON c.co_id = r.co_id
 JOIN prdt p ON p.prdt_id = rd.prdt_id
 JOIN prdt_opt o ON o.prdt_opt_id = rd.prdt_opt_id
 JOIN deli h ON h.deli_id = dd.deli_id
+LEFT JOIN sub_code sc_dst ON sc_dst.sub_code_id = dd.deli_st
 LEFT JOIN delivered ON delivered.rcvord_deta_id = rd.rcvord_deta_id
 LEFT JOIN doc ON doc.deli_id = dd.deli_id AND doc.rcvord_deta_id = rd.rcvord_deta_id
 WHERE dd.deli_id = ?
-ORDER BY rd.rcvord_id, p.prdt_nm, o.opt_nm`;
+ORDER BY rd.rcvord_id, p.prdt_nm, o.opt_nm DESC`;
 // 존재 여부
 const deliExists = `SELECT 1 FROM deli WHERE deli_id = ? LIMIT 1`;
 // 헤더 insert / update / delete
@@ -78,12 +96,6 @@ const deliDeleteLines = `DELETE FROM deli_deta WHERE deli_id = ?`;
 const deliInsertLine = `INSERT INTO deli_deta (deli_deta_id, deli_id, rcvord_deta_id, deli_qy, rm) VALUES (?, ?, ?, ?, ?)`;
 const deliUpdateLine = `UPDATE deli_deta SET rcvord_deta_id = ?, deli_qy = ?, rm = ? WHERE deli_deta_id = ?`;
 const deliFindLinesByDoc = `SELECT deli_deta_id, rcvord_deta_id, deli_qy, rm FROM deli_deta WHERE deli_id = ?`;
-// 단일 rcvord_deta_id의 전체 기납품 누계 (모든 문서 합계)
-const deliDeliveredSumByRcvDeta = `
-  SELECT IFNULL(SUM(deli_qy), 0) AS sum_qty
-  FROM deli_deta
-  WHERE rcvord_deta_id = ?
-`;
 // 복수 개 rcvord_deta_id에 대한 기납품 누계 조회
 const deliDeliveredSumByRcvDetaList = `
   SELECT rcvord_deta_id, IFNULL(SUM(deli_qy), 0) AS sum_qty
@@ -139,7 +151,6 @@ module.exports = {
   deliInsertLine,
   deliUpdateLine,
   deliFindLinesByDoc,
-  deliDeliveredSumByRcvDeta,
   deliDeliveredSumByRcvDetaList,
   deliDeliveredSumByRcvDetaListBeforeDt,
   deliNewId,

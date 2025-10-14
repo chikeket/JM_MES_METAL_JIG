@@ -245,7 +245,7 @@ function commitEdit(row, field) {
         return
       }
     }
-    row.drct_qy = validQty    
+    row.drct_qy = validQty
   } else if (field === 'producible') {
     row.producible = v === 'true' || v === true
   } else if (field === 'unit') {
@@ -263,12 +263,12 @@ watch(
     for (const row of newRows) {
       const order = Number(row.base_quantity) || 0
       const received = Number(row.plan_qy) || 0
-      row.unspecified_quantity = received - order
+      const unspecified = received - order
+      row.unspecified_quantity = unspecified < 0 ? 0 : unspecified
     }
   },
-  { deep: true }
+  { deep: true },
 )
-
 
 function cancelEdit() {
   editing.id = null
@@ -370,25 +370,25 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
       <CTableBody>
         <CTableRow v-for="(row, idx) in rows" :key="row.id ?? idx">
           <!-- 코드 명 -->
-          <CTableHeaderCell scope="row">{{ row.prdt_id }}</CTableHeaderCell>
+          <CTableDataCell scope="row">{{ row.prdt_id }}</CTableDataCell>
 
           <!-- 제품 명 -->
-          <CTableHeaderCell scope="row">{{ row.prdt_nm }}</CTableHeaderCell>
+          <CTableDataCell scope="row">{{ row.prdt_nm }}</CTableDataCell>
 
           <!-- 규격 -->
-          <CTableHeaderCell scope="row">{{ row.spec }}</CTableHeaderCell>
+          <CTableDataCell scope="row">{{ row.spec }}</CTableDataCell>
 
           <!-- 단위 -->
-          <CTableHeaderCell scope="row">{{ row.unit }}</CTableHeaderCell>
+          <CTableDataCell scope="row">{{ row.unit }}</CTableDataCell>
 
           <!-- 계획수량 -->
-          <CTableHeaderCell scope="row">{{ row.plan_qy }}</CTableHeaderCell>
+          <CTableDataCell scope="row">{{ row.plan_qy }}</CTableDataCell>
 
           <!-- 기지시수량 -->
-          <CTableHeaderCell scope="row">{{ row.base_quantity }}</CTableHeaderCell>
+          <CTableDataCell scope="row">{{ row.base_quantity }}</CTableDataCell>
 
           <!-- 미지시수량 -->
-          <CTableHeaderCell scope="row">{{ row.unspecified_quantity }}</CTableHeaderCell>
+          <CTableDataCell scope="row">{{ row.unspecified_quantity }}</CTableDataCell>
 
           <!-- 지시수량 -->
           <CTableDataCell class="text-end" @dblclick="startEdit(row, 'drct_qy')">
