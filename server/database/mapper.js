@@ -20,7 +20,7 @@ const connectionPool = mariadb.createPool({
   // MariaDB의 bigInt 타입을 JavaScript Number 타입으로 자동 변환
   // (JavaScript에서는 bigInt를 자동으로 변환하지 못하기 때문)
   bigIntAsNumber: true,
-  // 로거 설정 (디버깅 및 모니터링용)
+  // 로거 설정 (디버깅 및 모니터링 용)
   logger: {
     // 실행되는 SQL문을 콘솔에 출력
     query: console.log,
