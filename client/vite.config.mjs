@@ -17,7 +17,7 @@ export default defineConfig(() => {
     },
     resolve: {
       alias: [
-        // webpack path resolve to vitejs
+        // webpack path resolve  to vitejs
         {
           find: /^~(.*)$/,
           replacement: '$1',
