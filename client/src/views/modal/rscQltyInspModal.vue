@@ -84,9 +84,9 @@ const prdtSearch = async () => {
 }
 
 const selectProduct = async  (prdts) => {  
-  const params = { rsc_id: ''};
-  params.rsc_id = prdts.rsc_id;
-  let result = await axios.get('/api/rscQltyDeta', { params }).catch((err) => console.log(err))
+  const params = { rsc_qlty_insp_id: ''};
+  params.rsc_qlty_insp_id = prdts.rsc_qlty_insp_id;
+  let result = await axios.get('/api/rscQltyInspInferSelect', { params }).catch((err) => console.log(err))
   console.log(result.data)
   emit('select', {
   detailData: result.data,

@@ -79,7 +79,7 @@ const rscQltyInspInsert = async (Info) => {
   }
 };
 
-// 다중조건 검색조회
+// 자재품질검사 마스터정보 검색 쿼리
 const rscQltyInspSelect = async (Info) => {
   let insertColumns = ["emp_nm", "insp_dt"];
   // console.log("클라에서들어가는값 서비스");
@@ -89,6 +89,21 @@ const rscQltyInspSelect = async (Info) => {
   console.log(data);
   let list = await mariadb
     .query("rscQltyInspSelect", data)
+    .catch((err) => console.log(err));
+  // console.log("조회 결과:", list);
+  return list;
+};
+
+// 자재품질검사 불량수량 검색 쿼리
+const rscQltyInspInferSelect = async (Info) => {
+  let insertColumns = ["rsc_qlty_insp_id"];
+  // console.log("클라에서들어가는값 서비스");
+  // console.log(Info);
+  let data = convertObjToAry(Info, insertColumns);
+  console.log("service쪽");
+  console.log(data);
+  let list = await mariadb
+    .query("rscQltyInspInferSearch", data)
     .catch((err) => console.log(err));
   // console.log("조회 결과:", list);
   return list;
@@ -104,10 +119,14 @@ const rscQltyInspUpdate = async (Info) => {
 
     let queryResult = null;
 
-    let data = convertObjToAry(Info, rscQltyInspInsertColumns);
+    let data = convertObjToAry(Info.master, rscQltyInspInsertColumns);
     console.log(data);
     queryResult = await mariadb.query("rscQltyInspUpdate", data);
-
+    for (const item of Info.infer) {
+      let data = convertObjToAry(item, rscQltyInspInferInsertColumns);
+      console.log(data);
+      queryResult = await mariadb.query("rscQltyInspInferUpdate", data);
+    }
     await conn.commit();
     let result = null;
     result = {
@@ -168,4 +187,5 @@ module.exports = {
   rscQltyInspSelect,
   rscQltyInspUpdate,
   rscQltyInspDelete,
+  rscQltyInspInferSelect,
 };

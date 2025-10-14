@@ -76,7 +76,7 @@ SELECT
  c.qy,
  a.insp_qy,
  a.pass_qy,
- a.rtngud_qy,
+ min.min_rtngud_qy AS rtngud_qy,
  a.insp_dt,
  a.rm
 FROM rsc_qlty_insp a
@@ -90,6 +90,12 @@ JOIN rsc_ordr e
 ON c.rsc_ordr_id = e.rsc_ordr_id
 JOIN co f
 ON e.co_id = f.co_id
+JOIN (
+  SELECT rsc_ordr_deta_id, MIN(rtngud_qy) AS min_rtngud_qy
+  FROM rsc_qlty_insp
+  GROUP BY rsc_ordr_deta_id
+) min
+ON a.rsc_ordr_deta_id = min.rsc_ordr_deta_id
 WHERE b.emp_nm LIKE CONCAT('%', ?, '%')
 AND a.insp_dt >= ?`;
 
@@ -123,6 +129,15 @@ SET
 WHERE rsc_qlty_insp_id = ?
 `;
 
+//자재 품질 검사 불량 수량 테이블 쿼리수정
+const rscQltyInspInferUpdate = `
+UPDATE rsc_qlty_insp_infer_qy
+SET
+ infer_qy = ?
+WHERE qlty_item_mng_id = ?
+AND rsc_qlty_insp_id = ?
+`;
+
 //자재 품질 검사 테이블 삭제
 const rscQltyInspDelete = `
 DELETE
@@ -138,5 +153,6 @@ module.exports = {
   rscQltyInspSelect,
   rscQltyInspInferSearch,
   rscQltyInspUpdate,
+  rscQltyInspInferUpdate,
   rscQltyInspDelete,
 };

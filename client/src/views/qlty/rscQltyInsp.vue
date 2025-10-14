@@ -104,11 +104,11 @@
       </CTableHead>
       <CTableBody>
         <CTableRow v-for="(item, idx) in inspectItems" :key="idx">
-          <CTableDataCell>{{ item.name }}</CTableDataCell>
-          <CTableDataCell>{{ item.standard }}</CTableDataCell>
-          <CTableDataCell>{{ item.tolerance }}</CTableDataCell>
+          <CTableDataCell>{{ item.insp_item_nm }}</CTableDataCell>
+          <CTableDataCell>{{ item.basi_val }}</CTableDataCell>
+          <CTableDataCell>{{ item.eror_scope_min + '~' + item.eror_scope_max}}</CTableDataCell>
           <CTableDataCell class="text-start" style="width: 120px">
-            <CFormInput v-model="item.eachInferQy" size="sm" placeholder="불량수량기입" />
+            <CFormInput v-model="item.infer_qy" size="sm" placeholder="불량수량기입" />
           </CTableDataCell>
         </CTableRow>
         <CTableRow v-if="inspectItems.length === 0">
@@ -213,7 +213,7 @@ watch(
   (newItems) => {
     let total = 0
     for (const item of newItems) {
-      const value = Number(item.eachInferQy)
+      const value = Number(item.infer_qy)
       if (!isNaN(value)) {
         total += value
       }
@@ -253,19 +253,22 @@ const selectOrdr = (prdts) => {
   form.value.rsc_qlty_insp_id = prdts.searchParams.rsc_qlty_insp_id
   for (const prdt of prdts.detailData)
     inspectItems.value.push({
-      name: prdt.insp_item_nm,
-      standard: prdt.basi_val,
-      tolerance: prdt.eror_scope_min + '~' + prdt.eror_scope_max,
-      eachInferQy: prdt.infer_qy,
+      insp_item_nm: prdt.insp_item_nm,
+      basi_val: prdt.basi_val,
+      eror_scope_min: prdt.eror_scope_min,
+      eror_scope_max: prdt.eror_scope_max,
+      infer_qy: prdt.infer_qy || 0,
       qlty_item_mng_id: prdt.qlty_item_mng_id,
+      rsc_qlty_insp_id: prdt.rsc_qlty_insp_id,
     })
+    console.log(prdts)
 }
 
 const saveInspection = async () => {
   let inferData = []
   for (const prdt of inspectItems.value)
     inferData.push({
-      infer_qy: prdt.eachInferQy,
+      infer_qy: prdt.infer_qy,
       qlty_item_mng_id: prdt.qlty_item_mng_id,
     })
 
@@ -292,16 +295,25 @@ const saveInspection = async () => {
 }
 
 const update = async () => {
-  const payload = {
+  let inferData = []
+  for (const prdt of inspectItems.value)
+    inferData.push({
+      infer_qy: prdt.infer_qy,
+      qlty_item_mng_id: prdt.qlty_item_mng_id,
+      rsc_qlty_insp_id: prdt.rsc_qlty_insp_id,
+    })
+  const payload = {master:{
     rm: form.value.note,
     rsc_ordr_deta_id: form.value.rsc_ordr_deta_id,
     emp_id: form.value.emp_id,
     rtngud_qy: pendingQty.value,
-    pass_qy: form.value.pass_qy,
+    pass_qy: pass_qy.value,
     insp_qy: form.value.insp_qy,
     insp_dt: form.value.insp_dt,
     rsc_qlty_insp_id: form.value.rsc_qlty_insp_id,
-  }
+  },
+  infer: inferData,
+}
   let result = await axios.post('/api/rscQltyInspUpdate', payload).catch((err) => console.log(err))
   let addRes = result.data
   if (addRes.isSuccessed) {
@@ -326,8 +338,8 @@ const deleteFunc = async () => {
 
 const newFunc = async () => {
   // console.log(form)
-  form.value.emp_id = ''
-  form.value.emp_nm = ''
+  // form.value.emp_id = ''
+  // form.value.emp_nm = ''
   form.value.insp_dt = userDateUtils.dateFormat(new Date(), 'yyyy-MM-dd')
   form.value.insp_qy = 0
   form.value.note = ''

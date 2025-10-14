@@ -3,8 +3,8 @@ const { convertObjToAry } = require("../utils/converts.js");
 
 // 👇 이 3줄 추가
 const sqlList = require("../database/sqlList.js");
-console.log('🔍 coUpdate 존재 여부:', !!sqlList.coUpdate);
-console.log('🔍 사용 가능한 쿼리들:', Object.keys(sqlList).filter(k => k.startsWith('co')));
+// console.log('🔍 coUpdate 존재 여부:', !!sqlList.coUpdate);
+// console.log('🔍 사용 가능한 쿼리들:', Object.keys(sqlList).filter(k => k.startsWith('co')));
 
 // 조회 시 사용할 컬럼 - 각 필드를 2번씩 반복!
 let coSelectColumns = [
@@ -92,27 +92,27 @@ const coUpdate = async (info) => {
     }
 
     // 쿼리 파라미터 순서에 맞게 컬럼 정의
-let updateColumns = [
-  "co_id",            // 👈 이 줄 추가 (SET용)
-  "bizr_reg_no",
-  "co_nm",
-  "rpstr_nm",
-  "rpstr_tel",
-  "co_ty_id",
-  "st",
-  "original_co_id"    // WHERE 절
-];
+    let updateColumns = [
+      "co_id",            // 👈 이 줄 추가 (SET용)
+      "bizr_reg_no",
+      "co_nm",
+      "rpstr_nm",
+      "rpstr_tel",
+      "co_ty_id",
+      "st",
+      "original_co_id"    // WHERE 절
+    ];
 
     info.original_co_id = originalId;
 
     let data = convertObjToAry(info, updateColumns);
-    console.log('UPDATE 파라미터:', data);  
+    console.log('UPDATE 파라미터:', data);
     const sqlList = require("../database/sqlList.js");
     console.log('사용 가능한 쿼리들:', Object.keys(sqlList));
     console.log('coUpdate 존재 여부:', !!sqlList.coUpdate);
     console.log('coUpdate 내용:', sqlList.coUpdate);
-     await mariadb.query("coUpdate", data, conn);
-     await conn.commit();
+    await mariadb.query("coUpdate", data, conn);
+    await conn.commit();
 
     return {
       isSuccessed: true,
