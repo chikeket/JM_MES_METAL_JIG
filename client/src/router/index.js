@@ -82,6 +82,16 @@ const routes = [
             name: '창고 입출 관리',
             component: () => import('@/views/jamin/wrhousdlvr.vue'),
           },
+          {
+            path: '/jamin/wrhousManage',
+            name: '창고 관리',
+            component: () => import('@/views/jamin/wrhousManage.vue'),
+          },
+          {
+            path: '/jamin/wrhousZoneManage',
+            name: '창고 로케이션 관리',
+            component: () => import('@/views/jamin/wrhousZoneManage.vue'),
+          },
         ],
       },
 

@@ -29,66 +29,6 @@ ORDER BY w.reg_dt DESC
 LIMIT 500
 `;
 
-// 완제품 품질검사서 목록 조회
-const selectInspectionList = `
-SELECT 
-  qi.END_PRDT_QLTY_INSP_ID AS insp_no,
-  p.prdt_id AS item_code,
-  p.prdt_nm AS item_name,
-  p.spec AS item_spec,
-  p.unit AS item_unit,
-  qi.INSP_QY AS insp_qty,
-  qi.PASS_QY AS pass_qty,
-  qi.INFER_QY AS fail_qty,
-  CASE 
-    WHEN qi.INSP_QY > 0 AND qi.INSP_QY = (qi.PASS_QY + qi.INFER_QY) THEN '완료'
-    ELSE '진행중'
-  END AS insp_status,
-  DATE_FORMAT(qi.INSP_DT, '%Y-%m-%d') AS insp_date,
-  qi.EMP_ID AS insp_emp_id,
-  e.emp_nm AS insp_emp_name,
-  qi.RM AS rm
-FROM END_PRDT_QLTY_INSP qi
-LEFT JOIN PROC_CTRL pc ON qi.PRCS_CTRL_ID = pc.PRCS_CTRL_ID
-LEFT JOIN prdt p ON pc.PRDT_ID = p.prdt_id
-LEFT JOIN emp e ON qi.EMP_ID = e.emp_id
-WHERE qi.PASS_QY > 0
-  AND (? = '' OR p.prdt_id LIKE CONCAT('%', ?, '%'))
-  AND (? = '' OR p.prdt_nm LIKE CONCAT('%', ?, '%'))
-ORDER BY qi.INSP_DT DESC
-LIMIT 200
-`;
-
-// 자재 품질검사서 목록 조회
-const selectRscInspectionList = `
-SELECT 
-  qi.RSC_QLTY_INSP_ID AS insp_no,
-  r.RSC_ID AS item_code,
-  r.RSC_NM AS item_name,
-  r.SPEC AS item_spec,
-  r.UNIT AS item_unit,
-  qi.INSP_QY AS insp_qty,
-  qi.PASS_QY AS pass_qty,
-  qi.RTNGUD_QY AS fail_qty,
-  CASE 
-    WHEN qi.INSP_QY > 0 AND qi.INSP_QY = (qi.PASS_QY + qi.RTNGUD_QY) THEN '완료'
-    ELSE '진행중'
-  END AS insp_status,
-  DATE_FORMAT(qi.INSP_DT, '%Y-%m-%d') AS insp_date,
-  qi.EMP_ID AS insp_emp_id,
-  e.emp_nm AS insp_emp_name,
-  qi.RM AS rm
-FROM RSC_QLTY_INSP qi
-LEFT JOIN RSC_ORDR_DETA rod ON qi.RSC_ORDR_DETA_ID = rod.RSC_ORDR_DETA_ID
-LEFT JOIN RSC r ON rod.RSC_ID = r.RSC_ID
-LEFT JOIN emp e ON qi.EMP_ID = e.emp_id
-WHERE qi.PASS_QY > 0
-  AND (? = '' OR r.RSC_ID LIKE CONCAT('%', ?, '%'))
-  AND (? = '' OR r.RSC_NM LIKE CONCAT('%', ?, '%'))
-ORDER BY qi.INSP_DT DESC
-LIMIT 200
-`;
-
 // 창고 입출고 거래 등록
 const insertWrhousTransaction = `
 INSERT INTO warehouse_transaction (
@@ -179,20 +119,55 @@ ORDER BY w.reg_dt DESC
 LIMIT 100
 `;
 
-// 창고 자재 목록 조회 (자재 불출용) - 자재 검사서에서 조회
-const selectWarehouseMaterials = `
+// 완제품 품질검사서 목록 조회
+const selectEndPrdtInspectionList = `
+SELECT 
+  qi.END_PRDT_QLTY_INSP_ID AS insp_no,
+  p.prdt_id AS item_code,
+  p.prdt_nm AS item_name,
+  p.spec AS item_spec,
+  p.unit AS item_unit,
+  qi.INSP_QY AS insp_qty,
+  qi.PASS_QY AS pass_qty,
+  qi.INFER_QY AS fail_qty,
+  CASE 
+    WHEN qi.INSP_QY > 0 AND qi.INSP_QY = (qi.PASS_QY + qi.INFER_QY) THEN '완료'
+    ELSE '진행중'
+  END AS insp_status,
+  DATE_FORMAT(qi.INSP_DT, '%Y-%m-%d') AS insp_date,
+  qi.EMP_ID AS insp_emp_id,
+  e.emp_nm AS insp_emp_name,
+  qi.RM AS rm
+FROM END_PRDT_QLTY_INSP qi
+LEFT JOIN PROC_CTRL pc ON qi.PRCS_CTRL_ID = pc.PRCS_CTRL_ID
+LEFT JOIN prdt p ON pc.PRDT_ID = p.prdt_id
+LEFT JOIN emp e ON qi.EMP_ID = e.emp_id
+WHERE qi.PASS_QY > 0
+  AND (? = '' OR p.prdt_id LIKE CONCAT('%', ?, '%'))
+  AND (? = '' OR p.prdt_nm LIKE CONCAT('%', ?, '%'))
+ORDER BY qi.INSP_DT DESC
+LIMIT 200
+`;
+
+// 자재 품질검사서 목록 조회
+const selectRscInspectionList = `
 SELECT 
   qi.RSC_QLTY_INSP_ID AS insp_no,
   r.RSC_ID AS item_code,
   r.RSC_NM AS item_name,
   r.SPEC AS item_spec,
   r.UNIT AS item_unit,
-  qi.PASS_QY AS pass_qty,
   qi.INSP_QY AS insp_qty,
+  qi.PASS_QY AS pass_qty,
   qi.RTNGUD_QY AS fail_qty,
-  '완료' as insp_status,
+  CASE 
+    WHEN qi.INSP_QY > 0 AND qi.INSP_QY = (qi.PASS_QY + qi.RTNGUD_QY) THEN '완료'
+    ELSE '진행중'
+  END AS insp_status,
   DATE_FORMAT(qi.INSP_DT, '%Y-%m-%d') AS insp_date,
-  e.emp_nm AS insp_emp_name
+  qi.EMP_ID AS insp_emp_id,
+  e.emp_nm AS insp_emp_name,
+  qi.RM AS rm
 FROM RSC_QLTY_INSP qi
 LEFT JOIN RSC_ORDR_DETA rod ON qi.RSC_ORDR_DETA_ID = rod.RSC_ORDR_DETA_ID
 LEFT JOIN RSC r ON rod.RSC_ID = r.RSC_ID
@@ -201,7 +176,7 @@ WHERE qi.PASS_QY > 0
   AND (? = '' OR r.RSC_ID LIKE CONCAT('%', ?, '%'))
   AND (? = '' OR r.RSC_NM LIKE CONCAT('%', ?, '%'))
 ORDER BY qi.INSP_DT DESC
-LIMIT 100
+LIMIT 200
 `;
 
 // 반제품 품질검사서 목록 조회
@@ -234,64 +209,57 @@ ORDER BY qi.INSP_DT DESC
 LIMIT 200
 `;
 
-// 완제품 품질검사서 목록 조회
-const selectEndPrdtInspectionList = `
-SELECT 
-  qi.END_PRDT_QLTY_INSP_ID AS insp_no,
-  p.prdt_id AS item_code,
-  p.prdt_nm AS item_name,
-  p.spec AS item_spec,
-  p.unit AS item_unit,
-  qi.INSP_QY AS insp_qty,
-  qi.PASS_QY AS pass_qty,
-  qi.INFER_QY AS fail_qty,
-  CASE 
-    WHEN qi.INSP_QY > 0 AND qi.INSP_QY = (qi.PASS_QY + qi.INFER_QY) THEN '완료'
-    ELSE '진행중'
-  END AS insp_status,
-  DATE_FORMAT(qi.INSP_DT, '%Y-%m-%d') AS insp_date,
-  qi.EMP_ID AS insp_emp_id,
-  e.emp_nm AS insp_emp_name,
-  qi.RM AS rm
-FROM END_PRDT_QLTY_INSP qi
-LEFT JOIN PROC_CTRL pc ON qi.PRCS_CTRL_ID = pc.PRCS_CTRL_ID
-LEFT JOIN prdt p ON pc.PRDT_ID = p.prdt_id
-LEFT JOIN emp e ON qi.EMP_ID = e.emp_id
-WHERE qi.PASS_QY > 0
-  AND (? = '' OR p.prdt_id LIKE CONCAT('%', ?, '%'))
-  AND (? = '' OR p.prdt_nm LIKE CONCAT('%', ?, '%'))
-ORDER BY qi.INSP_DT DESC
-LIMIT 200
-`;
-
-// 창고 완제품 목록 조회 (완제품 납품용) - 완제품 검사서에서 조회
+// 창고 완제품 목록 조회 (완제품 납품용) - 납품 상세 기준으로 수주 상세와 JOIN
 const selectWarehouseProducts = `
 SELECT 
-  qi.END_PRDT_QLTY_INSP_ID AS insp_no,
-  p.prdt_id AS item_code,
-  p.prdt_nm AS item_name,
+  drd.deli_deta_id AS insp_no,
+  rd.prdt_id AS item_code,
+  p.prdt_nm  AS item_name,
   p.spec AS item_spec,
   p.unit AS item_unit,
+  rd.rcvord_qy AS order_qty,
+  drd.DELI_QY AS insp_qty,
+  (rd.rcvord_qy - COALESCE(drd.DELI_QY, 0)) AS remaining_qty,
+  DATE_FORMAT(rd.paprd_dt, '%Y-%m-%d') AS delivery_date,
+  drd.RM AS rm,
+  '납품가능' as status
+FROM DELI_DETA drd
+LEFT JOIN rcvord_deta rd ON drd.RCVORD_DETA_ID = rd.rcvord_deta_id
+LEFT JOIN prdt p ON rd.prdt_id = p.prdt_id
+LEFT JOIN prdt_opt po ON po.prdt_id = p.prdt_id
+WHERE drd.DELI_QY > 0
+  AND (? = '' OR rd.prdt_id LIKE CONCAT('%', ?, '%'))
+  AND (? = '' OR p.prdt_nm LIKE CONCAT('%', ?, '%'))
+LIMIT 100
+`;
+
+// 창고 자재 검사서 목록 조회 - 수정 필요 자재 불출용
+const selectWarehouseMaterials = `
+SELECT 
+  qi.RSC_QLTY_INSP_ID AS insp_no,
+  r.RSC_ID AS item_code,
+  r.RSC_NM AS item_name,
+  r.SPEC AS item_spec,
+  r.UNIT AS item_unit,
   qi.PASS_QY AS pass_qty,
   qi.INSP_QY AS insp_qty,
-  qi.INFER_QY AS fail_qty,
+  qi.RTNGUD_QY AS fail_qty,
   '완료' as insp_status,
   DATE_FORMAT(qi.INSP_DT, '%Y-%m-%d') AS insp_date,
   e.emp_nm AS insp_emp_name
-FROM END_PRDT_QLTY_INSP qi
-LEFT JOIN PROC_CTRL pc ON qi.PRCS_CTRL_ID = pc.PRCS_CTRL_ID
-LEFT JOIN prdt p ON pc.PRDT_ID = p.prdt_id
+FROM RSC_QLTY_INSP qi
+LEFT JOIN RSC_ORDR_DETA rod ON qi.RSC_ORDR_DETA_ID = rod.RSC_ORDR_DETA_ID
+LEFT JOIN RSC r ON rod.RSC_ID = r.RSC_ID
 LEFT JOIN emp e ON qi.EMP_ID = e.emp_id
 WHERE qi.PASS_QY > 0
-  AND (? = '' OR p.prdt_id LIKE CONCAT('%', ?, '%'))
-  AND (? = '' OR p.prdt_nm LIKE CONCAT('%', ?, '%'))
+  AND (? = '' OR r.RSC_ID LIKE CONCAT('%', ?, '%'))
+  AND (? = '' OR r.RSC_NM LIKE CONCAT('%', ?, '%'))
 ORDER BY qi.INSP_DT DESC
 LIMIT 100
 `;
 
 module.exports = {
   selectWrhousTransactionList,
-  selectInspectionList,
   selectRscInspectionList,
   selectSemiInspectionList,
   selectEndPrdtInspectionList,
