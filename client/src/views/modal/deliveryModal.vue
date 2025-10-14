@@ -177,32 +177,35 @@ const onSearch = async () => {
       insp_status: '완료', // 기본적으로 완료된 검사서만 조회
     }
 
-    console.log('[inspectionModal] 전송 파라미터:', params)
-    console.log('[inspectionModal] 검사서 종류:', searchCondition.insp_type)
+    console.log('[deliveryModal] 전송 파라미터:', params)
+    console.log('[deliveryModal] 검사서 종류:', searchCondition.insp_type)
 
-    // 검사서 종류에 따라 다른 API 호출
-    let apiUrl = ''
+    // 검사서 종류에 따라 다른 API 호출 (wrhousdlvr 라우터 사용)
+    let apiUrl = '/delivery/products/list'
+
+    // 검사서 종류를 params에 추가
+    params.insp_type = searchCondition.insp_type
 
     switch (searchCondition.insp_type) {
       case 'materialWithdrawal':
-        // 자재 불출 (출고) - 입고된 자재들 중에서 선택
-        apiUrl = '/api/warehouse/materials/list'
+        // 자재 불출 (출고) - 생산지시 → BOM 기반 자재 목록
+        apiUrl = '/material/withdrawal/list'
         break
 
       case 'deliveryDetail':
-        // 완제품 납품 (출고) - 입고된 완제품들 중에서 선택
-        apiUrl = '/api/warehouse/products/list'
+        // 완제품 납품 (출고) - 납품상세 기반 완제품 목록
+        apiUrl = '/delivery/products/list'
         break
 
       default:
         // 전체 조회 (완제품 품질검사 기본)
-        apiUrl = '/api/warehouse/products/list'
+        apiUrl = '/delivery/products/list'
         break
     }
 
     console.log('[deliveryModal] 호출 API:', apiUrl)
 
-    const response = await axios.get(apiUrl, { params })
+    const response = await axios.get(`/api${apiUrl}`, { params })
 
     console.log('[deliveryModal] API 응답:', response)
     console.log('[deliveryModal] 응답 데이터:', response.data)

@@ -181,37 +181,37 @@ const onSearch = async () => {
     console.log('[inspectionModal] 전송 파라미터:', params)
     console.log('[inspectionModal] 검사서 종류:', searchCondition.insp_type)
 
-    // 검사서 종류에 따라 다른 API 호출 (입출고 전용 API 사용)
-    let apiUrl = '/api/inspectionForWarehouse/list'
+        // 검사서 종류에 따라 다른 API 호출 (wrhousdlvr 라우터 사용)
+    let apiUrl = '/warehouse/inspections/list'
 
     // 검사서 종류를 params에 추가
     params.insp_type = searchCondition.insp_type
 
     switch (searchCondition.insp_type) {
       case 'materialQuality':
-        // 자재 품질 검사 (입고)
-        apiUrl = '/api/inspectionForWarehouse/material'
+        // 자재 품질검사서 (입고)
+        apiUrl = '/warehouse/rscQltyInsp/list'
         break
 
       case 'semiQuality':
-        // 반제품 품질 검사 (입고)
-        apiUrl = '/api/inspectionForWarehouse/semi'
+        // 반제품 품질검사서 (입고)
+        apiUrl = '/warehouse/semiPrdtQltyInsp/list'
         break
 
       case 'finishedQuality':
-        // 완제품 품질 검사 (입고)
-        apiUrl = '/api/inspectionForWarehouse/finished'
+        // 완제품 품질검사서 (입고)
+        apiUrl = '/warehouse/endPrdtQltyInsp/list'
         break
 
       default:
-        // 전체 조회 (자재 품질검사 기본)
-        apiUrl = '/api/inspectionForWarehouse/list'
+        // 전체 조회 (완제품 품질검사 기본)
+        apiUrl = '/warehouse/endPrdtQltyInsp/list'
         break
     }
 
     console.log('[inspectionModal] 호출 API:', apiUrl)
 
-    const response = await axios.get(apiUrl, { params })
+    const response = await axios.get(`/api${apiUrl}`, { params })
 
     console.log('[inspectionModal] API 응답:', response)
     console.log('[inspectionModal] 응답 데이터:', response.data)
