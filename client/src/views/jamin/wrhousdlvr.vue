@@ -247,9 +247,10 @@ onMounted(async () => {
 // 전체 창고 목록 조회
 const loadAllWarehouses = async () => {
   try {
-    const response = await axios.get('/api/wrhous/warehouses/all')
+    const response = await axios.get('/api/warehouses/all')
     warehouseList.value = response.data || []
     console.log('[wrhousdlvr] 창고 목록 로드:', warehouseList.value.length, '건')
+    console.log('[wrhousdlvr] 창고 데이터:', warehouseList.value)
   } catch (error) {
     console.error('[wrhousdlvr] 창고 목록 로드 실패:', error)
     warehouseList.value = []
@@ -259,65 +260,51 @@ const loadAllWarehouses = async () => {
 // 전체 로케이션 목록 조회
 const loadAllLocations = async () => {
   try {
-    const response = await axios.get('/api/wrhous/locations/all')
+    const response = await axios.get('/api/locations/all')
     locationList.value = response.data || []
     console.log('[wrhousdlvr] 로케이션 목록 로드:', locationList.value.length, '건')
+    console.log('[wrhousdlvr] 로케이션 데이터:', locationList.value)
   } catch (error) {
     console.error('[wrhousdlvr] 로케이션 목록 로드 실패:', error)
     locationList.value = []
   }
 }
 
-// 품목 유형에 따른 창고 코드 반환 (자재→E1, 반제품→E2, 완제품→E3)
-const getWarehouseCodeByItemType = (itemType) => {
-  switch (itemType) {
-    case '자재':
-      return 'E1'
-    case '반제품':
-      return 'E2'
-    case '완제품':
-      return 'E3'
-    default:
-      return 'E1' // 기본값: 자재 창고
+// 품목 유형별 창고 조회
+const getWarehousesByItemType = async (itemType) => {
+  try {
+    console.log('[wrhousdlvr] 품목 유형별 창고 조회:', itemType)
+    const response = await axios.get('/api/warehouses/all', {
+      params: { item_type: itemType }
+    })
+    const warehouses = response.data || []
+    console.log('[wrhousdlvr] 품목 유형별 창고 결과:', warehouses)
+    return warehouses
+  } catch (error) {
+    console.error('[wrhousdlvr] 품목 유형별 창고 조회 실패:', error)
+    return []
   }
 }
 
-// 품목 유형에 따른 창고 목록 반환
-const getAvailableWarehouses = (itemType) => {
-  if (!itemType) return warehouseList.value
-
-  const warehouseCode = getWarehouseCodeByItemType(itemType)
-  return warehouseList.value.filter(
-    (warehouse) =>
-      warehouse.warehouse_id === warehouseCode || warehouse.warehouse_name?.includes(warehouseCode),
-  )
-}
-
-// 품목 유형에 따른 사용 가능한 로케이션 반환
-const getAvailableLocations = (itemType, warehouseId) => {
-  let filteredLocations = locationList.value
-
-  // 창고 ID 필터링 (우선)
-  if (warehouseId) {
-    filteredLocations = filteredLocations.filter(
-      (location) => location.warehouse_id === warehouseId,
-    )
-  } else if (itemType) {
-    // 창고 ID가 없으면 품목 유형으로 필터링
-    const warehouseCode = getWarehouseCodeByItemType(itemType)
-    filteredLocations = filteredLocations.filter(
-      (location) =>
-        location.warehouse_id === warehouseCode || location.warehouse_name?.includes(warehouseCode),
-    )
+// 품목 유형별 로케이션 조회
+const getLocationsByItemType = async (itemType, warehouseId = null) => {
+  try {
+    console.log('[wrhousdlvr] 품목 유형별 로케이션 조회:', itemType, warehouseId)
+    const params = { item_type: itemType }
+    if (warehouseId) {
+      params.warehouse_id = warehouseId
+    }
+    const response = await axios.get('/api/locations/all', { params })
+    const locations = response.data || []
+    console.log('[wrhousdlvr] 품목 유형별 로케이션 결과:', locations)
+    return locations
+  } catch (error) {
+    console.error('[wrhousdlvr] 품목 유형별 로케이션 조회 실패:', error)
+    return []
   }
-
-  return filteredLocations.map((location) => ({
-    value: location.location_id,
-    label: `${location.location_name} (${location.warehouse_name})`,
-  }))
 }
 
-// 참고: 창고와 로케이션은 검사서 선택 시 품목 유형에 따라 자동으로 설정되며 readonly로 처리됩니다.
+// 참고: 창고와 로케이션은 검사서 선택 시 품목 유형에 따라 DB에서 실시간 조회하여 자동으로 설정되며 readonly로 처리됩니다.
 
 // 행 추가 / 삭제 / 초기화 / 저장
 const addRow = () => {
@@ -380,7 +367,7 @@ const getItemTypeByInspType = (inspType) => {
   }
 }
 
-const onSelectInspection = (inspectionList) => {
+const onSelectInspection = async (inspectionList) => {
   console.log('[wrhousdlvr] 검사서 선택됨:', inspectionList)
 
   if (!Array.isArray(inspectionList) || inspectionList.length === 0) {
@@ -416,62 +403,68 @@ const onSelectInspection = (inspectionList) => {
   summaryRows.value.push(...uniqueNewRows)
 
   // 메인 그리드에 새 행들 추가 (검사서 정보 기반)
-  const newRows = inspectionList
-    .filter((inspection) => !rows.value.some((row) => row.insp_no === inspection.insp_no))
-    .map((inspection) => {
-      console.log('[wrhousdlvr] 검사서 데이터:', inspection)
+  const newRows = []
+  
+  for (const inspection of inspectionList) {
+    // 중복 검사서 제거
+    if (rows.value.some((row) => row.insp_no === inspection.insp_no)) {
+      continue
+    }
 
-      // 품목 유형 결정 (검사서에서 직접 가져오거나 검사 유형으로 추정)
-      const itemType = inspection.item_type || getItemTypeByInspType(inspection.insp_type)
+    console.log('[wrhousdlvr] 검사서 데이터:', inspection)
 
-      // 품목 유형에 따른 창고 코드 자동 할당
-      const warehouseCode = getWarehouseCodeByItemType(itemType)
-      let defaultWarehouse = null
-      let defaultLocation = null
-      let defaultLocationName = ''
+    // 품목 유형 결정 (검사서에서 직접 가져오거나 검사 유형으로 추정)
+    const itemType = inspection.item_type || getItemTypeByInspType(inspection.insp_type)
+    console.log('[wrhousdlvr] 결정된 품목 유형:', itemType)
 
-      // 해당 창고 코드와 일치하는 창고 찾기
-      const availableWarehouses = getAvailableWarehouses(itemType)
+    // 품목 유형에 따른 창고/로케이션 DB 조회 및 자동 할당
+    let defaultWarehouse = null
+    let defaultLocation = null
+
+    try {
+      // 해당 품목 유형의 창고를 DB에서 조회
+      const availableWarehouses = await getWarehousesByItemType(itemType)
       if (availableWarehouses.length > 0) {
-        defaultWarehouse = availableWarehouses[0]
-      } else {
-        // 매칭되는 창고가 없으면 기본값으로 설정
-        defaultWarehouse = {
-          warehouse_id: warehouseCode,
-          warehouse_name: `${warehouseCode}창고`,
+        defaultWarehouse = availableWarehouses[0] // 첫 번째 창고 선택
+        console.log('[wrhousdlvr] 선택된 창고:', defaultWarehouse)
+
+        // 해당 창고의 로케이션을 DB에서 조회
+        const availableLocations = await getLocationsByItemType(itemType, defaultWarehouse.warehouse_id)
+        if (availableLocations.length > 0) {
+          defaultLocation = availableLocations[0] // 첫 번째 로케이션 선택
+          console.log('[wrhousdlvr] 선택된 로케이션:', defaultLocation)
+        } else {
+          console.warn('[wrhousdlvr] 매칭되는 로케이션이 없습니다. 창고ID:', defaultWarehouse.warehouse_id, '품목유형:', itemType)
         }
-      }
-
-      // 로케이션 자동 할당
-      const availableLocations = getAvailableLocations(itemType, defaultWarehouse.warehouse_id)
-      if (availableLocations.length > 0) {
-        defaultLocation = availableLocations[0]
-        defaultLocationName = availableLocations[0].label.split(' (')[0] // 로케이션 이름만 추출
       } else {
-        // 기본 로케이션 설정
-        defaultLocationName = `${warehouseCode}-001`
+        console.warn('[wrhousdlvr] 매칭되는 창고가 없습니다. 품목유형:', itemType)
       }
+    } catch (error) {
+      console.error('[wrhousdlvr] 창고/로케이션 조회 중 오류:', error)
+    }
 
-      return {
-        id: Date.now().toString(36) + Math.floor(Math.random() * 1000),
-        warehouse_id: defaultWarehouse?.warehouse_id || '',
-        warehouse_name: defaultWarehouse?.warehouse_name || '',
-        location_id: defaultLocation?.value || '',
-        location_name: defaultLocationName || '',
-        type: itemType,
-        code: inspection.item_code || inspection.rsc_id,
-        name: inspection.item_name || inspection.rsc_nm,
-        spec: inspection.item_spec || inspection.rsc_spec || '',
-        unit: inspection.item_unit || inspection.rsc_unit || 'EA',
-        qty: inspection.pass_qty || inspection.insp_qty || 0,
-        remark: '',
-        // 검사서 관련 정보 저장 (백엔드 저장 시 사용)
-        insp_no: inspection.insp_no || inspection.rsc_qlty_insp_id,
-        insp_date: inspection.insp_date || inspection.insp_dt,
-        insp_type: inspection.insp_type,
-        emp_name: inspection.insp_emp_name || inspection.emp_name || '',
-      }
-    })
+    const newRow = {
+      id: Date.now().toString(36) + Math.floor(Math.random() * 1000),
+      warehouse_id: defaultWarehouse?.warehouse_id || '',
+      warehouse_name: defaultWarehouse?.warehouse_name || '',
+      location_id: defaultLocation?.location_id || '',
+      location_name: defaultLocation?.location_name || '',
+      type: itemType,
+      code: inspection.item_code || inspection.rsc_id,
+      name: inspection.item_name || inspection.rsc_nm,
+      spec: inspection.item_spec || inspection.rsc_spec || '',
+      unit: inspection.item_unit || inspection.rsc_unit || 'EA',
+      qty: inspection.pass_qty || inspection.insp_qty || 0,
+      remark: '',
+      // 검사서 관련 정보 저장 (백엔드 저장 시 사용)
+      insp_no: inspection.insp_no || inspection.rsc_qlty_insp_id,
+      insp_date: inspection.insp_date || inspection.insp_dt,
+      insp_type: inspection.insp_type,
+      emp_name: inspection.insp_emp_name || inspection.emp_name || '',
+    }
+    
+    newRows.push(newRow)
+  }
 
   rows.value.push(...newRows)
   alert(`${newRows.length}건의 입고서 품목이 추가되었습니다.`)
@@ -488,7 +481,7 @@ const closeDeliveryModal = () => {
   isDeliveryModalOpen.value = false
 }
 
-const onSelectDelivery = (deliveryList) => {
+const onSelectDelivery = async (deliveryList) => {
   console.log('[wrhousdlvr] 출고서 선택됨:', deliveryList)
 
   if (!Array.isArray(deliveryList) || deliveryList.length === 0) {
@@ -524,62 +517,68 @@ const onSelectDelivery = (deliveryList) => {
   summaryRows.value.push(...uniqueNewRows)
 
   // 메인 그리드에 새 행들 추가 (출고서 정보 기반)
-  const newRows = deliveryList
-    .filter((delivery) => !rows.value.some((row) => row.insp_no === delivery.insp_no))
-    .map((delivery) => {
-      console.log('[wrhousdlvr] 출고서 데이터:', delivery)
+  const newRows = []
+  
+  for (const delivery of deliveryList) {
+    // 중복 출고서 제거
+    if (rows.value.some((row) => row.insp_no === delivery.insp_no)) {
+      continue
+    }
 
-      // 품목 유형 결정
-      const itemType = delivery.item_type || getItemTypeByInspType(delivery.insp_type)
+    console.log('[wrhousdlvr] 출고서 데이터:', delivery)
 
-      // 품목 유형에 따른 창고 코드 자동 할당
-      const warehouseCode = getWarehouseCodeByItemType(itemType)
-      let defaultWarehouse = null
-      let defaultLocation = null
-      let defaultLocationName = ''
+    // 품목 유형 결정
+    const itemType = delivery.item_type || getItemTypeByInspType(delivery.insp_type)
+    console.log('[wrhousdlvr] 결정된 품목 유형:', itemType)
 
-      // 해당 창고 코드와 일치하는 창고 찾기
-      const availableWarehouses = getAvailableWarehouses(itemType)
+    // 품목 유형에 따른 창고/로케이션 DB 조회 및 자동 할당
+    let defaultWarehouse = null
+    let defaultLocation = null
+
+    try {
+      // 해당 품목 유형의 창고를 DB에서 조회
+      const availableWarehouses = await getWarehousesByItemType(itemType)
       if (availableWarehouses.length > 0) {
-        defaultWarehouse = availableWarehouses[0]
-      } else {
-        // 매칭되는 창고가 없으면 기본값으로 설정
-        defaultWarehouse = {
-          warehouse_id: warehouseCode,
-          warehouse_name: `${warehouseCode}창고`,
+        defaultWarehouse = availableWarehouses[0] // 첫 번째 창고 선택
+        console.log('[wrhousdlvr] 선택된 창고:', defaultWarehouse)
+
+        // 해당 창고의 로케이션을 DB에서 조회
+        const availableLocations = await getLocationsByItemType(itemType, defaultWarehouse.warehouse_id)
+        if (availableLocations.length > 0) {
+          defaultLocation = availableLocations[0] // 첫 번째 로케이션 선택
+          console.log('[wrhousdlvr] 선택된 로케이션:', defaultLocation)
+        } else {
+          console.warn('[wrhousdlvr] 매칭되는 로케이션이 없습니다. 창고ID:', defaultWarehouse.warehouse_id, '품목유형:', itemType)
         }
-      }
-
-      // 로케이션 자동 할당
-      const availableLocations = getAvailableLocations(itemType, defaultWarehouse.warehouse_id)
-      if (availableLocations.length > 0) {
-        defaultLocation = availableLocations[0]
-        defaultLocationName = availableLocations[0].label.split(' (')[0] // 로케이션 이름만 추출
       } else {
-        // 기본 로케이션 설정
-        defaultLocationName = `${warehouseCode}-001`
+        console.warn('[wrhousdlvr] 매칭되는 창고가 없습니다. 품목유형:', itemType)
       }
+    } catch (error) {
+      console.error('[wrhousdlvr] 창고/로케이션 조회 중 오류:', error)
+    }
 
-      return {
-        id: Date.now().toString(36) + Math.floor(Math.random() * 1000),
-        warehouse_id: defaultWarehouse?.warehouse_id || '',
-        warehouse_name: defaultWarehouse?.warehouse_name || '',
-        location_id: defaultLocation?.value || '',
-        location_name: defaultLocationName || '',
-        type: itemType,
-        code: delivery.item_code || delivery.rsc_id,
-        name: delivery.item_name || delivery.rsc_nm,
-        spec: delivery.item_spec || delivery.rsc_spec || '',
-        unit: delivery.item_unit || delivery.rsc_unit || 'EA',
-        qty: 0, // 출고의 경우 수량은 사용자가 입력
-        remark: '',
-        // 출고서 관련 정보 저장 (백엔드 저장 시 사용)
-        insp_no: delivery.insp_no || delivery.rsc_qlty_insp_id,
-        insp_date: delivery.insp_date || delivery.insp_dt,
-        insp_type: delivery.insp_type,
-        emp_name: delivery.insp_emp_name || delivery.emp_name || '',
-      }
-    })
+    const newRow = {
+      id: Date.now().toString(36) + Math.floor(Math.random() * 1000),
+      warehouse_id: defaultWarehouse?.warehouse_id || '',
+      warehouse_name: defaultWarehouse?.warehouse_name || '',
+      location_id: defaultLocation?.location_id || '',
+      location_name: defaultLocation?.location_name || '',
+      type: itemType,
+      code: delivery.item_code || delivery.rsc_id,
+      name: delivery.item_name || delivery.rsc_nm,
+      spec: delivery.item_spec || delivery.rsc_spec || '',
+      unit: delivery.item_unit || delivery.rsc_unit || 'EA',
+      qty: 0, // 출고의 경우 수량은 사용자가 입력
+      remark: '',
+      // 출고서 관련 정보 저장 (백엔드 저장 시 사용)
+      insp_no: delivery.insp_no || delivery.rsc_qlty_insp_id,
+      insp_date: delivery.insp_date || delivery.insp_dt,
+      insp_type: delivery.insp_type,
+      emp_name: delivery.insp_emp_name || delivery.emp_name || '',
+    }
+    
+    newRows.push(newRow)
+  }
 
   rows.value.push(...newRows)
   alert(`${newRows.length}건의 출고서 품목이 추가되었습니다.`)
@@ -592,13 +591,25 @@ const onSave = async () => {
       return
     }
 
+    console.log('[wrhousdlvr] 저장 전 rows 데이터:', rows.value)
+
     // 유효성 검사
-    const invalidRows = rows.value.filter(
-      (row) => !row.warehouse_id || !row.location_id || !row.code || !row.name || !row.qty,
-    )
+    const invalidRows = rows.value.filter((row, index) => {
+      const isValid = row.warehouse_id && row.location_id && row.code && row.name && row.qty > 0
+      if (!isValid) {
+        console.log(`[wrhousdlvr] 유효하지 않은 행 ${index}:`, {
+          warehouse_id: row.warehouse_id,
+          location_id: row.location_id,
+          code: row.code,
+          name: row.name,
+          qty: row.qty,
+        })
+      }
+      return !isValid
+    })
 
     if (invalidRows.length > 0) {
-      alert('창고, 로케이션, 품목 정보, 수량을 모두 입력해주세요.')
+      alert(`창고, 로케이션, 품목 정보, 수량을 모두 입력해주세요.\n유효하지 않은 행: ${invalidRows.length}개`)
       return
     }
 
@@ -629,7 +640,9 @@ const onSave = async () => {
 
     console.log('[wrhousdlvr] 저장 요청 데이터:', payload)
 
-    const response = await axios.post('/api/wrhousdlvr/transactions', payload)
+    const response = await axios.post('/api/warehouse/transactions', payload)
+
+    console.log('[wrhousdlvr] 저장 응답:', response.data)
 
     if (response.data?.isSuccessed) {
       alert(`${mode.value === 'in' ? '입고' : '출고'} 처리가 완료되었습니다.`)
@@ -640,7 +653,7 @@ const onSave = async () => {
     }
   } catch (err) {
     console.error('[wrhousdlvr] 저장 오류:', err)
-    alert('저장 중 오류가 발생했습니다.')
+    alert('저장 중 오류가 발생했습니다: ' + (err.response?.data?.error || err.message))
   }
 }
 </script>

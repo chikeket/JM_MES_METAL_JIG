@@ -12,8 +12,10 @@ const instructions = require("./sqls/instruction.js");
 
 // 수주 관련 쿼리
 const rcvord = require("./sqls/rcvord.js");
+
 // 납품 관련 쿼리
 const deli = require("./sqls/deli.js");
+
 // 계정 관련 쿼리
 const acct = require("./sqls/acct.js");
 
@@ -47,12 +49,11 @@ const qltyItem = require("./sqls/qltyItem.js");
 // 창고 입출고 관련 쿼리
 const wrhousdlvr = require("./sqls/wrhousdlvr.js");
 
+// 창고 기준정보 관리 관련 쿼리
+const wrhousManage = require("./sqls/wrhousManage.js");
 
-// 창고 관리 관련 쿼리
-const wrhous = require("./sqls/wrhous.js");
-
-// 입출고용 검사서 조회 관련 쿼리
-const inspectionForWarehouse = require("./sqls/inspectionForWarehouse.js");
+// 창고 로케이션 기준정보 관리 관련 쿼리
+const wrhousZoneManage = require("./sqls/wrhousZoneManage.js");
 
 // 공정 라우팅 관련 쿼리
 const routingInfo = require("./sqls/routingInfo.js");
@@ -68,10 +69,7 @@ module.exports = {
   ...rscOrdr,
   ...companyManage,
   ...co,
-
   ...companyManage, // 추가!
-
-
   ...rcvord,
   ...emp,
   ...acct,
@@ -84,11 +82,7 @@ module.exports = {
   ...deli,
   ...qltyItem,
   ...wrhousdlvr,
-
-  ...wrhous,
-  ...inspectionForWarehouse,
-
+  ...wrhousManage,
+  ...wrhousZoneManage,
   ...routingInfo,
-
-
 };

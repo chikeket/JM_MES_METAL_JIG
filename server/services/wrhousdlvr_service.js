@@ -1,5 +1,4 @@
 const mariadb = require("../database/mapper.js");
-const sqlList = require("../database/sqlList.js");
 
 // 안전한 UUID 생성 (uuid 패키지 미설치 상황 대비)
 let uuidv4;
@@ -34,6 +33,179 @@ const toNumberSafe = (v, def = 0) => {
   }
   const n = Number(v);
   return Number.isFinite(n) ? n : def;
+};
+
+// 전체 창고 목록 조회 (품목 유형별 필터링 가능)
+const getAllWarehouses = async (info = {}) => {
+  // 클라이언트는 '자재'|'반제품'|'완제품' 같은 표기나 DB코드(E1/E2/E3)를 보낼 수 있음
+  const item_type_raw = (info.item_type ?? "").trim() || null;
+
+  // 매핑: 화면용 한글 -> DB 코드
+  const typeMap = {
+    '자재': 'E1',
+    '반제품': 'E2',
+    '완제품': 'E3',
+    'E1': 'E1',
+    'E2': 'E2',
+    'E3': 'E3',
+  };
+
+  const item_type = item_type_raw ? (typeMap[item_type_raw] || item_type_raw) : null;
+
+  let query;
+  let params = [];
+
+  if (item_type) {
+    // 품목 유형별 창고 필터링 (DB의 ITEM_TY 코드로 검색)
+    query = `
+      SELECT 
+        w.WRHOUS_ID as warehouse_id,
+        w.WRHOUS_NM as warehouse_name,
+        w.ITEM_TY as item_type,
+        w.ST as status,
+        w.RM as remark
+      FROM WRHOUS w
+      WHERE w.ITEM_TY = ?
+        AND w.ST = 'Y'
+      ORDER BY w.WRHOUS_ID
+    `;
+    params = [item_type];
+  } else {
+    // 전체 창고 목록
+    query = `
+      SELECT 
+        w.WRHOUS_ID as warehouse_id,
+        w.WRHOUS_NM as warehouse_name,
+        w.ITEM_TY as item_type,
+        w.ST as status,
+        w.RM as remark
+      FROM WRHOUS w
+      WHERE w.ST = 'Y'
+      ORDER BY w.WRHOUS_ID
+    `;
+  }
+
+  try {
+    console.log("[wrhousdlvr_service] getAllWarehouses query:", query);
+    console.log("[wrhousdlvr_service] getAllWarehouses params:", params);
+    
+    const result = await mariadb.query(query, params);
+    
+    console.log("[wrhousdlvr_service] getAllWarehouses result length:", Array.isArray(result) ? result.length : "N/A");
+    
+    return Array.isArray(result) ? result : [];
+  } catch (err) {
+    console.error("[wrhousdlvr_service] getAllWarehouses error:", err);
+    throw err;
+  }
+};
+
+// 전체 로케이션 목록 조회 (품목 유형별 필터링 가능)
+const getAllLocations = async (info = {}) => {
+  // 클라이언트는 '자재'|'반제품'|'완제품' 같은 표기나 DB코드(E1/E2/E3)를 보낼 수 있음
+  const item_type_raw = (info.item_type ?? "").trim() || null;
+  const warehouse_id = (info.warehouse_id ?? "").trim() || null;
+
+  const typeMap = {
+    '자재': 'E1',
+    '반제품': 'E2',
+    '완제품': 'E3',
+    'E1': 'E1',
+    'E2': 'E2',
+    'E3': 'E3',
+  };
+
+  const item_type = item_type_raw ? (typeMap[item_type_raw] || item_type_raw) : null;
+
+  let query;
+  let params = [];
+
+  if (warehouse_id && item_type) {
+    // 창고 ID와 품목 유형 모두 필터링 (DB 코드 사용)
+    query = `
+      SELECT 
+        wz.ZONE_ID as location_id,
+        wz.ZONE_NM as location_name,
+        wz.WRHOUS_ID as warehouse_id,
+        w.WRHOUS_NM as warehouse_name,
+        wz.ITEM_TY as item_type,
+        wz.ST as status,
+        wz.RM as remark
+      FROM WRHOUS_ZONE wz
+      LEFT JOIN WRHOUS w ON wz.WRHOUS_ID = w.WRHOUS_ID
+      WHERE wz.WRHOUS_ID = ?
+        AND wz.ITEM_TY = ?
+        AND wz.ST = 'Y'
+      ORDER BY wz.ZONE_ID
+    `;
+    params = [warehouse_id, item_type];
+  } else if (warehouse_id) {
+    // 창고 ID만 필터링
+    query = `
+      SELECT 
+        wz.ZONE_ID as location_id,
+        wz.ZONE_NM as location_name,
+        wz.WRHOUS_ID as warehouse_id,
+        w.WRHOUS_NM as warehouse_name,
+        wz.ITEM_TY as item_type,
+        wz.ST as status,
+        wz.RM as remark
+      FROM WRHOUS_ZONE wz
+      LEFT JOIN WRHOUS w ON wz.WRHOUS_ID = w.WRHOUS_ID
+      WHERE wz.WRHOUS_ID = ?
+        AND wz.ST = 'Y'
+      ORDER BY wz.ZONE_ID
+    `;
+    params = [warehouse_id];
+  } else if (item_type) {
+    // 품목 유형만 필터링
+    query = `
+      SELECT 
+        wz.ZONE_ID as location_id,
+        wz.ZONE_NM as location_name,
+        wz.WRHOUS_ID as warehouse_id,
+        w.WRHOUS_NM as warehouse_name,
+        wz.ITEM_TY as item_type,
+        wz.ST as status,
+        wz.RM as remark
+      FROM WRHOUS_ZONE wz
+      LEFT JOIN WRHOUS w ON wz.WRHOUS_ID = w.WRHOUS_ID
+      WHERE wz.ITEM_TY = ?
+        AND wz.ST = 'Y'
+      ORDER BY wz.ZONE_ID
+    `;
+    params = [item_type];
+  } else {
+    // 전체 로케이션 목록
+    query = `
+      SELECT 
+        wz.ZONE_ID as location_id,
+        wz.ZONE_NM as location_name,
+        wz.WRHOUS_ID as warehouse_id,
+        w.WRHOUS_NM as warehouse_name,
+        wz.ITEM_TY as item_type,
+        wz.ST as status,
+        wz.RM as remark
+      FROM WRHOUS_ZONE wz
+      LEFT JOIN WRHOUS w ON wz.WRHOUS_ID = w.WRHOUS_ID
+      WHERE wz.ST = 'Y'
+      ORDER BY wz.ZONE_ID
+    `;
+  }
+
+  try {
+    console.log("[wrhousdlvr_service] getAllLocations query:", query);
+    console.log("[wrhousdlvr_service] getAllLocations params:", params);
+    
+    const result = await mariadb.query(query, params);
+    
+    console.log("[wrhousdlvr_service] getAllLocations result length:", Array.isArray(result) ? result.length : "N/A");
+    
+    return Array.isArray(result) ? result : [];
+  } catch (err) {
+    console.error("[wrhousdlvr_service] getAllLocations error:", err);
+    throw err;
+  }
 };
 
 // 창고 입출고 거래 목록 조회 (로그인 사용자 기준 필터링)
@@ -124,15 +296,15 @@ const saveTransaction = async ({ transactionList, emp_id = null } = {}) => {
 
       // 기존 거래 존재 여부 확인
       if (txnId) {
-        exists = await conn.query(sqlList.existsWrhousTransaction, [txnId]);
+        exists = await conn.query("existsWrhousTransaction", [txnId]);
       }
 
       if (!txnId || !(exists && exists.length)) {
         // 신규 등록: ID 자동 생성
-        const gen = await conn.query(sqlList.createWrhousTransactionId);
+        const gen = await conn.query("createWrhousTransactionId");
         txnId = gen && gen[0] && gen[0].txn_id ? gen[0].txn_id : uuidv4();
 
-        await conn.query(sqlList.insertWrhousTransaction, [
+        await conn.query("insertWrhousTransaction", [
           txnId,
           txn.txn_type || "IN", // 기본값 입고
           txn.item_type || "",
@@ -149,7 +321,7 @@ const saveTransaction = async ({ transactionList, emp_id = null } = {}) => {
         console.log("[wrhousdlvr_service] inserted transaction id=", txnId);
       } else {
         // 기존 거래 수정
-        await conn.query(sqlList.updateWrhousTransaction, [
+        await conn.query("updateWrhousTransaction", [
           txn.txn_type || "IN",
           txn.item_type || "",
           txn.item_code || "",
@@ -197,7 +369,7 @@ const deleteTransaction = async (txnId) => {
     conn = await mariadb.getConnection();
     await conn.beginTransaction();
 
-    await conn.query(sqlList.deleteWrhousTransaction, [txnId]);
+    await conn.query("deleteWrhousTransaction", [txnId]);
 
     await conn.commit();
     return { isSuccessed: true };
@@ -229,7 +401,7 @@ const deleteSelectedTransactions = async (ids = []) => {
     await conn.beginTransaction();
 
     for (const id of list) {
-      await conn.query(sqlList.deleteWrhousTransaction, [id]);
+      await conn.query("deleteWrhousTransaction", [id]);
     }
 
     await conn.commit();
@@ -424,17 +596,84 @@ const getDeliveryDetailList = async (item_code, item_name, delivery_status) => {
   }
 };
 
-// 자재 불출 대상 목록 조회 (임시 구현)
-const getMaterialWithdrawalList = async (
-  item_code,
-  item_name,
-  withdrawal_status
-) => {
+// 자재 불출 대상 목록 조회 (생산지시 → BOM 기반)
+const getMaterialWithdrawalList = async (item_code = "", item_name = "") => {
   try {
-    console.log("[wrhousdlvr_service] 자재 불출 대상 조회 - 임시 빈 배열 반환");
-    return [];
+    const normalizedItemCode = (item_code || "").trim();
+    const normalizedItemName = (item_name || "").trim();
+
+    console.log("[wrhousdlvr_service] 자재 불출 대상 조회 파라미터:", {
+      normalizedItemCode,
+      normalizedItemName,
+    });
+
+    const params = [
+      normalizedItemCode, // ? = '' 체크용
+      normalizedItemCode, // LIKE 검색용
+      normalizedItemName, // ? = '' 체크용
+      normalizedItemName, // LIKE 검색용
+    ];
+
+    const results = await mariadb.query("selectMaterialWithdrawal", params);
+
+    console.log(
+      "[wrhousdlvr_service] 자재 불출 대상 조회 결과:",
+      results.length + "건"
+    );
+
+    return results.map(item => ({
+      ...item,
+      insp_type: 'materialWithdrawal',
+      insp_no: item.withdrawal_id,
+      insp_date: item.order_date,
+      pass_qty: item.remaining_qty,
+      insp_qty: item.required_qty,
+      insp_status: '대기',
+      insp_emp_name: item.emp_name
+    }));
   } catch (error) {
     console.error("[wrhousdlvr_service] 자재 불출 대상 조회 실패:", error);
+    throw error;
+  }
+};
+
+// 완제품 납품 대상 목록 조회 (납품상세 기반)
+const getDeliveryProductsList = async (item_code = "", item_name = "") => {
+  try {
+    const normalizedItemCode = (item_code || "").trim();
+    const normalizedItemName = (item_name || "").trim();
+
+    console.log("[wrhousdlvr_service] 완제품 납품 대상 조회 파라미터:", {
+      normalizedItemCode,
+      normalizedItemName,
+    });
+
+    const params = [
+      normalizedItemCode, // ? = '' 체크용
+      normalizedItemCode, // LIKE 검색용
+      normalizedItemName, // ? = '' 체크용
+      normalizedItemName, // LIKE 검색용
+    ];
+
+    const results = await mariadb.query("selectDeliveryProducts", params);
+
+    console.log(
+      "[wrhousdlvr_service] 완제품 납품 대상 조회 결과:",
+      results.length + "건"
+    );
+
+    return results.map(item => ({
+      ...item,
+      insp_type: 'deliveryDetail',
+      insp_no: item.delivery_id,
+      insp_date: item.delivery_date,
+      pass_qty: item.remaining_qty,
+      insp_qty: item.delivery_qty,
+      insp_status: '대기',
+      insp_emp_name: item.emp_name
+    }));
+  } catch (error) {
+    console.error("[wrhousdlvr_service] 완제품 납품 대상 조회 실패:", error);
     throw error;
   }
 };
@@ -776,4 +1015,9 @@ module.exports = {
   getWarehouseEndPrdtInspections,
   getWarehouseMaterials,
   getWarehouseProducts,
+  // 새로운 출고 관련 기능들
+  getDeliveryProductsList,
+  // 창고 및 로케이션 조회 기능
+  getAllWarehouses,
+  getAllLocations,
 };

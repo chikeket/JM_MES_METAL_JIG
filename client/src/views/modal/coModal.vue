@@ -9,8 +9,8 @@
         <div class="d-flex gap-2 mb-3">
           <select class="form-select" style="width: 150px" v-model="coTy">
             <option value="">전체유형</option>
-            <option value="VENDOR">협력업체</option>
-            <option value="CUSTOMER">고객사</option>
+            <option value="VENDOR">공급업체</option>
+            <option value="CUSTOMER">납품업체</option>
           </select>
           <select class="form-select" style="width: 150px" v-model="pickValue">
             <option value="CO_NM">업체 이름</option>
@@ -31,8 +31,8 @@
             @keyup.enter="coSearch" 
           />
           <div class="ms-auto d-flex gap-2">
-            <button class="btn btn-secondary" @click="resetSearch()">초기화</button>
             <button class="btn btn-secondary" @click="coSearch()">검색</button>
+            <button class="btn btn-secondary" @click="resetSearch()">초기화</button>
           </div>
         </div>
 
