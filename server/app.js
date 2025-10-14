@@ -49,7 +49,13 @@ const rscQltyInsp = require("./routers/rscQltyInsp_router.js"); // 자재품질�
 const endPrdtQltyInsp = require("./routers/endPrdtQltyInsp_router.js"); // 완제품 품질검수
 const qltyItem = require("./routers/qltyItem_router.js"); // 품질항목 기준정보
 const wrhousdlvr = require("./routers/wrhousdlvr_router.js"); // 창고 입출고
+
+const wrhous = require("./routers/wrhous_router.js"); // 창고 관리
+const inspectionForWarehouse = require("./routers/inspectionForWarehouse_router.js"); // 입출고용 검사서 조회
+
+
 const routingInfo = require("./routers/routing_router.js"); // 공정 라우팅
+
 // 기본 라우팅
 app.get("/", (req, res) => {
   res.send("Welcome!!");
@@ -72,5 +78,9 @@ app.use("/", endPrdtQltyInsp); // 완제품 품질검수
 app.use("/", qltyItem); // 품질항목 기준정보
 app.use("/", companyManage); // 업체관리 추가!
 app.use("/", wrhousdlvr); // 창고 입출고
+
+app.use("/", wrhous); // 창고 관리
+app.use("/", inspectionForWarehouse); // 입출고용 검사서 조회
 app.use("/", routingInfo); // 공정 라우팅
+
 

@@ -2,7 +2,7 @@
   <div v-if="isOpen" class="modal-backdrop" @click="closeModal">
     <div class="modal-container" @click.stop>
       <div class="modal-header">
-        <h5>입고서 목록</h5>
+        <h5>출고서 목록</h5>
         <button type="button" class="btn-close" @click="closeModal"></button>
       </div>
 
@@ -11,12 +11,11 @@
         <div class="search-area">
           <div class="row g-3">
             <div class="col-md-3">
-              <label class="form-label">입고서 종류</label>
+              <label class="form-label">출고서 종류</label>
               <select v-model="searchCondition.insp_type" class="form-select">
                 <option value="">전체</option>
-                <option value="materialQuality">자재 품질 검사</option>
-                <option value="semiQuality">반제품 품질 검사</option>
-                <option value="finishedQuality">완제품 품질 검사</option>
+                <option value="materialWithdrawal">자재 불출</option>
+                <option value="deliveryDetail">완제품 납품</option>
               </select>
             </div>
             <div class="col-md-3">
@@ -156,7 +155,7 @@ const selectedInspectionNo = ref('')
 const searchCondition = reactive({
   item_code: '',
   item_name: '',
-  insp_type: 'finishedQuality', // 기본값: 완제품 품질 검사
+  insp_type: 'deliveryDetail', // 기본값: 완제품 품질 검사
 })
 
 // 계산된 속성
@@ -181,51 +180,43 @@ const onSearch = async () => {
     console.log('[inspectionModal] 전송 파라미터:', params)
     console.log('[inspectionModal] 검사서 종류:', searchCondition.insp_type)
 
-    // 검사서 종류에 따라 다른 API 호출 (입출고 전용 API 사용)
-    let apiUrl = '/api/inspectionForWarehouse/list'
-
-    // 검사서 종류를 params에 추가
-    params.insp_type = searchCondition.insp_type
+    // 검사서 종류에 따라 다른 API 호출
+    let apiUrl = ''
 
     switch (searchCondition.insp_type) {
-      case 'materialQuality':
-        // 자재 품질 검사 (입고)
-        apiUrl = '/api/inspectionForWarehouse/material'
+      case 'materialWithdrawal':
+        // 자재 불출 (출고) - 입고된 자재들 중에서 선택
+        apiUrl = '/api/warehouse/materials/list'
         break
 
-      case 'semiQuality':
-        // 반제품 품질 검사 (입고)
-        apiUrl = '/api/inspectionForWarehouse/semi'
-        break
-
-      case 'finishedQuality':
-        // 완제품 품질 검사 (입고)
-        apiUrl = '/api/inspectionForWarehouse/finished'
+      case 'deliveryDetail':
+        // 완제품 납품 (출고) - 입고된 완제품들 중에서 선택
+        apiUrl = '/api/warehouse/products/list'
         break
 
       default:
-        // 전체 조회 (자재 품질검사 기본)
-        apiUrl = '/api/inspectionForWarehouse/list'
+        // 전체 조회 (완제품 품질검사 기본)
+        apiUrl = '/api/warehouse/products/list'
         break
     }
 
-    console.log('[inspectionModal] 호출 API:', apiUrl)
+    console.log('[deliveryModal] 호출 API:', apiUrl)
 
     const response = await axios.get(apiUrl, { params })
 
-    console.log('[inspectionModal] API 응답:', response)
-    console.log('[inspectionModal] 응답 데이터:', response.data)
-    console.log('[inspectionModal] 응답 건수:', response.data?.length)
+    console.log('[deliveryModal] API 응답:', response)
+    console.log('[deliveryModal] 응답 데이터:', response.data)
+    console.log('[deliveryModal] 응답 건수:', response.data?.length)
 
     if (response.data?.length > 100) {
-      console.warn('[inspectionModal] 조회 결과가 100건을 초과합니다!')
+      console.warn('[deliveryModal] 조회 결과가 100건을 초과합니다!')
     }
 
     inspectionList.value = response.data || []
     resetSelection()
   } catch (error) {
-    console.error('[inspectionModal] 검사서 조회 실패:', error)
-    console.error('[inspectionModal] 에러 상세:', {
+    console.error('[deliveryModal] 검사서 조회 실패:', error)
+    console.error('[deliveryModal] 에러 상세:', {
       message: error.message,
       status: error.response?.status,
       statusText: error.response?.statusText,
@@ -240,7 +231,7 @@ const onSearch = async () => {
 const onReset = () => {
   searchCondition.item_code = ''
   searchCondition.item_name = ''
-  searchCondition.insp_type = 'finishedQuality'
+  searchCondition.insp_type = 'deliveryDetail'
   resetSelection()
 }
 
@@ -254,7 +245,7 @@ const handleRowClick = (item) => {
 const selectSingleInspection = (item) => {
   selectedInspection.value = { ...item }
   selectedInspectionNo.value = item.insp_no
-  console.log('[inspectionModal] 단일 검사서 선택:', selectedInspection.value)
+  console.log('[deliveryModal] 단일 검사서 선택:', selectedInspection.value)
 }
 
 // 체크박스 선택/해제
@@ -265,7 +256,7 @@ const toggleSelection = (item) => {
   } else {
     selectedItems.value.push({ ...item, insp_type: searchCondition.insp_type })
   }
-  console.log('[inspectionModal] 선택된 검사서들:', selectedItems.value)
+  console.log('[deliveryModal] 선택된 검사서들:', selectedItems.value)
 }
 
 // 전체 선택/해제
@@ -311,7 +302,7 @@ const onSelect = () => {
     return
   }
 
-  console.log('[inspectionModal] 최종 선택된 검사서들:', selectedItems.value)
+  console.log('[deliveryModal] 최종 선택된 검사서들:', selectedItems.value)
   emit('select', selectedItems.value)
   closeModal()
 }
@@ -326,7 +317,7 @@ const closeModal = () => {
 
 // 컴포넌트 마운트 시 초기화
 onMounted(() => {
-  console.log('[inspectionModal] 컴포넌트 마운트됨')
+  console.log('[deliveryModal] 컴포넌트 마운트됨')
 })
 </script>
 

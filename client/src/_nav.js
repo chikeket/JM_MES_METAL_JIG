@@ -45,6 +45,16 @@ export default [
         name: '창고 입출고 관리',
         to: '/jamin/wrhousdlvr',
       },
+      {
+        component: 'CNavItem',
+        name: '창고 관리',
+        to: '/jamin/wrhousManage',
+      },
+      {
+        component: 'CNavItem',
+        name: '창고 로케이션 관리',
+        to: '/jamin/wrhousZoneManage',
+      },
     ],
   },
   {

@@ -47,8 +47,16 @@ const qltyItem = require("./sqls/qltyItem.js");
 // 창고 입출고 관련 쿼리
 const wrhousdlvr = require("./sqls/wrhousdlvr.js");
 
+
+// 창고 관리 관련 쿼리
+const wrhous = require("./sqls/wrhous.js");
+
+// 입출고용 검사서 조회 관련 쿼리
+const inspectionForWarehouse = require("./sqls/inspectionForWarehouse.js");
+
 // 공정 라우팅 관련 쿼리
 const routingInfo = require("./sqls/routingInfo.js");
+
 
 // └───각 테이블별 SQL 쿼리들을 모아놓은 중앙 관리 파일───┘
 
@@ -63,6 +71,7 @@ module.exports = {
 
   ...companyManage, // 추가!
 
+
   ...rcvord,
   ...emp,
   ...acct,
@@ -75,6 +84,11 @@ module.exports = {
   ...deli,
   ...qltyItem,
   ...wrhousdlvr,
+
+  ...wrhous,
+  ...inspectionForWarehouse,
+
   ...routingInfo,
+
 
 };
