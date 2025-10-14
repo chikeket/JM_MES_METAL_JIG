@@ -111,6 +111,11 @@ export default [
       },
       {
         component: 'CNavItem',
+        name: '수주 조회',
+        to: '/Minsu/rcvord_search',
+      },
+      {
+        component: 'CNavItem',
         name: '납품 관리',
         to: '/Minsu/deli',
       },
