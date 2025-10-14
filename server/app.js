@@ -36,6 +36,7 @@ const companyManage = require("./routers/companyManage_router.js"); // 업체관
 const instruction = require("./routers/instruction_router.js"); // 생산지시
 
 const rcvord = require("./routers/rcvord_router.js"); // 수주
+const rcvordSearch = require("./routers/rcvordSearch_router.js"); // 수주 조회
 const deli = require("./routers/deli_router.js"); // 납품
 const rscOrdr = require("./routers/rscOrdr_router.js"); // 자재 발주
 
@@ -60,6 +61,7 @@ app.use("/", prdt); // 제품
 app.use("/", rscOrdr); // 자재 발주
 app.use("/", co); // 업체
 app.use("/", rcvord); // 수주
+app.use("/", rcvordSearch); // 수주 조회
 app.use("/", deli); // 납품
 app.use("/", rsc); // 자재
 app.use("/", prodPlan); // 생산계획
@@ -71,3 +73,4 @@ app.use("/", qltyItem); // 품질항목 기준정보
 app.use("/", companyManage); // 업체관리 추가!
 app.use("/", wrhousdlvr); // 창고 입출고
 app.use("/", routingInfo); // 공정 라우팅
+

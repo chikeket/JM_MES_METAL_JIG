@@ -23,11 +23,11 @@
     </CCol>
     <CCol :md="3">
       <CFormLabel class="form-label">상태</CFormLabel>
-      <CFormSelect v-model="searchFilters.status" size="sm">
-        <option value="">전체</option>
-        <option value="ACT">활성</option>
-        <option value="INA">비활성</option>
-      </CFormSelect>
+<CFormSelect v-model="searchFilters.status" size="sm">
+  <option value="">전체</option>
+  <option value="ACT">활성</option>        <!-- 👈 active → ACT -->
+  <option value="INA">비활성</option>      <!-- 👈 INA → INA -->
+</CFormSelect>
     </CCol>
   </CRow>
 </div>
@@ -170,18 +170,17 @@ const formData = reactive({
 const getPlaceholder = (key) => {
   switch (key) {
     case 'id': return 'C001'
-    case 'businessNo': return '123-45-67890'
+    case 'businessNo': return '114-86-65214'
     case 'name': return '스타쉽엔터테인먼트'
-    case 'ceo': return '장원영'
-    case 'email': return 'jang@startship.com'
-    case 'ceoPhone': return '010-1234-5678'
+    case 'ceo': return '이진성'
+    case 'email': return 'cs@starship-square.com'
+    case 'ceoPhone': return '02-592-4000'
     case 'regDate': return '2025-10-11'
-    case 'managerName': return '김부장'
-    case 'managerPhone': return '010-2345-6789'
+    case 'managerName': return '장원영'
+    case 'managerPhone': return '010-0000-0000'
     default: return '입력해주세요'
   }
 }
-
 
 // 폼 필드 정의
 const formFields = [
@@ -212,7 +211,6 @@ const formFields = [
       { label: '비활성', value: 'inactive' }
     ]
   }
-  
 ]
 
 // 그리드 데이터
@@ -220,7 +218,6 @@ const gridData = ref([])
 const selectedRowIndex = ref(null)
 const originalId = ref('')
 
-// ===== 이 부분 추가 =====
 // 표시할 데이터 (최대 10행)
 const displayedData = computed(() => {
   return gridData.value.slice(0, 10)
@@ -236,53 +233,43 @@ const emptyRowCount = computed(() => {
 // Lifecycle
 // ============================================
 onMounted(() => {
-  handleSearch() // 초기 데이터 로딩
+  handleSearch()
 })
+
 // ============================================
 // 메서드
 // ============================================
 
-// 검색/초기화
+// 검색
 const handleSearch = async () => {
   const params = {
     type: searchFilters.type || '',
     name: searchFilters.name || '',
     status: searchFilters.status || '',
   }
-  console.log(params);
+  console.log('검색 파라미터:', params)
   
   try {
     let result = await axios.get('/api/co_list_view', { params })
-    console.log(result.data)
-    
-    // ===== 이 부분 추가! =====
-    gridData.value = result.data  // 받아온 데이터를 gridData에 할당!
-    // ========================
-    
+    console.log('조회 결과:', result.data)
+    gridData.value = result.data
     selectedRowIndex.value = null
   } catch (error) {
     console.error('조회 오류:', error)
-    gridData.value = []  // 에러 시 빈 배열
+    gridData.value = []
   }
 }
 
-// 초기화 함수 수정
+// 초기화
 const handleReset = () => {
   searchFilters.type = ''
   searchFilters.name = ''
   searchFilters.status = ''
   selectedRowIndex.value = null
-  gridData.value = [] // 그리드 데이터도 초기화
+  gridData.value = []
 }
 
-// onMounted 수정 - 초기 데이터 로딩 제거
-onMounted(() => {
-  gridData.value = [] // 빈 배열로 초기화
-})
-
-// -----------------------------
 // 폼 초기화
-// -----------------------------
 const resetFormData = () => {
   Object.assign(formData, {
     id: '',
@@ -301,78 +288,73 @@ const resetFormData = () => {
   selectedRowIndex.value = null
 }
 
-// -----------------------------
 // 행 선택
-// -----------------------------
 const handleRowSelect = (item, index) => {
-  Object.assign(formData, { ...item })
+  formData.id = item.id
+  formData.businessNo = item.businessNo
+  formData.name = item.name
+  formData.ceo = item.ceo
+  formData.ceoPhone = item.ceoPhone
+  formData.type = item.type === 'CUSTOMER' ? 'customer' : 'supplier'
+  formData.status = item.status === 'ACT' ? 'active' : 'inactive'
+  
   originalId.value = item.id
   selectedRowIndex.value = index
 }
-
-// -----------------------------
 // 신규
-// -----------------------------
 const handleNew = () => {
   resetFormData()
 }
 
-// -----------------------------
 // 저장
-// -----------------------------
-const handleSave = () => {
+const handleSave = async () => {
+  console.log('=== 저장 시작 ===')
+  
   if (!formData.name || !formData.ceo) {
     alert('업체명과 대표자명은 필수 입력 항목입니다.')
     return
   }
 
-  const isIdChanged = originalId.value && originalId.value !== formData.id
-
-  if (isIdChanged) {
-    const isDuplicate = gridData.value.some(item => item.id === formData.id)
-    if (isDuplicate) {
-      alert(`업체 ID "${formData.id}"는 이미 존재합니다.`)
-      return
+  try {
+    const sendData = {
+      co_id: formData.id,
+      bizr_reg_no: formData.businessNo,
+      co_nm: formData.name,
+      rpstr_nm: formData.ceo,
+      rpstr_tel: formData.ceoPhone,
+      co_ty_id: formData.type === 'customer' ? 'CUSTOMER' : 'VENDOR',
+      st: formData.status === 'active' ? 'ACT' : 'INA'
     }
-  }
 
-  const existingIndex = gridData.value.findIndex(item => item.id === originalId.value)
+    console.log('전송 데이터:', sendData)
 
-  if (existingIndex >= 0) {
-    if (isIdChanged) {
-      gridData.value.splice(existingIndex, 1)
-      gridData.value.push({ ...formData })
-      alert('업체 ID가 변경되어 저장되었습니다.')
+    let response
+    if (originalId.value) {
+      // 수정: 기존 ID를 별도로 전송
+      sendData.original_co_id = originalId.value  // 👈 추가!
+      response = await axios.post('/api/coUpdate', sendData)
     } else {
-      gridData.value[existingIndex] = { ...formData }
-      alert('수정되었습니다.')
+      // 신규
+      response = await axios.post('/api/coInsert', sendData)
     }
-  } else {
-    if (!formData.id) {
-      const maxId = gridData.value.reduce((max, item) => {
-        const num = parseInt(item.id.replace(/\D/g, '')) || 0
-        return num > max ? num : max
-      }, 0)
-      formData.id = 'C' + String(maxId + 1).padStart(3, '0')
-    } else {
-      const isDuplicate = gridData.value.some(item => item.id === formData.id)
-      if (isDuplicate) {
-        alert(`업체 ID "${formData.id}"는 이미 존재합니다.`)
-        return
-      }
-    }
-    gridData.value.push({ ...formData })
-    alert('저장되었습니다.')
-  }
 
-  localStorage.setItem('gridData', JSON.stringify(gridData.value))
-  resetFormData()
+    console.log('서버 응답:', response.data)
+
+    if (response.data.isSuccessed) {
+      alert(response.data.message)
+      await handleSearch()
+      resetFormData()
+    } else {
+      alert(response.data.message)
+    }
+
+  } catch (error) {
+    console.error('저장 오류:', error)
+    alert('저장 중 오류가 발생했습니다.')
+  }
 }
-
-// -----------------------------
 // 삭제
-// -----------------------------
-const handleDelete = () => {
+const handleDelete = async () => {
   if (!formData.id) {
     alert('삭제할 데이터를 선택해주세요.')
     return
@@ -380,19 +362,21 @@ const handleDelete = () => {
 
   if (!confirm('정말 삭제하시겠습니까?')) return
 
-  const existingIndex = gridData.value.findIndex(item => item.id === formData.id)
-  if (existingIndex >= 0) {
-    gridData.value.splice(existingIndex, 1)
-    localStorage.setItem('gridData', JSON.stringify(gridData.value))
-    alert('삭제되었습니다.')
+  try {
+    const response = await axios.post('/api/coDelete', { co_id: formData.id })
+    
+    if (response.data.isSuccessed) {
+      alert(response.data.message)
+      await handleSearch()
+      resetFormData()
+    }
+  } catch (error) {
+    console.error('삭제 오류:', error)
+    alert('삭제 중 오류가 발생했습니다.')
   }
-
-  resetFormData()
 }
 
-// -----------------------------
 // 라벨 반환
-// -----------------------------
 const getTypeLabel = (type) => {
   return type === 'customer' ? '고객사' : '공급업체'
 }

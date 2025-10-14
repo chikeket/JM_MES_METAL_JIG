@@ -5,66 +5,77 @@ const { convertObjToAry } = require("../utils/converts.js");
 
 // 다중조건 검색조회
 const prodDrctfindAll = async (Info) => {
-    let insertColumns = ["prod_drct_nm", "reg_dt", "prod_drct_fr_dt", "prod_drct_to_dt"];
-    // console.log("클라에서들어가는값 서비스");
-    // console.log(Info);
-    let data = convertObjToAry(Info, insertColumns);
-    console.log("service쪽");
-    console.log(data);
-    let list = await mariadb
-        .query("prodDrctMasterSearch", data)
-        .catch((err) => console.log(err));
-    // console.log("조회 결과:", list);
-    return list;
+  let insertColumns = [
+    "prod_drct_nm",
+    "reg_dt",
+    "prod_drct_fr_dt",
+    "prod_drct_to_dt",
+  ];
+  // console.log("클라에서들어가는값 서비스");
+  // console.log(Info);
+  let data = convertObjToAry(Info, insertColumns);
+  console.log("service쪽");
+  console.log(data);
+  let list = await mariadb
+    .query("prodDrctMasterSearch", data)
+    .catch((err) => console.log(err));
+  // console.log("조회 결과:", list);
+  return list;
 };
 
 // 마스터정보로 상세내용 조회
 const prodDrctDetafindAll = async (Info) => {
-    let insertColumns = ["prod_drct_id", "prod_drct_id"];
-    // console.log("클라에서들어가는값 서비스");
-    // console.log(Info);
-    // let infoEdit = {
-    //     ...Info[0],
-    //     ...Info[0],
-    // }
+  let prodPlanChk = await mariadb
+    .query("prodDrctPlanDetaIdChk", [Info.prod_drct_id])
+    .catch((err) => console.log(err));
+  console.log("확인prodPlanChk");
+  console.log(prodPlanChk[0].prod_plan_deta_id);
+  if (prodPlanChk[0].prod_plan_deta_id == "none") {
+    console.log("위에꺼 작동함");
+    let list = await mariadb
+      .query("prodDrctNonePlanDetailSearch", [Info.prod_drct_id])
+      .catch((err) => console.log(err));
+    return list;
+  } else {
     // let data = convertObjToAry(infoEdit, insertColumns);
-    console.log('인포내용')
-    console.log(Info.prod_drct_id)
-    let data = [Info.prod_drct_id, Info.prod_drct_id,];
+    console.log("인포내용");
+    console.log(Info.prod_drct_id);
+    let data = [Info.prod_drct_id, Info.prod_drct_id];
     console.log("service쪽");
     console.log(data);
     let list = await mariadb
-        .query("prodDrctDetailSearch", data)
-        .catch((err) => console.log(err));
+      .query("prodDrctDetailSearch", data)
+      .catch((err) => console.log(err));
     // console.log("조회 결과:", list);
     return list;
+  }
 };
 
 // 생산계획 조회페이지 다중검색조회
 const prodDrctBoardListSearch = async (Info) => {
-    let insertColumns = [
-        "prod_plan_id"
-        , "prod_plan_nm"
-        , "prod_expc_fr_dt"
-        , "prod_expc_to_dt"
-        , "prdt_id"
-        , "prdt_nm"
-        , "opt_nm"
-        , "reg_dt"
-    ];
+  let insertColumns = [
+    "prod_plan_id",
+    "prod_plan_nm",
+    "prod_expc_fr_dt",
+    "prod_expc_to_dt",
+    "prdt_id",
+    "prdt_nm",
+    "opt_nm",
+    "reg_dt",
+  ];
 
-    let data = convertObjToAry(Info, insertColumns);
-    console.log("service쪽");
-    console.log(data);
-    let list = await mariadb
-        .query("prodPlanBoardListSearch", data)
-        .catch((err) => console.log(err));
-    // console.log("조회 결과:", list);
-    return list;
+  let data = convertObjToAry(Info, insertColumns);
+  console.log("service쪽");
+  console.log(data);
+  let list = await mariadb
+    .query("prodPlanBoardListSearch", data)
+    .catch((err) => console.log(err));
+  // console.log("조회 결과:", list);
+  return list;
 };
 
 module.exports = {
-    prodDrctfindAll,
-    prodDrctDetafindAll,
-    prodDrctBoardListSearch,
+  prodDrctfindAll,
+  prodDrctDetafindAll,
+  prodDrctBoardListSearch,
 };

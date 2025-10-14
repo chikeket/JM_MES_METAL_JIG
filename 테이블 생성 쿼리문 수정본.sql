@@ -987,3 +987,21 @@ ALTER TABLE wrhous_wrhsdlvr ADD wrhous_wrhsdlvr_nm VARCHAR(100) NOT NULL;
 
 -- 기존 자재 발주 테이블에서 자재 발주 명 추가
 ALTER TABLE RSC_ORDR ADD RSC_ORDR_NM VARCHAR(100) NOT NULL;
+
+-- 자재 품질검수불량수량 테이블 추가 25.10.14
+CREATE TABLE rsc_qlty_insp_infer_qy(
+qlty_item_mng_id VARCHAR(100) NOT NULL,
+rsc_qlty_insp_id VARCHAR(100) NOT NULL,
+infer_qy INT DEFAULT 0)
+
+-- 완제품 품질검수불량수량 테이블 추가 25.10.14
+CREATE TABLE end_prdt_qlty_insp_infer_qy(
+qlty_item_mng_id VARCHAR(100) NOT NULL,
+end_prdt_qlty_insp_id VARCHAR(100) NOT NULL,
+infer_qy INT DEFAULT 0)
+
+-- 반제품 품질검수불량수량 테이블 추가 25.10.14
+CREATE TABLE semi_prdt_qlty_insp_infer_qy(
+qlty_item_mng_id VARCHAR(100) NOT NULL,
+semi_prdt_qlty_insp_id VARCHAR(100) NOT NULL,
+infer_qy INT DEFAULT 0)

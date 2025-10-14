@@ -8,7 +8,8 @@ async function getRcvordList(searchId) {
   // 여기서는 별도 가공 없이 그대로 반환 (total_qty 컬럼 명 일치 주의)
   return rows.map((r) => ({
     ...r,
-    status: r.st_nm || r.st, // 코드명 우선 사용
+    // 쿼리에서 계산된 status 사용 (모든 라인 st='J3'이면 '출고 완료', 아니면 '진행 중')
+    status: r.status || "진행 중",
   }));
 }
 
@@ -19,8 +20,8 @@ module.exports = {
     const rows = await mariadb.query("rcvordFindHeader", [id]);
     if (!rows.length) return null;
     const h = rows[0];
-    // status: 표시용 명칭, st: 코드 그대로
-    return { ...h, status: h.st_nm || h.st };
+    // 쿼리에서 계산된 status 사용
+    return { ...h, status: h.status || "진행 중" };
   },
   async getRcvordLines(id) {
     if (!id) return [];
@@ -34,84 +35,148 @@ module.exports = {
     await mariadb.query("rcvordDeleteHeader", [id]);
     return { ok: true };
   },
-  // 저장 (신규 + 수정 공통) - 트랜잭션 없이 단순 구현 (학습용)
+  // 저장 (신규 + 수정 공통) - 트랜잭션 + 라인 upsert(diff)로 FK 안전성 보장
   async saveRcvord(header, lines) {
     if (!header) throw new Error("header 누락");
     if (!Array.isArray(lines)) throw new Error("lines 형식 오류");
-    header.st = header.st || "J2";
     header.reg_dt = header.reg_dt || today();
 
-    // 이름만 들어온 경우( co_id, emp_id 없음 ) 이름 -> ID 매핑 시도
-    // 안전하게: 둘 다 비어있을 때만 기본값 적용
-    if (!header.co_id && header.co_nm) {
-      const coRows = await mariadb.query("coFindAll"); // 단순 전체 후 필터 (소규모 가정)
-      const found = coRows.find((r) => r.co_nm === header.co_nm);
-      if (found) header.co_id = found.co_id;
-    }
-    if (!header.emp_id && header.emp_nm) {
-      // 우선 정확히 일치 검색
-      const exact = await mariadb.query("empFindByName", [header.emp_nm]);
-      if (exact.length) header.emp_id = exact[0].emp_id;
-      else {
-        const like = await mariadb.query("empFindByNameLike", [header.emp_nm]);
-        if (like.length === 1) header.emp_id = like[0].emp_id; // 애매하면 자동선택하지 않음
-      }
-    }
-    // 그래도 없으면 (신규 Insert 시) 기본값으로 fallback
-    if (!header.co_id) header.co_id = "co001";
-    if (!header.emp_id) header.emp_id = "emp001";
+    const conn = await mariadb.getConnection();
+    try {
+      await conn.beginTransaction();
 
-    // 수주 ID 없으면 생성
-    if (!header.rcvord_id) {
-      const idRows = await mariadb.query("rcvordNewId");
-      header.rcvord_id = idRows[0]?.new_id;
-    }
-    const rcvordId = header.rcvord_id;
-
-    // 존재 여부
-    const exists = await mariadb.query("rcvordExists", [rcvordId]);
-    if (exists.length) {
-      await mariadb.query("rcvordUpdate", [
-        header.co_id,
-        header.emp_id,
-        header.reg_dt,
-        header.st,
-        header.rm || null,
-        rcvordId,
-      ]);
-    } else {
-      await mariadb.query("rcvordInsert", [
-        rcvordId,
-        header.co_id,
-        header.emp_id,
-        header.reg_dt,
-        header.st,
-        header.rm || null,
-      ]);
-    }
-
-    // 라인 재작성
-    await mariadb.query("rcvordDeleteLines", [rcvordId]);
-    for (const ln of lines) {
-      if (!ln.prdt_id || !ln.prdt_opt_id) {
-        throw new Error("라인 필수값 누락(prdt_id/prdt_opt_id)");
+      // 이름 -> ID 매핑
+      if (!header.co_id && header.co_nm) {
+        const coRows = await conn.query("SELECT co_id, co_nm FROM co");
+        const found = coRows.find((r) => r.co_nm === header.co_nm);
+        if (found) header.co_id = found.co_id;
       }
-      let lineId = ln.rcvord_deta_id;
-      if (!lineId) {
-        const lineRows = await mariadb.query("rcvordDetaNewId");
-        lineId = lineRows[0]?.new_id;
+      if (!header.emp_id && header.emp_nm) {
+        const exact = await conn.query(
+          "SELECT emp_id, emp_nm FROM emp WHERE emp_nm = ?",
+          [header.emp_nm]
+        );
+        if (exact.length) header.emp_id = exact[0].emp_id;
+        else {
+          const like = await conn.query(
+            "SELECT emp_id, emp_nm FROM emp WHERE emp_nm LIKE CONCAT('%', ?, '%')",
+            [header.emp_nm]
+          );
+          if (like.length === 1) header.emp_id = like[0].emp_id;
+        }
       }
-      await mariadb.query("rcvordInsertLine", [
-        lineId,
-        rcvordId,
-        ln.prdt_id,
-        ln.prdt_opt_id,
-        Number(ln.rcvord_qy || 0),
-        ln.paprd_dt || header.reg_dt,
-        ln.rm || null,
-      ]);
+      if (!header.co_id) header.co_id = "co001";
+      if (!header.emp_id) header.emp_id = "emp001";
+
+      // 수주 ID 발급(신규)
+      if (!header.rcvord_id) {
+        const idRows = await conn.query(
+          require("../database/sqlList.js").rcvordNewId
+        );
+        header.rcvord_id = idRows[0]?.new_id;
+      }
+      const rcvordId = header.rcvord_id;
+
+      // 헤더 upsert
+      const exists = await conn.query(
+        require("../database/sqlList.js").rcvordExists,
+        [rcvordId]
+      );
+      if (exists.length) {
+        await conn.query(require("../database/sqlList.js").rcvordUpdate, [
+          header.co_id,
+          header.emp_id,
+          header.reg_dt,
+          header.rm || null,
+          rcvordId,
+        ]);
+      } else {
+        await conn.query(require("../database/sqlList.js").rcvordInsert, [
+          rcvordId,
+          header.co_id,
+          header.emp_id,
+          header.reg_dt,
+          header.rm || null,
+        ]);
+      }
+
+      // 기존 라인 목록
+      const existLines = await conn.query(
+        require("../database/sqlList.js").rcvordFindLinesByDoc,
+        [rcvordId]
+      );
+      const existById = new Map(existLines.map((r) => [r.rcvord_deta_id, r]));
+
+      // upsert
+      for (const ln of lines) {
+        if (!ln.prdt_id || !ln.prdt_opt_id) {
+          throw new Error("라인 필수값 누락(prdt_id/prdt_opt_id)");
+        }
+        const detId = ln.rcvord_deta_id && String(ln.rcvord_deta_id).trim();
+        if (detId && existById.has(detId)) {
+          // update path
+          await conn.query(require("../database/sqlList.js").rcvordUpdateLine, [
+            ln.prdt_id,
+            ln.prdt_opt_id,
+            Number(ln.rcvord_qy || 0),
+            ln.paprd_dt || header.reg_dt,
+            ln.rm || null,
+            detId,
+          ]);
+          existById.delete(detId);
+        } else {
+          // insert path
+          let newId = detId;
+          if (!newId) {
+            const lineRows = await conn.query(
+              require("../database/sqlList.js").rcvordDetaNewId
+            );
+            newId = lineRows[0]?.new_id;
+          }
+          await conn.query(require("../database/sqlList.js").rcvordInsertLine, [
+            newId,
+            rcvordId,
+            ln.prdt_id,
+            ln.prdt_opt_id,
+            Number(ln.rcvord_qy || 0),
+            ln.paprd_dt || header.reg_dt,
+            ln.rm || null,
+          ]);
+        }
+      }
+
+      // 남은 기존 라인(프론트에서 제거된 것으로 간주) 삭제 시도
+      for (const [leftId] of existById) {
+        try {
+          await conn.query(
+            require("../database/sqlList.js").rcvordDeleteLineById,
+            [leftId]
+          );
+        } catch (err) {
+          // FK 참조 시 409를 유도하기 위해 에러 rethrow
+          const msg = String((err && err.message) || "");
+          if (
+            msg.includes("ER_ROW_IS_REFERENCED_2") ||
+            msg.toLowerCase().includes("foreign key")
+          ) {
+            throw new Error(
+              `외부 참조로 인해 라인(${leftId})을 삭제할 수 없습니다.`
+            );
+          }
+          throw err;
+        }
+      }
+
+      await conn.commit();
+      return { ok: true, rcvord_id: rcvordId };
+    } catch (err) {
+      try {
+        await conn.rollback();
+      } catch (_) {}
+      throw err;
+    } finally {
+      if (conn) conn.release();
     }
-    return { ok: true, rcvord_id: rcvordId };
   },
 };
 
