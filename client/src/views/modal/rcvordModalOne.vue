@@ -311,7 +311,6 @@ onMounted(() => {
 }
 :deep(.table-responsive tbody tr:hover) {
   background-color: #f8f9fa !important;
-  transform: scale(1.005);
 }
 /* Ensure cell background also changes to the same tone */
 :deep(.table-responsive tbody tr:hover) td {

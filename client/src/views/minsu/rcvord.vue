@@ -45,10 +45,6 @@
           <label>수주 등록 일자</label>
           <input type="date" v-model="header.orderDate" />
         </div>
-        <div class="field">
-          <label>총 요청 수량</label>
-          <input type="text" :value="formattedTotalQty" readonly />
-        </div>
         <div class="field field-col-span">
           <label>비고</label>
           <textarea v-model="header.note"></textarea>
@@ -307,12 +303,6 @@ function cancelEdit() {
   editingField.value = ''
   editValue.value = ''
 }
-
-// Computed total
-const totalQty = computed(() =>
-  lines.value.reduce((sum, l) => sum + (Number(l.requestQty) || 0), 0),
-)
-const formattedTotalQty = computed(() => formatNumber(totalQty.value))
 
 // 표준 높이를 위한 최소 빈행 (행 수가 적을 때만 채움)
 const GRID_VISIBLE_ROWS = 15
@@ -737,13 +727,15 @@ async function onSelectProduct(product) {
   transition: all 0.2s ease;
   background-color: #ffffff;
 }
-.data-grid tbody tr:hover:not(.empty-row) {
-  background-color: #f8f9fa;
-  transform: scale(1.005);
-}
-/* Hover 색상이 td 배경에 가려지지 않도록, hover 시 셀 배경도 변경 */
-.data-grid tbody tr:hover:not(.empty-row) td {
-  background-color: #f8f9fa !important;
+/* 파일1(CTable)과 동일한 테이블 hover 색을 변수로 참조해서 사용 */
+.data-grid tbody tr:hover:not(.empty-row),
+.data-grid tbody tr:hover:not(.empty-row) td,
+.data-grid tbody tr:hover:not(.empty-row) .input-like {
+  /* CoreUI(또는 Bootstrap) 변수 → 없으면 기본값 rgba(33,37,41,.075) */
+  background-color: var(
+    --cui-table-hover-bg,
+    var(--bs-table-hover-bg, rgba(33, 37, 41, 0.075))
+  ) !important;
 }
 .data-grid input,
 .data-grid select,
@@ -910,10 +902,6 @@ async function onSelectProduct(product) {
 .table-wrapper::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #a4a8ae, #7e838a);
 }
-/* 행 hover 시 내부 input-like 배경도 동일 톤으로 변경 */
-.data-grid tbody tr:hover:not(.empty-row) .input-like {
-  background-color: #f8f9fa !important;
-}
 /* rcvordSearch와 동일한 버튼 크기 반응형 규칙 */
 @media (max-width: 1600px) {
   .btn {
@@ -935,5 +923,80 @@ async function onSelectProduct(product) {
   .table-wrapper {
     height: calc(var(--row-h) * 5 + var(--thead-h));
   }
+}
+/* ===== 행 높이 고정 패치 (공통) ===== */
+.vars-scope {
+  /* 이미 선언돼 있으면 그대로 사용됩니다. */
+  --row-h: 34px;
+  --row-vpad: 6px; /* td 위/아래 패딩 */
+  --cell-inner-h: calc(var(--row-h) - (var(--row-vpad) * 2));
+}
+
+/* td 자체 패딩을 고정값으로 줄여서 내부요소가 넘치지 않게 */
+.data-grid tbody td {
+  padding-top: var(--row-vpad);
+  padding-bottom: var(--row-vpad);
+  vertical-align: middle; /* 텍스트/컨트롤 수직 중앙 */
+  overflow: hidden; /* 내부 컨트롤이 커도 tr을 밀지 않게 */
+}
+
+/* 표시용 블록은 한 줄 높이로 */
+.data-grid .cell-text {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: var(--cell-inner-h);
+  max-height: var(--cell-inner-h);
+}
+
+/* input-like(읽기 모양의 박스)도 고정 높이로 */
+.data-grid .input-like {
+  min-height: 0; /* 기존 26~28px 규칙 무력화 */
+  height: var(--cell-inner-h);
+  padding-top: 2px;
+  padding-bottom: 2px;
+  display: flex;
+  align-items: center; /* 수직 중앙 정렬 */
+  box-sizing: border-box;
+}
+
+/* 숫자/텍스트 영역 placeholder도 같은 라인 높이 */
+.data-grid .input-like .value {
+  line-height: 1.2;
+  max-height: var(--cell-inner-h);
+}
+
+/* 편집 입력창(텍스트/날짜)은 tr 높이 안에 맞춤 */
+.data-grid .editor-input {
+  height: var(--cell-inner-h) !important;
+  min-height: 0 !important;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  box-sizing: border-box;
+}
+
+/* 편집 textarea는 스크롤로 처리(행 확장 금지) */
+.data-grid .editor-textarea {
+  height: var(--cell-inner-h) !important;
+  min-height: 0 !important;
+  max-height: var(--cell-inner-h) !important;
+  overflow-y: auto !important;
+  box-sizing: border-box;
+}
+
+/* 긴 remark 입력도 tr을 밀지 않도록 ellipsis/스크롤 유지 */
+.data-grid .input-like--textarea {
+  height: var(--cell-inner-h);
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* (옵션) hover 시 내부 표시박스 배경도 같이 바뀌도록 유지 */
+.data-grid tbody tr:hover:not(.empty-row) .input-like {
+  background-color: var(
+    --cui-table-hover-bg,
+    var(--bs-table-hover-bg, rgba(33, 37, 41, 0.075))
+  ) !important;
 }
 </style>

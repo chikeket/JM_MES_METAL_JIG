@@ -2,31 +2,27 @@
   <div class="container-fluid h-100 d-flex flex-column p-3">
     <!-- 상단 툴바: 초기화 / 조회 (CompanyManage와 동일한 배치/스타일) -->
     <div class="d-flex justify-content-end mb-2 gap-2">
-      <button class="btn btn-secondary btn-sm" @click="onSearch">조회</button>
       <button class="btn btn-secondary btn-sm" @click="onReset">초기화</button>
+      <button class="btn btn-secondary btn-sm" @click="onSearch">조회</button>
     </div>
 
     <!-- 검색 필터 -->
     <div class="search-filter-box mb-2">
       <div class="row g-3 align-items-end">
         <div class="col-12 col-md-3">
-          <label class="form-label">수주 ID</label>
-          <input v-model="filters.rcvord_id" type="text" class="form-control" />
+          <label class="form-label">납품 ID</label>
+          <input v-model="filters.deli_id" type="text" class="form-control" />
         </div>
         <div class="col-12 col-md-3">
-          <label class="form-label">납품 업체 명</label>
-          <input v-model="filters.co_nm" type="text" class="form-control" />
-        </div>
-        <div class="col-12 col-md-3">
-          <label class="form-label">수주 담당자</label>
+          <label class="form-label">납품 담당자</label>
           <input v-model="filters.emp_nm" type="text" class="form-control" />
         </div>
         <div class="col-12 col-md-3">
-          <label class="form-label">수주 등록 일자</label>
+          <label class="form-label">납품 등록 일자</label>
           <div class="d-flex align-items-center gap-1">
-            <input v-model="filters.reg_dt_from" type="date" class="form-control" />
+            <input v-model="filters.deli_dt_from" type="date" class="form-control" />
             <span class="mx-1">~</span>
-            <input v-model="filters.reg_dt_to" type="date" class="form-control" />
+            <input v-model="filters.deli_dt_to" type="date" class="form-control" />
           </div>
         </div>
       </div>
@@ -45,111 +41,96 @@
                 No<span class="col-resizer" @mousedown="onResizerDown(0, $event)"></span>
               </th>
               <th class="th-resizable">
-                수주 ID<span class="col-resizer" @mousedown="onResizerDown(1, $event)"></span>
+                납품 ID<span class="col-resizer" @mousedown="onResizerDown(1, $event)"></span>
               </th>
               <th class="th-resizable">
-                수주 담당자<span class="col-resizer" @mousedown="onResizerDown(2, $event)"></span>
+                납품 담당자<span class="col-resizer" @mousedown="onResizerDown(2, $event)"></span>
               </th>
               <th class="th-resizable">
-                납품 업체 명<span class="col-resizer" @mousedown="onResizerDown(3, $event)"></span>
-              </th>
-              <th class="th-resizable">
-                제품 명<span class="col-resizer" @mousedown="onResizerDown(4, $event)"></span>
-              </th>
-              <th class="th-resizable">
-                제품 옵션 명<span class="col-resizer" @mousedown="onResizerDown(5, $event)"></span>
-              </th>
-              <th class="th-resizable">
-                규격<span class="col-resizer" @mousedown="onResizerDown(6, $event)"></span>
-              </th>
-              <th class="th-resizable">
-                단위<span class="col-resizer" @mousedown="onResizerDown(7, $event)"></span>
-              </th>
-              <th class="th-resizable">
-                요청 수량<span class="col-resizer" @mousedown="onResizerDown(8, $event)"></span>
-              </th>
-              <th class="th-resizable">
-                수주 등록 일자<span
+                납품 등록 일자<span
                   class="col-resizer"
-                  @mousedown="onResizerDown(9, $event)"
+                  @mousedown="onResizerDown(3, $event)"
                 ></span>
               </th>
               <th class="th-resizable">
-                납품 예정 일자<span
-                  class="col-resizer"
-                  @mousedown="onResizerDown(10, $event)"
-                ></span>
+                출고 상태<span class="col-resizer" @mousedown="onResizerDown(4, $event)"></span>
               </th>
               <th class="th-resizable">
-                출고 상태<span class="col-resizer" @mousedown="onResizerDown(11, $event)"></span>
+                비고<span class="col-resizer" @mousedown="onResizerDown(5, $event)"></span>
               </th>
-              <th class="th-resizable">
-                비고<span class="col-resizer" @mousedown="onResizerDown(12, $event)"></span>
+              <th class="th-resizable action-col">
+                납품 상세<span class="col-resizer" @mousedown="onResizerDown(6, $event)"></span>
               </th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(r, idx) in displayedRows" :key="idx">
               <td class="text-center">{{ idx + 1 }}</td>
-              <td class="text-start" :title="r.rcvord_id">{{ r.rcvord_id }}</td>
-              <td class="text-start" :title="r.emp_nm">{{ r.emp_nm }}</td>
-              <td class="text-start" :title="r.co_nm">{{ r.co_nm }}</td>
-              <td class="text-start" :title="r.prdt_nm">{{ r.prdt_nm || '' }}</td>
-              <td class="text-start" :title="r.opt_nm">{{ r.opt_nm || '' }}</td>
-              <td class="text-start" :title="r.spec">{{ r.spec || '' }}</td>
-              <td class="text-start" :title="r.unit">{{ r.unit || '' }}</td>
-              <td class="text-end" :title="formatNumber(r.rcvord_qy)">
-                {{ formatNumber(r.rcvord_qy) }}
+              <td class="text-start" :title="r.deli_id">{{ r.deli_id }}</td>
+              <td class="text-start" :title="r.emp_nm || r.emp_id">
+                {{ r.emp_nm || r.emp_id || '' }}
               </td>
-              <td class="text-start" :title="formatDate(r.reg_dt)">{{ formatDate(r.reg_dt) }}</td>
-              <td class="text-start" :title="formatDate(r.paprd_dt)">
-                {{ formatDate(r.paprd_dt) }}
-              </td>
-              <td class="text-start" :title="r.st_nm">{{ r.st_nm || '' }}</td>
+              <td class="text-start" :title="formatDate(r.deli_dt)">{{ formatDate(r.deli_dt) }}</td>
+              <td class="text-start" :title="computeDeliStatus(r)">{{ computeDeliStatus(r) }}</td>
               <td class="text-start" :title="r.rm">{{ r.rm || '' }}</td>
+              <td class="text-center">
+                <button class="btn btn-secondary btn-sm" @click="openOrderList(r)">
+                  수주 리스트
+                </button>
+              </td>
             </tr>
             <!-- 빈행 유지로 표준 높이 확보 -->
             <tr v-for="n in emptyRowCount" :key="'empty-' + n" class="empty-row">
-              <td colspan="13">&nbsp;</td>
+              <td colspan="7">&nbsp;</td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
+    <!-- 수주 리스트 모달 -->
+    <teleport to="body">
+      <DeliSearchModal
+        :visible="isDeliModalVisible"
+        :deli-id="selectedDeliId"
+        @close="isDeliModalVisible = false"
+      />
+    </teleport>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onBeforeUnmount } from 'vue'
 import axios from 'axios'
+import DeliSearchModal from '../modal/deliSearchModal.vue'
 
 // 검색 필터
 const filters = reactive({
-  rcvord_id: '',
-  co_nm: '',
+  deli_id: '',
   emp_nm: '',
-  reg_dt_from: '',
-  reg_dt_to: '',
+  deli_dt_from: '',
+  deli_dt_to: '',
 })
 
 // 결과 데이터
 const rows = ref([])
 
+// 수주 리스트 모달 상태
+const isDeliModalVisible = ref(false)
+const selectedDeliId = ref('')
+function openOrderList(row) {
+  selectedDeliId.value = row?.deli_id || ''
+  isDeliModalVisible.value = true
+}
+
 // 초기 컬럼 폭 (px) - 필요시 자유롭게 조절 가능
 const colWidths = ref([
-  '35px', // No
-  '120px', // 수주 ID
-  '100px', // 수주 담당자
-  '140px', // 납품 업체 명
-  '100px', // 제품 명
-  '100px', // 제품 옵션 명
-  '60px', // 규격
-  '60px', // 단위
-  '110px', // 요청 수량
-  '100px', // 수주 등록 일자
-  '100px', // 납품 예정 일자
+  '40px', // No
+  '140px', // 납품 ID
+  '140px', // 납품 담당자
+  '140px', // 납품 등록 일자
   '110px', // 출고 상태
   '300px', // 비고
+  '110px', // 납품 상세 버튼
 ])
 
 // 컬럼 리사이즈 상태 및 핸들러
@@ -212,22 +193,48 @@ function toDateStr(d) {
 const formatDate = toDateStr
 
 function onReset() {
-  filters.rcvord_id = ''
-  filters.co_nm = ''
+  filters.deli_id = ''
   filters.emp_nm = ''
-  filters.reg_dt_from = ''
-  filters.reg_dt_to = ''
+  filters.deli_dt_from = ''
+  filters.deli_dt_to = ''
   rows.value = []
 }
 
 async function onSearch() {
   try {
     const params = { ...filters }
-    const { data } = await axios.get('/api/rcvord-search', { params })
+    const { data } = await axios.get('/api/deli-search', { params })
     rows.value = Array.isArray(data?.data) ? data.data : []
   } catch (err) {
     console.error('검색 오류', err)
     alert('검색 중 오류가 발생했습니다.')
+  }
+}
+
+// 출고 상태 라벨 계산: 서버에서 status 주면 우선 사용, 없을 땐 모든 상태가 'J3'이면 "출고 완료", 아니면 "진행 중"
+function computeDeliStatus(row) {
+  try {
+    // 서버 응답의 status 문자열 우선 사용 (예: '출고 완료' | '진행 중')
+    if (typeof row?.status === 'string' && row.status.trim() !== '') return row.status
+
+    // 1) 백엔드가 미리 all J3 여부를 내려주는 경우
+    if (row?.deli_st_all_j3 === true) return '출고 완료'
+    if (row?.deli_st_all_j3 === false) return '진행 중'
+
+    // 2) 상태 배열을 내려주는 경우
+    if (Array.isArray(row?.deli_sts) && row.deli_sts.length > 0) {
+      return row.deli_sts.every((s) => s === 'J3') ? '출고 완료' : '진행 중'
+    }
+
+    // 3) 단일 상태 코드가 있는 경우(보수적 처리)
+    if (typeof row?.deli_st === 'string') {
+      return row.deli_st === 'J3' ? '출고 완료' : '진행 중'
+    }
+
+    // 4) 미정의면 진행 중으로 표기
+    return '진행 중'
+  } catch {
+    return '진행 중'
   }
 }
 </script>
@@ -480,5 +487,19 @@ body.resizing {
   .btn {
     padding: 0.4rem 1rem;
   }
+}
+
+/* 행 높이 계산에 맞게 액션열(7번째)만 세로 패딩 축소 */
+.data-table tbody td:nth-child(7) {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+/* 테이블 내 버튼을 컴팩트화(행 높이 35px 안에 딱 맞게) */
+.data-table tbody td:nth-child(7) .btn {
+  font-size: 12px;
+  line-height: 1.1;
+  padding: 0.15rem 0.5rem;
+  height: 22px; /* 패딩 포함해도 tr 35px 안 넘도록 */
 }
 </style>
