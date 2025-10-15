@@ -5,7 +5,7 @@ const selectRscOrdrDeta = `
 SELECT 
  b.insp_item_nm,
  b.basi_val,
- b.unit,
+ b.qlty_item_mng_id,
  b.eror_scope_min,
  b.eror_scope_max
 FROM qlty_item_deta a
@@ -19,7 +19,7 @@ const prdtQltyDeta = `
 SELECT 
  b.insp_item_nm,
  b.basi_val,
- b.unit,
+ b.qlty_item_mng_id,
  b.eror_scope_min,
  b.eror_scope_max
 FROM qlty_item_deta a
@@ -30,6 +30,6 @@ AND a.prdt_id = ?
 AND a.prdt_opt_id = ?`;
 
 module.exports = {
-    selectRscOrdrDeta,
-    prdtQltyDeta,
+  selectRscOrdrDeta,
+  prdtQltyDeta,
 };

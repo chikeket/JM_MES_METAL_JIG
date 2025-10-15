@@ -19,9 +19,9 @@
             placeholder="검색어 입력"
             style="width: 300px; flex-shrink: 0;"
           />
-          <div class="d-flex gap-2" style="flex-shrink: 0;">
-            <button class="btn btn-secondary" @click="resetSearch">초기화</button>
+          <div class="ms-auto d-flex gap-2">
             <button class="btn btn-secondary" @click="rscSearch">검색</button>
+            <button class="btn btn-secondary" @click="resetSearch">초기화</button>
           </div>
         </div>
 

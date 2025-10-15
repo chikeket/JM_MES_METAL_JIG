@@ -1,5 +1,4 @@
 const mariadb = require("../database/mapper.js");
-const sqlList = require("../database/sqlList.js");
 
 // 안전한 UUID 생성 (uuid 패키지 미설치 상황 대비)
 let uuidv4;
@@ -34,6 +33,84 @@ const toNumberSafe = (v, def = 0) => {
   }
   const n = Number(v);
   return Number.isFinite(n) ? n : def;
+};
+
+// 전체 창고 목록 조회 (품목 유형별 필터링 가능)
+const getAllWarehouses = async (info = {}) => {
+  console.log("[wrhousdlvr_service] getAllWarehouses 호출됨, info:", info);
+
+  const item_type_raw = (info.item_type ?? "").trim() || null;
+
+  // 매핑: 화면용 한글 -> DB 코드
+  const typeMap = {
+    자재: "E1",
+    반제품: "E2",
+    완제품: "E3",
+    E1: "E1",
+    E2: "E2",
+    E3: "E3",
+  };
+
+  const item_type = item_type_raw
+    ? typeMap[item_type_raw] || item_type_raw
+    : null;
+
+  console.log("[wrhousdlvr_service] item_type_raw:", item_type_raw);
+  console.log("[wrhousdlvr_service] mapped item_type:", item_type);
+
+  try {
+    let result;
+
+    if (item_type) {
+      // 품목 유형별 창고 필터링 - 기존 방식(sqlList 별칭) 사용
+      console.log(
+        "[wrhousdlvr_service] 별칭 방식으로 특정 품목유형 창고 조회:",
+        item_type
+      );
+      result = await mariadb.query("getWarehousesByItemType", [item_type]);
+    } else {
+      // 전체 창고 목록 - 기존 방식(sqlList 별칭) 사용
+      console.log("[wrhousdlvr_service] 별칭 방식으로 전체 창고 조회");
+      result = await mariadb.query("getWarehousesByNone");
+    }
+
+    console.log("[wrhousdlvr_service] getAllWarehouses result:", result);
+    return Array.isArray(result) ? result : [];
+  } catch (err) {
+    console.error("[wrhousdlvr_service] getAllWarehouses error:", err);
+    throw err;
+  }
+};
+
+// 전체 로케이션 목록 조회 (품목 유형별 필터링 가능)
+const getAllLocations = async (info = {}) => {
+  console.log("[wrhousdlvr_service] getAllLocations 호출됨, info:", info);
+
+  const warehouse_id = (info.warehouse_id ?? "").trim() || null;
+  console.log("[wrhousdlvr_service] warehouse_id:", warehouse_id);
+
+  try {
+    let result;
+
+    if (warehouse_id) {
+      // 특정 창고의 위치 조회 - 기존 방식(sqlList 별칭) 사용
+      console.log(
+        "[wrhousdlvr_service] 별칭 방식으로 특정 창고 위치 조회:",
+        warehouse_id
+      );
+      result = await mariadb.query("getLocationsByWarehouse", [warehouse_id]);
+    } else {
+      // 전체 위치 조회 - 기존 방식(sqlList 별칭) 사용
+      console.log("[wrhousdlvr_service] 별칭 방식으로 전체 위치 조회");
+      result = await mariadb.query("getLocationsByNone");
+    }
+
+    console.log("[wrhousdlvr_service] getAllLocations result:", result);
+    return Array.isArray(result) ? result : [];
+  } catch (err) {
+    console.error("[wrhousdlvr_service] getAllLocations error:", err);
+    throw err;
+  }
 };
 
 // 창고 입출고 거래 목록 조회 (로그인 사용자 기준 필터링)
@@ -124,15 +201,15 @@ const saveTransaction = async ({ transactionList, emp_id = null } = {}) => {
 
       // 기존 거래 존재 여부 확인
       if (txnId) {
-        exists = await conn.query(sqlList.existsWrhousTransaction, [txnId]);
+        exists = await mariadb.query("existsWrhousTransaction", [txnId]);
       }
 
       if (!txnId || !(exists && exists.length)) {
         // 신규 등록: ID 자동 생성
-        const gen = await conn.query(sqlList.createWrhousTransactionId);
+        const gen = await mariadb.query("createWrhousTransactionId");
         txnId = gen && gen[0] && gen[0].txn_id ? gen[0].txn_id : uuidv4();
 
-        await conn.query(sqlList.insertWrhousTransaction, [
+        await mariadb.query("insertWrhousTransaction", [
           txnId,
           txn.txn_type || "IN", // 기본값 입고
           txn.item_type || "",
@@ -149,7 +226,7 @@ const saveTransaction = async ({ transactionList, emp_id = null } = {}) => {
         console.log("[wrhousdlvr_service] inserted transaction id=", txnId);
       } else {
         // 기존 거래 수정
-        await conn.query(sqlList.updateWrhousTransaction, [
+        await mariadb.query("updateWrhousTransaction", [
           txn.txn_type || "IN",
           txn.item_type || "",
           txn.item_code || "",
@@ -197,7 +274,7 @@ const deleteTransaction = async (txnId) => {
     conn = await mariadb.getConnection();
     await conn.beginTransaction();
 
-    await conn.query(sqlList.deleteWrhousTransaction, [txnId]);
+    await mariadb.query("deleteWrhousTransaction", [txnId]);
 
     await conn.commit();
     return { isSuccessed: true };
@@ -229,7 +306,7 @@ const deleteSelectedTransactions = async (ids = []) => {
     await conn.beginTransaction();
 
     for (const id of list) {
-      await conn.query(sqlList.deleteWrhousTransaction, [id]);
+      await mariadb.query("deleteWrhousTransaction", [id]);
     }
 
     await conn.commit();
@@ -293,19 +370,15 @@ const getFinishedQualityInspectionList = async (
       normalizedInspStatus,
     });
 
+    // SQL에서 4개의 파라미터만 사용 (item_code 2개, item_name 2개)
     const params = [
-      normalizedItemCode,
-      normalizedItemCode,
-      normalizedItemCode,
-      normalizedItemName,
-      normalizedItemName,
-      normalizedItemName,
-      normalizedInspStatus,
-      normalizedInspStatus,
-      normalizedInspStatus,
+      normalizedItemCode, // ? = '' 체크용
+      normalizedItemCode, // LIKE 검색용
+      normalizedItemName, // ? = '' 체크용
+      normalizedItemName, // LIKE 검색용
     ];
 
-    const results = await mariadb.query("selectInspectionList", params);
+    const results = await mariadb.query("selectEndPrdtInspectionList", params);
 
     console.log(
       "[wrhousdlvr_service] 완제품 검사서 조회 결과:",
@@ -326,36 +399,32 @@ const getSemiQualityInspectionList = async (
   insp_status
 ) => {
   try {
-    console.log("[wrhousdlvr_service] 반제품 검사서 조회 - 임시 빈 배열 반환");
-    return [];
+    const normalizedItemCode = (item_code || "").trim();
+    const normalizedItemName = (item_name || "").trim();
+    const normalizedInspStatus = (insp_status || "").trim();
+    console.log("[wrhousdlvr_service] 반제품 검사서 조회", {
+      normalizedItemCode,
+      normalizedItemName,
+      normalizedInspStatus,
+    });
+
+    // SQL에서 4개의 파라미터만 사용 (item_code 2개, item_name 2개)
+    const params = [
+      normalizedItemCode, // ? = '' 체크용
+      normalizedItemCode, // LIKE 검색용
+      normalizedItemName, // ? = '' 체크용
+      normalizedItemName, // LIKE 검색용
+    ];
+
+    const results = await mariadb.query("selectSemiInspectionList", params);
+
+    console.log(
+      "[wrhousdlvr_service] 반제품 검사서 조회 결과:",
+      results.length + "건"
+    );
+    return results;
   } catch (error) {
     console.error("[wrhousdlvr_service] 반제품 검사서 조회 실패:", error);
-    throw error;
-  }
-};
-
-// 납품 상세 목록 조회 (임시 구현)
-const getDeliveryDetailList = async (item_code, item_name, delivery_status) => {
-  try {
-    console.log("[wrhousdlvr_service] 납품 상세 조회 - 임시 빈 배열 반환");
-    return [];
-  } catch (error) {
-    console.error("[wrhousdlvr_service] 납품 상세 조회 실패:", error);
-    throw error;
-  }
-};
-
-// 자재 불출 대상 목록 조회 (임시 구현)
-const getMaterialWithdrawalList = async (
-  item_code,
-  item_name,
-  withdrawal_status
-) => {
-  try {
-    console.log("[wrhousdlvr_service] 자재 불출 대상 조회 - 임시 빈 배열 반환");
-    return [];
-  } catch (error) {
-    console.error("[wrhousdlvr_service] 자재 불출 대상 조회 실패:", error);
     throw error;
   }
 };
@@ -377,16 +446,12 @@ const getRscQualityInspectionList = async (
       normalizedInspStatus,
     });
 
+    // SQL에서 4개의 파라미터만 사용 (item_code 2개, item_name 2개)
     const params = [
-      normalizedItemCode,
-      normalizedItemCode,
-      normalizedItemCode,
-      normalizedItemName,
-      normalizedItemName,
-      normalizedItemName,
-      normalizedInspStatus,
-      normalizedInspStatus,
-      normalizedInspStatus,
+      normalizedItemCode, // ? = '' 체크용
+      normalizedItemCode, // LIKE 검색용
+      normalizedItemName, // ? = '' 체크용
+      normalizedItemName, // LIKE 검색용
     ];
 
     const results = await mariadb.query("selectRscInspectionList", params);
@@ -399,6 +464,121 @@ const getRscQualityInspectionList = async (
     return results;
   } catch (error) {
     console.error("[wrhousdlvr_service] 자재 검사서 조회 실패:", error);
+    throw error;
+  }
+};
+
+// 납품 상세 목록 조회 (임시 구현)
+const getDeliveryDetailList = async (item_code, item_name, delivery_status) => {
+  try {
+    const normalizedItemCode = (item_code || "").trim();
+    const normalizedItemName = (item_name || "").trim();
+    const normalizedDeliStatus = (delivery_status || "").trim();
+    console.log("[wrhousdlvr_service] 납품 상세 조회: ", {
+      normalizedItemCode,
+      normalizedItemName,
+      normalizedDeliStatus,
+    });
+
+    const params = [
+      normalizedItemCode, // ? = '' 체크용
+      normalizedItemCode, // LIKE 검색용
+      normalizedItemName, // ? = '' 체크용
+      normalizedItemName, // LIKE 검색용
+    ];
+
+    const results = await mariadb.query("selectWarehouseProducts", params);
+
+    console.log(
+      "[wrhousdlvr_service] 완제품 납품 조회 결과:",
+      results.length + "건"
+    );
+
+    return results;
+  } catch (error) {
+    console.error("[wrhousdlvr_service] 납품 상세 조회 실패:", error);
+    throw error;
+  }
+};
+
+// 자재 불출 대상 목록 조회 (생산지시 → BOM 기반)
+const getMaterialWithdrawalList = async (item_code = "", item_name = "") => {
+  try {
+    const normalizedItemCode = (item_code || "").trim();
+    const normalizedItemName = (item_name || "").trim();
+
+    console.log("[wrhousdlvr_service] 자재 불출 대상 조회 파라미터:", {
+      normalizedItemCode,
+      normalizedItemName,
+    });
+
+    const params = [
+      normalizedItemCode, // ? = '' 체크용
+      normalizedItemCode, // LIKE 검색용
+      normalizedItemName, // ? = '' 체크용
+      normalizedItemName, // LIKE 검색용
+    ];
+
+    const results = await mariadb.query("selectMaterialWithdrawal", params);
+
+    console.log(
+      "[wrhousdlvr_service] 자재 불출 대상 조회 결과:",
+      results.length + "건"
+    );
+
+    return results.map((item) => ({
+      ...item,
+      insp_type: "materialWithdrawal",
+      insp_no: item.withdrawal_id,
+      insp_date: item.order_date,
+      pass_qty: item.remaining_qty,
+      insp_qty: item.required_qty,
+      insp_status: "대기",
+      insp_emp_name: item.emp_name,
+    }));
+  } catch (error) {
+    console.error("[wrhousdlvr_service] 자재 불출 대상 조회 실패:", error);
+    throw error;
+  }
+};
+
+// 완제품 납품 대상 목록 조회 (납품상세 기반)
+const getDeliveryProductsList = async (item_code = "", item_name = "") => {
+  try {
+    const normalizedItemCode = (item_code || "").trim();
+    const normalizedItemName = (item_name || "").trim();
+
+    console.log("[wrhousdlvr_service] 완제품 납품 대상 조회 파라미터:", {
+      normalizedItemCode,
+      normalizedItemName,
+    });
+
+    const params = [
+      normalizedItemCode, // ? = '' 체크용
+      normalizedItemCode, // LIKE 검색용
+      normalizedItemName, // ? = '' 체크용
+      normalizedItemName, // LIKE 검색용
+    ];
+
+    const results = await mariadb.query("selectDeliveryProducts", params);
+
+    console.log(
+      "[wrhousdlvr_service] 완제품 납품 대상 조회 결과:",
+      results.length + "건"
+    );
+
+    return results.map((item) => ({
+      ...item,
+      insp_type: "deliveryDetail",
+      insp_no: item.delivery_id,
+      insp_date: item.delivery_date,
+      pass_qty: item.remaining_qty,
+      insp_qty: item.delivery_qty,
+      insp_status: "대기",
+      insp_emp_name: item.emp_name,
+    }));
+  } catch (error) {
+    console.error("[wrhousdlvr_service] 완제품 납품 대상 조회 실패:", error);
     throw error;
   }
 };
@@ -439,20 +619,20 @@ const getInstructionInspectionList = async (searchParams) => {
 // LOT 번호 생성 함수
 const generateLotNumber = async (inspType) => {
   try {
-    let prefix = '';
-    
+    let prefix = "";
+
     switch (inspType) {
-      case 'materialQuality':
-        prefix = 'RSC_LOT_';
+      case "materialQuality":
+        prefix = "RSC_LOT_";
         break;
-      case 'semiQuality':
-        prefix = 'SEMI_LOT_';
+      case "semiQuality":
+        prefix = "SEMI_LOT_";
         break;
-      case 'finishedQuality':
-        prefix = 'PRD_LOT_';
+      case "finishedQuality":
+        prefix = "PRD_LOT_";
         break;
       default:
-        prefix = 'LOT_';
+        prefix = "LOT_";
         break;
     }
 
@@ -465,12 +645,14 @@ const generateLotNumber = async (inspType) => {
     `;
 
     const results = await mariadb.query(sql);
-    const lotNo = results?.[0]?.lot_no || `${prefix}${new Date().toISOString().slice(2, 7).replace('-', '')}001`;
+    const lotNo =
+      results?.[0]?.lot_no ||
+      `${prefix}${new Date().toISOString().slice(2, 7).replace("-", "")}001`;
 
     console.log(`[wrhousdlvr_service] 생성된 LOT 번호: ${lotNo}`);
     return lotNo;
   } catch (error) {
-    console.error('[wrhousdlvr_service] LOT 번호 생성 실패:', error);
+    console.error("[wrhousdlvr_service] LOT 번호 생성 실패:", error);
     throw error;
   }
 };
@@ -479,11 +661,11 @@ const generateLotNumber = async (inspType) => {
 const processTransactions = async (requestData) => {
   try {
     const { transactionList, emp_id } = requestData;
-    
+
     if (!Array.isArray(transactionList) || transactionList.length === 0) {
       return {
         isSuccessed: false,
-        error: '처리할 거래 데이터가 없습니다.'
+        error: "처리할 거래 데이터가 없습니다.",
       };
     }
 
@@ -502,12 +684,12 @@ const processTransactions = async (requestData) => {
         insp_no,
         insp_type,
         txn_date,
-        remark
+        remark,
       } = transaction;
 
       // LOT 번호 생성 (입고의 경우만)
       let lotNo = null;
-      if (txn_type === 'in' && insp_type) {
+      if (txn_type === "in" && insp_type) {
         lotNo = await generateLotNumber(insp_type);
       }
 
@@ -535,25 +717,30 @@ const processTransactions = async (requestData) => {
       `;
 
       // 기본 창고/구역 설정 (실제 환경에서는 동적으로 결정)
-      const warehouseId = 'WH_001'; // 메인 창고
-      const zoneId = item_type === '자재' ? 'ZONE_MAT_001' : 
-                     item_type === '반제품' ? 'ZONE_SEMI_001' : 'ZONE_PROD_001';
+      const warehouseId = "WH_001"; // 메인 창고
+      const zoneId =
+        item_type === "자재"
+          ? "ZONE_MAT_001"
+          : item_type === "반제품"
+          ? "ZONE_SEMI_001"
+          : "ZONE_PROD_001";
 
       const insertParams = [
         wrhousWrhsdlvrId,
         warehouseId,
         zoneId,
-        emp_id || 'EMP_001',
+        emp_id || "EMP_001",
         lotNo,
-        txn_type === 'in' ? '입고' : '출고',
+        txn_type === "in" ? "입고" : "출고",
         Number(qty),
         txn_date,
-        remark || `${txn_type === 'in' ? '입고' : '출고'} 처리 - 검사서: ${insp_no}`,
-        item_type === '자재' ? item_code : null,
-        item_type !== '자재' ? item_code : null,
-        item_type !== '자재' ? 'OPT_001' : null, // 기본 옵션
+        remark ||
+          `${txn_type === "in" ? "입고" : "출고"} 처리 - 검사서: ${insp_no}`,
+        item_type === "자재" ? item_code : null,
+        item_type !== "자재" ? item_code : null,
+        item_type !== "자재" ? "OPT_001" : null, // 기본 옵션
         item_spec,
-        item_unit
+        item_unit,
       ];
 
       await mariadb.query(insertSql, insertParams);
@@ -564,22 +751,21 @@ const processTransactions = async (requestData) => {
         item_code,
         item_name,
         qty: Number(qty),
-        txn_type
+        txn_type,
       });
     }
 
     return {
       isSuccessed: true,
       message: `${transactionList.length}건의 거래가 성공적으로 처리되었습니다.`,
-      data: processedTransactions
+      data: processedTransactions,
     };
-
   } catch (error) {
-    console.error('[wrhousdlvr_service] 거래 처리 실패:', error);
+    console.error("[wrhousdlvr_service] 거래 처리 실패:", error);
     return {
       isSuccessed: false,
-      error: '거래 처리 중 오류가 발생했습니다.',
-      details: error.message
+      error: "거래 처리 중 오류가 발생했습니다.",
+      details: error.message,
     };
   }
 };
@@ -587,86 +773,121 @@ const processTransactions = async (requestData) => {
 // ===== 창고 입출고 전용 검사서 조회 함수들 =====
 
 // 자재 품질검사서 목록 조회 (창고 입출고용)
-const getWarehouseRscInspections = async (item_code = '', item_name = '') => {
+const getWarehouseRscInspections = async (item_code = "", item_name = "") => {
   try {
-    console.log(`[wrhousdlvr_service] 창고용 자재 검사서 조회 - item_code: ${item_code}, item_name: ${item_name}`);
-    
+    console.log(
+      `[wrhousdlvr_service] 창고용 자재 검사서 조회 - item_code: ${item_code}, item_name: ${item_name}`
+    );
+
     const params = [item_code, item_code, item_name, item_name];
-    
+
     const results = await mariadb.query("selectRscInspectionList", params);
-    
-    console.log(`[wrhousdlvr_service] 창고용 자재 검사서 조회 결과: ${results?.length || 0}건`);
+
+    console.log(
+      `[wrhousdlvr_service] 창고용 자재 검사서 조회 결과: ${
+        results?.length || 0
+      }건`
+    );
     return results || [];
   } catch (error) {
-    console.error('[wrhousdlvr_service] 창고용 자재 검사서 조회 실패:', error);
+    console.error("[wrhousdlvr_service] 창고용 자재 검사서 조회 실패:", error);
     return [];
   }
 };
 
 // 반제품 품질검사서 목록 조회 (창고 입출고용)
-const getWarehouseSemiInspections = async (item_code = '', item_name = '') => {
+const getWarehouseSemiInspections = async (item_code = "", item_name = "") => {
   try {
-    console.log(`[wrhousdlvr_service] 창고용 반제품 검사서 조회 - item_code: ${item_code}, item_name: ${item_name}`);
-    
+    console.log(
+      `[wrhousdlvr_service] 창고용 반제품 검사서 조회 - item_code: ${item_code}, item_name: ${item_name}`
+    );
+
     const params = [item_code, item_code, item_name, item_name];
-    
+
     const results = await mariadb.query("selectSemiInspectionList", params);
-    
-    console.log(`[wrhousdlvr_service] 창고용 반제품 검사서 조회 결과: ${results?.length || 0}건`);
+
+    console.log(
+      `[wrhousdlvr_service] 창고용 반제품 검사서 조회 결과: ${
+        results?.length || 0
+      }건`
+    );
     return results || [];
   } catch (error) {
-    console.error('[wrhousdlvr_service] 창고용 반제품 검사서 조회 실패:', error);
+    console.error(
+      "[wrhousdlvr_service] 창고용 반제품 검사서 조회 실패:",
+      error
+    );
     return [];
   }
 };
 
 // 완제품 품질검사서 목록 조회 (창고 입출고용)
-const getWarehouseEndPrdtInspections = async (item_code = '', item_name = '') => {
+const getWarehouseEndPrdtInspections = async (
+  item_code = "",
+  item_name = ""
+) => {
   try {
-    console.log(`[wrhousdlvr_service] 창고용 완제품 검사서 조회 - item_code: ${item_code}, item_name: ${item_name}`);
-    
+    console.log(
+      `[wrhousdlvr_service] 창고용 완제품 검사서 조회 - item_code: ${item_code}, item_name: ${item_name}`
+    );
+
     const params = [item_code, item_code, item_name, item_name];
-    
+
     const results = await mariadb.query("selectEndPrdtInspectionList", params);
-    
-    console.log(`[wrhousdlvr_service] 창고용 완제품 검사서 조회 결과: ${results?.length || 0}건`);
+
+    console.log(
+      `[wrhousdlvr_service] 창고용 완제품 검사서 조회 결과: ${
+        results?.length || 0
+      }건`
+    );
     return results || [];
   } catch (error) {
-    console.error('[wrhousdlvr_service] 창고용 완제품 검사서 조회 실패:', error);
+    console.error(
+      "[wrhousdlvr_service] 창고용 완제품 검사서 조회 실패:",
+      error
+    );
+    return [];
+  }
+};
+
+// 납품서 기반 완제품 목록 조회
+const getWarehouseProducts = async (item_code = "", item_name = "") => {
+  try {
+    console.log(
+      `[wrhousdlvr_service] 창고 완제품 조회 - item_code: ${item_code}, item_name: ${item_name}`
+    );
+
+    const params = [item_code, item_code, item_name, item_name];
+
+    const results = await mariadb.query("selectWarehouseProducts", params);
+
+    console.log(
+      `[wrhousdlvr_service] 창고 완제품 조회 결과: ${results?.length || 0}건`
+    );
+    return results || [];
+  } catch (error) {
+    console.error("[wrhousdlvr_service] 창고 완제품 조회 실패:", error);
     return [];
   }
 };
 
 // 창고 자재 목록 조회 (자재 불출용)
-const getWarehouseMaterials = async (item_code = '', item_name = '') => {
+const getWarehouseMaterials = async (item_code = "", item_name = "") => {
   try {
-    console.log(`[wrhousdlvr_service] 창고 자재 조회 - item_code: ${item_code}, item_name: ${item_name}`);
-    
-    const params = [item_code, item_code, item_name, item_name];
-    
-    const results = await mariadb.query("selectWarehouseMaterials", params);
-    
-    console.log(`[wrhousdlvr_service] 창고 자재 조회 결과: ${results?.length || 0}건`);
-    return results || [];
-  } catch (error) {
-    console.error('[wrhousdlvr_service] 창고 자재 조회 실패:', error);
-    return [];
-  }
-};
+    console.log(
+      `[wrhousdlvr_service] 창고 자재 조회 - item_code: ${item_code}, item_name: ${item_name}`
+    );
 
-// 창고 완제품 목록 조회 (완제품 납품용)
-const getWarehouseProducts = async (item_code = '', item_name = '') => {
-  try {
-    console.log(`[wrhousdlvr_service] 창고 완제품 조회 - item_code: ${item_code}, item_name: ${item_name}`);
-    
     const params = [item_code, item_code, item_name, item_name];
-    
-    const results = await mariadb.query("selectWarehouseProducts", params);
-    
-    console.log(`[wrhousdlvr_service] 창고 완제품 조회 결과: ${results?.length || 0}건`);
+
+    const results = await mariadb.query("selectWarehouseMaterials", params);
+
+    console.log(
+      `[wrhousdlvr_service] 창고 자재 조회 결과: ${results?.length || 0}건`
+    );
     return results || [];
   } catch (error) {
-    console.error('[wrhousdlvr_service] 창고 완제품 조회 실패:', error);
+    console.error("[wrhousdlvr_service] 창고 자재 조회 실패:", error);
     return [];
   }
 };
@@ -692,11 +913,15 @@ module.exports = {
   generateLotNumber,
   processTransactions,
   // DB 쿼리 실행 헬퍼
-  executeQuery: (sql, params) => mariadb.query(sql, params),
   // 창고 입출고 전용 검사서 조회 함수들
   getWarehouseRscInspections,
   getWarehouseSemiInspections,
   getWarehouseEndPrdtInspections,
   getWarehouseMaterials,
   getWarehouseProducts,
+  // 새로운 출고 관련 기능들
+  getDeliveryProductsList,
+  // 창고 및 로케이션 조회 기능
+  getAllWarehouses,
+  getAllLocations,
 };

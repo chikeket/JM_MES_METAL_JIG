@@ -30,29 +30,20 @@ const connectionPool = mariadb.createPool({
 });
 
 // SQL 쿼리 실행 함수 (별칭으로 쿼리를 찾아서 실행)
-// mapper.js 수정
-const query = async (alias, values, connection) => {
-  const shouldRelease = !connection;
-  let conn = connection;
-  
+const query = async (alias, values) => {
+  let conn = null;
   try {
-    if (!conn) {
-      conn = await connectionPool.getConnection();
-    }
+    conn = await connectionPool.getConnection();
 
-    const sql = sqlList[alias];
-    
-    // 이 3줄 추가해서 디버깅
-    console.log('요청한 쿼리 이름:', alias);
-    console.log('찾은 SQL:', sql ? 'O' : 'X');
-    if (!sql) console.log('사용 가능한 쿼리들:', Object.keys(sqlList));
-    
+    const sql = sqlList[alias]; // 별칭으로 SQL 쿼리 찾기
     const result = await conn.query(sql, values);
     return result;
   } finally {
-    if (shouldRelease && conn) conn.release();
+    // 연결 리소스 정리 (반드시 실행)
+    if (conn) conn.release();
   }
 };
+
 // 직접 연결 객체 반환 함수 (트랜잭션 등 고급 기능 사용 시)
 let getConnection = async () => {
   return await connectionPool.getConnection();

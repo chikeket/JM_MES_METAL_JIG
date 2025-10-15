@@ -1,8 +1,10 @@
 const mariadb = require("../database/mapper.js");
 const { convertObjToAry } = require("../utils/converts.js");
 const sqlList = require("../database/sqlList.js");
-console.log('coUpdate 존재 여부:', !!sqlList.coUpdate);
-console.log('사용 가능한 쿼리들:', Object.keys(sqlList).filter(k => k.startsWith('co')));
+
+// console.log('🔍 coUpdate 존재 여부:', !!sqlList.coUpdate);
+// console.log('🔍 사용 가능한 쿼리들:', Object.keys(sqlList).filter(k => k.startsWith('co')));
+
 
 let coSelectColumns = [
   "type", "type",
@@ -85,6 +87,7 @@ const coUpdate = async (info) => {
       }
     }
 
+
 let updateColumns = [
   "co_id",
   "bizr_reg_no",
@@ -96,16 +99,17 @@ let updateColumns = [
   "original_co_id"    // WHERE 절
 ];
 
+
     info.original_co_id = originalId;
 
     let data = convertObjToAry(info, updateColumns);
-    console.log('UPDATE 파라미터:', data);  
+    console.log('UPDATE 파라미터:', data);
     const sqlList = require("../database/sqlList.js");
     console.log('사용 가능한 쿼리들:', Object.keys(sqlList));
     console.log('coUpdate 존재 여부:', !!sqlList.coUpdate);
     console.log('coUpdate 내용:', sqlList.coUpdate);
-     await mariadb.query("coUpdate", data, conn);
-     await conn.commit();
+    await mariadb.query("coUpdate", data, conn);
+    await conn.commit();
 
     return {
       isSuccessed: true,

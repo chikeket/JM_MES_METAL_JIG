@@ -37,6 +37,10 @@
           <label>납품 등록 일자</label>
           <input type="date" v-model="header.orderDate" />
         </div>
+        <div class="field">
+          <label>납품 상태</label>
+          <input type="text" v-model="header.deliveryStatus" readonly />
+        </div>
         <div class="field field-col-span">
           <label>비고</label>
           <textarea v-model="header.note"></textarea>
@@ -47,9 +51,9 @@
     <!-- 하단 버튼 -->
     <div class="sub-toolbar">
       <div class="sub-toolbar-buttons">
-        <button class="btn btn-xs btn-outline-secondary" @click="onResetLines">초기화</button>
-        <button class="btn btn-xs btn-outline-primary" @click="onAddRcvord">수주 추가</button>
-        <button class="btn btn-xs btn-outline-danger" @click="onDeleteSelected">
+        <button class="btn btn-sm btn-outline-secondary" @click="onResetLines">초기화</button>
+        <button class="btn btn-sm btn-outline-secondary" @click="onAddRcvord">수주 추가</button>
+        <button class="btn btn-sm btn-outline-danger" @click="onDeleteSelected">
           선택 수주 삭제
         </button>
       </div>
@@ -74,6 +78,7 @@
             <th class="dqy-col">기납품 수량</th>
             <th class="unqy-col">미납품 수량</th>
             <th class="tdqy-col">당회 총 납품 수량</th>
+            <th class="st-col">출고 상태</th>
             <th class="rm-col">비고</th>
           </tr>
         </thead>
@@ -116,10 +121,10 @@
             </td>
             <td
               class="cell-number editable"
-              @dblclick="row.remaining_qty > 0 && startEdit(row, 'requestQty')"
+              @click="row.remaining_qty > 0 && startEdit(row, 'requestQty')"
             >
               <template v-if="row.remaining_qty === 0">
-                <span>납품 완료</span>
+                <span>입력 불가</span>
               </template>
               <template v-else-if="isCellEditing(row, 'requestQty')">
                 <input
@@ -134,12 +139,19 @@
                 />
               </template>
               <template v-else>
-                <span :class="{ 'placeholder-text': !row.requestQty }">
-                  {{ row.requestQty ? formatNumber(row.requestQty) : '입력' }}
-                </span>
+                <div class="input-like input-like--compact input-like--number">
+                  <span class="value" :class="{ 'placeholder-text': !row.requestQty }">
+                    {{ row.requestQty ? formatNumber(row.requestQty) : '입력' }}
+                  </span>
+                </div>
               </template>
             </td>
-            <td class="cell-left editable" @dblclick="startEdit(row, 'remark')">
+            <td class="cell-left status-cell" :class="{ empty: !(row.statusName || '').trim() }">
+              <span class="cell-text" :title="row.statusName || ''">{{
+                row.statusName || ''
+              }}</span>
+            </td>
+            <td class="cell-left editable" @click="startEdit(row, 'remark')">
               <template v-if="isCellEditing(row, 'remark')">
                 <textarea
                   ref="remarkInputs"
@@ -152,16 +164,18 @@
                 ></textarea>
               </template>
               <template v-else>
-                <div class="ellipsis" :title="row.remark || ''">
-                  <span :class="{ 'placeholder-text': !row.remark }">
-                    {{ row.remark || '입력' }}
-                  </span>
+                <div class="input-like input-like--textarea">
+                  <div class="ellipsis" :title="row.remark || ''">
+                    <span class="value" :class="{ 'placeholder-text': !row.remark }">
+                      {{ row.remark || '입력' }}
+                    </span>
+                  </div>
                 </div>
               </template>
             </td>
           </tr>
-          <tr v-if="!lines.length">
-            <td colspan="13" class="empty">데이터가 없습니다.</td>
+          <tr v-for="n in emptyRowCount" :key="'empty-' + n" class="empty-row">
+            <td colspan="14">&nbsp;</td>
           </tr>
         </tbody>
       </table>
@@ -189,12 +203,17 @@ const header = reactive({
   status: '',
   statusCode: '',
   orderDate: '',
+  // 납품 상태(표시용): 기본 '진행 중', 모든 라인 deli_st 가 J3 일 때 '출고 완료'
+  deliveryStatus: '',
   note: '',
 })
 
 // Lines state
 let lineSeq = 1
 const lines = ref([])
+// 화면에 항상 보일 표준 행 수 (기본행)
+// 기본값: 15 (필요 시 숫자를 변경해서 조절하세요. 예: 10, 12, 20 등)
+const GRID_VISIBLE_ROWS = 15
 
 function createLine(partial = {}) {
   return {
@@ -212,6 +231,9 @@ function createLine(partial = {}) {
     unit: '',
     producible: '',
     paprd_dt: '',
+    // 출고 상태 (라인별): 코드와 명칭
+    st: '',
+    statusName: '',
     remark: '',
     _selected: false,
     ...partial,
@@ -300,6 +322,8 @@ const totalQty = computed(() =>
   lines.value.reduce((sum, l) => sum + (Number(l.requestQty) || 0), 0),
 )
 const formattedTotalQty = computed(() => formatNumber(totalQty.value))
+// 표준 높이를 위한 최소 빈행 (행 수가 적을 때만 채움)
+const emptyRowCount = computed(() => Math.max(0, GRID_VISIBLE_ROWS - lines.value.length))
 
 // Formatting helper
 function formatNumber(val) {
@@ -369,6 +393,7 @@ function onNew() {
     status: '',
     statusCode: '',
     orderDate: new Date().toISOString().slice(0, 10),
+    deliveryStatus: '',
     note: '',
   })
   applyDefaultOwnerIfEmpty()
@@ -421,13 +446,29 @@ async function onSelectDeli(row) {
             unit: l.unit || '',
             // 당회 총 납품 수량: 현재 문서의 라인 수량을 표시
             requestQty: Number(l.doc_line_qty || l.doc_delivered_qty || 0),
+            // 출고 상태 매핑 (서버에서 deli_st, deli_st_nm 제공 가정)
+            st: l.deli_st || '',
+            statusName: l.deli_st_nm || '',
             // 라인 비고만 사용 (문서 비고와 독립)
             remark: l.line_rm || '',
           }),
         )
       : []
+
+    // 납품 상태 계산: 모든 라인의 deli_st 가 'J3' 이면 '출고 완료', 아니면 '진행 중'
+    const allCompleted =
+      Array.isArray(ls) &&
+      ls.length > 0 &&
+      ls.every((l) => {
+        const code = (l?.deli_st || '').toString().trim()
+        return code === 'J3'
+      })
+    header.deliveryStatus = allCompleted ? '출고 완료' : '진행 중'
   } catch (err) {
     console.error('deli detail fetch error', err)
+    const msg =
+      err?.response?.data?.message || err?.message || '납품 상세 조회 중 오류가 발생했습니다.'
+    alert(msg)
   } finally {
     isDeliModalVisible.value = false
   }
@@ -590,6 +631,12 @@ async function onSelectRcvord(rcvordRow) {
 </script>
 
 <style scoped>
+:deep(*) {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
+    sans-serif;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
 .vars-scope {
   --radius-sm: 4px;
   --radius-md: 6px;
@@ -638,48 +685,50 @@ async function onSelectRcvord(rcvordRow) {
 }
 .btn {
   cursor: pointer;
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
-  background: var(--color-btn-gray);
+  border-radius: 8px;
+  border: none;
   color: var(--color-btn-text);
-  font-weight: 500;
-  transition: background 0.15s, filter 0.15s;
-  height: 32px;
-  line-height: 1;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: -0.3px;
+  transition: all 0.3s ease;
+  line-height: 1.5; /* rcvordSearch와 동일한 라인하이트로 높이 통일 */
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 0 14px;
-  font-size: 13px;
+  padding: 0.5rem 1.2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 .btn-sm,
 .btn-xs {
-  height: 32px;
-  padding: 0 14px;
+  height: auto;
+  padding: 0.5rem 1.2rem;
   font-size: 13px;
 }
 .btn-outline-secondary {
-  background: var(--color-btn-gray);
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
   color: var(--color-btn-text);
-  border-color: var(--color-btn-gray-hover);
 }
 .btn-outline-secondary:hover {
-  background: var(--color-btn-gray-hover);
+  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
 }
 .btn-outline-danger,
 .btn.btn-outline-danger,
 .btn-danger {
-  background: var(--color-btn-danger);
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
   color: var(--color-btn-text);
-  border-color: var(--color-btn-danger-hover);
 }
 .btn-outline-danger:hover,
 .btn-danger:hover {
-  background: var(--color-btn-danger-hover);
+  background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
 }
 .btn.btn-sm,
 .btn.btn-xs {
-  line-height: 1.2;
+  line-height: 1.5; /* rcvordSearch 상속값에 맞춤 */
 }
 .form-grid {
   display: grid;
@@ -695,17 +744,41 @@ async function onSelectRcvord(rcvordRow) {
   grid-column: 1 / -1;
 }
 .field label {
-  font-weight: 500;
+  font-weight: 600;
   margin-bottom: 4px;
+  font-size: 12px;
+  color: #2c3e50;
+  letter-spacing: -0.2px;
 }
 .field input[type='text'],
-.field input[type='date'],
+.field input[type='date'] {
+  font-size: 12px;
+  font-weight: 400;
+  padding: 0.4rem 0.75rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  background-color: #f8f9fa;
+  height: 34px;
+}
 .field textarea {
-  border: 1px solid #bbb;
-  border-radius: var(--radius-sm);
-  padding: 4px 6px;
-  background: #fff;
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 400;
+  padding: 0.4rem 0.75rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  background-color: #f8f9fa;
+}
+.field input[type='text']:focus,
+.field input[type='date']:focus,
+.field textarea:focus {
+  border-color: #6c757d;
+  box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.15);
+  background-color: #ffffff;
+}
+.field input[type='date'] {
+  font-size: 12px;
 }
 .field input[readonly],
 .field input[readonly='readonly'] {
@@ -720,6 +793,7 @@ async function onSelectRcvord(rcvordRow) {
 .table-wrapper {
   height: calc(var(--row-h) * var(--table-visible-rows) + var(--thead-h));
   overflow-y: auto;
+  overflow-x: hidden;
   border: 1px solid #bcbcbc;
   border-radius: var(--radius-md);
 }
@@ -732,18 +806,18 @@ async function onSelectRcvord(rcvordRow) {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  table-layout: auto;
+  table-layout: fixed;
   font-size: 12px;
 }
 .data-grid thead th {
   position: sticky;
   top: 0;
-  background: #212631;
+  background: linear-gradient(135deg, #495057 0%, #343a40 100%);
   color: #fff;
-  z-index: 2;
-  border: 1px solid #bcbcbc;
-  padding: 4px;
-  font-weight: 600;
+  z-index: 10;
+  border: none;
+  padding: 0.65rem 0.5rem;
+  font-weight: 700;
   text-align: center;
   height: var(--thead-h);
 }
@@ -754,13 +828,30 @@ async function onSelectRcvord(rcvordRow) {
   border-top-right-radius: var(--radius-sm);
 }
 .data-grid tbody td {
-  border: 1px solid #d4d4d4;
-  padding: 2px 4px;
-  background: #fff;
+  border: none;
+  border-bottom: 1px solid #e9ecef;
+  border-right: 2px solid #e9ecef; /* 열과 열 사이 세로 구분선 */
+  padding: 0.55rem 0.5rem;
+  background: #ffffff; /* hover 대비를 위해 명시 */
   height: var(--row-h);
+}
+.data-grid tbody td:last-child {
+  border-right: none; /* 마지막 컬럼은 우측 선 제거 */
 }
 .data-grid tbody tr {
   height: var(--row-h);
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+}
+/* 파일1(CTable)과 동일한 테이블 hover 색을 변수로 참조해서 사용 */
+.data-grid tbody tr:hover:not(.empty-row),
+.data-grid tbody tr:hover:not(.empty-row) td,
+.data-grid tbody tr:hover:not(.empty-row) .input-like {
+  /* CoreUI(또는 Bootstrap) 변수 → 없으면 기본값 rgba(33,37,41,.075) */
+  background-color: var(
+    --cui-table-hover-bg,
+    var(--bs-table-hover-bg, rgba(33, 37, 41, 0.075))
+  ) !important;
 }
 .data-grid input,
 .data-grid select,
@@ -805,6 +896,9 @@ async function onSelectRcvord(rcvordRow) {
 .tdqy-col {
   width: 160px;
 }
+.st-col {
+  width: 110px;
+}
 .dqy-col {
   width: 110px;
 }
@@ -824,7 +918,7 @@ async function onSelectRcvord(rcvordRow) {
   width: 80px;
 }
 .rm-col {
-  width: 450px;
+  width: 320px;
 }
 .cell-no {
   text-align: center;
@@ -865,11 +959,17 @@ async function onSelectRcvord(rcvordRow) {
   color: #b5b5b5;
   font-style: italic;
 }
+.status-cell.empty {
+  background: #e9e9e9;
+}
 .empty {
   text-align: center;
   padding: 24px 0;
   color: #777;
   font-size: 13px;
+}
+.empty-row td {
+  background: #fafbfc;
 }
 .cell-text {
   display: block;
@@ -879,20 +979,60 @@ async function onSelectRcvord(rcvordRow) {
 .data-grid td:not(.editable) {
   cursor: default;
 }
+.input-like {
+  display: block;
+  width: 100%;
+  background-color: #ffffff; /* 기본은 흰색으로 두고 */
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 0.25rem 0.5rem;
+  min-height: 28px;
+  line-height: 1.2;
+}
+.input-like--compact {
+  padding: 0.2rem 0.5rem;
+  min-height: 26px;
+}
+.input-like--number {
+  text-align: right;
+}
+.input-like--textarea {
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+}
+.input-like .value {
+  display: inline-block;
+  color: #2c3e50;
+}
+.input-like .placeholder-text {
+  color: #b5b5b5;
+}
+.table-wrapper {
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
 .table-wrapper::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
 }
 .table-wrapper::-webkit-scrollbar-track {
-  background: #f0f0f0;
-  border-radius: var(--radius-sm);
+  background: rgba(240, 240, 240, 0.6);
+  border-radius: 10px;
 }
 .table-wrapper::-webkit-scrollbar-thumb {
-  background: #c0c0c0;
-  border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, #bfc2c7, #9ea2a8);
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
 }
 .table-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #a0a0a0;
+  background: linear-gradient(180deg, #a4a8ae, #7e838a);
+}
+/* rcvordSearch와 동일한 버튼 크기 반응형 규칙 */
+@media (max-width: 1600px) {
+  .btn {
+    font-size: 11px !important;
+    padding: 0.4rem 1rem;
+  }
 }
 @media (max-height: 900px) {
   .table-wrapper {
@@ -908,5 +1048,81 @@ async function onSelectRcvord(rcvordRow) {
   .table-wrapper {
     height: calc(var(--row-h) * 5 + var(--thead-h));
   }
+}
+
+/* ===== 행 높이 고정 패치 (공통) ===== */
+.vars-scope {
+  /* 이미 선언돼 있으면 그대로 사용됩니다. */
+  --row-h: 34px;
+  --row-vpad: 6px; /* td 위/아래 패딩 */
+  --cell-inner-h: calc(var(--row-h) - (var(--row-vpad) * 2));
+}
+
+/* td 자체 패딩을 고정값으로 줄여서 내부요소가 넘치지 않게 */
+.data-grid tbody td {
+  padding-top: var(--row-vpad);
+  padding-bottom: var(--row-vpad);
+  vertical-align: middle; /* 텍스트/컨트롤 수직 중앙 */
+  overflow: hidden; /* 내부 컨트롤이 커도 tr을 밀지 않게 */
+}
+
+/* 표시용 블록은 한 줄 높이로 */
+.data-grid .cell-text {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: var(--cell-inner-h);
+  max-height: var(--cell-inner-h);
+}
+
+/* input-like(읽기 모양의 박스)도 고정 높이로 */
+.data-grid .input-like {
+  min-height: 0; /* 기존 26~28px 규칙 무력화 */
+  height: var(--cell-inner-h);
+  padding-top: 2px;
+  padding-bottom: 2px;
+  display: flex;
+  align-items: center; /* 수직 중앙 정렬 */
+  box-sizing: border-box;
+}
+
+/* 숫자/텍스트 영역 placeholder도 같은 라인 높이 */
+.data-grid .input-like .value {
+  line-height: 1.2;
+  max-height: var(--cell-inner-h);
+}
+
+/* 편집 입력창(텍스트/날짜)은 tr 높이 안에 맞춤 */
+.data-grid .editor-input {
+  height: var(--cell-inner-h) !important;
+  min-height: 0 !important;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  box-sizing: border-box;
+}
+
+/* 편집 textarea는 스크롤로 처리(행 확장 금지) */
+.data-grid .editor-textarea {
+  height: var(--cell-inner-h) !important;
+  min-height: 0 !important;
+  max-height: var(--cell-inner-h) !important;
+  overflow-y: auto !important;
+  box-sizing: border-box;
+}
+
+/* 긴 remark 입력도 tr을 밀지 않도록 ellipsis/스크롤 유지 */
+.data-grid .input-like--textarea {
+  height: var(--cell-inner-h);
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* (옵션) hover 시 내부 표시박스 배경도 같이 바뀌도록 유지 */
+.data-grid tbody tr:hover:not(.empty-row) .input-like {
+  background-color: var(
+    --cui-table-hover-bg,
+    var(--bs-table-hover-bg, rgba(33, 37, 41, 0.075))
+  ) !important;
 }
 </style>
