@@ -65,6 +65,11 @@ const routes = [
             name: 'deli',
             component: () => import('@/views/minsu/deli.vue'),
           },
+          {
+            path: '/Minsu/deli_search',
+            name: 'deli_search',
+            component: () => import('@/views/minsu/deliSearch.vue'),
+          },
         ],
       },
       {

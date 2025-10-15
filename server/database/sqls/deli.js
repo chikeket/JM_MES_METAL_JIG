@@ -62,10 +62,15 @@ SELECT
   dd.deli_qy AS doc_line_qty,
   dd.deli_st AS deli_st,
   c.co_nm,
+  e.emp_nm,
   p.prdt_nm,
   o.opt_nm,
   p.spec,
   p.unit,
+  r.reg_dt AS rcv_reg_dt,
+  r.rm AS rcv_rm,
+  rd.st AS rcv_deta_st,
+  sc_rdst.sub_code_nm AS rcv_deta_st_nm,
   dd.rm AS line_rm,
   rd.rcvord_qy AS total_req_qty,
   IFNULL(delivered.delivered_qty, 0) AS delivered_qty,
@@ -76,11 +81,13 @@ SELECT
 FROM deli_deta dd
 JOIN rcvord_deta rd ON rd.rcvord_deta_id = dd.rcvord_deta_id
 JOIN rcvord r ON r.rcvord_id = rd.rcvord_id
+JOIN emp e ON e.emp_id = r.emp_id
 JOIN co c ON c.co_id = r.co_id
 JOIN prdt p ON p.prdt_id = rd.prdt_id
 JOIN prdt_opt o ON o.prdt_opt_id = rd.prdt_opt_id
 JOIN deli h ON h.deli_id = dd.deli_id
 LEFT JOIN sub_code sc_dst ON sc_dst.sub_code_id = dd.deli_st
+LEFT JOIN sub_code sc_rdst ON sc_rdst.sub_code_id = rd.st
 LEFT JOIN delivered ON delivered.rcvord_deta_id = rd.rcvord_deta_id
 LEFT JOIN doc ON doc.deli_id = dd.deli_id AND doc.rcvord_deta_id = rd.rcvord_deta_id
 WHERE dd.deli_id = ?
@@ -139,6 +146,35 @@ const deliDetaNewId = `
   WHERE SUBSTR(deli_deta_id, 4, 6) = DATE_FORMAT(NOW(), '%Y%m')
 `;
 
+// 납품 검색 리스트(조회 화면용)
+// 컬럼: deli_id, emp_nm, deli_dt, status(출고 완료/진행 중), rm
+// 필터: deli_id LIKE, emp_nm LIKE, deli_dt range
+const deliSearchList = `
+  SELECT
+    d.deli_id,
+    e.emp_nm,
+    d.deli_dt,
+    d.rm,
+    (
+      SELECT CASE 
+               WHEN COUNT(*) > 0 
+                    AND SUM(CASE WHEN dd.deli_st = 'J3' THEN 1 ELSE 0 END) = COUNT(*)
+                 THEN '출고 완료' 
+               ELSE '진행 중' 
+             END
+      FROM deli_deta dd
+      WHERE dd.deli_id = d.deli_id
+    ) AS status
+  FROM deli d
+  JOIN emp e ON e.emp_id = d.emp_id
+  WHERE
+    (? = '' OR d.deli_id LIKE CONCAT('%', ?, '%'))
+    AND (? = '' OR e.emp_nm LIKE CONCAT('%', ?, '%'))
+    AND (? = '' OR d.deli_dt >= ?)
+    AND (? = '' OR d.deli_dt <= ?)
+  ORDER BY d.deli_id DESC
+`;
+
 module.exports = {
   deliModalFind,
   deliFindHeader,
@@ -155,4 +191,5 @@ module.exports = {
   deliDeliveredSumByRcvDetaListBeforeDt,
   deliNewId,
   deliDetaNewId,
+  deliSearchList,
 };

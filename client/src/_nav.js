@@ -129,6 +129,11 @@ export default [
         name: '납품 관리',
         to: '/Minsu/deli',
       },
+      {
+        component: 'CNavItem',
+        name: '납품 조회',
+        to: '/Minsu/deli_search',
+      },
     ],
   },
   {
