@@ -96,6 +96,130 @@ ORDER BY spqi.insp_dt ASC,
 LIMIT 200
 `;
 
+// 완제품 납품 대상 조회 (납품 상세) (사용)
+const selectDeliveryProducts = `
+SELECT  dd.deli_deta_id AS insp_no,
+        rd.prdt_id AS item_code,
+        p.prdt_nm AS item_name,
+        rd.prdt_opt_id AS opt_code,
+        po.opt_nm AS opt_name,
+        dd.deli_qy  AS pass_qty,
+        p.spec AS item_spec,
+        p.unit AS item_unit,
+        CASE 
+          WHEN dd.deli_st = 'J1' THEN '등록'
+          WHEN dd.deli_st = 'J2' THEN '진행 중'
+          ELSE '진행 완료'
+        END AS insp_status,
+        DATE_FORMAT(d.deli_dt, '%Y-%m-%d') AS insp_date,
+        e.emp_nm AS insp_emp_name,
+        dd.RM AS rm
+FROM    deli_deta dd 
+JOIN    deli d ON dd.deli_id = d.deli_id
+JOIN    rcvord_deta rd ON dd.rcvord_deta_id = rd.rcvord_deta_id
+JOIN    prdt p ON rd.prdt_id = p.prdt_id
+JOIN    prdt_opt po ON rd.prdt_opt_id = po.prdt_opt_id
+JOIN    emp e ON d.emp_id = e.emp_id
+WHERE   dd.deli_st IN ('J1', 'J2')
+  AND   (dd.deli_qy) > 0
+  AND   (? = '' OR rd.prdt_id LIKE CONCAT('%', ?, '%'))
+  AND   (? = '' OR p.prdt_nm LIKE CONCAT('%', ?, '%'))
+ORDER BY d.deli_dt DESC, SUBSTR(dd.deli_deta_id, -3) DESC
+LIMIT 200
+`;
+
+// 생산지시 상세 목록 조회 (상단 그리드용 - 완제품 정보)
+const selectProductionOrderDetails = `
+SELECT 
+  pdd.prod_drct_deta_id as withdrawal_id,
+  pd.prod_drct_id as production_order_id,
+  '완제품' as item_type,
+  pdd.prdt_id as item_code,
+  p.prdt_nm as item_name,
+  pdd.prdt_opt_id as opt_code,
+  po.opt_nm as opt_name,
+  p.spec as item_spec,
+  p.unit as item_unit,
+  pdd.drct_qy as required_qty,
+  DATE_FORMAT(pd.reg_dt, '%Y-%m-%d') as order_date,
+  pd.emp_id as emp_id,
+  e.emp_nm as emp_name
+FROM prod_drct_deta pdd
+JOIN prod_drct pd ON pdd.prod_drct_id = pd.prod_drct_id
+JOIN prdt p ON pdd.prdt_id = p.prdt_id
+JOIN prdt_opt po ON pdd.prdt_opt_id = po.prdt_opt_id
+JOIN emp e ON pd.emp_id = e.emp_id
+WHERE pdd.drct_qy > 0
+  AND (? = '' OR pdd.prdt_id LIKE CONCAT('%', ?, '%'))
+  AND (? = '' OR p.prdt_nm LIKE CONCAT('%', ?, '%'))
+ORDER BY pd.reg_dt DESC, p.prdt_nm
+LIMIT 200
+`;
+
+// 특정 생산지시의 BOM 자재 목록 조회 (하단 그리드용)
+const selectMaterialByProductionOrder = `
+SELECT 
+  pdd.prod_drct_deta_id as withdrawal_id,
+  '자재' as item_type,
+  bd.rsc_id as item_code,
+  r.rsc_nm as item_name,
+  '' as opt_code,
+  '' as opt_name,
+  r.spec as item_spec,
+  r.unit as item_unit,
+  bd.rec_qy as bom_qty,
+  pdd.drct_qy as order_qty,
+  ROUND(pdd.drct_qy * bd.rec_qy) as required_qty,
+  COALESCE(0, 0) as withdrawn_qty,
+  ROUND(pdd.drct_qy * bd.rec_qy) as remaining_qty
+FROM prod_drct_deta pdd
+JOIN bom b ON pdd.prdt_id = b.prdt_id
+JOIN bom_deta bd ON b.bom_id = bd.bom_id
+JOIN rsc r ON bd.rsc_id = r.rsc_id
+WHERE pdd.prod_drct_deta_id = ?
+  AND ROUND(pdd.drct_qy * bd.rec_qy) > 0
+ORDER BY r.rsc_nm
+`;
+
+// 자재 불출 대상 조회 (생산지시 상세 → BOM 기반) (기존 통합 쿼리)
+const selectMaterialWithdrawal = `
+SELECT 
+  pdd.prod_drct_deta_id as withdrawal_id,
+  pd.prod_drct_id as production_order_id,
+  pdd.prdt_id as item_code,
+  p.prdt_nm as item_name,
+  p.spec as item_spec,
+  p.unit as item_unit,
+  pdd.prdt_opt_id as product_opt_id,
+  po.opt_nm as product_opt_name,
+  pdd.drct_qy as required_qty,
+  bd.rsc_id,
+  r.rsc_nm,
+  r.spec,
+  r.unit,
+  bd.rec_qy as bom_qty,
+  ROUND(pdd.drct_qy * bd.rec_qy) as required_rsc_qty,
+  DATE_FORMAT(pd.reg_dt, '%Y-%m-%d') as order_date,
+  pd.emp_id as emp_id,
+  e.emp_nm as emp_name,
+  COALESCE(0, 0) as withdrawn_qty,
+  ROUND(pdd.drct_qy * bd.rec_qy) as remaining_qty
+FROM prod_drct_deta pdd
+LEFT OUTER JOIN rwmatr_rtun_trget rrt ON pdd.prod_drct_deta_id = rrt.prod_drct_deta_id
+JOIN prod_drct pd ON pdd.prod_drct_id = pd.prod_drct_id
+JOIN prdt p ON pdd.prdt_id = p.prdt_id
+JOIN prdt_opt po ON pdd.prdt_opt_id = po.prdt_opt_id
+JOIN bom b ON pdd.prdt_id = b.prdt_id
+JOIN bom_deta bd ON b.bom_id = bd.bom_id
+JOIN rsc r ON bd.rsc_id = r.rsc_id
+JOIN emp e ON pd.emp_id = e.emp_id
+WHERE ROUND(pdd.drct_qy * bd.rec_qy) > 0
+  AND (? = '' OR bd.rsc_id LIKE CONCAT('%', ?, '%'))
+  AND (? = '' OR r.rsc_nm LIKE CONCAT('%', ?, '%'))
+ORDER BY pd.reg_dt DESC, p.prdt_nm, r.rsc_nm
+LIMIT 200
+`;
+
 // 창고 입출고 거래 목록 조회 (사용자별 필터링)
 const selectWrhousTransactionList = `
 SELECT
@@ -155,7 +279,7 @@ ORDER BY qi.INSP_DT DESC
 LIMIT 200
 `;
 
-// 창고 입출고 거래 등록
+// 창고 입출고 거래 등록 (LOT 번호 포함)
 const insertWrhousTransaction = `
 INSERT INTO WRHOUS_WRHSDLVR (
   WRHSDLVR_ID,
@@ -170,9 +294,10 @@ INSERT INTO WRHOUS_WRHSDLVR (
   WRHOUS_ID,
   ZONE_ID,
   EMP_ID,
+  LOT_NO,
   REG_DT,
   RM
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
 `;
 
 // 창고 입출고 거래 수정
@@ -208,12 +333,12 @@ const existsWrhousTransaction = `
 SELECT 1 FROM WRHOUS_WRHSDLVR WHERE WRHSDLVR_ID = ? LIMIT 1
 `;
 
-// 거래 ID 자동 생성 (예: WTX2501001)
+// 거래 ID 자동 생성 (예: WRH_IN_251001, WRH_OUT_251001)
 const createWrhousTransactionId = `
-SELECT CONCAT('WTX', CONCAT(DATE_FORMAT(NOW(), '%y%m'),
+SELECT CONCAT(?, CONCAT(DATE_FORMAT(NOW(), '%y%m'),
   LPAD(IFNULL(MAX(SUBSTR(WRHSDLVR_ID, -3)), 0) + 1, 3, '0'))) "txn_id"
 FROM WRHOUS_WRHSDLVR
-WHERE SUBSTR(WRHSDLVR_ID, 4, 4) = DATE_FORMAT(NOW(), '%y%m')
+WHERE WRHSDLVR_ID LIKE CONCAT(?, DATE_FORMAT(NOW(), '%y%m'), '%')
 `;
 
 // 현재 재고 현황 조회
@@ -296,86 +421,6 @@ WHERE qi.PASS_QY > 0
   AND (? = '' OR p.prdt_nm LIKE CONCAT('%', ?, '%'))
 ORDER BY qi.INSP_DT DESC
 LIMIT 100
-`;
-
-// 자재 불출 대상 조회 (생산지시 상세 → BOM 기반)
-const selectMaterialWithdrawal = `
-SELECT 
-  pdd.PRDT_DRCT_DETA_ID as withdrawal_id,
-  pd.PRDT_DRCT_ID as production_order_id,
-  pd.PRDT_ID as product_code,
-  p.prdt_nm as product_name,
-  pdd.DRCT_QY as order_qty,
-  r.RSC_ID as item_code,
-  r.RSC_NM as item_name,
-  r.SPEC as item_spec,
-  r.UNIT as item_unit,
-  b.QY as bom_qty,
-  (pdd.DRCT_QY * b.QY) as required_qty,
-  DATE_FORMAT(pd.DRCT_DT, '%Y-%m-%d') as order_date,
-  pd.EMP_ID as emp_id,
-  e.emp_nm as emp_name,
-  COALESCE(withdrawn.withdrawn_qty, 0) as withdrawn_qty,
-  ((pdd.DRCT_QY * b.QY) - COALESCE(withdrawn.withdrawn_qty, 0)) as remaining_qty
-FROM PRDT_DRCT_DETA pdd
-JOIN PRDT_DRCT pd ON pdd.PRDT_DRCT_ID = pd.PRDT_DRCT_ID
-JOIN prdt p ON pd.PRDT_ID = p.prdt_id
-JOIN BOM b ON p.prdt_id = b.PRDT_ID
-JOIN RSC r ON b.RSC_ID = r.RSC_ID
-JOIN emp e ON pd.EMP_ID = e.emp_id
-LEFT JOIN (
-  SELECT 
-    SOURCE_ID as source_id,
-    ITEM_CODE as item_code,
-    SUM(QY) as withdrawn_qty
-  FROM WRHOUS_WRHSDLVR 
-  WHERE DLVR_TY = 'OUT' 
-    AND SOURCE_TY = 'material_withdrawal'
-  GROUP BY SOURCE_ID, ITEM_CODE
-) withdrawn ON pdd.PRDT_DRCT_DETA_ID = withdrawn.source_id AND r.RSC_ID = withdrawn.item_code
-WHERE pdd.ST = 'M1'
-  AND ((pdd.DRCT_QY * b.QY) - COALESCE(withdrawn.withdrawn_qty, 0)) > 0
-  AND (? = '' OR r.RSC_ID LIKE CONCAT('%', ?, '%'))
-  AND (? = '' OR r.RSC_NM LIKE CONCAT('%', ?, '%'))
-ORDER BY pd.DRCT_DT DESC, p.prdt_nm, r.RSC_NM
-LIMIT 200
-`;
-
-// 완제품 납품 대상 조회 (납품 상세)
-const selectDeliveryProducts = `
-SELECT 
-  dd.DELI_DETA_ID as delivery_id,
-  d.DELI_ID as delivery_order_id,
-  dd.PRDT_ID as item_code,
-  p.prdt_nm as item_name,
-  p.spec as item_spec,
-  p.unit as item_unit,
-  dd.QY as delivery_qty,
-  DATE_FORMAT(d.DELI_DT, '%Y-%m-%d') as delivery_date,
-  d.EMP_ID as emp_id,
-  e.emp_nm as emp_name,
-  COALESCE(delivered.delivered_qty, 0) as delivered_qty,
-  (dd.QY - COALESCE(delivered.delivered_qty, 0)) as remaining_qty
-FROM DELI_DETA dd
-JOIN DELI d ON dd.DELI_ID = d.DELI_ID
-JOIN prdt p ON dd.PRDT_ID = p.prdt_id
-JOIN emp e ON d.EMP_ID = e.emp_id
-LEFT JOIN (
-  SELECT 
-    SOURCE_ID as source_id,
-    ITEM_CODE as item_code,
-    SUM(QY) as delivered_qty
-  FROM WRHOUS_WRHSDLVR 
-  WHERE DLVR_TY = 'OUT' 
-    AND SOURCE_TY = 'delivery'
-  GROUP BY SOURCE_ID, ITEM_CODE
-) delivered ON dd.DELI_DETA_ID = delivered.source_id AND dd.PRDT_ID = delivered.item_code
-WHERE d.ST = 'M1'
-  AND (dd.QY - COALESCE(delivered.delivered_qty, 0)) > 0
-  AND (? = '' OR dd.PRDT_ID LIKE CONCAT('%', ?, '%'))
-  AND (? = '' OR p.prdt_nm LIKE CONCAT('%', ?, '%'))
-ORDER BY d.DELI_DT DESC, p.prdt_nm
-LIMIT 200
 `;
 
 // 재고 현황 조회/업데이트
@@ -482,6 +527,8 @@ module.exports = {
   // 새로운 출고 관련 쿼리들
   selectMaterialWithdrawal,
   selectDeliveryProducts,
+  selectProductionOrderDetails,
+  selectMaterialByProductionOrder,
   selectInventoryByItem,
   insertInventoryTransaction,
   getWarehousesByItemType,
