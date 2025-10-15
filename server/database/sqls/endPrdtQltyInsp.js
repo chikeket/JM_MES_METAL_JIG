@@ -4,6 +4,7 @@ SELECT
  a.prcs_ctrl_id,
  a.prdt_id, 
  d.prdt_nm,
+ g.opt_nm,
  f.prdt_opt_id,
  a.prcs_ord,
  a.pass_qy "bePass_qy",
@@ -28,13 +29,15 @@ JOIN prcs_prog_precon e
 ON a.prcs_prog_precon_id = e.prcs_prog_precon_id
 JOIN prod_drct_deta f
 ON e.prod_drct_deta_id = f.prod_drct_deta_id
+JOIN prdt_opt g
+ON f.prdt_opt_id = g.prdt_opt_id 
 WHERE a.prcs_ord = b.prcs_ord
 AND f.prdt_opt_id = b.opt_id
 AND a.pass_qy > insp_qy
 AND d.prdt_nm LIKE CONCAT('%',? ,'%')
 AND a.pass_qy > ?
 AND a.wk_to_dt >= ?
-GROUP BY a.prcs_ctrl_id, a.prdt_id, d.prdt_nm, f.prdt_opt_id, a.prcs_ord, a.pass_qy, a.wk_to_dt, a.prcs_routing_id
+GROUP BY a.prcs_ctrl_id, a.prdt_id, d.prdt_nm, f.prdt_opt_id, a.prcs_ord, a.pass_qy, a.wk_to_dt, a.prcs_routing_id, g.opt_nm
 `;
 
 // 완제품 품질검사 관리 조회
@@ -51,7 +54,8 @@ SELECT
  a.rm,
  e.prdt_id,
  e.prdt_opt_id,
- f.prdt_nm
+ f.prdt_nm,
+ g.opt_nm
 FROM end_prdt_qlty_insp a
 JOIN emp b
 ON a.emp_id = b.emp_id
@@ -63,8 +67,26 @@ JOIN prod_drct_deta e
 ON d.prod_drct_deta_id = e.prod_drct_deta_id
 JOIN prdt f
 ON e.prdt_id = f.prdt_id
+JOIN prdt_opt g
+ON e.prdt_opt_id = g.prdt_opt_id 
 WHERE b.emp_nm LIKE CONCAT('%',? ,'%')
 AND a.insp_dt >= ?`;
+
+// 완제품 품질검사 항목별 불량수량관리 조회
+const endPrdtQltyInspInferSearch = `
+SELECT
+ c.insp_item_nm,
+ c.basi_val,
+ a.qlty_item_mng_id,
+ a.end_prdt_qlty_insp_id,
+ c.eror_scope_min,
+ c.eror_scope_max,
+ a.infer_qy 
+FROM end_prdt_qlty_insp_infer_qy a
+JOIN qlty_item c
+ON a.qlty_item_mng_id = c.qlty_item_mng_id
+WHERE c.st = 'P1'
+AND a.end_prdt_qlty_insp_id = ?`;
 
 // 완제품 품질 검수 ID생성 쿼리
 const endPrdtQltyInspCreateId = `
@@ -84,6 +106,13 @@ INSERT INTO end_prdt_qlty_insp(
  end_prdt_qlty_insp_id)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?)`;
 
+const endPrdtQltyInspInferInsert = `
+INSERT INTO end_prdt_qlty_insp_infer_qy(
+infer_qy
+,qlty_item_mng_id
+,end_prdt_qlty_insp_id)
+VALUES(?, ?, ?)`;
+
 const endPrdtQltyInspUpdate = `
 UPDATE end_prdt_qlty_insp
 SET
@@ -96,16 +125,28 @@ SET
  insp_dt = ?
 WHERE end_prdt_qlty_insp_id = ?`;
 
+//자재 품질 검사 불량 수량 테이블 쿼리수정
+const endPrdtQltyInspInferUpdate = `
+UPDATE end_prdt_qlty_insp_infer_qy
+SET
+ infer_qy = ?
+WHERE qlty_item_mng_id = ?
+AND end_prdt_qlty_insp_id = ?
+`;
+
 const endPrdtQltyInspDelete = `
 DELETE
 FROM end_prdt_qlty_insp
 WHERE end_prdt_qlty_insp_id = ?`;
 
 module.exports = {
-    waitingFinishedPrdt,
-    endPrdtQltyInspSearch,
-    endPrdtQltyInspCreateId,
-    endPrdtQltyInspInsert,
-    endPrdtQltyInspUpdate,
-    endPrdtQltyInspDelete,
+  waitingFinishedPrdt,
+  endPrdtQltyInspSearch,
+  endPrdtQltyInspInferSearch,
+  endPrdtQltyInspCreateId,
+  endPrdtQltyInspInsert,
+  endPrdtQltyInspInferInsert,
+  endPrdtQltyInspUpdate,
+  endPrdtQltyInspInferUpdate,
+  endPrdtQltyInspDelete,
 };

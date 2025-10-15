@@ -136,8 +136,8 @@ const closeEndPrdtQltyInspModal = () => {
 }
 
 const form = ref({
-  emp_id: auth.user.emp_id,
-  emp_nm: auth.user.emp_nm,
+  emp_id: auth.user?.emp_id || 'EMP001',
+  emp_nm: auth.user?.emp_nm || '홍길동',
   prdt_nm: '',
   pass_qy: '',
   qy: '',

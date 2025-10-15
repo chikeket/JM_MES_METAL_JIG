@@ -35,7 +35,7 @@ const closeProdDrctModal = () => {
 }
 
 //로그인 세션기반으로 정보 등록함
-let empId = auth.user.emp_id
+let empId = auth.user?.emp_id || 'EMP001'
 
 const Info = ref({
   ordrName1: '',

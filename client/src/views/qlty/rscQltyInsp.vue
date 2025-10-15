@@ -67,7 +67,7 @@
       <CCol md="3">
         <CInputGroup>
           <CInputGroupText>합격 수량</CInputGroupText>
-          <CFormInput :value="pass_qy" readonly type="number" min="0" />
+          <CFormInput :value="pass_qy" readonly type="number" min="0" class="bg-light" />
         </CInputGroup>
       </CCol>
       <CCol md="3">
@@ -106,7 +106,7 @@
         <CTableRow v-for="(item, idx) in inspectItems" :key="idx">
           <CTableDataCell>{{ item.insp_item_nm }}</CTableDataCell>
           <CTableDataCell>{{ item.basi_val }}</CTableDataCell>
-          <CTableDataCell>{{ item.eror_scope_min + '~' + item.eror_scope_max}}</CTableDataCell>
+          <CTableDataCell>{{ item.eror_scope_min + '~' + item.eror_scope_max }}</CTableDataCell>
           <CTableDataCell class="text-start" style="width: 120px">
             <CFormInput v-model="item.infer_qy" size="sm" placeholder="불량수량기입" />
           </CTableDataCell>
@@ -161,8 +161,8 @@ const closerRscQltyInspModal = () => {
 }
 
 const form = ref({
-  emp_id: auth.user.emp_id,
-  emp_nm: auth.user.emp_nm,
+  emp_id: auth.user?.emp_id || 'EMP001',
+  emp_nm: auth.user?.emp_nm || '홍길동',
   co_nm: '',
   rcs_nm: '',
   qy: '',
@@ -261,7 +261,7 @@ const selectOrdr = (prdts) => {
       qlty_item_mng_id: prdt.qlty_item_mng_id,
       rsc_qlty_insp_id: prdt.rsc_qlty_insp_id,
     })
-    console.log(prdts)
+  console.log(prdts)
 }
 
 const saveInspection = async () => {
@@ -302,18 +302,19 @@ const update = async () => {
       qlty_item_mng_id: prdt.qlty_item_mng_id,
       rsc_qlty_insp_id: prdt.rsc_qlty_insp_id,
     })
-  const payload = {master:{
-    rm: form.value.note,
-    rsc_ordr_deta_id: form.value.rsc_ordr_deta_id,
-    emp_id: form.value.emp_id,
-    rtngud_qy: pendingQty.value,
-    pass_qy: pass_qy.value,
-    insp_qy: form.value.insp_qy,
-    insp_dt: form.value.insp_dt,
-    rsc_qlty_insp_id: form.value.rsc_qlty_insp_id,
-  },
-  infer: inferData,
-}
+  const payload = {
+    master: {
+      rm: form.value.note,
+      rsc_ordr_deta_id: form.value.rsc_ordr_deta_id,
+      emp_id: form.value.emp_id,
+      rtngud_qy: pendingQty.value,
+      pass_qy: pass_qy.value,
+      insp_qy: form.value.insp_qy,
+      insp_dt: form.value.insp_dt,
+      rsc_qlty_insp_id: form.value.rsc_qlty_insp_id,
+    },
+    infer: inferData,
+  }
   let result = await axios.post('/api/rscQltyInspUpdate', payload).catch((err) => console.log(err))
   let addRes = result.data
   if (addRes.isSuccessed) {
