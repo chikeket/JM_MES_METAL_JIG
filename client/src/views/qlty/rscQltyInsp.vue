@@ -3,7 +3,12 @@
     <!-- 상단 버튼 -->
     <div class="d-flex justify-content-end gap-2 mb-3">
       <CButton color="secondary" @click="newFunc()">신규</CButton>
-      <CButton color="secondary" @click="openOrderModal()">자재발주서 조회</CButton>
+      <CButton color="secondary" @click="openRscQltyInspModal()">자재품질 조회</CButton>
+      <rscQltyInspModal
+        :visible="isRscQltyInspModalVisible"
+        @close="closerRscQltyInspModal"
+        @select="selectOrdr"
+      />
       <rscOrdrModal
         :visible="isrscOrdrModalVisible"
         @close="closerscOrdrModal"
@@ -34,7 +39,8 @@
       <CCol md="3">
         <CInputGroup>
           <CInputGroupText style="min-width: 95px">자재명</CInputGroupText>
-          <CFormInput v-model="form.rcs_nm" readonly class="bg-light" />
+          <CFormInput v-model="form.rcs_nm" readonly class="bg-light" placeholder="자재발주서조회"
+ @click="openOrderModal"/>
         </CInputGroup>
       </CCol>
       <CCol md="3">
@@ -46,7 +52,7 @@
       <CCol md="3">
         <CInputGroup>
           <CInputGroupText>기입고 수량</CInputGroupText>
-          <CFormInput v-model.number="form.receivedQty" type="number" min="0" />
+          <CFormInput v-model.number="form.receivedQty" readonly type="number" min="0" class="bg-light"/>
         </CInputGroup>
       </CCol>
       <CCol md="3">
@@ -85,12 +91,7 @@
     </CRow>
     <CFormTextarea v-model="form.note" label="비고" rows="3" text="필요 시 기재"></CFormTextarea>
     <div class="d-flex justify-content-end gap-2 mb-3">
-      <CButton color="secondary" @click="openRscQltyInspModal()">자재품질 조회</CButton>
-      <rscQltyInspModal
-        :visible="isRscQltyInspModalVisible"
-        @close="closerRscQltyInspModal"
-        @select="selectOrdr"
-      />
+      
     </div>
     <!-- 검사 항목 테이블 -->
     <CTable hover bordered small class="align-middle mt-4">
@@ -167,7 +168,9 @@ const form = ref({
   rcs_nm: '',
   qy: '',
   receivedQty: '',
+  receivedQty_base: '',
   insp_qy: '',
+  insp_qy_base: '',
   insp_dt: userDateUtils.dateFormat(new Date(), 'yyyy-MM-dd'),
   note: '',
   rsc_ordr_deta_id: '',
@@ -190,23 +193,7 @@ const pendingQty = computed(() => {
 })
 //불량수량
 const defectQty = ref(0)
-//기입고수량검증
-watch(
-  () => form.value.receivedQty,
-  (newVal) => {
-    const order = Number(form.value.qy) || 0
-    const received = Number(newVal)
-    if (isNaN(received) || received < 0) {
-      alert('기입고 수량은 0 이상의 숫자만 입력 가능합니다.')
-      form.value.receivedQty = 0
-      return
-    }
-    if (received > order) {
-      alert('기입고 수량이 발주 수량보다 많을 수 없습니다.')
-      form.value.receivedQty = 0
-    }
-  },
-)
+
 //각각 검사항목별 불합격 수량 입력후 합격수량이 정해지는 코드
 watch(
   inspectItems,
@@ -229,6 +216,7 @@ watch(
   (newVal) => {
     const order = Number(form.value.qy) || 0
     const received = Number(newVal)
+    
     if (isNaN(received) || received < 0) {
       alert('검수 수량은 0 이상의 숫자만 입력 가능합니다.')
       form.value.pass_qy = 0
@@ -238,6 +226,7 @@ watch(
       alert('검수 수량이 발주 수량보다 많을 수 없습니다.')
       form.value.pass_qy = 0
     }
+    form.value.receivedQty = Number(form.value.receivedQty_base) + Number(form.value.insp_qy) - Number(form.value.insp_qy_base)
   },
 )
 
@@ -246,8 +235,11 @@ const selectOrdr = (prdts) => {
   form.value.co_nm = prdts.searchParams.co_nm
   form.value.qy = Math.floor(prdts.searchParams.qy)
   form.value.insp_qy = Math.floor(prdts.searchParams.insp_qy) || 0
+  form.value.insp_qy_base = Math.floor(prdts.searchParams.insp_qy) || 0
   form.value.receivedQty =
     Math.floor(prdts.searchParams.qy) - Math.floor(prdts.searchParams.rtngud_qy) || 0
+  form.value.receivedQty_base =
+  Math.floor(prdts.searchParams.qy) - Math.floor(prdts.searchParams.rtngud_qy) || 0
   form.value.rcs_nm = prdts.searchParams.rsc_nm
   form.value.rsc_ordr_deta_id = prdts.searchParams.rsc_ordr_deta_id
   form.value.rsc_qlty_insp_id = prdts.searchParams.rsc_qlty_insp_id
