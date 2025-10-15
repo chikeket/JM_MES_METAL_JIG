@@ -528,7 +528,7 @@ router.beforeEach(async (to) => {
   }
 
   // 보호할 경로 목록
-  const protectedPaths = ['/Minsu/rcvord', '/jamin/rsc-ordr', '/product/product-instructions']
+  const protectedPaths = ['/Minsu/rcvord', '/jamin/rsc-ordr']
   if (protectedPaths.includes(to.path)) {
     if (!auth.user) {
       return { path: '/login', query: { redirect: to.fullPath } }
