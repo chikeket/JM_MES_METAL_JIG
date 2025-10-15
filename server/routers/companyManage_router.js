@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const companyService = require("../services/companyManage_service.js");
 
-router.get("/api/co_list_view", async (req, res) => {
+router.get("/co_list_view", async (req, res) => {
   console.log("===== 라우터 도착! =====");
   console.log(req.query);
   
@@ -12,7 +12,7 @@ router.get("/api/co_list_view", async (req, res) => {
   res.send(result);
 });
 
-router.post("/api/coInsert", async (req, res) => {
+router.post("/coInsert", async (req, res) => {
   let Info = req.body;
   let result = await companyService
     .coInsert(Info)
@@ -20,7 +20,7 @@ router.post("/api/coInsert", async (req, res) => {
   res.send(result);
 });
 
-router.post("/api/coUpdate", async (req, res) => {
+router.post("/coUpdate", async (req, res) => {
   let Info = req.body;
   let result = await companyService
     .coUpdate(Info)
@@ -28,7 +28,7 @@ router.post("/api/coUpdate", async (req, res) => {
   res.send(result);
 });
 
-router.post("/api/coDelete", async (req, res) => {
+router.post("/coDelete", async (req, res) => {
   let Info = req.body;
   let result = await companyService
     .coDelete(Info)

@@ -1,18 +1,15 @@
 const mariadb = require("../database/mapper.js");
 const { convertObjToAry } = require("../utils/converts.js");
-
-// 👇 이 3줄 추가
 const sqlList = require("../database/sqlList.js");
-console.log('🔍 coUpdate 존재 여부:', !!sqlList.coUpdate);
-console.log('🔍 사용 가능한 쿼리들:', Object.keys(sqlList).filter(k => k.startsWith('co')));
+console.log('coUpdate 존재 여부:', !!sqlList.coUpdate);
+console.log('사용 가능한 쿼리들:', Object.keys(sqlList).filter(k => k.startsWith('co')));
 
-// 조회 시 사용할 컬럼 - 각 필드를 2번씩 반복!
 let coSelectColumns = [
   "type", "type",
   "name", "name",
   "status", "status"
 ];
-// 등록/수정 시 사용할 컬럼
+
 let coInsertColumns = [
   "co_id",
   "bizr_reg_no",
@@ -23,7 +20,6 @@ let coInsertColumns = [
   "st"
 ];
 
-// 업체 목록 조회
 const coListView = async (info) => {
   console.log('서비스 - 업체 조회');
   console.log(info);
@@ -34,7 +30,6 @@ const coListView = async (info) => {
   return result;
 };
 
-// 업체 등록
 const coInsert = async (info) => {
   let conn;
   try {
@@ -64,7 +59,6 @@ const coInsert = async (info) => {
   }
 };
 
-// 업체 수정
 const coUpdate = async (info) => {
   console.log('서비스 - 업체 수정');
   console.log(info);
@@ -91,9 +85,8 @@ const coUpdate = async (info) => {
       }
     }
 
-    // 쿼리 파라미터 순서에 맞게 컬럼 정의
 let updateColumns = [
-  "co_id",            // 👈 이 줄 추가 (SET용)
+  "co_id",
   "bizr_reg_no",
   "co_nm",
   "rpstr_nm",
