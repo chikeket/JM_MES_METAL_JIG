@@ -6,27 +6,17 @@ const router = express.Router();
 const routingService = require("../services/routing_service.js");
 
 // 공정 모달 조회
-router.get("/prcsModal", async (req, res) => {
+router.get('/prcsModal', async (req, res) => {
   try {
-    console.log("[routing_router] 공정 모달 조회 요청:", req.query);
-    let { prcsId, prcsName, eqmGrpNm, leadTm, moldUse } = req.query;
-    let result = await routingService.getPrcsModal(
-      prcsId,
-      prcsName,
-      eqmGrpNm,
-      leadTm,
-      moldUse
-    );
-    console.log(
-      "[routing_router] 공정 모달 조회 결과:",
-      result?.length || 0,
-      "건"
-    );
-    res.json(result || []);
-  } catch (error) {
-    console.error("[routing_router] 공정 모달 조회 오류:", error);
-    res.status(500).json({ message: "공정 모달 조회 중 오류가 발생했습니다." });
+    console.log('[routing_router] 공정 모달 조회 요청:', req.query);
+    const result = await routingService.selectPrcsModal(req.query);
+    res.json(result);
+  } catch (err) {
+    console.error('공정 모달 조회 오류:', err);
+    res.status(500).send('서버 오류 발생');
   }
 });
 
 module.exports = router;
+
+
