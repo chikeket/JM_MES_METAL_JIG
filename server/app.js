@@ -51,6 +51,7 @@ const wrhousManage = require("./routers/wrhousManage_router.js"); // 창고 기�
 const wrhousZoneManage = require("./routers/wrhousZoneManage_router.js"); // 창고 로케이션 기준정보 관리
 
 const routingInfo = require("./routers/routing_router.js"); // 공정 라우팅
+const prcs = require("./routers/prcs_router.js"); // 공정목록 조회
 
 // 기본 라우팅
 app.get("/", (req, res) => {
@@ -79,3 +80,4 @@ app.use("/", wrhousManage); // 창고 기준정보 관리
 app.use("/", wrhousZoneManage); // 창고 로케이션 기준정보 관리
 
 app.use("/", routingInfo); // 공정 라우팅
+app.use("/", prcs); // 공정목록 조회

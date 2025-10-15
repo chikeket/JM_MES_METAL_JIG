@@ -58,6 +58,8 @@ const wrhousZoneManage = require("./sqls/wrhousZoneManage.js");
 // 공정 라우팅 관련 쿼리
 const routingInfo = require("./sqls/routingInfo.js");
 
+// 공정목록 조회 관련 쿼리
+const prcs = require("./sqls/prcs.js");
 
 // └───각 테이블별 SQL 쿼리들을 모아놓은 중앙 관리 파일───┘
 
@@ -85,4 +87,5 @@ module.exports = {
   ...wrhousManage,
   ...wrhousZoneManage,
   ...routingInfo,
+  ...prcs,
 };
