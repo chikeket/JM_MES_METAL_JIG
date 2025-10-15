@@ -62,6 +62,8 @@
                   <th style="width: 120px">검사서번호</th>
                   <th style="width: 100px">품목코드</th>
                   <th style="width: 150px">품목명</th>
+                  <th style="width: 100px">옵션코드</th>
+                  <th style="width: 150px">옵션명</th>
                   <th style="width: 80px">검사수량</th>
                   <th style="width: 80px">합격수량</th>
                   <th style="width: 80px">불합격수량</th>
@@ -89,6 +91,8 @@
                   <td>{{ item.insp_no }}</td>
                   <td>{{ item.item_code }}</td>
                   <td>{{ item.item_name }}</td>
+                  <td>{{ item.opt_code }}</td>
+                  <td>{{ item.opt_name }}</td>
                   <td class="text-end">{{ Number(item.insp_qty || 0).toLocaleString() }}</td>
                   <td class="text-end">{{ Number(item.pass_qty || 0).toLocaleString() }}</td>
                   <td class="text-end">{{ Number(item.fail_qty || 0).toLocaleString() }}</td>

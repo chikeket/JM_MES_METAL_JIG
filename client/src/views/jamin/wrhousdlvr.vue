@@ -48,14 +48,30 @@
         <CTable hover bordered small class="mb-0">
           <CTableHead color="dark">
             <CTableRow>
-              <CTableHeaderCell class="text-center">검사서 ID</CTableHeaderCell>
-              <CTableHeaderCell class="text-center">품목 유형</CTableHeaderCell>
-              <CTableHeaderCell class="text-center">품목 코드</CTableHeaderCell>
-              <CTableHeaderCell class="text-center">품목 이름</CTableHeaderCell>
-              <CTableHeaderCell class="text-center">규격</CTableHeaderCell>
-              <CTableHeaderCell class="text-center">단위</CTableHeaderCell>
-              <CTableHeaderCell class="text-center">수량</CTableHeaderCell>
-              <CTableHeaderCell class="text-center">담당자 명</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 120px"
+                >검사서 ID</CTableHeaderCell
+              >
+              <CTableHeaderCell class="text-center" style="width: 100px"
+                >품목 유형</CTableHeaderCell
+              >
+              <CTableHeaderCell class="text-center" style="width: 130px"
+                >품목 코드</CTableHeaderCell
+              >
+              <CTableHeaderCell class="text-center" style="width: 200px"
+                >품목 이름</CTableHeaderCell
+              >
+              <CTableHeaderCell class="text-center" style="width: 130px"
+                >옵션 코드</CTableHeaderCell
+              >
+              <CTableHeaderCell class="text-center" style="width: 150px"
+                >옵션 이름</CTableHeaderCell
+              >
+              <CTableHeaderCell class="text-center" style="width: 120px">규격</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 70px">단위</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 90px">수량</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 120px"
+                >담당자 명</CTableHeaderCell
+              >
             </CTableRow>
           </CTableHead>
           <CTableBody>
@@ -64,6 +80,8 @@
               <CTableDataCell class="text-center">{{ r.type || '' }}</CTableDataCell>
               <CTableDataCell class="text-center">{{ r.code || '' }}</CTableDataCell>
               <CTableDataCell class="text-start">{{ r.name || '' }}</CTableDataCell>
+              <CTableDataCell class="text-center">{{ r.opt_code || '' }}</CTableDataCell>
+              <CTableDataCell class="text-start">{{ r.opt_name || '' }}</CTableDataCell>
               <CTableDataCell class="text-center">{{ r.spec || '' }}</CTableDataCell>
               <CTableDataCell class="text-center">{{ r.unit || '' }}</CTableDataCell>
               <CTableDataCell class="text-end">{{ r.qty ?? '' }}</CTableDataCell>
@@ -94,22 +112,30 @@
         <CTable hover bordered small class="mb-0 align-middle">
           <CTableHead color="dark">
             <CTableRow>
-              <CTableHeaderCell scope="col" class="text-center" style="width: 56px">
+              <CTableHeaderCell scope="col" class="text-center" style="width: 60px">
                 <CFormCheck :checked="allSelected" @change="toggleAll($event)" />
               </CTableHeaderCell>
-              <CTableHeaderCell class="text-center" style="width: 100px">창고</CTableHeaderCell>
-              <CTableHeaderCell class="text-center" style="width: 100px">로케이션</CTableHeaderCell>
-              <CTableHeaderCell class="text-center" style="width: 120px"
+              <CTableHeaderCell class="text-center" style="width: 120px">창고</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 120px">로케이션</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 100px"
                 >품목 유형</CTableHeaderCell
               >
-              <CTableHeaderCell class="text-center" style="width: 120px"
+              <CTableHeaderCell class="text-center" style="width: 130px"
                 >품목 코드</CTableHeaderCell
               >
-              <CTableHeaderCell class="text-center">품목 이름</CTableHeaderCell>
-              <CTableHeaderCell class="text-center" style="width: 100px">규격</CTableHeaderCell>
-              <CTableHeaderCell class="text-center" style="width: 80px">단위</CTableHeaderCell>
-              <CTableHeaderCell class="text-center" style="width: 100px">수량</CTableHeaderCell>
-              <CTableHeaderCell class="text-center" style="width: 100px">비고</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 200px"
+                >품목 이름</CTableHeaderCell
+              >
+              <CTableHeaderCell class="text-center" style="width: 130px"
+                >옵션 코드</CTableHeaderCell
+              >
+              <CTableHeaderCell class="text-center" style="width: 150px"
+                >옵션 이름</CTableHeaderCell
+              >
+              <CTableHeaderCell class="text-center" style="width: 120px">규격</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 70px">단위</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 90px">수량</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 120px">비고</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
 
@@ -118,27 +144,15 @@
               <CTableDataCell class="text-center">
                 <CFormCheck :checked="isSelected(row.id)" @change="toggleRow(row.id, $event)" />
               </CTableDataCell>
-              <CTableDataCell class="text-center">
-                <CFormInput v-model="row.warehouse_name" size="sm" readonly />
-              </CTableDataCell>
-              <CTableDataCell class="text-center">
-                <CFormInput v-model="row.location_name" size="sm" readonly />
-              </CTableDataCell>
-              <CTableDataCell class="text-center">
-                <CFormInput v-model="row.type" size="sm" readonly />
-              </CTableDataCell>
-              <CTableDataCell class="text-center">
-                <CFormInput v-model="row.code" size="sm" readonly />
-              </CTableDataCell>
-              <CTableDataCell class="text-start">
-                <CFormInput v-model="row.name" size="sm" readonly />
-              </CTableDataCell>
-              <CTableDataCell class="text-center">
-                <CFormInput v-model="row.spec" size="sm" readonly />
-              </CTableDataCell>
-              <CTableDataCell class="text-center">
-                <CFormInput v-model="row.unit" size="sm" readonly />
-              </CTableDataCell>
+              <CTableDataCell class="text-center">{{ row.warehouse_id }}</CTableDataCell>
+              <CTableDataCell class="text-center">{{ row.location_id }}</CTableDataCell>
+              <CTableDataCell class="text-center"> {{ row.type }} </CTableDataCell>
+              <CTableDataCell class="text-center"> {{ row.code }} </CTableDataCell>
+              <CTableDataCell class="text-start"> {{ row.name }} </CTableDataCell>
+              <CTableDataCell class="text-center"> {{ row.opt_code || '-' }} </CTableDataCell>
+              <CTableDataCell class="text-start"> {{ row.opt_name || '-' }} </CTableDataCell>
+              <CTableDataCell class="text-center"> {{ row.spec }} </CTableDataCell>
+              <CTableDataCell class="text-center"> {{ row.unit }} </CTableDataCell>
               <CTableDataCell class="text-end">
                 <CFormInput v-model.number="row.qty" size="sm" type="number" />
               </CTableDataCell>
@@ -148,7 +162,7 @@
             </CTableRow>
 
             <CTableRow v-if="rows.length === 0">
-              <CTableDataCell colspan="10" class="text-center text-muted"
+              <CTableDataCell colspan="8" class="text-center text-muted"
                 >행을 추가하세요</CTableDataCell
               >
             </CTableRow>
@@ -247,13 +261,16 @@ onMounted(async () => {
 // 전체 창고 목록 조회
 const loadAllWarehouses = async () => {
   try {
+    console.log('[wrhousdlvr] 전체 창고 목록 조회 시작')
     const response = await axios.get('/api/warehouses/all')
     warehouseList.value = response.data || []
     console.log('[wrhousdlvr] 창고 목록 로드:', warehouseList.value.length, '건')
     console.log('[wrhousdlvr] 창고 데이터:', warehouseList.value)
   } catch (error) {
     console.error('[wrhousdlvr] 창고 목록 로드 실패:', error)
+    console.error('[wrhousdlvr] 에러 상세:', error.response?.data || error.message)
     warehouseList.value = []
+    // 에러가 발생해도 페이지는 정상적으로 로드되도록 함
   }
 }
 
@@ -273,15 +290,27 @@ const loadAllLocations = async () => {
 // 품목 유형별 창고 조회
 const getWarehousesByItemType = async (itemType) => {
   try {
-    console.log('[wrhousdlvr] 품목 유형별 창고 조회:', itemType)
+    console.log('[wrhousdlvr] 품목 유형별 창고 조회 시작')
+    console.log('[wrhousdlvr] 요청 품목 유형:', itemType)
+    console.log('[wrhousdlvr] 요청 URL:', '/api/warehouses/all')
+    console.log('[wrhousdlvr] 요청 파라미터:', { item_type: itemType })
+
     const response = await axios.get('/api/warehouses/all', {
-      params: { item_type: itemType }
+      params: { item_type: itemType },
     })
+
+    console.log('[wrhousdlvr] 응답 전체:', response)
+    console.log('[wrhousdlvr] 응답 상태:', response.status)
+    console.log('[wrhousdlvr] 응답 데이터:', response.data)
+
     const warehouses = response.data || []
-    console.log('[wrhousdlvr] 품목 유형별 창고 결과:', warehouses)
+    console.log('[wrhousdlvr] 최종 창고 배열:', warehouses)
+    console.log('[wrhousdlvr] 창고 개수:', warehouses.length)
+
     return warehouses
   } catch (error) {
     console.error('[wrhousdlvr] 품목 유형별 창고 조회 실패:', error)
+    console.error('[wrhousdlvr] 에러 상세:', error.response?.data || error.message)
     return []
   }
 }
@@ -308,7 +337,7 @@ const getLocationsByItemType = async (itemType, warehouseId = null) => {
 
 // 행 추가 / 삭제 / 초기화 / 저장
 const addRow = () => {
-  const id = Date.now().toString(36) + Math.floor(Math.random() * 1000)
+  const id = Date.now().toString(36) + Math.floor(Math.random() * 1000) // 임시용
   rows.value.push({
     id,
     warehouse_id: '',
@@ -317,6 +346,8 @@ const addRow = () => {
     location_name: '',
     type: '',
     code: '',
+    opt_code: '',
+    opt_name: '',
     name: '',
     spec: '',
     unit: 'EA',
@@ -391,8 +422,10 @@ const onSelectInspection = async (inspectionList) => {
     type: inspection.item_type || getItemTypeByInspType(inspection.insp_type),
     code: inspection.item_code || inspection.rsc_id,
     name: inspection.item_name || inspection.rsc_nm,
+    opt_code: inspection.opt_code || '',
+    opt_name: inspection.opt_name || '',
     spec: inspection.item_spec || inspection.rsc_spec || '',
-    unit: inspection.item_unit || inspection.rsc_unit || 'EA',
+    unit: inspection.item_unit || inspection.rsc_unit || '',
     qty: inspection.pass_qty || inspection.insp_qty || 0,
     emp_nm: inspection.insp_emp_name || inspection.emp_name || '', // 담당자명 추가
   }))
@@ -404,7 +437,7 @@ const onSelectInspection = async (inspectionList) => {
 
   // 메인 그리드에 새 행들 추가 (검사서 정보 기반)
   const newRows = []
-  
+
   for (const inspection of inspectionList) {
     // 중복 검사서 제거
     if (rows.value.some((row) => row.insp_no === inspection.insp_no)) {
@@ -429,12 +462,20 @@ const onSelectInspection = async (inspectionList) => {
         console.log('[wrhousdlvr] 선택된 창고:', defaultWarehouse)
 
         // 해당 창고의 로케이션을 DB에서 조회
-        const availableLocations = await getLocationsByItemType(itemType, defaultWarehouse.warehouse_id)
+        const availableLocations = await getLocationsByItemType(
+          itemType,
+          defaultWarehouse.warehouse_id,
+        )
         if (availableLocations.length > 0) {
           defaultLocation = availableLocations[0] // 첫 번째 로케이션 선택
           console.log('[wrhousdlvr] 선택된 로케이션:', defaultLocation)
         } else {
-          console.warn('[wrhousdlvr] 매칭되는 로케이션이 없습니다. 창고ID:', defaultWarehouse.warehouse_id, '품목유형:', itemType)
+          console.warn(
+            '[wrhousdlvr] 매칭되는 로케이션이 없습니다. 창고ID:',
+            defaultWarehouse.warehouse_id,
+            '품목유형:',
+            itemType,
+          )
         }
       } else {
         console.warn('[wrhousdlvr] 매칭되는 창고가 없습니다. 품목유형:', itemType)
@@ -451,6 +492,8 @@ const onSelectInspection = async (inspectionList) => {
       location_name: defaultLocation?.location_name || '',
       type: itemType,
       code: inspection.item_code || inspection.rsc_id,
+      opt_code: inspection.opt_code || '',
+      opt_name: inspection.opt_name || '',
       name: inspection.item_name || inspection.rsc_nm,
       spec: inspection.item_spec || inspection.rsc_spec || '',
       unit: inspection.item_unit || inspection.rsc_unit || 'EA',
@@ -462,7 +505,7 @@ const onSelectInspection = async (inspectionList) => {
       insp_type: inspection.insp_type,
       emp_name: inspection.insp_emp_name || inspection.emp_name || '',
     }
-    
+
     newRows.push(newRow)
   }
 
@@ -505,6 +548,8 @@ const onSelectDelivery = async (deliveryList) => {
     type: delivery.item_type || getItemTypeByInspType(delivery.insp_type),
     code: delivery.item_code || delivery.rsc_id,
     name: delivery.item_name || delivery.rsc_nm,
+    opt_code: delivery.opt_code || '',
+    opt_name: delivery.opt_name || '',
     spec: delivery.item_spec || delivery.rsc_spec || '',
     unit: delivery.item_unit || delivery.rsc_unit || 'EA',
     qty: delivery.pass_qty || delivery.insp_qty || 0,
@@ -518,7 +563,7 @@ const onSelectDelivery = async (deliveryList) => {
 
   // 메인 그리드에 새 행들 추가 (출고서 정보 기반)
   const newRows = []
-  
+
   for (const delivery of deliveryList) {
     // 중복 출고서 제거
     if (rows.value.some((row) => row.insp_no === delivery.insp_no)) {
@@ -543,12 +588,20 @@ const onSelectDelivery = async (deliveryList) => {
         console.log('[wrhousdlvr] 선택된 창고:', defaultWarehouse)
 
         // 해당 창고의 로케이션을 DB에서 조회
-        const availableLocations = await getLocationsByItemType(itemType, defaultWarehouse.warehouse_id)
+        const availableLocations = await getLocationsByItemType(
+          itemType,
+          defaultWarehouse.warehouse_id,
+        )
         if (availableLocations.length > 0) {
           defaultLocation = availableLocations[0] // 첫 번째 로케이션 선택
           console.log('[wrhousdlvr] 선택된 로케이션:', defaultLocation)
         } else {
-          console.warn('[wrhousdlvr] 매칭되는 로케이션이 없습니다. 창고ID:', defaultWarehouse.warehouse_id, '품목유형:', itemType)
+          console.warn(
+            '[wrhousdlvr] 매칭되는 로케이션이 없습니다. 창고ID:',
+            defaultWarehouse.warehouse_id,
+            '품목유형:',
+            itemType,
+          )
         }
       } else {
         console.warn('[wrhousdlvr] 매칭되는 창고가 없습니다. 품목유형:', itemType)
@@ -566,6 +619,8 @@ const onSelectDelivery = async (deliveryList) => {
       type: itemType,
       code: delivery.item_code || delivery.rsc_id,
       name: delivery.item_name || delivery.rsc_nm,
+      opt_code: delivery.opt_code || '',
+      opt_name: delivery.opt_name || '',
       spec: delivery.item_spec || delivery.rsc_spec || '',
       unit: delivery.item_unit || delivery.rsc_unit || 'EA',
       qty: 0, // 출고의 경우 수량은 사용자가 입력
@@ -576,7 +631,7 @@ const onSelectDelivery = async (deliveryList) => {
       insp_type: delivery.insp_type,
       emp_name: delivery.insp_emp_name || delivery.emp_name || '',
     }
-    
+
     newRows.push(newRow)
   }
 
@@ -609,7 +664,9 @@ const onSave = async () => {
     })
 
     if (invalidRows.length > 0) {
-      alert(`창고, 로케이션, 품목 정보, 수량을 모두 입력해주세요.\n유효하지 않은 행: ${invalidRows.length}개`)
+      alert(
+        `창고, 로케이션, 품목 정보, 수량을 모두 입력해주세요.\n유효하지 않은 행: ${invalidRows.length}개`,
+      )
       return
     }
 
@@ -623,6 +680,8 @@ const onSave = async () => {
       item_type: row.type, // 자재/반제품/완제품
       item_code: row.code,
       item_name: row.name,
+      item_opt_code: row.opt_code || '',
+      item_opt_name: row.opt_name || '',
       item_spec: row.spec || '',
       item_unit: row.unit || 'EA',
       qty: Number(row.qty) || 0,
