@@ -1,61 +1,85 @@
 const mariadb = require("../database/mapper.js");
 const { convertObjToAry } = require("../utils/converts.js");
+const sqlList = require("../database/sqlList.js");
+console.log('prdtupdate 존재 여부:', !!sqlList.prdtUpdate);
+console.log('사용 가능한 쿼리들:', Object.keys(sqlList).filter(k => k.startsWith('prdt')));
 
-let prdtSelectColumns = [
-  "prdt_id", "prdt_id",
-  "prdt_nm", "prdt_nm",
-  "prdt_st", "prdt_st"
-];
 
-const prdtListView = async (info) => {
-  console.log('서비스 - 제품 조회');
-  console.log(info);
-  let data = convertObjToAry(info, prdtSelectColumns);
-  console.log('SQL 파라미터:', data);
-  
-  let result = await mariadb.query("prdtListView", data);
-  return result;
-};
-
-const prdtOptionList = async (info) => {
-  console.log('서비스 - 제품 옵션 조회');
-  console.log(info);
-  
-  let result = await mariadb.query("prdtOptionList", [info.prdt_id]);
-  return result;
-};
-
-const prdtDelete = async (info) => {
-  console.log('서비스 - 제품 삭제');
-  console.log(info);
-  
-  let conn;
+const getPrdtList = async (filters) => {
   try {
-    conn = await mariadb.getConnection();
-    await conn.beginTransaction();
-    
-    await mariadb.query("prdtDelete", [info.prdt_id], conn);
-    
-    await conn.commit();
-    
-    return {
-      isSuccessed: true,
-      message: "제품이 삭제되었습니다."
-    };
+    const params = [
+      filters.prdt_id || '',
+      filters.prdt_nm || '',
+      filters.prdt_st || '',
+      filters.spec || ''
+    ];
+    let list = await mariadb.query("prdtManageSelect", params);
+    return list || [];
   } catch (err) {
-    console.error(err);
-    if (conn) await conn.rollback();
-    return {
-      isSuccessed: false,
-      message: "제품 삭제 중 오류가 발생했습니다."
-    };
-  } finally {
-    if (conn) conn.release();
+    console.error("getPrdtList 오류:", err);
+    throw err;
+  }
+};
+
+const getPrdtOptions = async (prdtId) => {
+  try {
+    let list = await mariadb.query("prdtOptionSelect", [prdtId]);
+    return list || [];
+  } catch (err) {
+    console.error("getPrdtOptions 오류:", err);
+    throw err;
+  }
+};
+
+const insertPrdt = async (prdtData) => {
+  try {
+    let data = [
+      prdtData.prdt_nm,
+      prdtData.spec,
+      prdtData.unit,
+      prdtData.prdt_st || 'K1',
+      prdtData.rmrk || ''
+    ];
+    let result = await mariadb.query("prdtInsert", data);
+    return result;
+  } catch (err) {
+    console.error("insertPrdt 오류:", err);
+    throw err;
+  }
+};
+
+const updatePrdt = async (prdtData) => {
+  try {
+    let data = [
+      prdtData.prdt_nm,
+      prdtData.spec,
+      prdtData.unit,
+      prdtData.prdt_st,
+      prdtData.rmrk || '',
+      prdtData.original_prdt_id || prdtData.prdt_id
+    ];
+    let result = await mariadb.query("prdtUpdate", data);
+    return result;
+  } catch (err) {
+    console.error("updatePrdt 오류:", err);
+    throw err;
+  }
+};
+
+const deletePrdt = async (prdtId) => {
+  try {
+    let result = await mariadb.query("prdtDelete", [prdtId]);
+    return result;
+  } catch (err) {
+    console.error("deletePrdt 오류:", err);
+    throw err;
   }
 };
 
 module.exports = {
-  prdtListView,
-  prdtOptionList,
-  prdtDelete
+  getPrdtList,
+  getPrdtOptions,
+  insertPrdt,
+  updatePrdt,
+  deletePrdt,
 };

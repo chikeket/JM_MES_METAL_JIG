@@ -51,14 +51,6 @@ const coDelete = `
   WHERE co_id = ?
 `;
 
-module.exports = {
-  coListView,
-  coCreateId,
-  coInsert,
-  coUpdate,
-  coDelete
-};
-
 const coCheckDuplicate = `
   SELECT co_id FROM co WHERE co_id = ?
 `;
@@ -69,5 +61,5 @@ module.exports = {
   coInsert,
   coUpdate,
   coDelete,
-  coCheckDuplicate  // 이거 추가
+  coCheckDuplicate,
 };

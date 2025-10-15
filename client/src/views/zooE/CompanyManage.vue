@@ -11,11 +11,19 @@
   <CRow class="g-3">
     <CCol :md="3">
       <CFormLabel class="form-label">업체유형</CFormLabel>
-      <CFormSelect v-model="searchFilters.type" size="sm">
-        <option value="">전체</option>
-        <option value="VENDOR">공급업체</option>
-        <option value="CUSTOMER">고객사</option>
-      </CFormSelect>
+      <div class="custom-select-wrapper">
+        <div class="custom-select" @click="toggleTypeDropdown" ref="typeSelect">
+          <span>{{ getTypeDisplayText(searchFilters.type) }}</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12">
+            <path fill="#6c757d" d="M6 9L1 4h10z"/>
+          </svg>
+        </div>
+        <div v-if="showTypeDropdown" class="custom-dropdown">
+          <div class="custom-option" @click="selectType('')">전체</div>
+          <div class="custom-option" @click="selectType('VENDOR')">공급업체</div>
+          <div class="custom-option" @click="selectType('CUSTOMER')">고객사</div>
+        </div>
+      </div>
     </CCol>
     <CCol :md="4">
       <CFormLabel class="form-label">업체명</CFormLabel>
@@ -23,11 +31,19 @@
     </CCol>
     <CCol :md="3">
       <CFormLabel class="form-label">상태</CFormLabel>
-<CFormSelect v-model="searchFilters.status" size="sm">
-  <option value="">전체</option>
-  <option value="ACT">활성</option>        <!-- 👈 active → ACT -->
-  <option value="INA">비활성</option>      <!-- 👈 INA → INA -->
-</CFormSelect>
+      <div class="custom-select-wrapper">
+        <div class="custom-select" @click="toggleStatusDropdown" ref="statusSelect">
+          <span>{{ getStatusDisplayText(searchFilters.status) }}</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12">
+            <path fill="#6c757d" d="M6 9L1 4h10z"/>
+          </svg>
+        </div>
+        <div v-if="showStatusDropdown" class="custom-dropdown">
+          <div class="custom-option" @click="selectStatus('')">전체</div>
+          <div class="custom-option" @click="selectStatus('ACT')">활성</div>
+          <div class="custom-option" @click="selectStatus('INA')">비활성</div>
+        </div>
+      </div>
     </CCol>
   </CRow>
 </div>
@@ -138,21 +154,20 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import axios from 'axios'
 
-// ============================================
-// 데이터 정의
-// ============================================
-
-// 검색 필터
 const searchFilters = reactive({
   type: '',
   name: '',
   status: ''
 })
 
-// 입력 폼 데이터
+const showTypeDropdown = ref(false)
+const showStatusDropdown = ref(false)
+const typeSelect = ref(null)
+const statusSelect = ref(null)
+
 const formData = reactive({
   id: '',
   businessNo: '',
@@ -182,7 +197,6 @@ const getPlaceholder = (key) => {
   }
 }
 
-// 폼 필드 정의
 const formFields = [
   { key: 'id', label: '업체 ID', type: 'text' },
   { key: 'businessNo', label: '사업자 등록번호', type: 'text' },
@@ -234,11 +248,58 @@ const emptyRowCount = computed(() => {
 // ============================================
 onMounted(() => {
   handleSearch()
+  document.addEventListener('click', handleClickOutside)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside)
 })
 
 // ============================================
 // 메서드
 // ============================================
+
+// 커스텀 셀렉트 관련
+const toggleTypeDropdown = () => {
+  showTypeDropdown.value = !showTypeDropdown.value
+  showStatusDropdown.value = false
+}
+
+const toggleStatusDropdown = () => {
+  showStatusDropdown.value = !showStatusDropdown.value
+  showTypeDropdown.value = false
+}
+
+const selectType = (value) => {
+  searchFilters.type = value
+  showTypeDropdown.value = false
+}
+
+const selectStatus = (value) => {
+  searchFilters.status = value
+  showStatusDropdown.value = false
+}
+
+const getTypeDisplayText = (value) => {
+  if (value === 'VENDOR') return '공급업체'
+  if (value === 'CUSTOMER') return '고객사'
+  return '전체'
+}
+
+const getStatusDisplayText = (value) => {
+  if (value === 'ACT') return '활성'
+  if (value === 'INA') return '비활성'
+  return '전체'
+}
+
+const handleClickOutside = (event) => {
+  if (typeSelect.value && !typeSelect.value.contains(event.target)) {
+    showTypeDropdown.value = false
+  }
+  if (statusSelect.value && !statusSelect.value.contains(event.target)) {
+    showStatusDropdown.value = false
+  }
+}
 
 // 검색
 const handleSearch = async () => {
@@ -331,7 +392,7 @@ const handleSave = async () => {
     let response
     if (originalId.value) {
       // 수정: 기존 ID를 별도로 전송
-      sendData.original_co_id = originalId.value  // 👈 추가!
+      sendData.original_co_id = originalId.value
       response = await axios.post('/api/coUpdate', sendData)
     } else {
       // 신규
@@ -515,6 +576,84 @@ const getTypeLabel = (type) => {
 }
 
 /* ============================================
+   커스텀 셀렉트박스 스타일
+   ============================================ */
+.custom-select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.custom-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 400;
+  padding: 0.4rem 0.75rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  height: 34px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.custom-select:hover {
+  border-color: #dee2e6;
+  background-color: #ffffff;
+}
+
+.custom-select svg {
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.custom-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  overflow: hidden;
+  animation: dropdownFadeIn 0.2s ease;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.custom-option {
+  padding: 0.5rem 0.75rem;
+  font-size: 12px;
+  font-weight: 500;
+  color: #2c3e50;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.custom-option:hover {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  color: #495057;
+}
+
+.custom-option:active {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+  color: #ffffff;
+}
+
+/* ============================================
    라디오 버튼 스타일 - Modern
    ============================================ */
 .radio-group {
@@ -528,6 +667,7 @@ const getTypeLabel = (type) => {
   align-items: center !important;
   margin-bottom: 0 !important;
   padding: 0 !important;
+  width: 80px !important;
 }
 
 :deep(.radio-item .form-check-input) {
@@ -574,8 +714,8 @@ const getTypeLabel = (type) => {
   margin-bottom: 0;
   border-collapse: separate;
   border-spacing: 0;
-  user-select: none;   /* ✅ 텍스트 선택 방지 */
-  cursor: default;     /* ✅ 클릭 시 일반 커서 유지 */
+  user-select: none;
+  cursor: default;
 }
 
 :deep(.data-table thead) {
@@ -647,47 +787,53 @@ const getTypeLabel = (type) => {
 }
 
 /* ============================================
-   모던 스크롤바 스타일 (Glass / Minimal)
+   모던 스크롤바 스타일 (Smooth & Elegant)
    ============================================ */
 .table-wrapper,
 :deep(.overflow-auto) {
-  overflow-y: scroll;          /* 항상 스크롤바 표시(내용 유무와 상관없이) */
-  overflow-x: hidden; /* ✅ 좌우 스크롤 완전 차단 */
-  scrollbar-gutter: stable;    /* 스크롤바 공간을 항상 예약 (레이아웃 흔들림 방지) */
-  -webkit-overflow-scrolling: touch; /* 모바일/터치 스무스 스크롤 보완(선택) */
+  overflow-y: scroll;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* 모던 스크롤바 스타일 (Glass / Minimal) */
+/* 스크롤바 너비 - 10px → 14px로 변경 */
 .table-wrapper::-webkit-scrollbar,
 :deep(.overflow-auto)::-webkit-scrollbar {
-  width: 8px;
+  width: 14px;
 }
 
+/* 스크롤바 트랙 (배경) - 더 진한 회색 */
 .table-wrapper::-webkit-scrollbar-track,
 :deep(.overflow-auto)::-webkit-scrollbar-track {
-  background: rgba(240, 240, 240, 0.6); /* 트랙이 보이도록 불투명도를 약간 높임 */
+  background: #e9ecef;
   border-radius: 10px;
+  margin: 4px 0;
 }
 
+/* 스크롤바 썸 (움직이는 부분) - 더 진하고 굵게 */
 .table-wrapper::-webkit-scrollbar-thumb,
 :deep(.overflow-auto)::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #bfc2c7, #9ea2a8);
+  background: linear-gradient(180deg, #6c757d 0%, #495057 100%);
   border-radius: 10px;
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(2px);
-  transition: all 0.2s ease;
+  border: 3px solid #e9ecef;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
+/* 스크롤바 호버 - 더욱 진하게 */
 .table-wrapper::-webkit-scrollbar-thumb:hover,
 :deep(.overflow-auto)::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #a4a8ae, #7e838a);
+  background: linear-gradient(180deg, #495057 0%, #343a40 100%);
+  border-color: #dee2e6;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
 }
 
 /* Firefox 대응 */
 .table-wrapper,
 :deep(.overflow-auto) {
-  scrollbar-width: thin;
-  scrollbar-color: #9ea2a8 rgba(240, 240, 240, 0.6);
+  scrollbar-width: auto;
+  scrollbar-color: #6c757d #e9ecef;
 }
 
 /* ============================================
@@ -707,6 +853,4 @@ const getTypeLabel = (type) => {
     padding: 0.4rem 1rem;
   }
 }
-
-
 </style>

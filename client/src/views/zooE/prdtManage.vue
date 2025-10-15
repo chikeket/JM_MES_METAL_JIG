@@ -47,7 +47,7 @@
             <CTable bordered hover class="data-table">
               <CTableHead>
                 <CTableRow>
-                  <CTableHeaderCell style="width:30px;"><CFormCheck disabled /></CTableHeaderCell>
+                  <CTableHeaderCell style="width:30px;"><CFormCheck :checked="allChecked" @change="toggleAllCheck" /></CTableHeaderCell>
                   <CTableHeaderCell style="width:40px;">No</CTableHeaderCell>
                   <CTableHeaderCell style="width:80px;">제품ID</CTableHeaderCell>
                   <CTableHeaderCell style="width:120px;">제품명</CTableHeaderCell>
@@ -65,12 +65,22 @@
                     <CFormCheck v-model="item.selected" @click.stop />
                   </CTableDataCell>
                   <CTableDataCell class="text-end" style="width:40px;">{{ index + 1 }}</CTableDataCell>
-                  <CTableDataCell class="text-end text-primary clickable" style="width:80px;">{{ item.prdt_id }}</CTableDataCell>
-                  <CTableDataCell class="text-start" style="width:120px;">{{ item.prdt_nm }}</CTableDataCell>
-                  <CTableDataCell class="text-start" style="width:80px;">{{ item.spec }}</CTableDataCell>
-                  <CTableDataCell class="text-start" style="width:60px;">{{ item.unit }}</CTableDataCell>
-                  <CTableDataCell class="text-start" style="width:100px;">{{ item.prdt_st }}</CTableDataCell>
-                  <CTableDataCell class="text-start">{{ item.rmrk }}</CTableDataCell>
+                  <CTableDataCell class="text-end text-primary" style="width:80px;">{{ item.prdt_id }}</CTableDataCell>
+                  <CTableDataCell class="text-start" style="width:120px;">
+                    <input v-model="item.prdt_nm" class="cell-input" @click.stop />
+                  </CTableDataCell>
+                  <CTableDataCell class="text-start" style="width:80px;">
+                    <input v-model="item.spec" class="cell-input" @click.stop />
+                  </CTableDataCell>
+                  <CTableDataCell class="text-start" style="width:60px;">
+                    <input v-model="item.unit" class="cell-input" @click.stop />
+                  </CTableDataCell>
+                  <CTableDataCell class="text-start" style="width:100px;">
+                    <input v-model="item.prdt_st" class="cell-input" @click.stop />
+                  </CTableDataCell>
+                  <CTableDataCell class="text-start">
+                    <input v-model="item.rmrk" class="cell-input" @click.stop />
+                  </CTableDataCell>
                 </CTableRow>
                 <CTableRow v-for="i in leftEmptyRows" :key="'empty-'+i" class="empty-row">
                   <CTableDataCell colspan="8">&nbsp;</CTableDataCell>
@@ -92,7 +102,7 @@
             <CTable bordered hover class="data-table">
               <CTableHead>
                 <CTableRow>
-                  <CTableHeaderCell style="width:30px;"><CFormCheck disabled /></CTableHeaderCell>
+                  <CTableHeaderCell style="width:30px;"><CFormCheck :checked="allRightChecked" @change="toggleAllRightCheck" /></CTableHeaderCell>
                   <CTableHeaderCell style="width:40px;">No</CTableHeaderCell>
                   <CTableHeaderCell style="width:80px;">옵션ID</CTableHeaderCell>
                   <CTableHeaderCell>옵션명</CTableHeaderCell>
@@ -146,6 +156,29 @@ const rightDisplayData = computed(() => {
 })
 const rightEmptyRows = computed(() => Math.max(0, 10 - rightDisplayData.value.length))
 
+// 전체 선택 체크박스
+const allChecked = computed(() => {
+  return leftDisplayData.value.length > 0 && leftDisplayData.value.every(item => item.selected)
+})
+
+const allRightChecked = computed(() => {
+  return rightDisplayData.value.length > 0 && rightDisplayData.value.every(item => item.selected)
+})
+
+const toggleAllCheck = () => {
+  const newValue = !allChecked.value
+  leftDisplayData.value.forEach(item => {
+    item.selected = newValue
+  })
+}
+
+const toggleAllRightCheck = () => {
+  const newValue = !allRightChecked.value
+  rightDisplayData.value.forEach(item => {
+    item.selected = newValue
+  })
+}
+
 onMounted(() => {
   handleSearch()
 })
@@ -155,6 +188,7 @@ const selectProduct = (item) => {
   loadOptions(item.prdt_id)
 }
 
+// 조회
 const handleSearch = async () => {
   try {
     const params = {
@@ -162,26 +196,36 @@ const handleSearch = async () => {
       prdt_nm: searchFilters.productName || '',
       prdt_st: searchFilters.productStatus || ''
     }
-    const result = await axios.get('/api/prdt_list_view', { params })
-    leftGridData.value = result.data.map(item => ({ ...item, selected: false }))
+    console.log('📋 조회 파라미터:', params)
+    
+    const response = await axios.get('/api/prdt_list_view', { params })
+    const list = Array.isArray(response.data) ? response.data : response.data.data || []
+    leftGridData.value = list.map(item => ({ ...item, selected: false }))
+    
+    console.log('✅ 조회 완료:', leftGridData.value.length, '건')
+
     selectedProductId.value = null
     rightGridData.value = []
   } catch (error) {
-    console.error('조회 오류:', error)
+    console.error('❌ 조회 오류:', error)
     leftGridData.value = []
   }
 }
 
+// 옵션 조회
 const loadOptions = async (prdtId) => {
   try {
+    console.log('📋 옵션 조회:', prdtId)
     const result = await axios.get('/api/prdt_option_list', { params: { prdt_id: prdtId } })
-    rightGridData.value = result.data.map(item => ({ ...item, selected: false }))
+    rightGridData.value = result.data.map(item => ({ ...item, selected: false, prdt_id: prdtId }))
+    console.log('✅ 옵션 조회 완료:', rightGridData.value.length, '건')
   } catch (error) {
-    console.error('옵션 조회 오류:', error)
+    console.error('❌ 옵션 조회 오류:', error)
     rightGridData.value = []
   }
 }
 
+// 초기화
 const handleReset = () => {
   searchFilters.productId = ''
   searchFilters.productName = ''
@@ -189,17 +233,70 @@ const handleReset = () => {
   selectedProductId.value = null
   leftGridData.value = []
   rightGridData.value = []
+  console.log('🔄 초기화 완료')
 }
 
-const handleNew = () => {
-  selectedProductId.value = null
-  rightGridData.value = []
+// 신규 등록
+const handleNew = async () => {
+  if (!searchFilters.productName) {
+    alert('제품명을 입력해주세요.')
+    return
+  }
+  
+  try {
+    const payload = {
+      prdt_nm: searchFilters.productName,
+      spec: '',
+      unit: '',
+      prdt_st: searchFilters.productStatus || 'K1',
+      rmrk: ''
+    }
+    
+    console.log('➕ 신규 등록:', payload)
+    const res = await axios.post('/api/prdtInsert', payload)
+    alert('등록 완료')
+    
+    // 등록 후 재조회
+    await handleSearch()
+  } catch (error) {
+    console.error('❌ 등록 오류:', error)
+    alert('등록 중 오류가 발생했습니다.')
+  }
 }
 
+// 저장 (수정)
 const handleSave = async () => {
-  alert('저장 기능은 추후 구현 예정입니다.')
+  const selected = leftGridData.value.find(p => p.prdt_id === selectedProductId.value)
+  
+  if (!selected) {
+    alert('수정할 제품을 선택해주세요.')
+    return
+  }
+
+  try {
+    const payload = {
+      prdt_id: selected.prdt_id,
+      prdt_nm: selected.prdt_nm,
+      spec: selected.spec,
+      unit: selected.unit,
+      prdt_st: selected.prdt_st,
+      rmrk: selected.rmrk,
+      original_prdt_id: selected.prdt_id
+    }
+    
+    console.log('✏️ 수정 저장:', payload)
+    const res = await axios.post('/api/prdtUpdate', payload)
+    alert('수정 완료')
+    
+    // 수정 후 재조회
+    await handleSearch()
+  } catch (error) {
+    console.error('❌ 수정 오류:', error)
+    alert('수정 중 오류가 발생했습니다.')
+  }
 }
 
+// 좌측 선택 삭제
 const handleLeftDelete = async () => {
   const selected = leftGridData.value.filter(item => item.selected)
   if (selected.length === 0) {
@@ -210,18 +307,27 @@ const handleLeftDelete = async () => {
 
   try {
     for (const item of selected) {
+      console.log('🗑️ 삭제:', item.prdt_id)
       await axios.post('/api/prdtDelete', { prdt_id: item.prdt_id })
     }
     alert('삭제되었습니다.')
-    handleSearch()
+    await handleSearch()
   } catch (error) {
-    console.error('삭제 오류:', error)
+    console.error('❌ 삭제 오류:', error)
     alert('삭제 중 오류가 발생했습니다.')
   }
 }
 
+// 우측 선택 삭제 (화면에서만 제거)
 const handleRightDelete = () => {
+  const toDelete = rightDisplayData.value.filter(item => item.selected)
+  if (toDelete.length === 0) {
+    alert('삭제할 항목을 선택해주세요.')
+    return
+  }
+  
   rightGridData.value = rightGridData.value.filter(item => !item.selected)
+  console.log('🗑️ 우측 항목 삭제:', toDelete.length, '건')
 }
 </script>
 
@@ -366,9 +472,21 @@ const handleRightDelete = () => {
   background-color: #f8f9fa;
 }
 
-.clickable {
-  cursor: pointer;
-  font-weight: 600;
+/* 셀 입력 스타일 */
+.cell-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  padding: 2px 4px;
+  outline: none;
+  font-family: inherit;
+}
+
+.cell-input:focus {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 4px;
 }
 
 :deep(.selected-row) {

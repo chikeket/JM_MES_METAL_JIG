@@ -125,7 +125,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import axios from 'axios'
 
 // ============================================
 // 데이터 정의
@@ -162,66 +163,71 @@ const rightFields = [
 ]
 
 // 그리드 데이터
-const gridData = ref([
-  {
-    materialCode: 'M001',
-    materialType: '원자재',
-    materialName: '철판',
-    spec: '200x200',
-    unit: 'EA',
-    remark: '테스트용'
-  },
-  {
-    materialCode: 'M002',
-    materialType: '부자재',
-    materialName: '볼트',
-    spec: 'M8x20',
-    unit: 'EA',
-    remark: ''
-  }
-])
+const gridData = ref([])
 
 // 선택된 행 인덱스
 const selectedRowIndex = ref(null)
+const originalCode = ref('')
 
 // ============================================
 // Computed (계산된 속성)
 // ============================================
 
-// 필터링된 데이터
-const filteredData = computed(() => {
-  return gridData.value.filter(item => {
-    const matchName = !searchFilters.materialName || item.materialName.includes(searchFilters.materialName)
-    const matchType = !searchFilters.materialType || item.materialType.includes(searchFilters.materialType)
-    return matchName && matchType
-  })
-})
-
 // 화면에 표시할 데이터 (최대 10개)
-const displayedData = computed(() => filteredData.value.slice(0, 10))
+const displayedData = computed(() => gridData.value.slice(0, 10))
 
 // 빈 행 개수 (10행 고정을 위해)
 const emptyRowCount = computed(() => Math.max(0, 10 - displayedData.value.length))
 
 // ============================================
+// Lifecycle
+// ============================================
+onMounted(() => {
+  // 초기 로드 시 데이터 안 불러옴
+})
+
+// ============================================
 // 메서드 (이벤트 핸들러)
 // ============================================
 
-// 조회 버튼 클릭
-const handleSearch = () => {
-  selectedRowIndex.value = null
+// 조회 버튼 클릭 - DB에서 데이터 조회
+const handleSearch = async () => {
+  try {
+    const params = {
+      rsc_nm: searchFilters.materialName || '',
+      rsc_ty_id: searchFilters.materialType || ''
+    }
+    console.log('📋 조회 파라미터:', params)
+    
+    const response = await axios.get('/api/rsc_list_view', { params })
+    const list = Array.isArray(response.data) ? response.data : response.data.data || []
+    
+    gridData.value = list.map(item => ({
+      materialCode: item.rsc_id,
+      materialType: item.rsc_ty_id,
+      materialName: item.rsc_nm,
+      spec: item.spec,
+      unit: item.unit,
+      remark: item.rmrk
+    }))
+    
+    console.log('✅ 조회 완료:', gridData.value.length, '건')
+    selectedRowIndex.value = null
+  } catch (error) {
+    console.error('❌ 조회 오류:', error)
+    gridData.value = []
+  }
 }
 
-// 초기화 버튼 클릭
+// 초기화 버튼 클릭 - 우측 폼만 초기화
 const handleReset = () => {
-  searchFilters.materialName = ''
-  searchFilters.materialType = ''
-  selectedRowIndex.value = null
+  resetFormData()
 }
 
-// 그리드 행 선택
+// 그리드 행 선택 - 우측 폼에 데이터 표시
 const handleRowSelect = (item, index) => {
   Object.assign(formData, item)
+  originalCode.value = item.materialCode
   selectedRowIndex.value = index
 }
 
@@ -235,39 +241,91 @@ const resetFormData = () => {
     unit: '',
     remark: ''
   })
+  originalCode.value = ''
   selectedRowIndex.value = null
 }
 
-// 신규 버튼 클릭
-const handleNew = () => {
-  resetFormData()
+// 신규 버튼 클릭 - 우측 폼에 입력한 값으로 신규 등록
+const handleNew = async () => {
+  if (!formData.materialName) {
+    alert('자재명을 입력해주세요.')
+    return
+  }
+
+  try {
+    const payload = {
+      rsc_ty_id: formData.materialType,
+      rsc_nm: formData.materialName,
+      spec: formData.spec,
+      unit: formData.unit,
+      rmrk: formData.remark
+    }
+    
+    console.log('➕ 신규 등록:', payload)
+    const response = await axios.post('/api/rscInsert', payload)
+    alert('등록 완료')
+    
+    // 등록 후 재조회
+    await handleSearch()
+    resetFormData()
+  } catch (error) {
+    console.error('❌ 등록 오류:', error)
+    alert('등록 중 오류가 발생했습니다.')
+  }
 }
 
-// 저장 버튼 클릭
-const handleSave = () => {
-  const existingIndex = gridData.value.findIndex(item => item.materialCode === formData.materialCode)
-  
-  if (existingIndex >= 0) {
-    // 기존 데이터 업데이트
-    gridData.value[existingIndex] = { ...formData }
-  } else {
-    // 신규 데이터 추가
-    const newCode = 'M' + String(gridData.value.length + 1).padStart(3, '0')
-    gridData.value.push({ ...formData, materialCode: newCode })
+// 저장 버튼 클릭 - 선택된 행 데이터 수정
+const handleSave = async () => {
+  if (!originalCode.value) {
+    alert('수정할 자재를 선택해주세요.')
+    return
   }
-  
-  resetFormData()
+
+  try {
+    const payload = {
+      rsc_id: formData.materialCode,
+      rsc_ty_id: formData.materialType,
+      rsc_nm: formData.materialName,
+      spec: formData.spec,
+      unit: formData.unit,
+      rmrk: formData.remark,
+      original_rsc_id: originalCode.value
+    }
+    
+    console.log('✏️ 수정 저장:', payload)
+    const response = await axios.post('/api/rscUpdate', payload)
+    alert('수정 완료')
+    
+    // 수정 후 재조회
+    await handleSearch()
+    resetFormData()
+  } catch (error) {
+    console.error('❌ 수정 오류:', error)
+    alert('수정 중 오류가 발생했습니다.')
+  }
 }
 
 // 삭제 버튼 클릭
-const handleDelete = () => {
-  const existingIndex = gridData.value.findIndex(item => item.materialCode === formData.materialCode)
-  
-  if (existingIndex >= 0) {
-    gridData.value.splice(existingIndex, 1)
+const handleDelete = async () => {
+  if (!formData.materialCode) {
+    alert('삭제할 자재를 선택해주세요.')
+    return
   }
-  
-  resetFormData()
+
+  if (!confirm('정말 삭제하시겠습니까?')) return
+
+  try {
+    console.log('🗑️ 삭제:', formData.materialCode)
+    const response = await axios.post('/api/rscDelete', { rsc_id: formData.materialCode })
+    alert('삭제 완료')
+    
+    // 삭제 후 재조회
+    await handleSearch()
+    resetFormData()
+  } catch (error) {
+    console.error('❌ 삭제 오류:', error)
+    alert('삭제 중 오류가 발생했습니다.')
+  }
 }
 </script>
 
@@ -481,25 +539,30 @@ const handleDelete = () => {
    ============================================ */
 .table-wrapper::-webkit-scrollbar,
 :deep(.overflow-auto)::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 14px;
 }
 
 .table-wrapper::-webkit-scrollbar-track,
 :deep(.overflow-auto)::-webkit-scrollbar-track {
-  background: #f1f3f5;
-  border-radius: 8px;
+  background: #e9ecef;
+  border-radius: 10px;
+  margin: 4px 0;
 }
 
 .table-wrapper::-webkit-scrollbar-thumb,
 :deep(.overflow-auto)::-webkit-scrollbar-thumb {
-  background: #adb5bd;
-  border-radius: 8px;
+  background: linear-gradient(180deg, #6c757d 0%, #495057 100%);
+  border-radius: 10px;
+  border: 3px solid #e9ecef;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .table-wrapper::-webkit-scrollbar-thumb:hover,
 :deep(.overflow-auto)::-webkit-scrollbar-thumb:hover {
-  background: #868e96;
+  background: linear-gradient(180deg, #495057 0%, #343a40 100%);
+  border-color: #dee2e6;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
 }
 
 /* 간격 조정 */
