@@ -63,6 +63,8 @@
                   <th style="width: 120px">검사서번호</th>
                   <th style="width: 100px">품목코드</th>
                   <th style="width: 150px">품목명</th>
+                  <th style="width: 100px">옵션코드</th>
+                  <th style="width: 150px">옵션명</th>
                   <th style="width: 80px">검사수량</th>
                   <th style="width: 80px">합격수량</th>
                   <th style="width: 80px">불합격수량</th>
@@ -76,7 +78,14 @@
                   v-for="item in inspectionList"
                   :key="item.insp_no"
                   class="cursor-pointer"
-                  :class="{ 'table-active': selectedItems.some((s) => s.insp_no === item.insp_no) }"
+                  :class="{
+                    'table-active': selectedItems.some(
+                      (s) =>
+                        s.insp_no === item.insp_no &&
+                        s.item_code === item.item_code &&
+                        s.opt_code === item.opt_code,
+                    ),
+                  }"
                   @click="handleRowClick(item)"
                 >
                   <td @click.stop>
@@ -90,6 +99,8 @@
                   <td>{{ item.insp_no }}</td>
                   <td>{{ item.item_code }}</td>
                   <td>{{ item.item_name }}</td>
+                  <td>{{ item.opt_code || '-' }}</td>
+                  <td>{{ item.opt_name || '-' }}</td>
                   <td class="text-end">{{ Number(item.insp_qty || 0).toLocaleString() }}</td>
                   <td class="text-end">{{ Number(item.pass_qty || 0).toLocaleString() }}</td>
                   <td class="text-end">{{ Number(item.fail_qty || 0).toLocaleString() }}</td>
@@ -164,7 +175,12 @@ const allSelected = computed(() => {
   return (
     inspectionList.value.length > 0 &&
     inspectionList.value.every((item) =>
-      selectedItems.value.some((s) => s.insp_no === item.insp_no),
+      selectedItems.value.some(
+        (s) =>
+          s.insp_no === item.insp_no &&
+          s.item_code === item.item_code &&
+          s.opt_code === item.opt_code,
+      ),
     )
   )
 })
@@ -181,7 +197,7 @@ const onSearch = async () => {
     console.log('[inspectionModal] 전송 파라미터:', params)
     console.log('[inspectionModal] 검사서 종류:', searchCondition.insp_type)
 
-        // 검사서 종류에 따라 다른 API 호출 (wrhousdlvr 라우터 사용)
+    // 검사서 종류에 따라 다른 API 호출 (wrhousdlvr 라우터 사용)
     let apiUrl = '/warehouse/inspections/list'
 
     // 검사서 종류를 params에 추가
@@ -259,7 +275,11 @@ const selectSingleInspection = (item) => {
 
 // 체크박스 선택/해제
 const toggleSelection = (item) => {
-  const index = selectedItems.value.findIndex((s) => s.insp_no === item.insp_no)
+  // 고유 식별자: 검사서번호 + 품목코드 + 옵션코드 조합
+  const index = selectedItems.value.findIndex(
+    (s) =>
+      s.insp_no === item.insp_no && s.item_code === item.item_code && s.opt_code === item.opt_code,
+  )
   if (index > -1) {
     selectedItems.value.splice(index, 1)
   } else {
@@ -282,7 +302,10 @@ const toggleAll = (event) => {
 
 // 선택 여부 확인
 const isSelected = (item) => {
-  return selectedItems.value.some((s) => s.insp_no === item.insp_no)
+  return selectedItems.value.some(
+    (s) =>
+      s.insp_no === item.insp_no && s.item_code === item.item_code && s.opt_code === item.opt_code,
+  )
 }
 
 // 선택 상태 초기화
