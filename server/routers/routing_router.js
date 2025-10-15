@@ -24,6 +24,7 @@ router.get("/prcs", async (req, res) => {
       .json({ message: "제품코드로 공정 조회 중 오류가 발생했습니다." });
   }
 });
+
 module.exports = router;
 // └───제품코드로 공정 조회 라우터───┘
 // └───routing_router.js───┘
