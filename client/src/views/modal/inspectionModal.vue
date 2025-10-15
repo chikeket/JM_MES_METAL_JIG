@@ -60,16 +60,16 @@
                       class="form-check-input"
                     />
                   </th>
-                  <th style="width: 120px">검사서번호</th>
-                  <th style="width: 100px">품목코드</th>
-                  <th style="width: 150px">품목명</th>
-                  <th style="width: 100px">옵션코드</th>
-                  <th style="width: 150px">옵션명</th>
-                  <th style="width: 80px">검사수량</th>
-                  <th style="width: 80px">합격수량</th>
-                  <th style="width: 80px">불합격수량</th>
-                  <th style="width: 80px">검사상태</th>
-                  <th style="width: 100px">검사일자</th>
+                  <th style="width: 120px">검사서 코드</th>
+                  <th style="width: 100px">품목 코드</th>
+                  <th style="width: 150px">품목 명</th>
+                  <th style="width: 100px">옵션 코드</th>
+                  <th style="width: 150px">옵션 명</th>
+                  <th style="width: 80px">검사 수량</th>
+                  <th style="width: 80px">합격 수량</th>
+                  <th style="width: 80px">불합격 수량</th>
+                  <th style="width: 80px">검사 상태</th>
+                  <th style="width: 100px">검사 일자</th>
                   <th style="width: 100px">검사자</th>
                 </tr>
               </thead>

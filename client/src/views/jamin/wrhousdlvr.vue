@@ -58,13 +58,13 @@
                 >품목 코드</CTableHeaderCell
               >
               <CTableHeaderCell class="text-center" style="width: 200px"
-                >품목 이름</CTableHeaderCell
+                >품목 명</CTableHeaderCell
               >
               <CTableHeaderCell class="text-center" style="width: 130px"
                 >옵션 코드</CTableHeaderCell
               >
               <CTableHeaderCell class="text-center" style="width: 150px"
-                >옵션 이름</CTableHeaderCell
+                >옵션 명</CTableHeaderCell
               >
               <CTableHeaderCell class="text-center" style="width: 120px">규격</CTableHeaderCell>
               <CTableHeaderCell class="text-center" style="width: 70px">단위</CTableHeaderCell>
@@ -124,16 +124,17 @@
                 >품목 코드</CTableHeaderCell
               >
               <CTableHeaderCell class="text-center" style="width: 200px"
-                >품목 이름</CTableHeaderCell
+                >품목 명</CTableHeaderCell
               >
               <CTableHeaderCell class="text-center" style="width: 130px"
                 >옵션 코드</CTableHeaderCell
               >
               <CTableHeaderCell class="text-center" style="width: 150px"
-                >옵션 이름</CTableHeaderCell
+                >옵션 명</CTableHeaderCell
               >
               <CTableHeaderCell class="text-center" style="width: 120px">규격</CTableHeaderCell>
               <CTableHeaderCell class="text-center" style="width: 70px">단위</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 70px">LOT</CTableHeaderCell>
               <CTableHeaderCell class="text-center" style="width: 90px">수량</CTableHeaderCell>
               <CTableHeaderCell class="text-center" style="width: 120px">비고</CTableHeaderCell>
             </CTableRow>
@@ -153,6 +154,7 @@
               <CTableDataCell class="text-start"> {{ row.opt_name || '-' }} </CTableDataCell>
               <CTableDataCell class="text-center"> {{ row.spec }} </CTableDataCell>
               <CTableDataCell class="text-center"> {{ row.unit }} </CTableDataCell>
+              <CTableDataCell class="text-center"> {{ row.lot || '-' }} </CTableDataCell>
               <CTableDataCell class="text-end">
                 <CFormInput v-model.number="row.qty" size="sm" type="number" />
               </CTableDataCell>
@@ -400,6 +402,7 @@ const getItemTypeByInspType = (inspType) => {
 
 const onSelectInspection = async (inspectionList) => {
   console.log('[wrhousdlvr] 검사서 선택됨:', inspectionList)
+  console.log(`[wrhousdlvr] 선택된 검사서 수: ${inspectionList.length}`)
 
   if (!Array.isArray(inspectionList) || inspectionList.length === 0) {
     alert('선택된 검사서가 없습니다.')
@@ -430,9 +433,15 @@ const onSelectInspection = async (inspectionList) => {
     emp_nm: inspection.insp_emp_name || inspection.emp_name || '', // 담당자명 추가
   }))
 
+  console.log(`[wrhousdlvr] 요약 테이블에 추가할 행 수: ${newSummaryRows.length}`)
+
   // 중복 검사서 제거 후 누적
   const existingIds = summaryRows.value.map((row) => row.id)
+  console.log(`[wrhousdlvr] 기존 요약 테이블 ID들:`, existingIds)
+  
   const uniqueNewRows = newSummaryRows.filter((row) => !existingIds.includes(row.id))
+  console.log(`[wrhousdlvr] 중복 제거 후 요약 테이블 추가 행 수: ${uniqueNewRows.length}`)
+  
   summaryRows.value.push(...uniqueNewRows)
 
   // 메인 그리드에 새 행들 추가 (검사서 정보 기반)
@@ -441,10 +450,11 @@ const onSelectInspection = async (inspectionList) => {
   for (const inspection of inspectionList) {
     // 중복 검사서 제거
     if (rows.value.some((row) => row.insp_no === inspection.insp_no)) {
+      console.log(`[wrhousdlvr] 중복 검사서 건너뜀: ${inspection.insp_no}`)
       continue
     }
 
-    console.log('[wrhousdlvr] 검사서 데이터:', inspection)
+    console.log('[wrhousdlvr] 검사서 처리 중:', inspection.insp_no)
 
     // 품목 유형 결정 (검사서에서 직접 가져오거나 검사 유형으로 추정)
     const itemType = inspection.item_type || getItemTypeByInspType(inspection.insp_type)
@@ -526,6 +536,7 @@ const closeDeliveryModal = () => {
 
 const onSelectDelivery = async (deliveryList) => {
   console.log('[wrhousdlvr] 출고서 선택됨:', deliveryList)
+  console.log('[wrhousdlvr] 첫 번째 출고서 상세:', JSON.stringify(deliveryList[0], null, 2))
 
   if (!Array.isArray(deliveryList) || deliveryList.length === 0) {
     alert('선택된 출고서가 없습니다.')
@@ -541,6 +552,119 @@ const onSelectDelivery = async (deliveryList) => {
     mode.value = 'out'
   }
 
+  // 자재 불출의 경우 특별 처리
+  if (inspType === 'materialWithdrawal') {
+    await handleMaterialWithdrawal(deliveryList)
+    return
+  }
+
+  // 기존 완제품 납품 로직
+  await handleDeliveryDetail(deliveryList)
+}
+
+// 자재 불출 처리 (생산지시 → BOM 자재)
+const handleMaterialWithdrawal = async (productionOrders) => {
+  console.log('[wrhousdlvr] 자재 불출 처리 시작:', productionOrders)
+
+  // 요약 테이블에 생산지시 정보 추가
+  const newSummaryRows = productionOrders.map((order) => ({
+    id: order.insp_no,
+    inspect_id: order.withdrawal_id,
+    type: order.item_type,
+    code: order.item_code,
+    name: order.item_name,
+    opt_code: order.opt_code || '',
+    opt_name: order.opt_name || '',
+    spec: order.item_spec || '',
+    unit: order.item_unit || '',
+    qty: order.required_qty || 0,
+    emp_nm: order.emp_name || '',
+  }))
+
+  // 중복 제거 후 누적
+  const existingIds = summaryRows.value.map((row) => row.id)
+  const uniqueNewRows = newSummaryRows.filter((row) => !existingIds.includes(row.id))
+  summaryRows.value.push(...uniqueNewRows)
+
+  // 각 생산지시에 대해 BOM 자재 조회 및 메인 그리드에 추가
+  const newRows = []
+
+  for (const order of productionOrders) {
+    console.log('[wrhousdlvr] 생산지시 처리:', order)
+
+    try {
+      // BOM 자재 목록 조회
+      const response = await axios.get(`/api/production/orders/${order.withdrawal_id}/materials`)
+      const materialList = response.data || []
+      
+      console.log('[wrhousdlvr] BOM 자재 목록:', materialList)
+
+      // 각 자재에 대해 메인 그리드 행 생성
+      for (const material of materialList) {
+        // 중복 자재 제거
+        const materialKey = `${order.withdrawal_id}_${material.item_code}`
+        if (rows.value.some((row) => row.material_key === materialKey)) {
+          continue
+        }
+
+        // 품목 유형에 따른 창고/로케이션 자동 할당
+        let defaultWarehouse = null
+        let defaultLocation = null
+
+        try {
+          const availableWarehouses = await getWarehousesByItemType(material.item_type)
+          if (availableWarehouses.length > 0) {
+            defaultWarehouse = availableWarehouses[0]
+            
+            const availableLocations = await getLocationsByItemType(
+              material.item_type,
+              defaultWarehouse.warehouse_id,
+            )
+            if (availableLocations.length > 0) {
+              defaultLocation = availableLocations[0]
+            }
+          }
+        } catch (error) {
+          console.error('[wrhousdlvr] 창고/로케이션 조회 오류:', error)
+        }
+
+        const newRow = {
+          id: Date.now().toString(36) + Math.floor(Math.random() * 1000),
+          material_key: materialKey, // 중복 방지용 키
+          warehouse_id: defaultWarehouse?.warehouse_id || '',
+          warehouse_name: defaultWarehouse?.warehouse_name || '',
+          location_id: defaultLocation?.location_id || '',
+          location_name: defaultLocation?.location_name || '',
+          type: material.item_type,
+          code: material.item_code,
+          name: material.item_name,
+          opt_code: material.opt_code || '',
+          opt_name: material.opt_name || '',
+          spec: material.item_spec || '',
+          unit: material.item_unit || 'EA',
+          qty: material.required_qty || 0,
+          remark: '',
+          // 연결 정보
+          production_order_id: order.withdrawal_id,
+          insp_no: order.withdrawal_id,
+          insp_type: 'materialWithdrawal',
+          emp_name: order.emp_name || '',
+        }
+
+        newRows.push(newRow)
+      }
+    } catch (error) {
+      console.error('[wrhousdlvr] BOM 자재 조회 실패:', error)
+      alert(`생산지시 ${order.withdrawal_id}의 BOM 자재 조회에 실패했습니다.`)
+    }
+  }
+
+  rows.value.push(...newRows)
+  alert(`${productionOrders.length}건의 생산지시에서 ${newRows.length}건의 자재가 추가되었습니다.`)
+}
+
+// 완제품 납품 처리 (기존 로직)
+const handleDeliveryDetail = async (deliveryList) => {
   // 요약 테이블에 선택된 출고서들 정보 누적 추가 (기존 데이터 유지)
   const newSummaryRows = deliveryList.map((delivery) => ({
     id: delivery.insp_no,
@@ -623,7 +747,7 @@ const onSelectDelivery = async (deliveryList) => {
       opt_name: delivery.opt_name || '',
       spec: delivery.item_spec || delivery.rsc_spec || '',
       unit: delivery.item_unit || delivery.rsc_unit || 'EA',
-      qty: 0, // 출고의 경우 수량은 사용자가 입력
+      qty: delivery.pass_qty || delivery.insp_qty || 0, // 출고 시에도 납품수량 표시
       remark: '',
       // 출고서 관련 정보 저장 (백엔드 저장 시 사용)
       insp_no: delivery.insp_no || delivery.rsc_qlty_insp_id,
@@ -641,6 +765,8 @@ const onSelectDelivery = async (deliveryList) => {
 
 const onSave = async () => {
   try {
+    console.log('[wrhousdlvr] 저장 함수 시작')
+    
     if (rows.value.length === 0) {
       alert('저장할 데이터가 없습니다.')
       return
@@ -648,8 +774,66 @@ const onSave = async () => {
 
     console.log('[wrhousdlvr] 저장 전 rows 데이터:', rows.value)
 
+    // ====== 동일 품목 거래 통합 로직 ======
+    const consolidatedRows = {}
+    
+    rows.value.forEach(row => {
+      // 통합 키: 거래유형_품목코드_옵션코드_품목유형
+      const key = `${mode.value}_${row.code}_${row.opt_code || 'NO_OPT'}_${row.type}`
+      
+      console.log(`[wrhousdlvr] 처리 중인 행:`, {
+        key,
+        code: row.code,
+        name: row.name,
+        opt_code: row.opt_code,
+        type: row.type,
+        qty: row.qty,
+        warehouse_id: row.warehouse_id,
+        location_id: row.location_id
+      })
+      
+      if (consolidatedRows[key]) {
+        // 기존 항목에 수량 합산
+        const prevQty = consolidatedRows[key].qty;
+        consolidatedRows[key].qty += Number(row.qty) || 0
+        console.log(`[wrhousdlvr] 수량 합산: ${prevQty} + ${row.qty} = ${consolidatedRows[key].qty}`)
+        
+        // 검사서 번호 추가 (중복 제거)
+        if (row.insp_no && !consolidatedRows[key].insp_nos.includes(row.insp_no)) {
+          consolidatedRows[key].insp_nos.push(row.insp_no)
+        }
+        consolidatedRows[key].remark = `통합거래 - 검사서: ${consolidatedRows[key].insp_nos.join(', ')}`
+        console.log(`[wrhousdlvr] 기존 항목에 추가됨: ${key}`)
+      } else {
+        // 새로운 통합 항목 생성
+        consolidatedRows[key] = {
+          ...row,
+          qty: Number(row.qty) || 0,
+          insp_nos: row.insp_no ? [row.insp_no] : [],
+          remark: row.remark || `${mode.value === 'in' ? '입고' : '출고'} 처리`
+        }
+        console.log(`[wrhousdlvr] 새 통합 항목 생성: ${key}`)
+      }
+    })
+    
+    const finalRows = Object.values(consolidatedRows)
+    console.log('[wrhousdlvr] 통합 후 데이터:', finalRows)
+    console.log(`[wrhousdlvr] 거래 통합: ${rows.value.length}건 → ${finalRows.length}건`)
+    
+    // 통합 결과 상세 로그
+    finalRows.forEach((row, index) => {
+      console.log(`[wrhousdlvr] 통합 결과 ${index + 1}:`, {
+        code: row.code,
+        name: row.name,
+        opt_code: row.opt_code,
+        type: row.type,
+        qty: row.qty,
+        insp_nos: row.insp_nos
+      })
+    })
+
     // 유효성 검사
-    const invalidRows = rows.value.filter((row, index) => {
+    const invalidRows = finalRows.filter((row, index) => {
       const isValid = row.warehouse_id && row.location_id && row.code && row.name && row.qty > 0
       if (!isValid) {
         console.log(`[wrhousdlvr] 유효하지 않은 행 ${index}:`, {
@@ -670,27 +854,43 @@ const onSave = async () => {
       return
     }
 
-    // 거래 유형별 데이터 변환
-    const transactionList = rows.value.map((row) => ({
-      txn_type: mode.value, // 'in' 또는 'out'
-      warehouse_id: row.warehouse_id,
-      warehouse_name: row.warehouse_name,
-      location_id: row.location_id,
-      location_name: row.location_name,
-      item_type: row.type, // 자재/반제품/완제품
-      item_code: row.code,
-      item_name: row.name,
-      item_opt_code: row.opt_code || '',
-      item_opt_name: row.opt_name || '',
-      item_spec: row.spec || '',
-      item_unit: row.unit || 'EA',
-      qty: Number(row.qty) || 0,
-      insp_no: row.insp_no || null, // 검사서 번호
-      insp_type: row.insp_type || null, // 검사서 종류 (LOT 번호 생성용)
-      txn_date: new Date().toISOString().split('T')[0], // 오늘 날짜
-      remark: row.remark || `${mode.value === 'in' ? '입고' : '출고'} 처리`,
-      emp_name: row.emp_name || '', // 담당자명
-    }))
+    // 거래 유형별 데이터 변환 (통합된 데이터 사용)
+    const transactionList = finalRows.map((row) => {
+      // 품목 유형 코드 매핑 (한글 → 공통코드)
+      let itemTypeCode = 'E3'; // 기본값: 완제품
+      if (row.type === '자재' || row.type === 'materialQuality') {
+        itemTypeCode = 'E1';
+      } else if (row.type === '반제품' || row.type === 'semiQuality') {
+        itemTypeCode = 'E2';
+      } else if (row.type === '완제품' || row.type === 'finishedQuality') {
+        itemTypeCode = 'E3';
+      }
+      
+      console.log(`[wrhousdlvr] 품목 유형 매핑: ${row.type} → ${itemTypeCode}`);
+      
+      return {
+        txn_type: mode.value, // 'in' 또는 'out'
+        warehouse_id: row.warehouse_id,
+        warehouse_name: row.warehouse_name,
+        location_id: row.location_id,
+        location_name: row.location_name,
+        item_type: itemTypeCode, // 공통코드로 변환
+        item_type_name: row.type, // 원본 한글명 (참고용)
+        item_code: row.code,
+        item_name: row.name,
+        item_opt_code: row.opt_code || '',
+        item_opt_name: row.opt_name || '',
+        item_spec: row.spec || '',
+        item_unit: row.unit || 'EA',
+        qty: Number(row.qty) || 0,
+        insp_no: row.insp_nos ? row.insp_nos[0] : (row.insp_no || null), // 첫 번째 검사서 번호
+        insp_nos: row.insp_nos || (row.insp_no ? [row.insp_no] : []), // 모든 검사서 번호 배열
+        insp_type: row.insp_type || null, // 검사서 종류 (LOT 번호 생성용)
+        txn_date: new Date().toISOString().split('T')[0], // 오늘 날짜
+        remark: row.remark || `${mode.value === 'in' ? '입고' : '출고'} 처리`,
+        emp_name: row.emp_name || '', // 담당자명
+      }
+    })
 
     const payload = {
       transactionList,
@@ -698,20 +898,24 @@ const onSave = async () => {
     }
 
     console.log('[wrhousdlvr] 저장 요청 데이터:', payload)
+    console.log('[wrhousdlvr] API 호출 시작: /api/warehouse/transactions')
 
     const response = await axios.post('/api/warehouse/transactions', payload)
 
-    console.log('[wrhousdlvr] 저장 응답:', response.data)
+    console.log('[wrhousdlvr] 저장 응답:', response)
+    console.log('[wrhousdlvr] 응답 데이터:', response.data)
 
     if (response.data?.isSuccessed) {
       alert(`${mode.value === 'in' ? '입고' : '출고'} 처리가 완료되었습니다.`)
       // 저장 성공 시 초기화
       onReset()
     } else {
+      console.error('[wrhousdlvr] 저장 실패 상세:', response.data)
       alert('저장 실패: ' + (response.data?.error || '알 수 없는 오류'))
     }
   } catch (err) {
-    console.error('[wrhousdlvr] 저장 오류:', err)
+    console.error('[wrhousdlvr] 저장 오류 상세:', err)
+    console.error('[wrhousdlvr] 응답 상세:', err.response)
     alert('저장 중 오류가 발생했습니다: ' + (err.response?.data?.error || err.message))
   }
 }

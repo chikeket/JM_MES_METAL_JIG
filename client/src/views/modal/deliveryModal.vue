@@ -29,12 +29,12 @@
               />
             </div>
             <div class="col-md-3">
-              <label class="form-label">품목명</label>
+              <label class="form-label">품목 명</label>
               <input
                 v-model="searchCondition.item_name"
                 type="text"
                 class="form-control"
-                placeholder="품목명 입력"
+                placeholder="품목 명 입력"
                 @keyup.enter="onSearch"
               />
             </div>
@@ -45,8 +45,8 @@
           </div>
         </div>
 
-        <!-- 검사서 목록 테이블 -->
-        <div class="table-area mt-3">
+        <!-- 자재 불출의 경우 생산지시 상세 목록만 표시 -->
+        <div v-if="searchCondition.insp_type === 'materialWithdrawal'" class="table-area mt-3">
           <div class="table-responsive" style="max-height: 400px; overflow-y: auto">
             <table class="table table-sm table-hover">
               <thead class="table-light">
@@ -59,16 +59,75 @@
                       class="form-check-input"
                     />
                   </th>
-                  <th style="width: 120px">검사서번호</th>
-                  <th style="width: 100px">품목코드</th>
-                  <th style="width: 150px">품목명</th>
-                  <th style="width: 100px">옵션코드</th>
-                  <th style="width: 150px">옵션명</th>
-                  <th style="width: 80px">검사수량</th>
-                  <th style="width: 80px">합격수량</th>
-                  <th style="width: 80px">불합격수량</th>
-                  <th style="width: 80px">검사상태</th>
-                  <th style="width: 100px">검사일자</th>
+                  <th style="width: 120px">검사서 ID</th>
+                  <th style="width: 80px">품목 유형</th>
+                  <th style="width: 100px">품목 코드</th>
+                  <th style="width: 150px">품목 명</th>
+                  <th style="width: 100px">옵션 코드</th>
+                  <th style="width: 150px">옵션 명</th>
+                  <th style="width: 80px">규격</th>
+                  <th style="width: 60px">단위</th>
+                  <th style="width: 80px">수량</th>
+                  <th style="width: 100px">담당자 명</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="item in productionOrderList"
+                  :key="item.withdrawal_id"
+                  class="cursor-pointer"
+                  :class="{ 'table-active': selectedItems.some((s) => s.insp_no === item.withdrawal_id) }"
+                  @click="handleRowClick(item)"
+                >
+                  <td @click.stop>
+                    <input
+                      type="checkbox"
+                      :checked="isSelected(item)"
+                      @change="toggleSelection(item)"
+                      class="form-check-input"
+                    />
+                  </td>
+                  <td>{{ item.withdrawal_id }}</td>
+                  <td>{{ item.item_type }}</td>
+                  <td>{{ item.item_code }}</td>
+                  <td>{{ item.item_name }}</td>
+                  <td>{{ item.opt_code || '-' }}</td>
+                  <td>{{ item.opt_name || '-' }}</td>
+                  <td>{{ item.item_spec || '-' }}</td>
+                  <td>{{ item.item_unit || '-' }}</td>
+                  <td class="text-end">{{ Number(item.required_qty || 0).toLocaleString() }}</td>
+                  <td>{{ item.emp_name }}</td>
+                </tr>
+                <tr v-if="!productionOrderList || productionOrderList.length === 0">
+                  <td colspan="11" class="text-center text-muted py-4">검색 결과가 없습니다.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 기존 단일 그리드 (완제품 납품 등) -->
+        <div v-else class="table-area mt-3">
+          <div class="table-responsive" style="max-height: 400px; overflow-y: auto">
+            <table class="table table-sm table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th style="width: 50px">
+                    <input
+                      type="checkbox"
+                      :checked="allSelected"
+                      @change="toggleAll($event)"
+                      class="form-check-input"
+                    />
+                  </th>
+                  <th style="width: 120px">출고서 코드</th>
+                  <th style="width: 100px">품목 코드</th>
+                  <th style="width: 150px">품목 명</th>
+                  <th style="width: 100px">옵션 코드</th>
+                  <th style="width: 150px">옵션 명</th>
+                  <th style="width: 80px">출고 예정 수량</th>
+                  <th style="width: 80px">검사 상태</th>
+                  <th style="width: 100px">검사 일자</th>
                   <th style="width: 100px">검사자</th>
                 </tr>
               </thead>
@@ -91,11 +150,9 @@
                   <td>{{ item.insp_no }}</td>
                   <td>{{ item.item_code }}</td>
                   <td>{{ item.item_name }}</td>
-                  <td>{{ item.opt_code }}</td>
-                  <td>{{ item.opt_name }}</td>
-                  <td class="text-end">{{ Number(item.insp_qty || 0).toLocaleString() }}</td>
+                  <td>{{ item.opt_code || '-' }}</td>
+                  <td>{{ item.opt_name || '-' }}</td>
                   <td class="text-end">{{ Number(item.pass_qty || 0).toLocaleString() }}</td>
-                  <td class="text-end">{{ Number(item.fail_qty || 0).toLocaleString() }}</td>
                   <td>
                     <span
                       :class="{
@@ -111,7 +168,7 @@
                   <td>{{ item.insp_emp_name }}</td>
                 </tr>
                 <tr v-if="!inspectionList || inspectionList.length === 0">
-                  <td colspan="11" class="text-center text-muted py-4">검색 결과가 없습니다.</td>
+                  <td colspan="9" class="text-center text-muted py-4">검색 결과가 없습니다.</td>
                 </tr>
               </tbody>
             </table>
@@ -155,6 +212,11 @@ const selectedItems = ref([])
 const selectedInspection = ref(null)
 const selectedInspectionNo = ref('')
 
+// 자재 불출용 추가 데이터
+const productionOrderList = ref([])
+const materialList = ref([])
+const selectedProductionOrder = ref(null)
+
 // 검색 조건
 const searchCondition = reactive({
   item_code: '',
@@ -164,12 +226,23 @@ const searchCondition = reactive({
 
 // 계산된 속성
 const allSelected = computed(() => {
-  return (
-    inspectionList.value.length > 0 &&
-    inspectionList.value.every((item) =>
-      selectedItems.value.some((s) => s.insp_no === item.insp_no),
+  if (searchCondition.insp_type === 'materialWithdrawal') {
+    // 자재 불출의 경우 productionOrderList 확인
+    return (
+      productionOrderList.value.length > 0 &&
+      productionOrderList.value.every((item) => {
+        const itemKey = item.withdrawal_id
+        return selectedItems.value.some((s) => s.insp_no === itemKey)
+      })
     )
-  )
+  } else {
+    return (
+      inspectionList.value.length > 0 &&
+      inspectionList.value.every((item) =>
+        selectedItems.value.some((s) => s.insp_no === item.insp_no),
+      )
+    )
+  }
 })
 
 // 검사서 목록 조회
@@ -184,54 +257,73 @@ const onSearch = async () => {
     console.log('[deliveryModal] 전송 파라미터:', params)
     console.log('[deliveryModal] 검사서 종류:', searchCondition.insp_type)
 
-    // 검사서 종류에 따라 다른 API 호출 (wrhousdlvr 라우터 사용)
-    let apiUrl = '/delivery/products/list'
-
-    // 검사서 종류를 params에 추가
-    params.insp_type = searchCondition.insp_type
-
-    switch (searchCondition.insp_type) {
-      case 'materialWithdrawal':
-        // 자재 불출 (출고) - 생산지시 → BOM 기반 자재 목록
-        apiUrl = '/material/withdrawal/list'
-        break
-
-      case 'deliveryDetail':
-        // 완제품 납품 (출고) - 납품상세 기반 완제품 목록
-        apiUrl = '/delivery/products/list'
-        break
-
-      default:
-        // 전체 조회 (완제품 품질검사 기본)
-        apiUrl = '/delivery/products/list'
-        break
+    if (searchCondition.insp_type === 'materialWithdrawal') {
+      // 자재 불출의 경우 생산지시 상세 목록 조회
+      await loadProductionOrders(params)
+    } else {
+      // 기존 로직 (완제품 납품 등)
+      await loadDeliveryProducts(params)
     }
-
-    console.log('[deliveryModal] 호출 API:', apiUrl)
-
-    const response = await axios.get(`/api${apiUrl}`, { params })
-
-    console.log('[deliveryModal] API 응답:', response)
-    console.log('[deliveryModal] 응답 데이터:', response.data)
-    console.log('[deliveryModal] 응답 건수:', response.data?.length)
-
-    if (response.data?.length > 100) {
-      console.warn('[deliveryModal] 조회 결과가 100건을 초과합니다!')
-    }
-
-    inspectionList.value = response.data || []
-    resetSelection()
   } catch (error) {
-    console.error('[deliveryModal] 검사서 조회 실패:', error)
-    console.error('[deliveryModal] 에러 상세:', {
-      message: error.message,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-    })
-    alert(`검사서 목록 조회 중 오류가 발생했습니다: ${error.message}`)
-    inspectionList.value = []
+    console.error('[deliveryModal] 조회 실패:', error)
+    alert('데이터 조회에 실패했습니다.')
   }
+}
+
+// 생산지시 상세 목록 조회 (자재 불출용)
+const loadProductionOrders = async (params) => {
+  const apiParams = {
+    product_code: params.item_code || '',
+    product_name: params.item_name || '',
+  }
+
+  console.log('[deliveryModal] 생산지시 조회 API 호출:', apiParams)
+  
+  const response = await axios.get('/api/production/orders/details', { params: apiParams })
+  
+  console.log('[deliveryModal] 생산지시 응답:', response.data)
+  
+  productionOrderList.value = response.data || []
+  materialList.value = []
+  selectedProductionOrder.value = null
+  resetSelection()
+}
+
+// 기존 완제품 납품 목록 조회
+const loadDeliveryProducts = async (params) => {
+  // 검사서 종류에 따라 다른 API 호출 (wrhousdlvr 라우터 사용)
+  let apiUrl = '/delivery/products/list'
+
+  // 검사서 종류를 params에 추가
+  params.insp_type = searchCondition.insp_type
+
+  switch (searchCondition.insp_type) {
+    case 'deliveryDetail':
+      // 완제품 납품 (출고) - 납품상세 기반 완제품 목록
+      apiUrl = '/delivery/products/list'
+      break
+
+    default:
+      // 전체 조회 (완제품 품질검사 기본)
+      apiUrl = '/delivery/products/list'
+      break
+  }
+
+  console.log('[deliveryModal] 호출 API:', apiUrl)
+
+  const response = await axios.get(`/api${apiUrl}`, { params })
+
+  console.log('[deliveryModal] API 응답:', response)
+  console.log('[deliveryModal] 응답 데이터:', response.data)
+  console.log('[deliveryModal] 응답 건수:', response.data?.length)
+  console.log('[deliveryModal] 첫 번째 데이터 상세:', JSON.stringify(response.data?.[0], null, 2))
+
+  if (response.data?.length > 100) {
+    console.warn('[deliveryModal] 조회 결과가 100건을 초과합니다!')
+  }
+
+  inspectionList.value = response.data || []
+  resetSelection()
 }
 
 // 검색 조건 초기화
@@ -257,11 +349,23 @@ const selectSingleInspection = (item) => {
 
 // 체크박스 선택/해제
 const toggleSelection = (item) => {
-  const index = selectedItems.value.findIndex((s) => s.insp_no === item.insp_no)
+  let itemKey
+  if (searchCondition.insp_type === 'materialWithdrawal') {
+    // 자재 불출의 경우 생산지시 ID 사용
+    itemKey = item.withdrawal_id
+  } else {
+    itemKey = item.insp_no
+  }
+  
+  const index = selectedItems.value.findIndex((s) => s.insp_no === itemKey)
   if (index > -1) {
     selectedItems.value.splice(index, 1)
   } else {
-    selectedItems.value.push({ ...item, insp_type: searchCondition.insp_type })
+    selectedItems.value.push({ 
+      ...item, 
+      insp_no: itemKey,
+      insp_type: searchCondition.insp_type 
+    })
   }
   console.log('[deliveryModal] 선택된 검사서들:', selectedItems.value)
 }
@@ -269,10 +373,19 @@ const toggleSelection = (item) => {
 // 전체 선택/해제
 const toggleAll = (event) => {
   if (event.target.checked) {
-    selectedItems.value = inspectionList.value.map((item) => ({
-      ...item,
-      insp_type: searchCondition.insp_type,
-    }))
+    if (searchCondition.insp_type === 'materialWithdrawal') {
+      // 자재 불출의 경우 productionOrderList 사용
+      selectedItems.value = productionOrderList.value.map((item) => ({
+        ...item,
+        insp_no: item.withdrawal_id,
+        insp_type: searchCondition.insp_type,
+      }))
+    } else {
+      selectedItems.value = inspectionList.value.map((item) => ({
+        ...item,
+        insp_type: searchCondition.insp_type,
+      }))
+    }
   } else {
     selectedItems.value = []
   }
@@ -280,7 +393,13 @@ const toggleAll = (event) => {
 
 // 선택 여부 확인
 const isSelected = (item) => {
-  return selectedItems.value.some((s) => s.insp_no === item.insp_no)
+  let itemKey
+  if (searchCondition.insp_type === 'materialWithdrawal') {
+    itemKey = item.withdrawal_id
+  } else {
+    itemKey = item.insp_no
+  }
+  return selectedItems.value.some((s) => s.insp_no === itemKey)
 }
 
 // 선택 상태 초기화
