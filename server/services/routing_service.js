@@ -13,14 +13,14 @@ const getRoutingInfo = async (prdt_cd) => {
 };
 
 // 공정 모달 조회
-const getPrcsModal = async (prcsId, prcsName, eqmGrpNm, leadTm, moldUse) => {
+const getPrcsModal = async (prcs_id, prcs_nm, eqm_grp_nm, lead_tm, mold_use_at) => {
   try {
     const result = await mariadb.query("selectPrcsModal", [
-      prcsId,
-      prcsName,
-      eqmGrpNm,
-      leadTm,
-      moldUse,
+      prcs_id,
+      prcs_nm,
+      eqm_grp_nm,
+      lead_tm,
+      mold_use_at,
     ]);
     return result;
   } catch (error) {

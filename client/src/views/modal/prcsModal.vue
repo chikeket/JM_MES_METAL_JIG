@@ -5,7 +5,7 @@
     </CModalHeader>
     <CModalBody>
       <div class="modal-body" style="max-height: 400px; overflow-y: auto">
-        <!-- Select box : 검색 영역 -->
+        <!-- 검색 영역 -->
         <div class="d-flex gap-2 mb-3">
           <select class="form-select" style="width: 150px" v-model="pickValue">
             <option value="prcs_id">공정코드</option>
@@ -18,11 +18,10 @@
             placeholder="검색어 입력"
             v-model="searchKeyword"
           />
-          <button class="btn btn-secondary" @click="prcsSearch()">검색</button>
+          <button class="btn btn-secondary" @click="prcsSearch">검색</button>
         </div>
 
         <!-- 결과 테이블 -->
-
         <table class="table table-bordered table-hover">
           <thead class="table-light">
             <tr>
@@ -33,10 +32,8 @@
               <th>금형사용유무</th>
             </tr>
           </thead>
-
-          <tbody class="table table-bordered table-hover mb-0">
-            <!-- 결과 값 row를 더블클릭 시 ...-->
-            <tr v-for="(prdts, i) in prdtList" :key="i" @dblclick="selectPrcs(prcs)">
+          <tbody>
+            <tr v-for="(prcs, i) in prcsList" :key="i" @dblclick="selectPrcs(prcs)">
               <td>{{ prcs.prcs_id }}</td>
               <td>{{ prcs.prcs_nm }}</td>
               <td>{{ prcs.eqm_grp_nm }}</td>
@@ -54,43 +51,46 @@
 </template>
 
 <script setup>
-import { ref, defineProps, defineEmits, shallowRef } from 'vue'
+import { ref, shallowRef, defineProps, defineEmits } from 'vue'
 import axios from 'axios'
 
 const props = defineProps({
   visible: Boolean,
 })
 const emit = defineEmits(['close', 'select'])
+
+const pickValue = ref('prcs_id')
+const searchKeyword = ref('')
+const prcsList = shallowRef([])
+
+// 모달 닫기
 const close = () => {
   prcsList.value = []
   emit('close')
 }
 
-const pickValue = ref('prdt_nm') // 기본값: 코드
-const searchKeyword = ref('')
-
-let prdtList = shallowRef([]) // <- 반응형 객체
-
+// 검색 버튼 클릭
 const prcsSearch = async () => {
-  const params = { prcs_id: '', prcs_nm: '', eqm_grp_nm: '', lead_tm: '', mold_use_at: '' }
+  try {
+    const params = { prcsId: '', prcsName: '', eqmGrpNm: '' }
 
-  if (pickValue.value == 'prcs_id') {
-    params.prcs_id = searchKeyword.value
-  } else if (pickValue.value == 'prcs_nm') {
-    params.prcs_nm = searchKeyword.value
-  } else if (pickValue.value == 'eqm_grp_nm') {
-    params.eqm_grp_nm = searchKeyword.value
-  } else if (pickValue.value == 'lead_tm') {
-    params.lead_tm = searchKeyword.value
-  } else {
-    params.mold_use_at = searchKeyword.value
+    if (pickValue.value === 'prcs_id') {
+      params.prcsId = searchKeyword.value
+    } else if (pickValue.value === 'prcs_nm') {
+      params.prcsName = searchKeyword.value
+    } else if (pickValue.value === 'eqm_grp_nm') {
+      params.eqmGrpNm = searchKeyword.value
+    }
+
+    const result = await axios.get('/api/prcsModal', { params })
+    prcsList.value = result.data
+  } catch (err) {
+    console.error('공정 검색 오류:', err)
+    alert('검색 중 오류가 발생했습니다.')
   }
-  // console.log(params)
-  let result = await axios.get('/api/prcs', { params }).catch((err) => console.log(err))
-  // console.log(result.data)
-  prcsList.value = result.data
 }
 
+// row 더블클릭: 선택
 const selectPrcs = (prcs) => {
   emit('select', {
     detailData: prcs,
@@ -101,7 +101,7 @@ const selectPrcs = (prcs) => {
       lead_tm: '',
       mold_use_at: '',
     },
-  }) // 부모에게 선택된 제품 전달
-  close() // 모달 닫기
+  })
+  close()
 }
 </script>
