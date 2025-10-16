@@ -134,6 +134,11 @@ export default [
         name: '납품 조회',
         to: '/Minsu/deli_search',
       },
+      {
+        component: 'CNavItem',
+        name: '공정 진행 현황',
+        to: '/Minsu/prcsProgPrecon',
+      },
     ],
   },
   {
