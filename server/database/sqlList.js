@@ -93,7 +93,7 @@ module.exports = {
   ...qltyItemManage,
   ...wrhousdlvr,
 
-  ...SSMManage,
+  // ...SSMManage,
 
   ...wrhousManage,
   ...wrhousZoneManage,
@@ -101,6 +101,4 @@ module.exports = {
   ...prcs,
   ...prcsProgPrecon,
   ...semiPrdtQltyInsp,
-
-
 };
