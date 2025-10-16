@@ -53,6 +53,7 @@ const wrhousZoneManage = require("./routers/wrhousZoneManage_router.js"); // 창
 
 const routingInfo = require("./routers/routing_router.js"); // 공정 라우팅
 const prcs_Router = require("./routers/prcs_router.js"); // 공정목록 조회
+const semiPrdtQltyInsp = require("./routers/semiPrdtQltyInsp_router.js"); // 반제품 품질검수
 
 // 기본 라우팅
 app.get("/", (req, res) => {
@@ -83,3 +84,4 @@ app.use("/", wrhousZoneManage); // 창고 로케이션 기준정보 관리
 
 app.use("/", routingInfo); // 공정 라우팅
 app.use("/api", prcs_Router); // 공정목록 조회
+app.use("/", semiPrdtQltyInsp); // 반제품 품질검수

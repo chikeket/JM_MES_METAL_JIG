@@ -41,7 +41,7 @@
             <tr v-for="(prdts, i) in prdtList" :key="i" @dblclick="selectProduct(prdts)">
               <td>{{ prdts.prdt_nm }}</td>
               <td>{{ prdts.opt_nm }}</td>
-              <td>{{ Number(prdts.bePass_qy) - Number(prdts.beInsp_qy) }}</td>
+              <td>{{ Number(prdts.bePass_qy) }}</td>
               <td>{{ userDateUtils.dateFormat(prdts.wk_to_dt, 'yyyy-MM-dd') }}</td>
             </tr>
           </tbody>
