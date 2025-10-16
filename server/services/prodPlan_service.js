@@ -33,7 +33,23 @@ const prodPlanDetafindAll = async (Info) => {
   return list;
 };
 
+// 마스터정보로 상세내용 조회
+const prodPlanRcvordMasterSearch = async (Info) => {
+  let insertColumns = ["rcvord_id", "co_nm", "emp_nm", "reg_dt"];
+  // console.log("클라에서들어가는값 서비스");
+  // console.log(Info);
+  let data = convertObjToAry(Info, insertColumns);
+  console.log("service쪽");
+  console.log(data);
+  let list = await mariadb
+    .query("rcvordMykMasterSearch", data)
+    .catch((err) => console.log(err));
+  // console.log("조회 결과:", list);
+  return list;
+};
+
 module.exports = {
   prodPlanfindAll,
   prodPlanDetafindAll,
+  prodPlanRcvordMasterSearch,
 };

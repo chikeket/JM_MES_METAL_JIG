@@ -106,6 +106,11 @@ export default [
         name: '반제품품질',
         to: '/qlty/semiPrdtQltyInsp',
       },
+      {
+        component: 'CNavItem',
+        name: '생산계획',
+        to: '/product/prodPlanManage',
+      },
     ],
   },
   {

@@ -132,6 +132,52 @@ const rcvordSearchList = `
   ORDER BY R.rcvord_id DESC, D.rcvord_deta_id DESC
 `;
 
+// 수주서 모달에서 수주서 마스터테이블 조회(윤기가 쓰는 쿼리)
+const rcvordMykMasterSearch = `
+  select
+ a.rcvord_id
+ ,b.co_nm
+ ,c.emp_nm
+ ,a.reg_dt
+from rcvord a
+join co b
+on a.co_id = b.co_id
+join emp c
+on a.emp_id = c.emp_id
+where a.rcvord_id IN(
+					select
+					 ae.rcvord_id
+					from (
+							select
+							 a.rcvord_id
+							 ,b.prdt_id
+							 ,b.prdt_opt_id
+							 ,b.rcvord_qy
+							 ,c.plan_qy
+							from rcvord a
+							join rcvord_deta b
+							on a.rcvord_id = b.rcvord_id
+							join (
+									select
+									 a.rcvord_id
+									 ,b.prdt_id
+									 ,b.prdt_opt_id
+									 ,SUM(b.plan_qy) "plan_qy"
+									from prod_plan a
+									join prod_plan_deta b
+									on a.prod_plan_id = b.prod_plan_id
+									group by a.rcvord_id ,b.prdt_id ,b.prdt_opt_id ) c
+							on a.rcvord_id = c.rcvord_id
+							and b.prdt_id = c.prdt_id
+							and b.prdt_opt_id = c.prdt_opt_id
+							and b.rcvord_qy > c.plan_qy
+							order by a.reg_dt desc) ae)
+and a.rcvord_id LIKE CONCAT('%', ?,'%')
+and b.co_nm LIKE CONCAT('%', ?,'%')
+and c.emp_nm LIKE CONCAT('%', ?,'%')
+and a.reg_dt > ?
+`;
+
 module.exports = {
   modalRcvordFind,
   rcvordFindHeader,
@@ -148,4 +194,5 @@ module.exports = {
   rcvordNewId,
   rcvordDetaNewId,
   rcvordSearchList,
+  rcvordMykMasterSearch,
 };
