@@ -22,48 +22,50 @@
 
     <!-- 메인 컨텐츠 영역 -->
     <CRow class="flex-grow-1 overflow-hidden g-2">
-      
       <!-- 좌측: 데이터 그리드 -->
       <CCol :md="6" class="d-flex flex-column overflow-hidden">
-        <!-- 높이 맞추기용 투명 버튼 영역 -->
-        <div class="button-spacer mb-2">
+        <div class="button-spacer mb-2" style="visibility: hidden">
           <CButton color="secondary" size="sm">신규</CButton>
           <CButton color="secondary" size="sm">저장</CButton>
           <CButton color="danger" size="sm">삭제</CButton>
         </div>
-        
+
         <!-- 그리드 테이블 -->
-        <div class="grid-box flex-grow-1 overflow-hidden d-flex flex-column">
+        <div class="grid-box flex-grow-1 overflow-hidden">
           <div class="table-wrapper">
             <CTable bordered hover class="data-table">
               <CTableHead>
                 <CTableRow>
-                  <CTableHeaderCell>자재코드</CTableHeaderCell>
-                  <CTableHeaderCell>자재분류타입</CTableHeaderCell>
-                  <CTableHeaderCell>자재명</CTableHeaderCell>
-                  <CTableHeaderCell>규격</CTableHeaderCell>
-                  <CTableHeaderCell>수량단위</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 80px">자재코드</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 100px">자재분류타입</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 120px">자재명</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 80px">규격</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 80px">수량단위</CTableHeaderCell>
                   <CTableHeaderCell>비고</CTableHeaderCell>
                 </CTableRow>
               </CTableHead>
               <CTableBody>
-                <!-- 데이터 행 -->
                 <CTableRow
                   v-for="(item, index) in displayedData"
                   :key="index"
                   @click="handleRowSelect(item, index)"
                   :class="{ 'selected-row': selectedRowIndex === index }"
                 >
-                  <CTableDataCell class="text-end">{{ item.materialCode }}</CTableDataCell>
-                  <CTableDataCell>{{ item.materialType }}</CTableDataCell>
-                  <CTableDataCell>{{ item.materialName }}</CTableDataCell>
-                  <CTableDataCell>{{ item.spec }}</CTableDataCell>
-                  <CTableDataCell>{{ item.unit }}</CTableDataCell>
-                  <CTableDataCell>{{ item.remark }}</CTableDataCell>
-                </CTableRow>
-                <!-- 빈 행 채우기 (10행 고정) -->
-                <CTableRow v-for="i in emptyRowCount" :key="'empty-' + i" class="empty-row">
-                  <CTableDataCell colspan="6">&nbsp;</CTableDataCell>
+                  <CTableDataCell class="text-end">{{ item.rsc_id }}</CTableDataCell>
+                  <CTableDataCell>{{ item.rsc_clsf_id }}</CTableDataCell>
+                  <!-- ✅ 수정: input으로 변경 -->
+                  <CTableDataCell>
+                    <input v-model="item.rsc_nm" class="cell-input" @click.stop />
+                  </CTableDataCell>
+                  <CTableDataCell>
+                    <input v-model="item.spec" class="cell-input" @click.stop />
+                  </CTableDataCell>
+                  <CTableDataCell>
+                    <input v-model="item.unit" class="cell-input" @click.stop />
+                  </CTableDataCell>
+                  <CTableDataCell>
+                    <input v-model="item.rmrk" class="cell-input" @click.stop />
+                  </CTableDataCell>
                 </CTableRow>
               </CTableBody>
             </CTable>
@@ -73,18 +75,15 @@
 
       <!-- 우측: 상세 입력 폼 -->
       <CCol :md="6" class="d-flex flex-column overflow-hidden">
-        <!-- 신규/저장/삭제 버튼 -->
         <div class="d-flex justify-content-end gap-2 mb-2">
           <CButton color="secondary" size="sm" @click="handleNew">신규</CButton>
           <CButton color="secondary" size="sm" @click="handleSave">저장</CButton>
           <CButton color="danger" size="sm" @click="handleDelete">삭제</CButton>
         </div>
 
-        <!-- 입력 폼 (2열 구조) -->
         <div class="form-box flex-grow-1 d-flex flex-column overflow-hidden">
           <div class="p-3 flex-grow-1 overflow-auto">
             <CRow>
-              <!-- 좌측 열 -->
               <CCol :md="6">
                 <CRow class="mb-2" v-for="field in leftFields" :key="field.key">
                   <CCol :md="4" class="text-end pe-2">
@@ -95,12 +94,12 @@
                       v-model="formData[field.key]"
                       size="sm"
                       placeholder="입력해주세요"
+                      :disabled="field.key === 'materialCode'"
                     />
                   </CCol>
                 </CRow>
               </CCol>
 
-              <!-- 우측 열 -->
               <CCol :md="6">
                 <CRow class="mb-2" v-for="field in rightFields" :key="field.key">
                   <CCol :md="4" class="text-end pe-2">
@@ -120,7 +119,6 @@
         </div>
       </CCol>
     </CRow>
-
   </CContainer>
 </template>
 
@@ -135,7 +133,7 @@ import axios from 'axios'
 // 검색 필터
 const searchFilters = reactive({
   materialName: '',
-  materialType: ''
+  materialType: '',
 })
 
 // 입력 폼 데이터
@@ -145,21 +143,21 @@ const formData = reactive({
   materialName: '',
   spec: '',
   unit: '',
-  remark: ''
+  remark: '',
 })
 
 // 폼 필드 정의 (좌측)
 const leftFields = [
   { key: 'materialCode', label: '자재코드' },
   { key: 'materialType', label: '자재분류타입' },
-  { key: 'materialName', label: '자재명' }
+  { key: 'materialName', label: '자재명' },
 ]
 
 // 폼 필드 정의 (우측)
 const rightFields = [
   { key: 'spec', label: '규격' },
   { key: 'unit', label: '수량단위' },
-  { key: 'remark', label: '비고' }
+  { key: 'remark', label: '비고' },
 ]
 
 // 그리드 데이터
@@ -167,6 +165,7 @@ const gridData = ref([])
 
 // 선택된 행 인덱스
 const selectedRowIndex = ref(null)
+const selectedRscId = ref(null) // ✅ 추가: 선택된 자재 ID
 const originalCode = ref('')
 
 // ============================================
@@ -195,26 +194,31 @@ const handleSearch = async () => {
   try {
     const params = {
       rsc_nm: searchFilters.materialName || '',
-      rsc_ty_id: searchFilters.materialType || ''
+      rsc_clsf_id: searchFilters.materialType || '', // ✅ 수정: rsc_ty_id → rsc_clsf_id
     }
     console.log('📋 조회 파라미터:', params)
-    
+
     const response = await axios.get('/api/rsc_list_view', { params })
+    console.log('서버 응답:', response.data)
+
     const list = Array.isArray(response.data) ? response.data : response.data.data || []
-    
-    gridData.value = list.map(item => ({
-      materialCode: item.rsc_id,
-      materialType: item.rsc_ty_id,
-      materialName: item.rsc_nm,
+
+    // ✅ 수정: DB 컬럼명 그대로 사용 + rmrk로 매핑
+    gridData.value = list.map((item) => ({
+      rsc_id: item.rsc_id,
+      rsc_clsf_id: item.rsc_clsf_id,
+      rsc_nm: item.rsc_nm,
       spec: item.spec,
       unit: item.unit,
-      remark: item.rmrk
+      rmrk: item.rmrk, // ✅ SQL에서 rm as rmrk
     }))
-    
+
     console.log('✅ 조회 완료:', gridData.value.length, '건')
     selectedRowIndex.value = null
+    selectedRscId.value = null
   } catch (error) {
     console.error('❌ 조회 오류:', error)
+    alert('조회 중 오류가 발생했습니다.')
     gridData.value = []
   }
 }
@@ -226,9 +230,17 @@ const handleReset = () => {
 
 // 그리드 행 선택 - 우측 폼에 데이터 표시
 const handleRowSelect = (item, index) => {
-  Object.assign(formData, item)
-  originalCode.value = item.materialCode
+  // ✅ 수정: DB 컬럼명으로 매핑
+  formData.materialCode = item.rsc_id
+  formData.materialType = item.rsc_clsf_id
+  formData.materialName = item.rsc_nm
+  formData.spec = item.spec
+  formData.unit = item.unit
+  formData.remark = item.rmrk || ''
+
+  originalCode.value = item.rsc_id
   selectedRowIndex.value = index
+  selectedRscId.value = item.rsc_id // ✅ 추가
 }
 
 // 폼 데이터 초기화
@@ -239,10 +251,11 @@ const resetFormData = () => {
     materialName: '',
     spec: '',
     unit: '',
-    remark: ''
+    remark: '',
   })
   originalCode.value = ''
   selectedRowIndex.value = null
+  selectedRscId.value = null
 }
 
 // 신규 버튼 클릭 - 우측 폼에 입력한 값으로 신규 등록
@@ -254,18 +267,17 @@ const handleNew = async () => {
 
   try {
     const payload = {
-      rsc_ty_id: formData.materialType,
+      rsc_clsf_id: formData.materialType, // ✅ 수정
       rsc_nm: formData.materialName,
       spec: formData.spec,
       unit: formData.unit,
-      rmrk: formData.remark
+      rm: formData.remark, // ✅ DB 컬럼명 rm
     }
-    
+
     console.log('➕ 신규 등록:', payload)
     const response = await axios.post('/api/rscInsert', payload)
+
     alert('등록 완료')
-    
-    // 등록 후 재조회
     await handleSearch()
     resetFormData()
   } catch (error) {
@@ -276,32 +288,32 @@ const handleNew = async () => {
 
 // 저장 버튼 클릭 - 선택된 행 데이터 수정
 const handleSave = async () => {
-  if (!originalCode.value) {
+  // ✅ 수정: displayedData에서 찾기
+  const selected = gridData.value.find((r) => r.rsc_id === selectedRscId.value)
+
+  if (!selected) {
     alert('수정할 자재를 선택해주세요.')
     return
   }
 
   try {
     const payload = {
-      rsc_id: formData.materialCode,
-      rsc_ty_id: formData.materialType,
-      rsc_nm: formData.materialName,
-      spec: formData.spec,
-      unit: formData.unit,
-      rmrk: formData.remark,
-      original_rsc_id: originalCode.value
+      rsc_id: selected.rsc_id,
+      rsc_clsf_id: selected.rsc_clsf_id,
+      rsc_nm: selected.rsc_nm,
+      spec: selected.spec,
+      unit: selected.unit,
+      rm: selected.rmrk || '', // ✅ rmrk를 rm으로 변환
+      original_rsc_id: selected.rsc_id,
     }
-    
+
     console.log('✏️ 수정 저장:', payload)
-    const response = await axios.post('/api/rscUpdate', payload)
+    await axios.post('/api/rscUpdate', payload)
     alert('수정 완료')
-    
-    // 수정 후 재조회
     await handleSearch()
-    resetFormData()
   } catch (error) {
     console.error('❌ 수정 오류:', error)
-    alert('수정 중 오류가 발생했습니다.')
+    alert('수정 실패')
   }
 }
 
@@ -316,10 +328,9 @@ const handleDelete = async () => {
 
   try {
     console.log('🗑️ 삭제:', formData.materialCode)
-    const response = await axios.post('/api/rscDelete', { rsc_id: formData.materialCode })
+    await axios.post('/api/rscDelete', { rsc_id: formData.materialCode })
+
     alert('삭제 완료')
-    
-    // 삭제 후 재조회
     await handleSearch()
     resetFormData()
   } catch (error) {
@@ -334,7 +345,8 @@ const handleDelete = async () => {
    전역 스타일 - 2025 Modern Design
    ============================================ */
 :deep(*) {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
+    sans-serif;
   line-height: 1.5;
   box-sizing: border-box;
 }
@@ -586,9 +598,25 @@ const handleDelete = async () => {
   :deep(td) {
     font-size: 11px !important;
   }
-  
+
   :deep(.btn) {
     padding: 0.4rem 1rem;
   }
+}
+
+.cell-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 2px 4px;
+}
+
+.cell-input:focus {
+  outline: 1px solid #0d6efd;
+  background: #fff;
+}
+
+.selected-row {
+  background-color: #e7f3ff !important;
 }
 </style>
