@@ -1,8 +1,8 @@
 const mariadb = require("../database/mapper.js");
 const { convertObjToAry } = require("../utils/converts.js");
 const sqlList = require("../database/sqlList.js");
-console.log('prdtupdate 존재 여부:', !!sqlList.prdtUpdate);
-console.log('사용 가능한 쿼리들:', Object.keys(sqlList).filter(k => k.startsWith('prdt')));
+// console.log('prdtupdate 존재 여부:', !!sqlList.prdtUpdate);
+// console.log('사용 가능한 쿼리들:', Object.keys(sqlList).filter(k => k.startsWith('prdt')));
 
 
 const getPrdtList = async (filters) => {
@@ -52,7 +52,7 @@ const updatePrdt = async (prdtData) => {
   try {
     console.log("===== ✅ updatePrdt 받은 데이터 =====");
     console.log(prdtData);
-    
+
     let data = [
       prdtData.prdt_nm,
       prdtData.spec,
@@ -61,16 +61,16 @@ const updatePrdt = async (prdtData) => {
       prdtData.rm || '',
       prdtData.original_prdt_id || prdtData.prdt_id
     ];
-    
+
     console.log("===== 📝 SQL에 전달할 배열 =====");
     console.log(data);
     console.log("순서: [prdt_nm, spec, unit, prdt_st, rm, prdt_id]");
-    
+
     let result = await mariadb.query("prdtUpdate", data);
-    
+
     console.log("===== 💾 UPDATE 실행 결과 =====");
     console.log(result);
-    
+
     return result;
   } catch (err) {
     console.error("❌ updatePrdt 오류:", err);

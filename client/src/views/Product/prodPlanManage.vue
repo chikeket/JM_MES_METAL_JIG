@@ -2,21 +2,14 @@
 import { ref, reactive, watch } from 'vue'
 
 import axios from 'axios'
-import PrdtModal from '../modal/prdtModal.vue'
+
 import ProdPlanModal from '../modal/prodPlanModal.vue'
-import ProdDrctModal from '../modal/prodDrctModal.vue'
+import ProdDrctModal from '../modal/rcvordMykModal.vue'
 import { useAuthStore } from '@/stores/auth.js'
 const auth = useAuthStore()
 // console.log('auth정보')
 // console.log(auth.user)
-//제품검색모달
-const isPrdtModalVisible = ref(false)
-const goToPrdtModal = () => {
-  isPrdtModalVisible.value = true
-}
-const closePrdtModal = () => {
-  isPrdtModalVisible.value = false
-}
+
 //생산계획모달
 const isProdPlanModalVisible = ref(false)
 const goToProdPlan = () => {
@@ -284,10 +277,10 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
   <CContainer fluid>
     <div class="d-flex justify-content-end gap-2 mb-3">
       <CButton color="secondary" @click="masterReset()">신규</CButton>
-      <CButton color="secondary" @click="goToDrctPlan()">생산지시서 조회</CButton>
-      <ProdDrctModal
-        :visible="isProdDrctModalVisible"
-        @close="closeProdDrctModal"
+      <CButton color="secondary" @click="goToProdPlan()">생산계획서 조회</CButton>
+      <ProdPlanModal
+        :visible="isProdPlanModalVisible"
+        @close="closeProdPlanModal"
         @select="selectedPrdt"
       />
       <CButton color="secondary" @click="insertRowsToDB">저장</CButton>
@@ -299,7 +292,7 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
       <CRow class="g-3 mb-3">
         <CCol md="3">
           <CInputGroup>
-            <CInputGroupText id="addon-ordr-name-1">생산지시서 명</CInputGroupText>
+            <CInputGroupText id="addon-ordr-name-1">생산계획서 명</CInputGroupText>
             <CFormInput v-model="Info.ordrName1" placeholder="생산지시서 명" />
           </CInputGroup>
         </CCol>
@@ -327,16 +320,14 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
     <CFormTextarea v-model="Info.remark" label="비고" rows="3" text="필요 시 기재"></CFormTextarea>
 
     <div class="d-flex justify-content-end gap-2 mb-3">
-      <CButton color="secondary" @click="goToPrdtModal()">제품 조회</CButton>
-      <!-- 모달 컴포넌트 -->
-      <PrdtModal :visible="isPrdtModalVisible" @close="closePrdtModal" @select="selectedPrdt" />
-
-      <CButton color="secondary" @click="goToProdPlan()">생산계획서 조회</CButton>
-      <ProdPlanModal
-        :visible="isProdPlanModalVisible"
-        @close="closeProdPlanModal"
+      
+<CButton color="secondary" @click="goToDrctPlan()">수주서 조회</CButton>
+      <ProdDrctModal
+        :visible="isProdDrctModalVisible"
+        @close="closeProdDrctModal"
         @select="selectedPrdt"
       />
+      
 
       <CButton color="secondary" @click="reset()">초기화</CButton>
     </div>

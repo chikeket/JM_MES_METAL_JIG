@@ -2,8 +2,8 @@
 const mariadb = require("../database/mapper.js");
 const sqlList = require("../database/sqlList.js");
 
-console.log('rscUpdate 존재 여부:', !!sqlList.rscUpdate);
-console.log('사용 가능한 쿼리들:', Object.keys(sqlList).filter(k => k.startsWith('rsc')));
+// console.log('rscUpdate 존재 여부:', !!sqlList.rscUpdate);
+// console.log('사용 가능한 쿼리들:', Object.keys(sqlList).filter(k => k.startsWith('rsc')));
 
 const getRscList = async (filters) => {
   try {

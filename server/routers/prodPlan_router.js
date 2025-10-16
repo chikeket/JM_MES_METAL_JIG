@@ -31,4 +31,17 @@ router.get("/prodPlanDetaSearch", async (req, res) => {
   // res.json(prdtList);
 });
 
+router.get("/prodPlanRcvordMasterSearch", async (req, res) => {
+  console.log("생산계획페이지 수주서모달에서 조회할때 쓰는 라우터");
+  console.log(req.query);
+  // req.query;
+  let prdtList = await prodPlanService
+    .prodPlanRcvordMasterSearch(req.query)
+    .catch((err) => console.log(err));
+  // console.log("클라로갈값");
+  // console.log(prdtList);
+  res.send(prdtList);
+  // res.json(prdtList);
+});
+
 module.exports = router;
