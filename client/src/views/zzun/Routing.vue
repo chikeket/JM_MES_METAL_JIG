@@ -122,10 +122,11 @@
             <CButton color="secondary" size="sm" @click="openPrcsSearch"> 공정검색 </CButton>
             <!-- 모달 상태 -->
             <prcsModal
-              v-model:visible="isPrcsModalOpen"
-              @close="closePrcsModal"
-              @select="onSelectPrcs"
-            />
+  :isPrcsModalOpen="isPrcsModalOpen"
+  @close="closePrcsModal"
+  @select="onSelectPrcs"
+/>
+
 
             <CButton color="danger" size="sm">행 삭제</CButton>
             <CButton color="secondary" size="sm">저장</CButton>
@@ -199,6 +200,7 @@ const prdtSearch = async () => {
     console.error('검색 오류:', err)
   }
 }
+
 
 // 공정 조회 모달 열기
 const openPrcsSearch = () => {

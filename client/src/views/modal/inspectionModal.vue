@@ -41,7 +41,7 @@
             </div>
             <div class="col-md-3 d-flex align-items-end">
               <button type="button" class="btn btn-secondary me-2" @click="onSearch">조회</button>
-              <button type="button" class="btn btn-secondary" @click="onResetpr">초기화</button>
+              <button type="button" class="btn btn-secondary" @click="onReset">초기화</button>
             </div>
           </div>
         </div>
@@ -185,7 +185,7 @@ const allSelected = computed(() => {
   )
 })
 
-// 검사서 목록 조회   밥 먹고 여기서부터 하셈 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// 검사서 목록 조회   
 const onSearch = async () => {
   try {
     const params = {
