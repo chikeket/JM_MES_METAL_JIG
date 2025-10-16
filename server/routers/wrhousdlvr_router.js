@@ -200,6 +200,42 @@ router.get("/warehouse/semiPrdtQltyInsp/list", async (req, res) => {
   }
 });
 
+// LOT 할당 정보 조회 (출고용)
+router.get("/warehouse/lots/allocations", async (req, res) => {
+  console.log("[wrhousdlvr_router] /warehouse/lots/allocations 요청 받음");
+  console.log("[wrhousdlvr_router] query:", req.query);
+
+  try {
+    const { item_type, item_code, item_opt_code, quantity } = req.query;
+
+    console.log("[wrhousdlvr_router] LOT 할당 파라미터:", {
+      item_type,
+      item_code,
+      item_opt_code,
+      quantity: Number(quantity)
+    });
+
+    const result = await wrhousdlvrService.getLotAllocations({
+      item_type,
+      item_code,
+      item_opt_code: item_opt_code || null,
+      quantity: Number(quantity)
+    });
+
+    console.log("[wrhousdlvr_router] LOT 할당 결과:", result.length, "건");
+    console.log("[wrhousdlvr_router] LOT 할당 상세:", result);
+
+    res.json(result);
+  } catch (error) {
+    console.error("[wrhousdlvr_router] LOT 할당 조회 실패:", error);
+    res.status(500).json({
+      error: "LOT 할당 조회 실패",
+      message: error.message,
+      details: error.stack
+    });
+  }
+});
+
 // 납품 상세 목록 조회
 router.get("/wrhousdlvr/warehouse/products/list", async (req, res) => {
   console.log(
@@ -466,14 +502,14 @@ router.post("/warehouse/transactions", async (req, res) => {
       `[wrhousdlvr_router] 디테일 거래: ${detailTransactions.length}건`
     );
 
-    // 서비스를 통해 마스터-디테일 저장 처리
-    const result = await wrhousdlvrService.saveMasterDetailTransactions({
+    // 새로운 서비스를 통해 마스터-디테일 저장 처리 (LOT 관리, 재고 확인 포함)
+    const result = await wrhousdlvrService.saveWarehouseTransactions({
       mode,
       masterTransactions,
       detailTransactions,
     });
 
-    console.log("[wrhousdlvr_router] 마스터-디테일 저장 결과:", result);
+    console.log("[wrhousdlvr_router] 창고 거래 저장 결과:", result);
 
     res.json(result);
   } catch (err) {

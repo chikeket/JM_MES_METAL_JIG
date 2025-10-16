@@ -1,6 +1,6 @@
 // 테이블: WRHOUS_WRHSDLVR <창고 입출고> 관련 SQL 쿼리들
 
-// 자재 품질검사서 목록 조회 (사용)
+// 자재 품질검사서 목록 조회 (사용) - 완전 입고된 것 제외
 const selectRscInspectionList = `
 SELECT 
   qi.RSC_QLTY_INSP_ID AS insp_no,
@@ -11,6 +11,8 @@ SELECT
   qi.INSP_QY          AS insp_qty,
   qi.PASS_QY          AS pass_qty,
   COALESCE(SUM(qii.INFER_QY), 0) AS fail_qty,
+  COALESCE(SUM(wd.RCVPAY_QY), 0) AS received_qty,
+  (qi.PASS_QY - COALESCE(SUM(wd.RCVPAY_QY), 0)) AS remaining_qty,
   CASE 
     WHEN qi.INSP_QY > 0 
          AND qi.INSP_QY = qi.PASS_QY + COALESCE(SUM(qii.INFER_QY), 0)
@@ -30,6 +32,11 @@ LEFT JOIN EMP e
        ON qi.EMP_ID = e.EMP_ID
 LEFT JOIN RSC_QLTY_INSP_INFER_QY qii 
        ON qi.RSC_QLTY_INSP_ID = qii.RSC_QLTY_INSP_ID
+LEFT JOIN WRHOUS_WRHSDLVR wd 
+       ON qi.RSC_QLTY_INSP_ID = wd.RSC_QLTY_INSP_ID
+LEFT JOIN WRHOUS_WRHSDLVR_MAS wm 
+       ON wd.WRHSDLVR_MAS_ID = wm.WRHSDLVR_MAS_ID 
+       AND wm.RCVPAY_TY = 'S1'
 WHERE qi.PASS_QY > 0
   AND (? = '' OR r.RSC_ID LIKE CONCAT('%', ?, '%'))
   AND (? = '' OR r.RSC_NM LIKE CONCAT('%', ?, '%'))
@@ -37,11 +44,12 @@ GROUP BY
   qi.RSC_QLTY_INSP_ID, r.RSC_ID, r.RSC_NM, r.SPEC, r.UNIT,
   qi.INSP_QY, qi.PASS_QY, qi.RTNGUD_QY, rod.QY,
   qi.INSP_DT, qi.EMP_ID, e.EMP_NM, qi.RM
+HAVING remaining_qty > 0
 ORDER BY qi.INSP_DT DESC
 LIMIT 200
 `;
 
-// 완제품 품질검사서 목록 조회 (사용)
+// 완제품 품질검사서 목록 조회 (사용) - 완전 입고된 것 제외
 const selectEndPrdtInspectionList = `
 SELECT  epqi.end_prdt_qlty_insp_id AS insp_no,
         pdd.prdt_id AS item_code,
@@ -51,6 +59,8 @@ SELECT  epqi.end_prdt_qlty_insp_id AS insp_no,
         epqi.insp_qy AS insp_qty,
         epqi.pass_qy  AS pass_qty,
         epqi.infer_qy AS fail_qty,
+        COALESCE(SUM(wd.RCVPAY_QY), 0) AS received_qty,
+        (epqi.pass_qy - COALESCE(SUM(wd.RCVPAY_QY), 0)) AS remaining_qty,
         p.spec AS item_spec,
         p.unit AS item_unit,
         CASE 
@@ -60,21 +70,31 @@ SELECT  epqi.end_prdt_qlty_insp_id AS insp_no,
         DATE_FORMAT(epqi.INSP_DT, '%Y-%m-%d') AS insp_date,
         e.emp_nm AS insp_emp_name,
         epqi.RM AS rm
-FROM   end_prdt_qlty_insp epqi JOIN proc_ctrl pc ON epqi.prcs_ctrl_id = pc.prcs_ctrl_id
+FROM   end_prdt_qlty_insp epqi 
+JOIN proc_ctrl pc ON epqi.prcs_ctrl_id = pc.prcs_ctrl_id
 JOIN prcs_prog_precon ppp ON pc.prcs_prog_precon_id = ppp.prcs_prog_precon_id
 JOIN prod_drct_deta pdd ON ppp.prod_drct_deta_id = pdd.prod_drct_deta_id
 JOIN prdt p ON pdd.prdt_id = p.prdt_id
 JOIN prdt_opt po ON p.prdt_id = po.prdt_id
 JOIN emp e ON e.emp_id = epqi.emp_id
+LEFT JOIN WRHOUS_WRHSDLVR wd 
+       ON epqi.end_prdt_qlty_insp_id = wd.END_PRDT_QLTY_INSP_ID
+LEFT JOIN WRHOUS_WRHSDLVR_MAS wm 
+       ON wd.WRHSDLVR_MAS_ID = wm.WRHSDLVR_MAS_ID 
+       AND wm.RCVPAY_TY = 'S1'
 WHERE epqi.PASS_QY > 0
 AND (? = '' OR p.prdt_id LIKE CONCAT('%', ?, '%'))
 AND (? = '' OR p.prdt_nm LIKE CONCAT('%', ?, '%'))
+GROUP BY epqi.end_prdt_qlty_insp_id, pdd.prdt_id, p.prdt_nm, po.prdt_opt_id, po.opt_nm,
+         epqi.insp_qy, epqi.pass_qy, epqi.infer_qy, p.spec, p.unit,
+         epqi.INSP_DT, e.emp_nm, epqi.RM
+HAVING remaining_qty > 0
 ORDER BY epqi.INSP_DT ASC,
          SUBSTR(epqi.end_prdt_qlty_insp_id,-3) DESC
 LIMIT 200
 `;
 
-// 반제품 품질검사서 목록 조회 (사용)
+// 반제품 품질검사서 목록 조회 (사용) - 완전 입고된 것 제외
 const selectSemiInspectionList = `
 SELECT  spqi.semi_prdt_qlty_insp_id AS insp_no,
         pdd.prdt_id AS item_code,
@@ -84,6 +104,8 @@ SELECT  spqi.semi_prdt_qlty_insp_id AS insp_no,
         spqi.insp_qy AS insp_qty,
         spqi.pass_qy  AS pass_qty,
         spqi.infer_qy AS fail_qty,
+        COALESCE(SUM(wd.RCVPAY_QY), 0) AS received_qty,
+        (spqi.pass_qy - COALESCE(SUM(wd.RCVPAY_QY), 0)) AS remaining_qty,
         p.spec AS item_spec,
         p.unit AS item_unit,
         CASE 
@@ -93,21 +115,31 @@ SELECT  spqi.semi_prdt_qlty_insp_id AS insp_no,
         DATE_FORMAT(spqi.INSP_DT, '%Y-%m-%d') AS insp_date,
         e.emp_nm AS insp_emp_name,
         spqi.RM AS rm
-FROM   semi_prdt_qlty_insp spqi JOIN proc_ctrl pc ON spqi.prcs_ctrl_id = pc.prcs_ctrl_id
+FROM   semi_prdt_qlty_insp spqi 
+JOIN proc_ctrl pc ON spqi.prcs_ctrl_id = pc.prcs_ctrl_id
 JOIN prcs_prog_precon ppp ON pc.prcs_prog_precon_id = ppp.prcs_prog_precon_id
 JOIN prod_drct_deta pdd ON ppp.prod_drct_deta_id = pdd.prod_drct_deta_id
 JOIN prdt p ON pdd.prdt_id = p.prdt_id
 JOIN prdt_opt po ON p.prdt_id = po.prdt_id
 JOIN emp e ON e.emp_id = spqi.emp_id
+LEFT JOIN WRHOUS_WRHSDLVR wd 
+       ON spqi.semi_prdt_qlty_insp_id = wd.SEMI_PRDT_QLTY_INSP_ID
+LEFT JOIN WRHOUS_WRHSDLVR_MAS wm 
+       ON wd.WRHSDLVR_MAS_ID = wm.WRHSDLVR_MAS_ID 
+       AND wm.RCVPAY_TY = 'S1'
 WHERE spqi.pass_qy > 0
 AND (? = '' OR p.prdt_id LIKE CONCAT('%', ?, '%'))
 AND (? = '' OR p.prdt_nm LIKE CONCAT('%', ?, '%'))
+GROUP BY spqi.semi_prdt_qlty_insp_id, pdd.prdt_id, p.prdt_nm, po.prdt_opt_id, po.opt_nm,
+         spqi.insp_qy, spqi.pass_qy, spqi.infer_qy, p.spec, p.unit,
+         spqi.insp_dt, e.emp_nm, spqi.RM
+HAVING remaining_qty > 0
 ORDER BY spqi.insp_dt ASC,
          SUBSTR(spqi.semi_prdt_qlty_insp_id,-3) DESC
 LIMIT 200
 `;
 
-// 완제품 납품 대상 조회 (납품 상세) (사용)
+// 완제품 납품 대상 조회 (납품 상세) (사용) - 완전 출고된 것 제외
 const selectDeliveryProducts = `
 SELECT  dd.deli_deta_id AS insp_no,
         rd.prdt_id AS item_code,
@@ -115,6 +147,8 @@ SELECT  dd.deli_deta_id AS insp_no,
         rd.prdt_opt_id AS opt_code,
         po.opt_nm AS opt_name,
         dd.deli_qy  AS pass_qty,
+        COALESCE(SUM(wd.RCVPAY_QY), 0) AS delivered_qty,
+        (dd.deli_qy - COALESCE(SUM(wd.RCVPAY_QY), 0)) AS remaining_qty,
         p.spec AS item_spec,
         p.unit AS item_unit,
         CASE 
@@ -131,10 +165,18 @@ JOIN    rcvord_deta rd ON dd.rcvord_deta_id = rd.rcvord_deta_id
 JOIN    prdt p ON rd.prdt_id = p.prdt_id
 JOIN    prdt_opt po ON rd.prdt_opt_id = po.prdt_opt_id
 JOIN    emp e ON d.emp_id = e.emp_id
+LEFT JOIN WRHOUS_WRHSDLVR wd 
+       ON dd.deli_deta_id = wd.DELI_DETA_ID
+LEFT JOIN WRHOUS_WRHSDLVR_MAS wm 
+       ON wd.WRHSDLVR_MAS_ID = wm.WRHSDLVR_MAS_ID 
+       AND wm.RCVPAY_TY = 'S2'
 WHERE   dd.deli_st IN ('J1', 'J2')
   AND   (dd.deli_qy) > 0
   AND   (? = '' OR rd.prdt_id LIKE CONCAT('%', ?, '%'))
   AND   (? = '' OR p.prdt_nm LIKE CONCAT('%', ?, '%'))
+GROUP BY dd.deli_deta_id, rd.prdt_id, p.prdt_nm, rd.prdt_opt_id, po.opt_nm,
+         dd.deli_qy, p.spec, p.unit, dd.deli_st, d.deli_dt, e.emp_nm, dd.RM
+HAVING remaining_qty > 0
 ORDER BY d.deli_dt DESC, SUBSTR(dd.deli_deta_id, -3) DESC
 LIMIT 200
 `;
@@ -180,15 +222,15 @@ SELECT
   r.unit as item_unit,
   bd.rec_qy as bom_qty,
   pdd.drct_qy as order_qty,
-  ROUND(pdd.drct_qy * bd.rec_qy) as required_qty,
+  CEIL(pdd.drct_qy * bd.rec_qy) as required_qty,
   COALESCE(0, 0) as withdrawn_qty,
-  ROUND(pdd.drct_qy * bd.rec_qy) as remaining_qty
+  CEIL(pdd.drct_qy * bd.rec_qy) as remaining_qty
 FROM prod_drct_deta pdd
 JOIN bom b ON pdd.prdt_id = b.prdt_id
 JOIN bom_deta bd ON b.bom_id = bd.bom_id
 JOIN rsc r ON bd.rsc_id = r.rsc_id
 WHERE pdd.prod_drct_deta_id = ?
-  AND ROUND(pdd.drct_qy * bd.rec_qy) > 0
+  AND CEIL(pdd.drct_qy * bd.rec_qy) > 0
 ORDER BY r.rsc_nm
 `;
 
@@ -209,12 +251,12 @@ SELECT
   r.spec,
   r.unit,
   bd.rec_qy as bom_qty,
-  ROUND(pdd.drct_qy * bd.rec_qy) as required_rsc_qty,
+  CEIL(pdd.drct_qy * bd.rec_qy) as required_rsc_qty,
   DATE_FORMAT(pd.reg_dt, '%Y-%m-%d') as order_date,
   pd.emp_id as emp_id,
   e.emp_nm as emp_name,
   COALESCE(0, 0) as withdrawn_qty,
-  ROUND(pdd.drct_qy * bd.rec_qy) as remaining_qty
+  CEIL(pdd.drct_qy * bd.rec_qy) as remaining_qty
 FROM prod_drct_deta pdd
 LEFT OUTER JOIN rwmatr_rtun_trget rrt ON pdd.prod_drct_deta_id = rrt.prod_drct_deta_id
 JOIN prod_drct pd ON pdd.prod_drct_id = pd.prod_drct_id
@@ -224,7 +266,7 @@ JOIN bom b ON pdd.prdt_id = b.prdt_id
 JOIN bom_deta bd ON b.bom_id = bd.bom_id
 JOIN rsc r ON bd.rsc_id = r.rsc_id
 JOIN emp e ON pd.emp_id = e.emp_id
-WHERE ROUND(pdd.drct_qy * bd.rec_qy) > 0
+WHERE CEIL(pdd.drct_qy * bd.rec_qy) > 0
   AND (? = '' OR bd.rsc_id LIKE CONCAT('%', ?, '%'))
   AND (? = '' OR r.rsc_nm LIKE CONCAT('%', ?, '%'))
 ORDER BY pd.reg_dt DESC, p.prdt_nm, r.rsc_nm
@@ -298,7 +340,7 @@ INSERT INTO WRHOUS_WRHSDLVR (
   RSC_QLTY_INSP_ID,
   SEMI_PRDT_QLTY_INSP_ID,
   END_PRDT_QLTY_INSP_ID,
-  deli_deta_id,
+  DELI_DETA_ID,
   RCVPAY_QY,
   RM
 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -359,18 +401,18 @@ SELECT 1 FROM WRHOUS_WRHSDLVR WHERE WRHSDLVR_ID = ? LIMIT 1
 
 // 마스터 ID 자동 생성 (예: WRHM_IN_251001, WRHM_OUT_251001)
 const createWrhousTransactionId = `
-SELECT CONCAT(?, CONCAT(DATE_FORMAT(NOW(), '%y%m'),
-  LPAD(IFNULL(MAX(SUBSTR(WRHSDLVR_ID, -3)), 0) + 1, 3, '0'))) "txn_id"
+SELECT CONCAT(?, DATE_FORMAT(NOW(), '%y%m'),
+  LPAD(IFNULL(MAX(SUBSTR(WRHSDLVR_MAS_ID, -3)), 0) + 1, 3, '0')) "txn_id"
 FROM WRHOUS_WRHSDLVR_MAS
 WHERE WRHSDLVR_MAS_ID LIKE CONCAT(?, DATE_FORMAT(NOW(), '%y%m'), '%')
 `;
 
-// 디테일 창고 ID 자동 생성 (예: WRH_IN_251001)
+// 디테일 창고 ID 자동 생성 (예: 입고 WRH_IN_251001, 출고 WRH_OUT_251001)
 const createWrhousDetailId = `
 SELECT CONCAT(?, DATE_FORMAT(NOW(), '%y%m'),
-  LPAD(IFNULL(MAX(SUBSTR(WRHSDLVR_ID, -3)), 0) + 1, 3, '0')) "detail_id"
+  LPAD(IFNULL(MAX(SUBSTR(WRHOUS_WRHSDLVR_ID, -3)), 0) + 1, 3, '0')) "detail_id"
 FROM WRHOUS_WRHSDLVR
-WHERE WRHSDLVR_ID LIKE CONCAT(?, DATE_FORMAT(NOW(), '%y%m'), '%')
+WHERE WRHOUS_WRHSDLVR_ID LIKE CONCAT(?, DATE_FORMAT(NOW(), '%y%m'), '%')
 `;
 
 // LOT 번호 자동 생성 (예: 자재: LOT_RSC_251001, 완제품: LOT_END_251001, 반제품: LOT_SEMI_251001)
@@ -548,6 +590,87 @@ WHERE wz.ST = 'M1'
 ORDER BY wz.ZONE_ID
 `;
 
+// 검사서별 입고 완료 수량 확인 (자재 품질검사)
+const selectRscInspectionCompletedQty = `
+SELECT 
+  COALESCE(SUM(wm.ALL_RCVPAY_QY), 0) as completed_qty
+FROM WRHOUS_WRHSDLVR_MAS wm
+WHERE wm.RSC_ID = ?
+  AND wm.RCVPAY_TY = 'S1'
+  AND wm.INSP_ID = ?
+`;
+
+// 검사서별 입고 완료 수량 확인 (완제품/반제품 품질검사)
+const selectPrdtInspectionCompletedQty = `
+SELECT 
+  COALESCE(SUM(wm.ALL_RCVPAY_QY), 0) as completed_qty
+FROM WRHOUS_WRHSDLVR_MAS wm
+WHERE wm.PRDT_ID = ?
+  AND wm.RCVPAY_TY = 'S1'
+  AND wm.INSP_ID = ?
+`;
+
+// 품목별 재고 현황 조회 (LOT별)
+const selectInventoryByItemWithLot = `
+SELECT 
+  wm.LOT_NO as lot_no,
+  wm.RSC_ID as rsc_id,
+  wm.PRDT_ID as prdt_id,
+  wm.PRDT_OPT_ID as prdt_opt_id,
+  wm.SPEC as spec,
+  wm.UNIT as unit,
+  SUM(CASE WHEN wm.RCVPAY_TY = 'S1' THEN wm.ALL_RCVPAY_QY ELSE -wm.ALL_RCVPAY_QY END) as current_stock,
+  MIN(wm.RCVPAY_DT) as first_rcvpay_dt,
+  wm.WRHOUS_ID as warehouse_id,
+  wm.ZONE_ID as zone_id
+FROM WRHOUS_WRHSDLVR_MAS wm
+WHERE (wm.RSC_ID = ? OR wm.PRDT_ID = ?)
+GROUP BY wm.LOT_NO, wm.RSC_ID, wm.PRDT_ID, wm.PRDT_OPT_ID, wm.SPEC, wm.UNIT, wm.WRHOUS_ID, wm.ZONE_ID
+HAVING current_stock > 0
+ORDER BY first_rcvpay_dt ASC, wm.LOT_NO ASC
+`;
+
+// 출고 가능한 LOT 목록 조회 (선입선출)
+const selectAvailableLots = `
+SELECT 
+  wm.LOT_NO as lot_no,
+  wm.RSC_ID as rsc_id,
+  wm.PRDT_ID as prdt_id,
+  wm.PRDT_OPT_ID as prdt_opt_id,
+  SUM(CASE WHEN wm.RCVPAY_TY = 'S1' THEN wm.ALL_RCVPAY_QY ELSE -wm.ALL_RCVPAY_QY END) as available_qty,
+  MIN(wm.RCVPAY_DT) as first_rcvpay_dt,
+  wm.WRHOUS_ID as warehouse_id,
+  wm.ZONE_ID as zone_id
+FROM WRHOUS_WRHSDLVR_MAS wm
+WHERE (? = '' OR wm.RSC_ID = ?)
+  AND (? = '' OR wm.PRDT_ID = ?)
+  AND (? = '' OR wm.PRDT_OPT_ID = ?)
+GROUP BY wm.LOT_NO, wm.RSC_ID, wm.PRDT_ID, wm.PRDT_OPT_ID, wm.WRHOUS_ID, wm.ZONE_ID
+HAVING available_qty > 0
+ORDER BY first_rcvpay_dt ASC, wm.LOT_NO ASC
+`;
+
+// 납품서별 출고 완료 수량 확인
+const selectDeliveryCompletedQty = `
+SELECT 
+  COALESCE(SUM(wm.ALL_RCVPAY_QY), 0) as completed_qty
+FROM WRHOUS_WRHSDLVR_MAS wm
+WHERE wm.PRDT_ID = ?
+  AND wm.PRDT_OPT_ID = ?
+  AND wm.RCVPAY_TY = 'S2'
+  AND wm.DELI_DETA_ID = ?
+`;
+
+// 생산지시별 자재 불출 완료 수량 확인
+const selectMaterialWithdrawalCompletedQty = `
+SELECT 
+  COALESCE(SUM(wm.ALL_RCVPAY_QY), 0) as completed_qty
+FROM WRHOUS_WRHSDLVR_MAS wm
+WHERE wm.RSC_ID = ?
+  AND wm.RCVPAY_TY = 'S2'
+  AND wm.PROD_DRCT_DETA_ID = ?
+`;
+
 module.exports = {
   selectWrhousTransactionList,
   selectInspectionList,
@@ -561,6 +684,8 @@ module.exports = {
   deleteWrhousTransactionsByIds,
   existsWrhousTransaction,
   createWrhousTransactionId,
+  createWrhousDetailId,
+  createLotno,
   selectInventoryStatus,
   selectItemTransactionHistory,
   selectWarehouseMaterials,
@@ -576,4 +701,11 @@ module.exports = {
   getWarehousesByNone,
   getLocationsByWarehouse,
   getLocationsByNone,
+  // 새로 추가된 쿼리들
+  selectRscInspectionCompletedQty,
+  selectPrdtInspectionCompletedQty,
+  selectInventoryByItemWithLot,
+  selectAvailableLots,
+  selectDeliveryCompletedQty,
+  selectMaterialWithdrawalCompletedQty,
 };
