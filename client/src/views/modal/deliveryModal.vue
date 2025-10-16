@@ -76,7 +76,9 @@
                   v-for="item in productionOrderList"
                   :key="item.withdrawal_id"
                   class="cursor-pointer"
-                  :class="{ 'table-active': selectedItems.some((s) => s.insp_no === item.withdrawal_id) }"
+                  :class="{
+                    'table-active': selectedItems.some((s) => s.insp_no === item.withdrawal_id),
+                  }"
                   @click="handleRowClick(item)"
                 >
                   <td @click.stop>
@@ -126,7 +128,7 @@
                   <th style="width: 100px">옵션 코드</th>
                   <th style="width: 150px">옵션 명</th>
                   <th style="width: 80px">출고 예정 수량</th>
-                  <th style="width: 80px">검사 상태</th>
+                  <th style="width: 80px">출고 상태</th>
                   <th style="width: 100px">검사 일자</th>
                   <th style="width: 100px">검사자</th>
                 </tr>
@@ -278,11 +280,11 @@ const loadProductionOrders = async (params) => {
   }
 
   console.log('[deliveryModal] 생산지시 조회 API 호출:', apiParams)
-  
+
   const response = await axios.get('/api/production/orders/details', { params: apiParams })
-  
+
   console.log('[deliveryModal] 생산지시 응답:', response.data)
-  
+
   productionOrderList.value = response.data || []
   materialList.value = []
   selectedProductionOrder.value = null
@@ -356,16 +358,33 @@ const toggleSelection = (item) => {
   } else {
     itemKey = item.insp_no
   }
-  
+
   const index = selectedItems.value.findIndex((s) => s.insp_no === itemKey)
   if (index > -1) {
     selectedItems.value.splice(index, 1)
   } else {
-    selectedItems.value.push({ 
-      ...item, 
-      insp_no: itemKey,
-      insp_type: searchCondition.insp_type 
-    })
+    // 자재 불출의 경우 생산지시 정보로 저장
+    if (searchCondition.insp_type === 'materialWithdrawal') {
+      selectedItems.value.push({
+        insp_no: itemKey,
+        insp_type: searchCondition.insp_type,
+        item_type: item.item_type,
+        item_code: item.item_code,
+        item_name: item.item_name,
+        opt_code: item.opt_code,
+        opt_name: item.opt_name,
+        item_spec: item.item_spec,
+        item_unit: item.item_unit,
+        required_qty: item.required_qty,
+        emp_name: item.emp_name,
+      })
+    } else {
+      selectedItems.value.push({
+        ...item,
+        insp_no: itemKey,
+        insp_type: searchCondition.insp_type,
+      })
+    }
   }
   console.log('[deliveryModal] 선택된 검사서들:', selectedItems.value)
 }
@@ -374,11 +393,19 @@ const toggleSelection = (item) => {
 const toggleAll = (event) => {
   if (event.target.checked) {
     if (searchCondition.insp_type === 'materialWithdrawal') {
-      // 자재 불출의 경우 productionOrderList 사용
+      // 자재 불출의 경우 생산지시 정보로 저장
       selectedItems.value = productionOrderList.value.map((item) => ({
-        ...item,
         insp_no: item.withdrawal_id,
         insp_type: searchCondition.insp_type,
+        item_type: item.item_type,
+        item_code: item.item_code,
+        item_name: item.item_name,
+        opt_code: item.opt_code,
+        opt_name: item.opt_name,
+        item_spec: item.item_spec,
+        item_unit: item.item_unit,
+        required_qty: item.required_qty,
+        emp_name: item.emp_name,
       }))
     } else {
       selectedItems.value = inspectionList.value.map((item) => ({

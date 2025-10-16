@@ -229,25 +229,23 @@ router.get("/wrhousdlvr/warehouse/products/list", async (req, res) => {
 
 // 생산지시 상세 목록 조회 (상단 그리드용)
 router.get("/production/orders/details", async (req, res) => {
-  console.log(
-    "[wrhousdlvr_router] /production/orders/details 요청 받음"
-  );
+  console.log("[wrhousdlvr_router] /production/orders/details 요청 받음");
   console.log("[wrhousdlvr_router] query:", req.query);
 
   try {
     const { product_code = "", product_name = "" } = req.query;
 
-    console.log("[wrhousdlvr_router] 파라미터 확인:", { product_code, product_name });
+    console.log("[wrhousdlvr_router] 파라미터 확인:", {
+      product_code,
+      product_name,
+    });
 
     const results = await wrhousdlvrService.getProductionOrderDetailsList(
       product_code,
       product_name
     );
 
-    console.log(
-      "[wrhousdlvr_router] 생산지시 상세 응답 건수:",
-      results.length
-    );
+    console.log("[wrhousdlvr_router] 생산지시 상세 응답 건수:", results.length);
 
     res.json(results);
   } catch (error) {
@@ -260,47 +258,48 @@ router.get("/production/orders/details", async (req, res) => {
 });
 
 // 특정 생산지시의 BOM 자재 목록 조회 (하단 그리드용)
-router.get("/production/orders/:prod_drct_deta_id/materials", async (req, res) => {
-  console.log(
-    "[wrhousdlvr_router] /production/orders/:prod_drct_deta_id/materials 요청 받음"
-  );
-  console.log("[wrhousdlvr_router] params:", req.params);
+router.get(
+  "/production/orders/:prod_drct_deta_id/materials",
+  async (req, res) => {
+    console.log(
+      "[wrhousdlvr_router] /production/orders/:prod_drct_deta_id/materials 요청 받음"
+    );
+    console.log("[wrhousdlvr_router] params:", req.params);
 
-  try {
-    const { prod_drct_deta_id } = req.params;
+    try {
+      const { prod_drct_deta_id } = req.params;
 
-    if (!prod_drct_deta_id) {
-      return res.status(400).json({
-        error: "생산지시 상세 ID가 필요합니다",
+      if (!prod_drct_deta_id) {
+        return res.status(400).json({
+          error: "생산지시 상세 ID가 필요합니다",
+        });
+      }
+
+      console.log("[wrhousdlvr_router] 파라미터 확인:", { prod_drct_deta_id });
+
+      const results = await wrhousdlvrService.getMaterialByProductionOrder(
+        prod_drct_deta_id
+      );
+
+      console.log(
+        "[wrhousdlvr_router] BOM 자재 목록 응답 건수:",
+        results.length
+      );
+
+      res.json(results);
+    } catch (error) {
+      console.error("[wrhousdlvr_router] BOM 자재 목록 조회 오류:", error);
+      res.status(500).json({
+        error: "BOM 자재 목록 조회 실패",
+        message: error.message,
       });
     }
-
-    console.log("[wrhousdlvr_router] 파라미터 확인:", { prod_drct_deta_id });
-
-    const results = await wrhousdlvrService.getMaterialByProductionOrder(
-      prod_drct_deta_id
-    );
-
-    console.log(
-      "[wrhousdlvr_router] BOM 자재 목록 응답 건수:",
-      results.length
-    );
-
-    res.json(results);
-  } catch (error) {
-    console.error("[wrhousdlvr_router] BOM 자재 목록 조회 오류:", error);
-    res.status(500).json({
-      error: "BOM 자재 목록 조회 실패",
-      message: error.message,
-    });
   }
-});
+);
 
 // 자재 불출 대상 목록 조회 (생산지시 → BOM 기반)
 router.get("/material/withdrawal/list", async (req, res) => {
-  console.log(
-    "[wrhousdlvr_router] /material/withdrawal/list 요청 받음"
-  );
+  console.log("[wrhousdlvr_router] /material/withdrawal/list 요청 받음");
   console.log("[wrhousdlvr_router] query:", req.query);
 
   try {
@@ -436,7 +435,69 @@ router.post("/warehouse/transactions", async (req, res) => {
   try {
     console.log("[wrhousdlvr_router] POST /warehouse/transactions 요청 받음");
     console.log("[wrhousdlvr_router] 요청 헤더:", req.headers);
-    console.log("[wrhousdlvr_router] 요청 본문 크기:", JSON.stringify(req.body).length);
+    console.log("[wrhousdlvr_router] 요청 본문:", req.body);
+
+    // 새로운 마스터-디테일 구조 처리
+    const { mode, masterTransactions, detailTransactions } = req.body;
+
+    // 유효성 검사
+    if (
+      !mode ||
+      !Array.isArray(masterTransactions) ||
+      !Array.isArray(detailTransactions)
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: "mode, masterTransactions, detailTransactions가 필요합니다.",
+      });
+    }
+
+    if (detailTransactions.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "디테일 테이블에 값이 하나도 없으면 저장할 수 없습니다.",
+      });
+    }
+
+    console.log(
+      `[wrhousdlvr_router] 마스터 거래: ${masterTransactions.length}건`
+    );
+    console.log(
+      `[wrhousdlvr_router] 디테일 거래: ${detailTransactions.length}건`
+    );
+
+    // 서비스를 통해 마스터-디테일 저장 처리
+    const result = await wrhousdlvrService.saveMasterDetailTransactions({
+      mode,
+      masterTransactions,
+      detailTransactions,
+    });
+
+    console.log("[wrhousdlvr_router] 마스터-디테일 저장 결과:", result);
+
+    res.json(result);
+  } catch (err) {
+    console.error(
+      "[wrhousdlvr_router] POST error:",
+      err && err.stack ? err.stack : err
+    );
+    res
+      .status(500)
+      .json({ success: false, error: err?.message ?? "server error" });
+  }
+});
+
+// 기존 API 호환을 위한 레거시 엔드포인트 (deprecated)
+router.post("/warehouse/transactions/legacy", async (req, res) => {
+  try {
+    console.log(
+      "[wrhousdlvr_router] POST /warehouse/transactions/legacy 요청 받음"
+    );
+    console.log("[wrhousdlvr_router] 요청 헤더:", req.headers);
+    console.log(
+      "[wrhousdlvr_router] 요청 본문 크기:",
+      JSON.stringify(req.body).length
+    );
     console.log(
       "[wrhousdlvr_router] POST body:",
       JSON.stringify(req.body).slice(0, 2000)
@@ -452,7 +513,7 @@ router.post("/warehouse/transactions", async (req, res) => {
         item_name: t.item_name,
         qty: t.qty,
         warehouse_id: t.warehouse_id,
-        location_id: t.location_id
+        location_id: t.location_id,
       }));
       console.log(
         "[wrhousdlvr_router] transaction preview (first 5):",
@@ -466,7 +527,7 @@ router.post("/warehouse/transactions", async (req, res) => {
       transactionList,
       emp_id,
     });
-    
+
     console.log("[wrhousdlvr_router] saveTransaction 결과:", result);
 
     res.json(result);
