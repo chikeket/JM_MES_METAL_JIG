@@ -1,11 +1,8 @@
-const companyManage = require("./sqls/companyManage.js");
 // ┌───각 테이블별 SQL 쿼리들을 모아놓은 중앙 관리 파일───┐
 
 // 업체 관련 쿼리
 const co = require("./sqls/co.js");
-
-// 제품
-const prdtManage = require("./sqls/prdtManage.js");
+const companyManage = require("./sqls/companyManage.js");
 
 // 생산지시에서 공정관리로 넘어가는 관련 쿼리들
 const instructions = require("./sqls/instruction.js");
@@ -22,12 +19,14 @@ const emp = require("./sqls/emp.js");
 
 // 제품 관련 쿼리
 const prdt = require("./sqls/prdt.js");
+const prdtManage = require("./sqls/prdtManage.js");
 
 // 자재 발주 관련 쿼리
 const rscOrdr = require("./sqls/rscOrdr.js");
 
 // 자재 관련 쿼리
 const rsc = require("./sqls/rsc.js");
+const rscManage = require("./sqls/rscManage.js");
 
 // 생산계획 관련 쿼리
 const prodPlan = require("./sqls/prodPlan.js");
@@ -43,6 +42,7 @@ const endPrdtQltyInsp = require("./sqls/endPrdtQltyInsp.js");
 
 // 품질항목 기준정보 관련 쿼리
 const qltyItem = require("./sqls/qltyItem.js");
+const qltyItemManage = require("./sqls/qltyItemManage.js");
 
 // 창고 입출고 관련 쿼리
 const wrhousdlvr = require("./sqls/wrhousdlvr.js");
@@ -55,6 +55,7 @@ module.exports = {
   ...instructions,
   ...prdt,
   ...rscOrdr,
+  ...rscManage,
   ...companyManage,
   ...co,
   ...rcvord,
@@ -68,5 +69,7 @@ module.exports = {
   ...endPrdtQltyInsp,
   ...deli,
   ...qltyItem,
+  ...qltyItemManage,
   ...wrhousdlvr,
+  ...SSMManage,
 };

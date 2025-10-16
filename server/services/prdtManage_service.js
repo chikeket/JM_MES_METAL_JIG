@@ -8,11 +8,11 @@ console.log('사용 가능한 쿼리들:', Object.keys(sqlList).filter(k => k.st
 const getPrdtList = async (filters) => {
   try {
     const params = [
-      filters.prdt_id || '',
-      filters.prdt_nm || '',
-      filters.prdt_st || '',
-      filters.spec || ''
+      filters.prdt_id || '', filters.prdt_id || '',
+      filters.prdt_nm || '', filters.prdt_nm || '',
+      filters.prdt_st || '', filters.prdt_st || ''
     ];
+    console.log('📋 서비스 파라미터:', params);
     let list = await mariadb.query("prdtManageSelect", params);
     return list || [];
   } catch (err) {
@@ -50,18 +50,30 @@ const insertPrdt = async (prdtData) => {
 
 const updatePrdt = async (prdtData) => {
   try {
+    console.log("===== ✅ updatePrdt 받은 데이터 =====");
+    console.log(prdtData);
+    
     let data = [
       prdtData.prdt_nm,
       prdtData.spec,
       prdtData.unit,
       prdtData.prdt_st,
-      prdtData.rmrk || '',
+      prdtData.rm || '',
       prdtData.original_prdt_id || prdtData.prdt_id
     ];
+    
+    console.log("===== 📝 SQL에 전달할 배열 =====");
+    console.log(data);
+    console.log("순서: [prdt_nm, spec, unit, prdt_st, rm, prdt_id]");
+    
     let result = await mariadb.query("prdtUpdate", data);
+    
+    console.log("===== 💾 UPDATE 실행 결과 =====");
+    console.log(result);
+    
     return result;
   } catch (err) {
-    console.error("updatePrdt 오류:", err);
+    console.error("❌ updatePrdt 오류:", err);
     throw err;
   }
 };

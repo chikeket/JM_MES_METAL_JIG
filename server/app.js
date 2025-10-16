@@ -32,6 +32,10 @@ app.listen(3000, () => {
 
 const co = require("./routers/co_router.js"); // 업체(테스트 완료 주익이 나중에 쓰면 됨)
 const companyManage = require("./routers/companyManage_router.js"); // 업체관리 추가!
+const prdtManage = require("./routers/prdtManage_router.js"); // 제품관리
+const rscManage = require("./routers/rscManage_router.js"); // 자재관리
+const qltyItemManage = require("./routers/qltyItemManage_router.js"); // 품질항목관리
+const SSMManage = require("./routers/SSMManage,_router.js"); // 생산지시관리
 
 const instruction = require("./routers/instruction_router.js"); // 생산지시
 
@@ -57,17 +61,21 @@ app.get("/", (req, res) => {
 // 라우터 모듈 등록
 app.use("/", instruction);
 app.use("/", prdt); // 제품
+app.use("/", prdtManage); // 제품관리
 app.use("/", rscOrdr); // 자재 발주
 app.use("/", co); // 업체
 app.use("/", rcvord); // 수주
 app.use("/", deli); // 납품
 app.use("/", rsc); // 자재
+app.use("/", rscManage); // 자재관리
 app.use("/", prodPlan); // 생산계획
 app.use("/", prodDrct); // 생산지시
 app.use("/", auth); // 로그인
 app.use("/", rscQltyInsp); // 자재품질검수
 app.use("/", endPrdtQltyInsp); // 완제품 품질검수
 app.use("/", qltyItem); // 품질항목 기준정보
+app.use("/", qltyItemManage); // 품질항목관리
 app.use("/", companyManage); // 업체관리 추가!
 app.use("/", wrhousdlvr); // 창고 입출고
+app.use("/", SSMManage); // 생산지시관리
 
