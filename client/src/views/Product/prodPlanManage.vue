@@ -25,7 +25,7 @@ const goToProdPlan = () => {
 const closeProdPlanModal = () => {
   isProdPlanModalVisible.value = false
 }
-//생산지시모달
+//수주서모달
 const isProdDrctModalVisible = ref(false)
 const goToDrctPlan = () => {
   isProdDrctModalVisible.value = true
