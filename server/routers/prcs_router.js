@@ -6,17 +6,15 @@ const router = express.Router();
 const routingService = require("../services/routing_service.js");
 
 // 공정 모달 조회
-router.get('/prcsModal', async (req, res) => {
+router.get("/prcs", async (req, res) => {
   try {
-    console.log('[routing_router] 공정 모달 조회 요청:', req.query);
+    console.log("[routing_router] 공정 모달 조회 요청:", req.query);
     const result = await routingService.selectPrcsModal(req.query);
     res.json(result);
   } catch (err) {
-    console.error('공정 모달 조회 오류:', err);
-    res.status(500).send('서버 오류 발생');
+    console.error("공정 모달 조회 오류:", err);
+    res.status(500).send("서버 오류 발생");
   }
 });
 
 module.exports = router;
-
-

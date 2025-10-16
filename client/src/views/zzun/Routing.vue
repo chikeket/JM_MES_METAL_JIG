@@ -138,6 +138,7 @@
                 <th>
                   <input type="checkbox" @change="toggleAllRouting($event)" />
                 </th>
+                <th>공정코드</th>
                 <th>공정명</th>
                 <th>그룹설비명</th>
                 <th>리드타임(분)</th>
@@ -151,6 +152,7 @@
                 <td>
                   <input type="checkbox" v-model="route.selected" />
                 </td>
+                <td>{{ route.prcs_id }}</td>
                 <td>{{ route.prcs_nm }}</td>
                 <td>{{ route.eqm_grp_nm }}</td>
                 <td>{{ route.lead_tm }}</td>
