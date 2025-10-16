@@ -26,6 +26,7 @@ SELECT
 	ppp.drct_qy,
 	ppp.inpt_qy,
 	ppp.st,
+	sc.sub_code_nm AS st_nm,
 	ppp.rm,
 	pr.prdt_nm,
 	po.opt_nm
@@ -33,6 +34,7 @@ FROM prcs_prog_precon ppp
 JOIN prod_drct_deta pdd ON ppp.prod_drct_deta_id = pdd.prod_drct_deta_id
 JOIN prdt pr ON pdd.prdt_id = pr.prdt_id
 JOIN prdt_opt po ON pdd.prdt_opt_id = po.prdt_opt_id
+LEFT JOIN sub_code sc ON sc.sub_code_id = ppp.st
 WHERE pdd.prod_drct_id = ?
 	AND ppp.st = 'J2'
 ORDER BY ppp.prcs_ord, ppp.prcs_id`;

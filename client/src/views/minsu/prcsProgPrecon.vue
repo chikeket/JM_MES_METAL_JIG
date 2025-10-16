@@ -7,20 +7,6 @@
       </div>
     </div>
 
-    <div class="card-like" v-if="selectedId">
-      <div class="form-grid">
-        <div class="field">
-          <label>지시 ID</label><input type="text" :value="selectedId" readonly />
-        </div>
-        <div class="field">
-          <label>지시 명</label><input type="text" :value="selectedNm" readonly />
-        </div>
-        <div class="field">
-          <label>지시 시작</label><input type="text" :value="fmtDate(selectedFrDt)" readonly />
-        </div>
-      </div>
-    </div>
-
     <div class="grid-card">
       <div class="grid-title main-title">
         <span v-if="selectedId" class="id-badge" :title="selectedId">{{ selectedId }}</span>
@@ -31,12 +17,14 @@
           <thead>
             <tr>
               <th class="no-col">No</th>
-              <th class="prod-col">제품</th>
-              <th class="opt-col">옵션</th>
-              <th class="st-col">공정순서</th>
-              <th class="pr-col">공정ID</th>
-              <th class="qty-col">지시수량</th>
-              <th class="qty-col">투입수량</th>
+              <th class="date-col">지시 일자</th>
+              <th class="name-col">생산 지시 명</th>
+              <th class="prod-col">제품 명</th>
+              <th class="opt-col">제품 옵션 명</th>
+              <th class="ord-col">공정 순서</th>
+              <th class="pr-col">공정 코드</th>
+              <th class="drct-col">지시 수량</th>
+              <th class="inpt-col">투입 수량</th>
               <th class="st-col">상태</th>
               <th class="remark-col">비고</th>
             </tr>
@@ -45,32 +33,34 @@
             <tr v-for="(r, i) in mainRows" :key="r.prcs_id + '-' + i">
               <td class="cell-no">{{ i + 1 }}</td>
               <td class="cell-left">
+                <span class="cell-text" :title="fmtDate(selectedFrDt)">{{
+                  fmtDate(selectedFrDt)
+                }}</span>
+              </td>
+              <td class="cell-left">
+                <span class="cell-text" :title="selectedNm">{{ selectedNm }}</span>
+              </td>
+              <td class="cell-left">
                 <span class="cell-text" :title="r.prdt_nm">{{ r.prdt_nm }}</span>
               </td>
               <td class="cell-left">
                 <span class="cell-text" :title="r.opt_nm">{{ r.opt_nm }}</span>
               </td>
-              <td class="cell-no">{{ r.prcs_ord }}</td>
+              <td class="cell-number">{{ r.prcs_ord }}</td>
               <td class="cell-left">
                 <span class="cell-text mono" :title="r.prcs_id">{{ r.prcs_id }}</span>
               </td>
               <td class="cell-number">
-                <div class="input-like input-like--compact input-like--number">
-                  <span class="value">{{ fmtNumber(r.drct_qy) }}</span>
-                </div>
+                <span class="cell-text">{{ fmtNumber(r.drct_qy) }}</span>
               </td>
               <td class="cell-number">
-                <div class="input-like input-like--compact input-like--number">
-                  <span class="value">{{ fmtNumber(r.inpt_qy) }}</span>
-                </div>
+                <span class="cell-text">{{ fmtNumber(r.inpt_qy) }}</span>
               </td>
               <td class="cell-left">
                 <span class="cell-text" :title="r.st_nm || r.st">{{ r.st_nm || r.st }}</span>
               </td>
               <td class="cell-left">
-                <div class="input-like input-like--textarea">
-                  <div class="ellipsis" :title="r.rm">{{ r.rm }}</div>
-                </div>
+                <span class="cell-text" :title="r.rm">{{ r.rm }}</span>
               </td>
             </tr>
             <tr
@@ -78,7 +68,7 @@
               :key="'m-empty-' + n"
               class="empty-row"
             >
-              <td colspan="9">&nbsp;</td>
+              <td colspan="11">&nbsp;</td>
             </tr>
           </tbody>
         </table>
@@ -92,14 +82,16 @@
           <table class="data-grid">
             <thead>
               <tr>
-                <th class="no-col">No</th>
-                <th class="prod-col">성명</th>
-                <th class="opt-col">부서</th>
+                <th class="empid-col">사원 ID</th>
+                <th class="empname-col">사원 이름</th>
+                <th class="dept-col">부서 명</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="(r, i) in empRows" :key="r.emp_id + '-' + i">
-                <td class="cell-no">{{ i + 1 }}</td>
+                <td class="cell-left">
+                  <span class="cell-text mono" :title="r.emp_id">{{ r.emp_id }}</span>
+                </td>
                 <td class="cell-left">
                   <span class="cell-text" :title="r.emp_nm">{{ r.emp_nm }}</span>
                 </td>
@@ -125,14 +117,16 @@
           <table class="data-grid">
             <thead>
               <tr>
-                <th class="no-col">No</th>
-                <th class="prod-col">설비</th>
-                <th class="st-col">상태</th>
+                <th class="pr-col">설비 ID</th>
+                <th class="prod-col">설비 명</th>
+                <th class="st-col">설비 상태</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="(r, i) in eqmRows" :key="r.eqm_id + '-' + i">
-                <td class="cell-no">{{ i + 1 }}</td>
+                <td class="cell-left">
+                  <span class="cell-text mono" :title="r.eqm_id">{{ r.eqm_id }}</span>
+                </td>
                 <td class="cell-left">
                   <span class="cell-text" :title="r.eqm_nm">{{ r.eqm_nm }}</span>
                 </td>
@@ -200,7 +194,10 @@ const fetchMainList = async () => {
     const { data } = await axios.get('/api/prcs-prog-precon/main', {
       params: { prod_drct_id: selectedId.value },
     })
-    mainRows.value = Array.isArray(data) ? data : []
+    const arr = Array.isArray(data) ? data : []
+    // 서버가 st='J2'만 내려주지 않는 경우를 대비해 클라이언트에서 보조 필터
+    const hasStCode = arr.some((r) => r && typeof r.st === 'string')
+    mainRows.value = hasStCode ? arr.filter((r) => (r.st || '').trim() === 'J2') : arr
   } catch (err) {
     console.error('fetchMainList error', err)
     mainRows.value = []
@@ -208,6 +205,11 @@ const fetchMainList = async () => {
 }
 
 const fetchEmpList = async () => {
+  // 선택된 지시가 없으면 비워둔다
+  if (!selectedId.value) {
+    empRows.value = []
+    return
+  }
   try {
     const { data } = await axios.get('/api/prcs-prog-precon/emps')
     empRows.value = Array.isArray(data) ? data : []
@@ -265,6 +267,19 @@ function fmtNumber(v) {
   --table-visible-rows: 9;
   --row-h: 34px;
   --thead-h: 34px;
+
+  /* 메인 그리드 열 너비 변수 (필요 시 여기서만 숫자 조절) */
+  --col-main-no: 46px;
+  --col-main-date: 110px;
+  --col-main-name: 180px;
+  --col-main-prod: 120px;
+  --col-main-opt: 140px;
+  --col-main-ord: 90px;
+  --col-main-pr: 100px;
+  --col-main-drct: 90px;
+  --col-main-inpt: 90px;
+  --col-main-st: 110px;
+  --col-main-remark: 320px;
 }
 .global-toolbar {
   display: flex;
@@ -452,26 +467,39 @@ table.data-grid {
   color: #2c3e50;
 }
 
+/* 메인 그리드: 열별 너비 매핑 */
 .no-col {
-  width: 46px;
+  width: var(--col-main-no);
 }
-.qty-col {
-  width: 90px;
+.date-col {
+  width: var(--col-main-date);
+}
+.name-col {
+  width: var(--col-main-name);
 }
 .prod-col {
-  width: 120px;
+  width: var(--col-main-prod);
 }
 .opt-col {
-  width: 140px;
+  width: var(--col-main-opt);
 }
-.st-col {
-  width: 110px;
+.ord-col {
+  width: var(--col-main-ord);
 }
 .pr-col {
-  width: 100px;
+  width: var(--col-main-pr);
+}
+.drct-col {
+  width: var(--col-main-drct);
+}
+.inpt-col {
+  width: var(--col-main-inpt);
+}
+.st-col {
+  width: var(--col-main-st);
 }
 .remark-col {
-  width: 320px;
+  width: var(--col-main-remark);
 }
 
 .grid-row {
