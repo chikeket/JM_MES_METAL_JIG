@@ -22,34 +22,36 @@
         <CTable bordered hover small>
           <CTableHead color="dark">
             <CTableRow>
+              <CTableHeaderCell class="text-center" style="width: 60px">No</CTableHeaderCell>
               <CTableHeaderCell class="text-center" style="width: 160px">지시 ID</CTableHeaderCell>
-              <CTableHeaderCell class="text-center" style="width: 200px"
-                >생산 지시 명</CTableHeaderCell
-              >
-              <CTableHeaderCell class="text-center" style="width: 120px">담당자</CTableHeaderCell>
-              <CTableHeaderCell class="text-center" style="width: 130px"
-                >시작 예정</CTableHeaderCell
+              <CTableHeaderCell class="text-center" style="width: 200px">지시 명</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 120px"
+                >지시 담당자</CTableHeaderCell
               >
               <CTableHeaderCell class="text-center" style="width: 130px"
-                >종료 예정</CTableHeaderCell
+                >지시 시작 일자</CTableHeaderCell
               >
               <CTableHeaderCell class="text-center" style="width: 130px"
-                >등록 일자</CTableHeaderCell
+                >지시 종료 예정 일자</CTableHeaderCell
+              >
+              <CTableHeaderCell class="text-center" style="width: 130px"
+                >지시 등록 일자</CTableHeaderCell
               >
               <CTableHeaderCell class="text-center" style="width: 200px">비고</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
           <CTableBody>
             <CTableRow
-              v-for="row in rows"
+              v-for="(row, i) in rows"
               :key="row.prod_drct_id"
               @dblclick="onDblClick(row)"
               style="cursor: pointer"
             >
+              <CTableDataCell class="cell-no">{{ i + 1 }}</CTableDataCell>
               <CTableDataCell class="cell-left">{{ row.prod_drct_id }}</CTableDataCell>
-              <CTableDataCell class="cell-left text-ellipsis" :title="row.prod_drct_nm">
-                {{ row.prod_drct_nm }}
-              </CTableDataCell>
+              <CTableDataCell class="cell-left text-ellipsis" :title="row.prod_drct_nm">{{
+                row.prod_drct_nm
+              }}</CTableDataCell>
               <CTableDataCell class="cell-left">{{ row.emp_nm }}</CTableDataCell>
               <CTableDataCell class="cell-left">{{ fmtDate(row.prod_drct_fr_dt) }}</CTableDataCell>
               <CTableDataCell class="cell-left">{{ fmtDate(row.prod_drct_to_dt) }}</CTableDataCell>
@@ -59,7 +61,7 @@
               }}</CTableDataCell>
             </CTableRow>
             <CTableRow v-if="rows.length === 0">
-              <CTableDataCell colspan="7" class="text-center text-muted py-3">
+              <CTableDataCell colspan="8" class="text-center text-muted py-3">
                 데이터가 없습니다.
               </CTableDataCell>
             </CTableRow>
@@ -95,8 +97,9 @@ const rows = ref([])
 
 async function fetchOrders() {
   try {
-    const params = {}
-    if (keyword.value && keyword.value.trim()) params.prod_drct_id = keyword.value.trim()
+    // 검색어가 있으면 prod_drct_id LIKE 검색, 없으면 전체 조회
+    const kw = (keyword.value || '').trim()
+    const params = kw ? { prod_drct_id: kw } : {}
     const { data } = await axios.get('/api/prcs-prog-precon/orders', { params })
     rows.value = Array.isArray(data) ? data : []
   } catch (err) {
@@ -153,7 +156,8 @@ onMounted(fetchOrders)
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-right: 12px;
+  /* 닫기(X) 버튼을 살짝 왼쪽으로 이동 */
+  padding-right: 25px;
 }
 .search-bar {
   display: flex;
