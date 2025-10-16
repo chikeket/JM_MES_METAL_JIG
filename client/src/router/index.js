@@ -56,9 +56,24 @@ const routes = [
             component: () => import('@/views/minsu/rcvord.vue'),
           },
           {
+            path: '/Minsu/rcvord_search',
+            name: 'rcvord_search',
+            component: () => import('@/views/minsu/rcvordSearch.vue'),
+          },
+          {
             path: '/Minsu/deli',
             name: 'deli',
             component: () => import('@/views/minsu/deli.vue'),
+          },
+          {
+            path: '/Minsu/deli_search',
+            name: 'deli_search',
+            component: () => import('@/views/minsu/deliSearch.vue'),
+          },
+          {
+            path: '/Minsu/prcsProgPrecon',
+            name: 'prcsProgPrecon',
+            component: () => import('@/views/minsu/prcsProgPrecon.vue'),
           },
         ],
       },
@@ -81,6 +96,16 @@ const routes = [
             path: '/jamin/wrhousdlvr',
             name: '창고 입출 관리',
             component: () => import('@/views/jamin/wrhousdlvr.vue'),
+          },
+          {
+            path: '/jamin/wrhousManage',
+            name: '창고 관리',
+            component: () => import('@/views/jamin/wrhousManage.vue'),
+          },
+          {
+            path: '/jamin/wrhousZoneManage',
+            name: '창고 로케이션 관리',
+            component: () => import('@/views/jamin/wrhousZoneManage.vue'),
           },
         ],
       },
@@ -513,7 +538,7 @@ router.beforeEach(async (to) => {
   }
 
   // 보호할 경로 목록
-  const protectedPaths = ['/Minsu/rcvord', '/jamin/rsc-ordr', '/product/product-instructions']
+  const protectedPaths = ['/Minsu/rcvord', '/jamin/rsc-ordr']
   if (protectedPaths.includes(to.path)) {
     if (!auth.user) {
       return { path: '/login', query: { redirect: to.fullPath } }

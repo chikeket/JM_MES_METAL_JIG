@@ -45,6 +45,16 @@ export default [
         name: '창고 입출고 관리',
         to: '/jamin/wrhousdlvr',
       },
+      {
+        component: 'CNavItem',
+        name: '창고 관리',
+        to: '/jamin/wrhousManage',
+      },
+      {
+        component: 'CNavItem',
+        name: '창고 로케이션 관리',
+        to: '/jamin/wrhousZoneManage',
+      },
     ],
   },
   {
@@ -111,8 +121,23 @@ export default [
       },
       {
         component: 'CNavItem',
+        name: '수주 조회',
+        to: '/Minsu/rcvord_search',
+      },
+      {
+        component: 'CNavItem',
         name: '납품 관리',
         to: '/Minsu/deli',
+      },
+      {
+        component: 'CNavItem',
+        name: '납품 조회',
+        to: '/Minsu/deli_search',
+      },
+      {
+        component: 'CNavItem',
+        name: '공정 진행 현황',
+        to: '/Minsu/prcsProgPrecon',
       },
     ],
   },

@@ -17,7 +17,7 @@ export default defineConfig(() => {
     },
     resolve: {
       alias: [
-        // webpack path resolve to vitejs
+        // webpack path resolve  to vitejs
         {
           find: /^~(.*)$/,
           replacement: '$1',
@@ -39,6 +39,7 @@ export default defineConfig(() => {
         '^/api': {
           target: server,
           changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, ''),
         },
       },
     },

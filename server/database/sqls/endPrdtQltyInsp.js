@@ -1,47 +1,65 @@
 //완제품 품질 실적대기완제품 조회 (endPrdtQltyInspModal.vue모달검색조회쿼리)
 const waitingFinishedPrdt = `
-SELECT
- a.prcs_ctrl_id,
- a.prdt_id, 
- d.prdt_nm,
- f.prdt_opt_id,
- a.prcs_ord,
- a.pass_qy "bePass_qy",
- a.wk_to_dt,
- a.prcs_routing_id, 
- SUM(c.insp_qy) "beInsp_qy"
-FROM proc_ctrl a
-JOIN (SELECT
- a.prdt_id,
- a.opt_id,
- MAX(b.prcs_ord) "prcs_ord"
-FROM routing a
-JOIN routing_deta b
-ON a.prcs_routing_id = b.prcs_routing_id
-GROUP BY a.prdt_id) b
-ON a.prdt_id = b.prdt_id
-JOIN end_prdt_qlty_insp c
-ON a.prcs_ctrl_id = c.prcs_ctrl_id
-JOIN prdt d
-ON a.prdt_id = d.prdt_id
-JOIN prcs_prog_precon e
-ON a.prcs_prog_precon_id = e.prcs_prog_precon_id
-JOIN prod_drct_deta f
-ON e.prod_drct_deta_id = f.prod_drct_deta_id
-WHERE a.prcs_ord = b.prcs_ord
-AND f.prdt_opt_id = b.opt_id
-AND a.pass_qy > insp_qy
-AND d.prdt_nm LIKE CONCAT('%',? ,'%')
+select 
+ a.prcs_ctrl_id
+ ,a.prcs_prog_precon_id
+ ,a.prcs_routing_id
+ ,a.prcs_ord
+ ,a.pass_qy - d.end_insp_qy "bePass_qy"
+ ,a.wk_to_dt
+ ,e.prdt_nm
+ ,f.opt_nm
+ ,b.prdt_id
+ ,b.prdt_opt_id
+from proc_ctrl a
+join (
+		select 
+		 a.prcs_prog_precon_id 
+		 ,b.prdt_id
+		 ,b.prdt_opt_id 
+		from prcs_prog_precon a
+		join (
+				select
+				 prdt_id
+				 ,prdt_opt_id
+				 ,prod_drct_deta_id
+				from prod_drct_deta) b
+		on a.prod_drct_deta_id = b.prod_drct_deta_id) b
+on a.prcs_prog_precon_id = b.prcs_prog_precon_id
+join (
+		SELECT
+		 a.prdt_id,
+		 a.opt_id,
+		 MAX(b.prcs_ord) "prcs_ord"
+		FROM routing a
+		JOIN routing_deta b
+		ON a.prcs_routing_id = b.prcs_routing_id
+		GROUP BY a.prdt_id, a.opt_id) c
+on b.prdt_id = c.prdt_id
+and b.prdt_opt_id = c.opt_id
+and a.prcs_ord = c.prcs_ord
+join(
+		select
+		 prcs_ctrl_id
+		 ,SUM(insp_qy) "end_insp_qy"
+		from end_prdt_qlty_insp
+		group by prcs_ctrl_id) d
+on a.prcs_ctrl_id = d.prcs_ctrl_id
+and a.pass_qy > d.end_insp_qy
+join prdt e
+on b.prdt_id = e.prdt_id
+join prdt_opt f
+on b.prdt_opt_id = f.prdt_opt_id
+WHERE e.prdt_nm LIKE CONCAT('%',? ,'%')
 AND a.pass_qy > ?
 AND a.wk_to_dt >= ?
-GROUP BY a.prcs_ctrl_id, a.prdt_id, d.prdt_nm, f.prdt_opt_id, a.prcs_ord, a.pass_qy, a.wk_to_dt, a.prcs_routing_id
 `;
 
 // 완제품 품질검사 관리 조회
 const endPrdtQltyInspSearch = `
 SELECT 
  b.emp_nm,
- c.pass_qy "qy",
+ c.pass_qy "bePass_qy",
  a.prcs_ctrl_id,
  a.end_prdt_qlty_insp_id,
  a.insp_qy,
@@ -51,7 +69,8 @@ SELECT
  a.rm,
  e.prdt_id,
  e.prdt_opt_id,
- f.prdt_nm
+ f.prdt_nm,
+ g.opt_nm
 FROM end_prdt_qlty_insp a
 JOIN emp b
 ON a.emp_id = b.emp_id
@@ -63,8 +82,26 @@ JOIN prod_drct_deta e
 ON d.prod_drct_deta_id = e.prod_drct_deta_id
 JOIN prdt f
 ON e.prdt_id = f.prdt_id
+JOIN prdt_opt g
+ON e.prdt_opt_id = g.prdt_opt_id 
 WHERE b.emp_nm LIKE CONCAT('%',? ,'%')
 AND a.insp_dt >= ?`;
+
+// 완제품 품질검사 항목별 불량수량관리 조회
+const endPrdtQltyInspInferSearch = `
+SELECT
+ c.insp_item_nm,
+ c.basi_val,
+ a.qlty_item_mng_id,
+ a.end_prdt_qlty_insp_id,
+ c.eror_scope_min,
+ c.eror_scope_max,
+ a.infer_qy 
+FROM end_prdt_qlty_insp_infer_qy a
+JOIN qlty_item c
+ON a.qlty_item_mng_id = c.qlty_item_mng_id
+WHERE c.st = 'P1'
+AND a.end_prdt_qlty_insp_id = ?`;
 
 // 완제품 품질 검수 ID생성 쿼리
 const endPrdtQltyInspCreateId = `
@@ -84,6 +121,13 @@ INSERT INTO end_prdt_qlty_insp(
  end_prdt_qlty_insp_id)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?)`;
 
+const endPrdtQltyInspInferInsert = `
+INSERT INTO end_prdt_qlty_insp_infer_qy(
+infer_qy
+,qlty_item_mng_id
+,end_prdt_qlty_insp_id)
+VALUES(?, ?, ?)`;
+
 const endPrdtQltyInspUpdate = `
 UPDATE end_prdt_qlty_insp
 SET
@@ -96,16 +140,28 @@ SET
  insp_dt = ?
 WHERE end_prdt_qlty_insp_id = ?`;
 
+//자재 품질 검사 불량 수량 테이블 쿼리수정
+const endPrdtQltyInspInferUpdate = `
+UPDATE end_prdt_qlty_insp_infer_qy
+SET
+ infer_qy = ?
+WHERE qlty_item_mng_id = ?
+AND end_prdt_qlty_insp_id = ?
+`;
+
 const endPrdtQltyInspDelete = `
 DELETE
 FROM end_prdt_qlty_insp
 WHERE end_prdt_qlty_insp_id = ?`;
 
 module.exports = {
-    waitingFinishedPrdt,
-    endPrdtQltyInspSearch,
-    endPrdtQltyInspCreateId,
-    endPrdtQltyInspInsert,
-    endPrdtQltyInspUpdate,
-    endPrdtQltyInspDelete,
+  waitingFinishedPrdt,
+  endPrdtQltyInspSearch,
+  endPrdtQltyInspInferSearch,
+  endPrdtQltyInspCreateId,
+  endPrdtQltyInspInsert,
+  endPrdtQltyInspInferInsert,
+  endPrdtQltyInspUpdate,
+  endPrdtQltyInspInferUpdate,
+  endPrdtQltyInspDelete,
 };

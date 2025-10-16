@@ -21,8 +21,8 @@
         />
         <input class="form-control" type="date" v-model="reg_dt" style="width: 160px" />
         <div class="ms-auto d-flex gap-2">
-          <button class="btn btn-secondary" @click="resetSearch">초기화</button>
           <button class="btn btn-secondary" @click="search">검색</button>
+          <button class="btn btn-secondary" @click="resetSearch">초기화</button>
         </div>
       </div>
 

@@ -32,17 +32,20 @@ app.listen(3000, () => {
 
 const co = require("./routers/co_router.js"); // 업체(테스트 완료 주익이 나중에 쓰면 됨)
 const companyManage = require("./routers/companyManage_router.js"); // 업체관리 추가!
+
 const prdtManage = require("./routers/prdtManage_router.js"); // 제품관리
 const rscManage = require("./routers/rscManage_router.js"); // 자재관리
 const qltyItemManage = require("./routers/qltyItemManage_router.js"); // 품질항목관리
 const SSMManage = require("./routers/SSMManage,_router.js"); // 생산지시관리
 
+
 const instruction = require("./routers/instruction_router.js"); // 생산지시
-
 const rcvord = require("./routers/rcvord_router.js"); // 수주
+const rcvordSearch = require("./routers/rcvordSearch_router.js"); // 수주 조회
 const deli = require("./routers/deli_router.js"); // 납품
+const deliSearch = require("./routers/deliSearch_router.js"); // 납품 조회
+const prcsProgPrecon = require("./routers/prcsProgPrecon.js"); // 공정 진행 현황
 const rscOrdr = require("./routers/rscOrdr_router.js"); // 자재 발주
-
 const prdt = require("./routers/prdt_router.js"); // 제품
 const rsc = require("./routers/rsc_router.js"); // 자재
 const prodPlan = require("./routers/prodPlan_router.js"); // 생산계획
@@ -52,6 +55,12 @@ const rscQltyInsp = require("./routers/rscQltyInsp_router.js"); // 자재품질�
 const endPrdtQltyInsp = require("./routers/endPrdtQltyInsp_router.js"); // 완제품 품질검수
 const qltyItem = require("./routers/qltyItem_router.js"); // 품질항목 기준정보
 const wrhousdlvr = require("./routers/wrhousdlvr_router.js"); // 창고 입출고
+const wrhousManage = require("./routers/wrhousManage_router.js"); // 창고 기준정보 관리
+const wrhousZoneManage = require("./routers/wrhousZoneManage_router.js"); // 창고 로케이션 기준정보 관리
+
+const routingInfo = require("./routers/routing_router.js"); // 공정 라우팅
+const prcs_Router = require("./routers/prcs_router.js"); // 공정목록 조회
+const semiPrdtQltyInsp = require("./routers/semiPrdtQltyInsp_router.js"); // 반제품 품질검수
 
 // 기본 라우팅
 app.get("/", (req, res) => {
@@ -65,7 +74,10 @@ app.use("/", prdtManage); // 제품관리
 app.use("/", rscOrdr); // 자재 발주
 app.use("/", co); // 업체
 app.use("/", rcvord); // 수주
+app.use("/", rcvordSearch); // 수주 조회
 app.use("/", deli); // 납품
+app.use("/", deliSearch); // 납품 조회
+app.use("/", prcsProgPrecon); // 공정 진행 현황
 app.use("/", rsc); // 자재
 app.use("/", rscManage); // 자재관리
 app.use("/", prodPlan); // 생산계획
@@ -77,5 +89,13 @@ app.use("/", qltyItem); // 품질항목 기준정보
 app.use("/", qltyItemManage); // 품질항목관리
 app.use("/", companyManage); // 업체관리 추가!
 app.use("/", wrhousdlvr); // 창고 입출고
+
 app.use("/", SSMManage); // 생산지시관리
 
+app.use("/", wrhousManage); // 창고 기준정보 관리
+app.use("/", wrhousZoneManage); // 창고 로케이션 기준정보 관리
+
+
+app.use("/", routingInfo); // 공정 라우팅
+app.use("/api", prcs_Router); // 공정목록 조회
+app.use("/", semiPrdtQltyInsp); // 반제품 품질검수

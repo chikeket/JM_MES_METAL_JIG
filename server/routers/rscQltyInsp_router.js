@@ -28,6 +28,13 @@ router.get("/rscQltyInspSelect", async (req, res) => {
   res.send(result);
 });
 
+router.get("/rscQltyInspInferSelect", async (req, res) => {
+  let result = await rscOrdrService
+    .rscQltyInspInferSelect(req.query)
+    .catch((err) => console.log(err));
+  res.send(result);
+});
+
 router.post("/rscQltyInspUpdate", async (req, res) => {
   let Info = req.body;
   let result = await rscOrdrService

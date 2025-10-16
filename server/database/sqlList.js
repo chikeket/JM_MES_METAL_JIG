@@ -9,8 +9,13 @@ const instructions = require("./sqls/instruction.js");
 
 // 수주 관련 쿼리
 const rcvord = require("./sqls/rcvord.js");
+
 // 납품 관련 쿼리
 const deli = require("./sqls/deli.js");
+
+// 공정 진행 현황 관련 쿼리
+const prcsProgPrecon = require("./sqls/prcsProgPrecon.js");
+
 // 계정 관련 쿼리
 const acct = require("./sqls/acct.js");
 
@@ -47,6 +52,21 @@ const qltyItemManage = require("./sqls/qltyItemManage.js");
 // 창고 입출고 관련 쿼리
 const wrhousdlvr = require("./sqls/wrhousdlvr.js");
 
+// 창고 기준정보 관리 관련 쿼리
+const wrhousManage = require("./sqls/wrhousManage.js");
+
+// 창고 로케이션 기준정보 관리 관련 쿼리
+const wrhousZoneManage = require("./sqls/wrhousZoneManage.js");
+
+// 공정 라우팅 관련 쿼리
+const routingInfo = require("./sqls/routingInfo.js");
+
+// 공정목록 조회 관련 쿼리
+const prcs = require("./sqls/prcs.js");
+
+// 반제품 품질 검수 관련 쿼리
+const semiPrdtQltyInsp = require("./sqls/semiPrdtQltyInsp.js");
+
 // └───각 테이블별 SQL 쿼리들을 모아놓은 중앙 관리 파일───┘
 
 module.exports = {
@@ -58,6 +78,7 @@ module.exports = {
   ...rscManage,
   ...companyManage,
   ...co,
+  ...companyManage, // 추가!
   ...rcvord,
   ...emp,
   ...acct,
@@ -71,5 +92,15 @@ module.exports = {
   ...qltyItem,
   ...qltyItemManage,
   ...wrhousdlvr,
+
   ...SSMManage,
+
+  ...wrhousManage,
+  ...wrhousZoneManage,
+  ...routingInfo,
+  ...prcs,
+  ...prcsProgPrecon,
+  ...semiPrdtQltyInsp,
+
+
 };

@@ -3,7 +3,12 @@
     <!-- 상단 버튼 -->
     <div class="d-flex justify-content-end gap-2 mb-3">
       <CButton color="secondary" @click="newFunc()">신규</CButton>
-      <CButton color="secondary" @click="openOrderModal()">자재발주서 조회</CButton>
+      <CButton color="secondary" @click="openRscQltyInspModal()">자재품질 조회</CButton>
+      <rscQltyInspModal
+        :visible="isRscQltyInspModalVisible"
+        @close="closerRscQltyInspModal"
+        @select="selectOrdr"
+      />
       <rscOrdrModal
         :visible="isrscOrdrModalVisible"
         @close="closerscOrdrModal"
@@ -34,7 +39,8 @@
       <CCol md="3">
         <CInputGroup>
           <CInputGroupText style="min-width: 95px">자재명</CInputGroupText>
-          <CFormInput v-model="form.rcs_nm" readonly class="bg-light" />
+          <CFormInput v-model="form.rcs_nm" readonly class="bg-light" placeholder="자재발주서조회"
+ @click="openOrderModal"/>
         </CInputGroup>
       </CCol>
       <CCol md="3">
@@ -46,7 +52,7 @@
       <CCol md="3">
         <CInputGroup>
           <CInputGroupText>기입고 수량</CInputGroupText>
-          <CFormInput v-model.number="form.receivedQty" type="number" min="0" />
+          <CFormInput v-model.number="form.receivedQty" readonly type="number" min="0" class="bg-light"/>
         </CInputGroup>
       </CCol>
       <CCol md="3">
@@ -67,7 +73,7 @@
       <CCol md="3">
         <CInputGroup>
           <CInputGroupText>합격 수량</CInputGroupText>
-          <CFormInput v-model.number="form.pass_qy" type="number" min="0" />
+          <CFormInput :value="pass_qy" readonly type="number" min="0" class="bg-light" />
         </CInputGroup>
       </CCol>
       <CCol md="3">
@@ -85,12 +91,7 @@
     </CRow>
     <CFormTextarea v-model="form.note" label="비고" rows="3" text="필요 시 기재"></CFormTextarea>
     <div class="d-flex justify-content-end gap-2 mb-3">
-      <CButton color="secondary" @click="openRscQltyInspModal()">자재품질 조회</CButton>
-      <rscQltyInspModal
-        :visible="isRscQltyInspModalVisible"
-        @close="closerRscQltyInspModal"
-        @select="selectOrdr"
-      />
+      
     </div>
     <!-- 검사 항목 테이블 -->
     <CTable hover bordered small class="align-middle mt-4">
@@ -99,16 +100,20 @@
           <CTableHeaderCell class="text-center">검사항목</CTableHeaderCell>
           <CTableHeaderCell class="text-center">기준치</CTableHeaderCell>
           <CTableHeaderCell class="text-center">오차범위</CTableHeaderCell>
+          <CTableHeaderCell class="text-center">불량수량</CTableHeaderCell>
         </CTableRow>
       </CTableHead>
       <CTableBody>
         <CTableRow v-for="(item, idx) in inspectItems" :key="idx">
-          <CTableDataCell>{{ item.name }}</CTableDataCell>
-          <CTableDataCell>{{ item.standard }}</CTableDataCell>
-          <CTableDataCell>{{ item.tolerance }}</CTableDataCell>
+          <CTableDataCell>{{ item.insp_item_nm }}</CTableDataCell>
+          <CTableDataCell>{{ item.basi_val }}</CTableDataCell>
+          <CTableDataCell>{{ item.eror_scope_min + '~' + item.eror_scope_max }}</CTableDataCell>
+          <CTableDataCell class="text-start" style="width: 120px">
+            <CFormInput v-model="item.infer_qy" size="sm" placeholder="불량수량기입" />
+          </CTableDataCell>
         </CTableRow>
         <CTableRow v-if="inspectItems.length === 0">
-          <CTableDataCell colspan="3" class="text-center text-muted py-4"
+          <CTableDataCell colspan="4" class="text-center text-muted py-4"
             >검사항목이 없습니다.</CTableDataCell
           >
         </CTableRow>
@@ -157,14 +162,15 @@ const closerRscQltyInspModal = () => {
 }
 
 const form = ref({
-  emp_id: auth.user.emp_id,
-  emp_nm: auth.user.emp_nm,
+  emp_id: auth.user?.emp_id || 'EMP001',
+  emp_nm: auth.user?.emp_nm || '홍길동',
   co_nm: '',
   rcs_nm: '',
-  pass_qy: '',
   qy: '',
   receivedQty: '',
+  receivedQty_base: '',
   insp_qy: '',
+  insp_qy_base: '',
   insp_dt: userDateUtils.dateFormat(new Date(), 'yyyy-MM-dd'),
   note: '',
   rsc_ordr_deta_id: '',
@@ -173,57 +179,44 @@ const form = ref({
 const inspectItems = ref([
   // { name: '외관검사', standard: '1mm', tolerance: '2%' },
 ])
+//합격수량
+const pass_qy = computed(() => {
+  const order = Number(form.value.insp_qy) || 0
+  const received = Number(defectQty.value) || 0
+  return order - received
+})
+//미입고수량
 const pendingQty = computed(() => {
   const order = Number(form.value.qy) || 0
   const received = Number(form.value.receivedQty) || 0
   return order - received
 })
+//불량수량
+const defectQty = ref(0)
 
-const defectQty = computed(() => {
-  const order = Number(form.value.insp_qy) || 0
-  const received = Number(form.value.pass_qy) || 0
-  return order - received
-})
-//기입고수량검증
+//각각 검사항목별 불합격 수량 입력후 합격수량이 정해지는 코드
 watch(
-  () => form.value.receivedQty,
-  (newVal) => {
-    const order = Number(form.value.qy) || 0
-    const received = Number(newVal)
-    if (isNaN(received) || received < 0) {
-      alert('기입고 수량은 0 이상의 숫자만 입력 가능합니다.')
-      form.value.receivedQty = 0
-      return
+  inspectItems,
+  (newItems) => {
+    let total = 0
+    for (const item of newItems) {
+      const value = Number(item.infer_qy)
+      if (!isNaN(value)) {
+        total += value
+      }
     }
-    if (received > order) {
-      alert('기입고 수량이 발주 수량보다 많을 수 없습니다.')
-      form.value.receivedQty = 0
-    }
+    defectQty.value = total
   },
+  { deep: true },
 )
-//합격수량검증
-watch(
-  () => form.value.pass_qy,
-  (newVal) => {
-    const order = Number(form.value.insp_qy) || 0
-    const received = Number(newVal)
-    if (isNaN(received) || received < 0) {
-      alert('합격 수량은 0 이상의 숫자만 입력 가능합니다.')
-      form.value.pass_qy = 0
-      return
-    }
-    if (received > order) {
-      alert('합격 수량이 검수량보다 많을 수 없습니다.')
-      form.value.pass_qy = 0
-    }
-  },
-)
+
 //검수수량검증
 watch(
   () => form.value.insp_qy,
   (newVal) => {
     const order = Number(form.value.qy) || 0
     const received = Number(newVal)
+    
     if (isNaN(received) || received < 0) {
       alert('검수 수량은 0 이상의 숫자만 입력 가능합니다.')
       form.value.pass_qy = 0
@@ -233,6 +226,7 @@ watch(
       alert('검수 수량이 발주 수량보다 많을 수 없습니다.')
       form.value.pass_qy = 0
     }
+    form.value.receivedQty = Number(form.value.receivedQty_base) + Number(form.value.insp_qy) - Number(form.value.insp_qy_base)
   },
 )
 
@@ -241,30 +235,46 @@ const selectOrdr = (prdts) => {
   form.value.co_nm = prdts.searchParams.co_nm
   form.value.qy = Math.floor(prdts.searchParams.qy)
   form.value.insp_qy = Math.floor(prdts.searchParams.insp_qy) || 0
+  form.value.insp_qy_base = Math.floor(prdts.searchParams.insp_qy) || 0
   form.value.receivedQty =
     Math.floor(prdts.searchParams.qy) - Math.floor(prdts.searchParams.rtngud_qy) || 0
-  form.value.pass_qy = Math.floor(prdts.searchParams.pass_qy) || 0
+  form.value.receivedQty_base =
+  Math.floor(prdts.searchParams.qy) - Math.floor(prdts.searchParams.rtngud_qy) || 0
   form.value.rcs_nm = prdts.searchParams.rsc_nm
   form.value.rsc_ordr_deta_id = prdts.searchParams.rsc_ordr_deta_id
   form.value.rsc_qlty_insp_id = prdts.searchParams.rsc_qlty_insp_id
   for (const prdt of prdts.detailData)
     inspectItems.value.push({
-      name: prdt.insp_item_nm,
-      standard: prdt.basi_val,
-      tolerance: prdt.eror_scope_min + '~' + prdt.eror_scope_max,
+      insp_item_nm: prdt.insp_item_nm,
+      basi_val: prdt.basi_val,
+      eror_scope_min: prdt.eror_scope_min,
+      eror_scope_max: prdt.eror_scope_max,
+      infer_qy: prdt.infer_qy || 0,
+      qlty_item_mng_id: prdt.qlty_item_mng_id,
+      rsc_qlty_insp_id: prdt.rsc_qlty_insp_id,
     })
+  console.log(prdts)
 }
 
 const saveInspection = async () => {
+  let inferData = []
+  for (const prdt of inspectItems.value)
+    inferData.push({
+      infer_qy: prdt.infer_qy,
+      qlty_item_mng_id: prdt.qlty_item_mng_id,
+    })
+
   const payload = {
-    rm: form.value.note,
-    rsc_ordr_deta_id: form.value.rsc_ordr_deta_id,
-    emp_id: form.value.emp_id,
-    rtngud_qy: pendingQty.value,
-    pass_qy: form.value.pass_qy,
-    insp_qy: form.value.insp_qy,
-    insp_dt: form.value.insp_dt,
-    // rsc_qlty_insp_id: form.value.rsc_qlty_insp_id,
+    master: {
+      rm: form.value.note,
+      rsc_ordr_deta_id: form.value.rsc_ordr_deta_id,
+      emp_id: form.value.emp_id,
+      rtngud_qy: pendingQty.value,
+      pass_qy: pass_qy.value,
+      insp_qy: form.value.insp_qy,
+      insp_dt: form.value.insp_dt,
+    },
+    infer: inferData,
   }
   console.log(payload)
   let result = await axios.post('/api/rscQltyInspInsert', payload).catch((err) => console.log(err))
@@ -277,15 +287,25 @@ const saveInspection = async () => {
 }
 
 const update = async () => {
+  let inferData = []
+  for (const prdt of inspectItems.value)
+    inferData.push({
+      infer_qy: prdt.infer_qy,
+      qlty_item_mng_id: prdt.qlty_item_mng_id,
+      rsc_qlty_insp_id: prdt.rsc_qlty_insp_id,
+    })
   const payload = {
-    rm: form.value.note,
-    rsc_ordr_deta_id: form.value.rsc_ordr_deta_id,
-    emp_id: form.value.emp_id,
-    rtngud_qy: pendingQty.value,
-    pass_qy: form.value.pass_qy,
-    insp_qy: form.value.insp_qy,
-    insp_dt: form.value.insp_dt,
-    rsc_qlty_insp_id: form.value.rsc_qlty_insp_id,
+    master: {
+      rm: form.value.note,
+      rsc_ordr_deta_id: form.value.rsc_ordr_deta_id,
+      emp_id: form.value.emp_id,
+      rtngud_qy: pendingQty.value,
+      pass_qy: pass_qy.value,
+      insp_qy: form.value.insp_qy,
+      insp_dt: form.value.insp_dt,
+      rsc_qlty_insp_id: form.value.rsc_qlty_insp_id,
+    },
+    infer: inferData,
   }
   let result = await axios.post('/api/rscQltyInspUpdate', payload).catch((err) => console.log(err))
   let addRes = result.data
@@ -311,8 +331,8 @@ const deleteFunc = async () => {
 
 const newFunc = async () => {
   // console.log(form)
-  form.value.emp_id = ''
-  form.value.emp_nm = ''
+  // form.value.emp_id = ''
+  // form.value.emp_nm = ''
   form.value.insp_dt = userDateUtils.dateFormat(new Date(), 'yyyy-MM-dd')
   form.value.insp_qy = 0
   form.value.note = ''

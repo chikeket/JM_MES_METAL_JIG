@@ -39,7 +39,7 @@
             <!-- v-for="(prdts, i) in prdtList" :key="i" -->
             <tr v-for="(prdts, i) in prdtList" :key="i" @dblclick="selectProduct(prdts)">
               <td>{{ prdts.prdt_nm }}</td>
-              <td>{{ Number(prdts.bePass_qy) - Number(prdts.beInsp_qy) }}</td>
+              <td>{{ Number(prdts.bePass_qy) }}</td>
               <td>{{ userDateUtils.dateFormat(prdts.wk_to_dt, 'yyyy-MM-dd') }}</td>
             </tr>
           </tbody>
@@ -85,9 +85,7 @@ const prdtSearch = async () => {
     params.pass_qy = ctrlValue.value.searchKeyword
   }
   // console.log(params)
-  let result = await axios
-    .get('/api/waitingFinishedPrdt', { params })
-    .catch((err) => console.log(err))
+  let result = await axios.get('/api/waitingSemiPrdt', { params }).catch((err) => console.log(err))
   // console.log(result.data)
   prdtList.value = result.data
 

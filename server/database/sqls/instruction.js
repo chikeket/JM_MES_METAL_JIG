@@ -48,7 +48,7 @@ WHERE SUBSTR(prcs_prog_precon_id, 10, 4) = DATE_FORMAT(NOW(), '%y%m')
 FOR UPDATE`;
 
 const prcsSelect =
-  // 제품ID,옵션ID로 라우팅과 공정열람 
+  // 제품ID,옵션ID로 라우팅과 공정열람
   `SELECT  
  b.prcs_ord,
  c.prcs_id,
@@ -59,11 +59,10 @@ ON a.prcs_routing_id = b.prcs_routing_id
 JOIN prcs c
 ON b.prcs_id = c.prcs_id
 WHERE a.prdt_id = ?
-AND a.opt_id = ?
-AND b.prcs_ord = 1`;
+AND a.opt_id = ?`;
 
 const prcsProgPreconInsert =
-  // 공정진행현황 정보입력 
+  // 공정진행현황 정보입력
   `INSERT INTO prcs_prog_precon (
     rm,
     prod_drct_deta_id,
@@ -75,7 +74,7 @@ const prcsProgPreconInsert =
     st,
     prcs_prog_precon_id
   )
-  VALUES (?, ?, ?, ?, ?, ?, 0, 'J1', ?)`;
+  VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)`;
 
 const instructionUpdate =
   // 생산지시마스터 수정(업데이트)
@@ -107,7 +106,7 @@ const prcsProgPreconIdSearch =
   `SELECT prcs_prog_precon_id
 FROM prcs_prog_precon
 WHERE prod_drct_deta_id = ?
-ORDER BY prcs_ord DESC
+ORDER BY prcs_ord ASC
 LIMIT 1`;
 
 const prcsProgPreconUpdate =
@@ -120,8 +119,8 @@ SET
   prcs_id = ? ,
   prcs_nm = ? ,
   drct_qy = ? ,
-  inpt_qy = 0,
-  st = 'J1'
+  inpt_qy = 0 ,
+  st = ?  
 WHERE prcs_prog_precon_id = ?`;
 
 const instructionDelete =
