@@ -16,6 +16,9 @@ const rcvord = require("./sqls/rcvord.js");
 // 납품 관련 쿼리
 const deli = require("./sqls/deli.js");
 
+// 공정 진행 현황 관련 쿼리
+const prcsProgPrecon = require("./sqls/prcsProgPrecon.js");
+
 // 계정 관련 쿼리
 const acct = require("./sqls/acct.js");
 
@@ -88,4 +91,5 @@ module.exports = {
   ...wrhousZoneManage,
   ...routingInfo,
   ...prcs,
+  ...prcsProgPrecon,
 };

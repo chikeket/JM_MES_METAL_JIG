@@ -70,6 +70,11 @@ const routes = [
             name: 'deli_search',
             component: () => import('@/views/minsu/deliSearch.vue'),
           },
+          {
+            path: '/Minsu/prcsProgPrecon',
+            name: 'prcsProgPrecon',
+            component: () => import('@/views/minsu/prcsProgPrecon.vue'),
+          },
         ],
       },
       {
