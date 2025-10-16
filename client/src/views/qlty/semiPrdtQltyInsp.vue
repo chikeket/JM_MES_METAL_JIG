@@ -31,6 +31,12 @@
       </CCol>
       <CCol md="3">
         <CInputGroup>
+          <CInputGroupText style="min-width: 95px">옵션명</CInputGroupText>
+          <CFormInput v-model="form.opt_nm" readonly class="bg-light" />
+        </CInputGroup>
+      </CCol>
+      <CCol md="3">
+        <CInputGroup>
           <CInputGroupText>실적 수량</CInputGroupText>
           <CFormInput v-model.number="form.qy" readonly type="number" min="0" class="bg-light" />
         </CInputGroup>
@@ -46,7 +52,7 @@
       <CCol md="3">
         <CInputGroup>
           <CInputGroupText>합격 수량</CInputGroupText>
-          <CFormInput v-model.number="form.pass_qy" type="number" min="0" />
+          <CFormInput :value="pass_qy" readonly type="number" min="0" class="bg-light" />
         </CInputGroup>
       </CCol>
       <CCol md="3">
@@ -62,7 +68,7 @@
         </CInputGroup>
       </CCol>
     </CRow>
-    <CFormTextarea v-model="form.note" label="비고" rows="3" text="필요 시 기재"></CFormTextarea>
+    <CFormTextarea v-model="form.rm" label="비고" rows="3" text="필요 시 기재"></CFormTextarea>
     <div class="d-flex justify-content-end gap-2 mb-3">
       <CButton color="secondary" @click="openEndPrdtQltyInspModal()">반제품 품질조회</CButton>
       <endPrdtQltyInspModal
@@ -78,13 +84,17 @@
           <CTableHeaderCell class="text-center">검사항목</CTableHeaderCell>
           <CTableHeaderCell class="text-center">기준치</CTableHeaderCell>
           <CTableHeaderCell class="text-center">오차범위</CTableHeaderCell>
+          <CTableHeaderCell class="text-center">불량수량</CTableHeaderCell>
         </CTableRow>
       </CTableHead>
       <CTableBody>
         <CTableRow v-for="(item, idx) in inspectItems" :key="idx">
-          <CTableDataCell>{{ item.name }}</CTableDataCell>
-          <CTableDataCell>{{ item.standard }}</CTableDataCell>
-          <CTableDataCell>{{ item.tolerance }}</CTableDataCell>
+          <CTableDataCell>{{ item.insp_item_nm }}</CTableDataCell>
+          <CTableDataCell>{{ item.basi_val }}</CTableDataCell>
+          <CTableDataCell>{{ item.eror_scope_min + '~' + item.eror_scope_max }}</CTableDataCell>
+          <CTableDataCell class="text-start" style="width: 120px">
+            <CFormInput v-model="item.infer_qy" size="sm" placeholder="불량수량기입" />
+          </CTableDataCell>
         </CTableRow>
         <CTableRow v-if="inspectItems.length === 0">
           <CTableDataCell colspan="3" class="text-center text-muted py-4"
@@ -139,11 +149,11 @@ const form = ref({
   emp_id: auth.user?.emp_id || 'EMP001',
   emp_nm: auth.user?.emp_nm || '홍길동',
   prdt_nm: '',
-  pass_qy: '',
+  opt_nm: '',
   qy: '',
   insp_qy: '',
   insp_dt: userDateUtils.dateFormat(new Date(), 'yyyy-MM-dd'),
-  note: '',
+  rm: '',
   prcs_ctrl_id: '',
   end_prdt_qlty_insp_id: '',
 })
@@ -151,28 +161,30 @@ const inspectItems = ref([
   // { name: '외관검사', standard: '1mm', tolerance: '2%' },
 ])
 
-const defectQty = computed(() => {
+//불량수량
+const defectQty = ref(0)
+//합격수량
+const pass_qy = computed(() => {
   const order = Number(form.value.insp_qy) || 0
-  const received = Number(form.value.pass_qy) || 0
+  const received = Number(defectQty.value) || 0
   return order - received
 })
-//기입고수량검증
+//각각 검사항목별 불합격 수량 입력후 합격수량이 정해지는 코드
 watch(
-  () => form.value.receivedQty,
-  (newVal) => {
-    const order = Number(form.value.qy) || 0
-    const received = Number(newVal)
-    if (isNaN(received) || received < 0) {
-      alert('기입고 수량은 0 이상의 숫자만 입력 가능합니다.')
-      form.value.receivedQty = 0
-      return
+  inspectItems,
+  (newItems) => {
+    let total = 0
+    for (const item of newItems) {
+      const value = Number(item.infer_qy)
+      if (!isNaN(value)) {
+        total += value
+      }
     }
-    if (received > order) {
-      alert('기입고 수량이 발주 수량보다 많을 수 없습니다.')
-      form.value.receivedQty = 0
-    }
+    defectQty.value = total
   },
+  { deep: true },
 )
+
 //합격수량검증
 watch(
   () => form.value.pass_qy,
@@ -202,8 +214,8 @@ watch(
       return
     }
     if (received > order) {
-      alert('검수 수량이 발주 수량보다 많을 수 없습니다.')
-      form.value.pass_qy = 0
+      alert('검수 수량이 실적 수량보다 많을 수 없습니다.')
+      form.value.insp_qy = 0
     }
   },
 )
@@ -212,26 +224,29 @@ const selectOrdr = (prdts) => {
   console.log(prdts)
   inspectItems.value = []
   form.value.prdt_nm = prdts.searchParams.prdt_nm
-  form.value.qy =
-    Math.floor(prdts.searchParams.bePass_qy) - Math.floor(prdts.searchParams.beInsp_qy) ||
-    prdts.searchParams.qy
+  form.value.opt_nm = prdts.searchParams.opt_nm
+  form.value.qy = Math.floor(prdts.searchParams.bePass_qy)
   form.value.insp_qy = Math.floor(prdts.searchParams.insp_qy) || 0
   form.value.pass_qy = Math.floor(prdts.searchParams.pass_qy) || 0
-  form.value.note = prdts.searchParams.rm || ''
+  form.value.rm = prdts.searchParams.rm || ''
   form.value.prcs_ctrl_id = prdts.searchParams.prcs_ctrl_id
   form.value.end_prdt_qlty_insp_id = prdts.searchParams.end_prdt_qlty_insp_id
   defectQty.value = prdts.searchParams.infer_qy || 0
   for (const prdt of prdts.detailData)
     inspectItems.value.push({
-      name: prdt.insp_item_nm,
-      standard: prdt.basi_val,
-      tolerance: prdt.eror_scope_min + '~' + prdt.eror_scope_max,
+      insp_item_nm: prdt.insp_item_nm,
+      basi_val: prdt.basi_val,
+      eror_scope_min: prdt.eror_scope_min,
+      eror_scope_max: prdt.eror_scope_max,
+      infer_qy: prdt.infer_qy || 0,
+      qlty_item_mng_id: prdt.qlty_item_mng_id,
+      end_prdt_qlty_insp_id: prdt.end_prdt_qlty_insp_id,
     })
 }
 
 const saveInspection = async () => {
   const payload = {
-    rm: form.value.note,
+    rm: form.value.rm,
     prcs_ctrl_id: form.value.prcs_ctrl_id,
     emp_id: form.value.emp_id,
     infer_qy: defectQty.value,

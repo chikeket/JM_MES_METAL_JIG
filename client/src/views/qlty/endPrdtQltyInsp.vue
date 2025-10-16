@@ -207,9 +207,7 @@ const selectOrdr = (prdts) => {
   inspectItems.value = []
   form.value.prdt_nm = prdts.searchParams.prdt_nm
   form.value.opt_nm = prdts.searchParams.opt_nm
-  form.value.qy =
-    Math.floor(prdts.searchParams.bePass_qy) - Math.floor(prdts.searchParams.beInsp_qy) ||
-    prdts.searchParams.qy
+  form.value.qy = Math.floor(prdts.searchParams.bePass_qy)
   form.value.insp_qy = Math.floor(prdts.searchParams.insp_qy) || 0
   form.value.pass_qy = Math.floor(prdts.searchParams.pass_qy) || 0
   form.value.rm = prdts.searchParams.rm || ''
