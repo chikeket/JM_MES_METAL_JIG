@@ -2,10 +2,11 @@
 // 공정명(PK), 설비그룹ID(FK), 리드타임, 금형사용유무, 공정등록일, 공정순서
 
 const selectPrcs = `
-SELECT
+SELECT DISTINCT
+   p.prcs_id,
    p.prcs_nm, 
    eg.eqm_grp_nm, 
-   rd.lead_tm, 
+   p.lead_tm, 
    p.mold_use_at,
    rd.prcs_reg_dt,
    rd.prcs_ord

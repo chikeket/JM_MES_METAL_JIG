@@ -2,7 +2,7 @@
   <div v-if="isOpen" class="modal-backdrop" @click="closeModal">
     <div class="modal-container" @click.stop>
       <div class="modal-header">
-        <h5>입고서 목록</h5>
+        <h5>공정검색</h5>
         <button type="button" class="btn-close" @click="closeModal"></button>
       </div>
 
@@ -41,7 +41,7 @@
             </div>
             <div class="col-md-3 d-flex align-items-end">
               <button type="button" class="btn btn-secondary me-2" @click="onSearch">조회</button>
-              <button type="button" class="btn btn-secondary" @click="onReset">초기화</button>
+              <button type="button" class="btn btn-secondary" @click="onResetpr">초기화</button>
             </div>
           </div>
         </div>
@@ -185,7 +185,7 @@ const allSelected = computed(() => {
   )
 })
 
-// 검사서 목록 조회
+// 검사서 목록 조회   밥 먹고 여기서부터 하셈 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 const onSearch = async () => {
   try {
     const params = {
