@@ -65,7 +65,7 @@
                   <th style="width: 150px">품목 명</th>
                   <th style="width: 100px">옵션 코드</th>
                   <th style="width: 150px">옵션 명</th>
-                  <th style="width: 80px">검사 수량</th>
+                  <th style="width: 80px">총 수량</th>
                   <th style="width: 80px">합격 수량</th>
                   <th style="width: 80px">불합격 수량</th>
                   <th style="width: 80px">검사 상태</th>

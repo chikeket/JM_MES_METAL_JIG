@@ -4,28 +4,39 @@
 const selectRscInspectionList = `
 SELECT 
   qi.RSC_QLTY_INSP_ID AS insp_no,
-  r.RSC_ID AS item_code,
-  r.RSC_NM AS item_name,
-  r.SPEC AS item_spec,
-  r.UNIT AS item_unit,
-  qi.INSP_QY AS insp_qty,
-  qi.PASS_QY AS pass_qty,
-  qi.RTNGUD_QY AS fail_qty,
+  r.RSC_ID            AS item_code,
+  r.RSC_NM            AS item_name,
+  r.SPEC              AS item_spec,
+  r.UNIT              AS item_unit,
+  qi.INSP_QY          AS insp_qty,
+  qi.PASS_QY          AS pass_qty,
+  COALESCE(SUM(qii.INFER_QY), 0) AS fail_qty,
   CASE 
-    WHEN qi.INSP_QY > 0 AND qi.INSP_QY = (qi.PASS_QY + qi.RTNGUD_QY) THEN '완료'
+    WHEN qi.INSP_QY > 0 
+         AND qi.INSP_QY = qi.PASS_QY + COALESCE(SUM(qii.INFER_QY), 0)
+      THEN '완료'
     ELSE '진행중'
-  END AS insp_status,
+  END                AS insp_status,
   DATE_FORMAT(qi.INSP_DT, '%Y-%m-%d') AS insp_date,
-  qi.EMP_ID AS insp_emp_id,
-  e.emp_nm AS insp_emp_name,
-  qi.RM AS rm
+  qi.EMP_ID          AS insp_emp_id,
+  e.EMP_NM           AS insp_emp_name,
+  qi.RM              AS rm
 FROM RSC_QLTY_INSP qi
-LEFT JOIN RSC_ORDR_DETA rod ON qi.RSC_ORDR_DETA_ID = rod.RSC_ORDR_DETA_ID
-LEFT JOIN RSC r ON rod.RSC_ID = r.RSC_ID
-LEFT JOIN emp e ON qi.EMP_ID = e.emp_id
+LEFT JOIN RSC_ORDR_DETA rod 
+       ON qi.RSC_ORDR_DETA_ID = rod.RSC_ORDR_DETA_ID
+LEFT JOIN RSC r 
+       ON rod.RSC_ID = r.RSC_ID
+LEFT JOIN EMP e 
+       ON qi.EMP_ID = e.EMP_ID
+LEFT JOIN RSC_QLTY_INSP_INFER_QY qii 
+       ON qi.RSC_QLTY_INSP_ID = qii.RSC_QLTY_INSP_ID
 WHERE qi.PASS_QY > 0
   AND (? = '' OR r.RSC_ID LIKE CONCAT('%', ?, '%'))
   AND (? = '' OR r.RSC_NM LIKE CONCAT('%', ?, '%'))
+GROUP BY
+  qi.RSC_QLTY_INSP_ID, r.RSC_ID, r.RSC_NM, r.SPEC, r.UNIT,
+  qi.INSP_QY, qi.PASS_QY, qi.RTNGUD_QY, rod.QY,
+  qi.INSP_DT, qi.EMP_ID, e.EMP_NM, qi.RM
 ORDER BY qi.INSP_DT DESC
 LIMIT 200
 `;
@@ -279,25 +290,38 @@ ORDER BY qi.INSP_DT DESC
 LIMIT 200
 `;
 
-// 창고 입출고 거래 등록 (LOT 번호 포함)
+// 창고 입출고 디테일 거래 등록 - 실제 테이블 구조에 맞춤
 const insertWrhousTransaction = `
 INSERT INTO WRHOUS_WRHSDLVR (
-  WRHSDLVR_ID,
-  DLVR_TY,
-  ITEM_TY,
-  ITEM_CODE,
-  ITEM_NM,
-  SPEC,
-  UNIT,
-  QY,
-  INSP_ID,
+  WRHOUS_WRHSDLVR_ID,
+  WRHSDLVR_MAS_ID,
+  RSC_QLTY_INSP_ID,
+  SEMI_PRDT_QLTY_INSP_ID,
+  END_PRDT_QLTY_INSP_ID,
+  deli_deta_id,
+  RCVPAY_QY,
+  RM
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+`;
+
+// 창고 입출고 마스터 거래 등록 (신규 추가) - 실제 테이블 구조에 맞춤
+const insertWrhousTransactionMaster = `
+INSERT INTO WRHOUS_WRHSDLVR_MAS (
+  WRHSDLVR_MAS_ID,
+  RCVPAY_TY,
+  EMP_ID,
+  RSC_ID,
+  PRDT_ID,
+  PRDT_OPT_ID,
   WRHOUS_ID,
   ZONE_ID,
-  EMP_ID,
   LOT_NO,
-  REG_DT,
+  SPEC,
+  UNIT,
+  ALL_RCVPAY_QY,
+  RCVPAY_DT,
   RM
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
 // 창고 입출고 거래 수정
@@ -333,12 +357,28 @@ const existsWrhousTransaction = `
 SELECT 1 FROM WRHOUS_WRHSDLVR WHERE WRHSDLVR_ID = ? LIMIT 1
 `;
 
-// 거래 ID 자동 생성 (예: WRH_IN_251001, WRH_OUT_251001)
+// 마스터 ID 자동 생성 (예: WRHM_IN_251001, WRHM_OUT_251001)
 const createWrhousTransactionId = `
 SELECT CONCAT(?, CONCAT(DATE_FORMAT(NOW(), '%y%m'),
   LPAD(IFNULL(MAX(SUBSTR(WRHSDLVR_ID, -3)), 0) + 1, 3, '0'))) "txn_id"
+FROM WRHOUS_WRHSDLVR_MAS
+WHERE WRHSDLVR_MAS_ID LIKE CONCAT(?, DATE_FORMAT(NOW(), '%y%m'), '%')
+`;
+
+// 디테일 창고 ID 자동 생성 (예: WRH_IN_251001)
+const createWrhousDetailId = `
+SELECT CONCAT(?, DATE_FORMAT(NOW(), '%y%m'),
+  LPAD(IFNULL(MAX(SUBSTR(WRHSDLVR_ID, -3)), 0) + 1, 3, '0')) "detail_id"
 FROM WRHOUS_WRHSDLVR
 WHERE WRHSDLVR_ID LIKE CONCAT(?, DATE_FORMAT(NOW(), '%y%m'), '%')
+`;
+
+// LOT 번호 자동 생성 (예: 자재: LOT_RSC_251001, 완제품: LOT_END_251001, 반제품: LOT_SEMI_251001)
+const createLotno = `
+SELECT CONCAT(?, DATE_FORMAT(NOW(), '%y%m'),
+  LPAD(IFNULL(MAX(SUBSTR(LOT_NO, -3)), 0) + 1, 3, '0')) "lot_no"
+FROM WRHOUS_WRHSDLVR_MAS
+WHERE LOT_NO LIKE CONCAT(?, DATE_FORMAT(NOW(), '%y%m'), '%')
 `;
 
 // 현재 재고 현황 조회
@@ -515,6 +555,7 @@ module.exports = {
   selectSemiInspectionList,
   selectEndPrdtInspectionList,
   insertWrhousTransaction,
+  insertWrhousTransactionMaster, // 새로 추가
   updateWrhousTransaction,
   deleteWrhousTransaction,
   deleteWrhousTransactionsByIds,

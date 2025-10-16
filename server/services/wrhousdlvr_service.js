@@ -177,29 +177,30 @@ const getInspectionList = async (Info) => {
 // 창고 입출고 거래 등록/수정 통합 처리 (Upsert)
 const saveTransaction = async ({ transactionList, emp_id = null } = {}) => {
   try {
-    console.log("[wrhousdlvr_service] saveTransaction 호출됨 - 새로운 통합 로직 적용");
-    console.log("[wrhousdlvr_service] 입력 데이터:", { 
+    console.log(
+      "[wrhousdlvr_service] saveTransaction 호출됨 - 새로운 통합 로직 적용"
+    );
+    console.log("[wrhousdlvr_service] 입력 데이터:", {
       transactionListLength: transactionList?.length || 0,
       emp_id,
-      firstTransaction: transactionList?.[0] || null
+      firstTransaction: transactionList?.[0] || null,
     });
-    
+
     // 기존 API 호환을 위한 데이터 변환 및 새로운 processTransactions 호출
     const result = await processTransactions({
       transactionList: transactionList || [],
-      emp_id: emp_id || 'EMP_001'
+      emp_id: emp_id || "EMP_001",
     });
-    
+
     console.log("[wrhousdlvr_service] saveTransaction 결과:", result);
     return result;
-    
   } catch (error) {
     console.error("[wrhousdlvr_service] saveTransaction 오류:", error);
     console.error("[wrhousdlvr_service] 오류 스택:", error.stack);
     return {
       isSuccessed: false,
       error: "거래 저장 중 오류가 발생했습니다.",
-      details: error.message
+      details: error.message,
     };
   }
 };
@@ -443,7 +444,10 @@ const getDeliveryDetailList = async (item_code, item_name, delivery_status) => {
 };
 
 // 생산지시 상세 목록 조회 (상단 그리드용)
-const getProductionOrderDetailsList = async (product_code = "", product_name = "") => {
+const getProductionOrderDetailsList = async (
+  product_code = "",
+  product_name = ""
+) => {
   try {
     const normalizedProductCode = (product_code || "").trim();
     const normalizedProductName = (product_name || "").trim();
@@ -490,7 +494,10 @@ const getMaterialByProductionOrder = async (prod_drct_deta_id) => {
 
     const params = [prod_drct_deta_id];
 
-    const results = await mariadb.query("selectMaterialByProductionOrder", params);
+    const results = await mariadb.query(
+      "selectMaterialByProductionOrder",
+      params
+    );
 
     console.log(
       "[wrhousdlvr_service] BOM 자재 목록 조회 결과:",
@@ -583,7 +590,7 @@ const getDeliveryProductsList = async (item_code = "", item_name = "") => {
 
     return results.map((item) => ({
       ...item,
-      insp_type: "deliveryDetail"
+      insp_type: "deliveryDetail",
     }));
   } catch (error) {
     console.error("[wrhousdlvr_service] 완제품 납품 대상 조회 실패:", error);
@@ -672,8 +679,8 @@ const generateLotNumber = async (inspType) => {
 // 창고 거래 ID 생성 함수 (WRH_IN/OUT 형식)
 const generateTransactionId = async (txnType) => {
   try {
-    const prefix = txnType === 'in' ? 'WRH_IN_' : 'WRH_OUT_';
-    
+    const prefix = txnType === "in" ? "WRH_IN_" : "WRH_OUT_";
+
     // 임시로 고정 ID 생성 (디버깅용)
     const timestamp = Date.now().toString().slice(-6);
     const txnId = `${prefix}${timestamp}`;
@@ -689,37 +696,41 @@ const generateTransactionId = async (txnType) => {
 // 재고 검증 함수 (출고 전 재고 확인)
 const validateInventoryForOutbound = async (itemCode, requestQty) => {
   try {
-    console.log(`[wrhousdlvr_service] 재고 검증 - 품목: ${itemCode}, 요청수량: ${requestQty}`);
-    
+    console.log(
+      `[wrhousdlvr_service] 재고 검증 - 품목: ${itemCode}, 요청수량: ${requestQty}`
+    );
+
     const sql = sqlList.selectInventoryStatus;
     const results = await mariadb.query(sql, [itemCode]);
-    
+
     if (!results || results.length === 0) {
       return {
         isValid: false,
         currentStock: 0,
-        message: `품목 ${itemCode}의 재고가 없습니다.`
+        message: `품목 ${itemCode}의 재고가 없습니다.`,
       };
     }
-    
+
     const currentStock = results[0].current_stock || 0;
     const isValid = currentStock >= requestQty;
-    
-    console.log(`[wrhousdlvr_service] 재고 검증 결과 - 현재재고: ${currentStock}, 유효성: ${isValid}`);
-    
+
+    console.log(
+      `[wrhousdlvr_service] 재고 검증 결과 - 현재재고: ${currentStock}, 유효성: ${isValid}`
+    );
+
     return {
       isValid,
       currentStock,
-      message: isValid 
+      message: isValid
         ? `재고 확인 완료 (현재: ${currentStock}, 요청: ${requestQty})`
-        : `재고 부족 (현재: ${currentStock}, 요청: ${requestQty})`
+        : `재고 부족 (현재: ${currentStock}, 요청: ${requestQty})`,
     };
   } catch (error) {
     console.error("[wrhousdlvr_service] 재고 검증 실패:", error);
     return {
       isValid: false,
       currentStock: 0,
-      message: "재고 검증 중 오류가 발생했습니다."
+      message: "재고 검증 중 오류가 발생했습니다.",
     };
   }
 };
@@ -727,14 +738,16 @@ const validateInventoryForOutbound = async (itemCode, requestQty) => {
 // 거래 통합 함수 (동일 품목 여러 검사서 통합)
 const consolidateTransactions = (transactions) => {
   try {
-    console.log(`[wrhousdlvr_service] 거래 통합 시작 - 총 ${transactions.length}건`);
-    
+    console.log(
+      `[wrhousdlvr_service] 거래 통합 시작 - 총 ${transactions.length}건`
+    );
+
     const consolidated = {};
-    
-    transactions.forEach(txn => {
+
+    transactions.forEach((txn) => {
       // 통합 키: 거래유형_품목코드_품목유형
       const key = `${txn.txn_type}_${txn.item_code}_${txn.item_type}`;
-      
+
       if (consolidated[key]) {
         // 기존 거래에 수량 합산 및 검사서 추가
         consolidated[key].qty += Number(txn.qty);
@@ -746,14 +759,16 @@ const consolidateTransactions = (transactions) => {
           ...txn,
           qty: Number(txn.qty),
           insp_nos: [txn.insp_no],
-          remark: `통합거래 - 검사서: ${txn.insp_no}`
+          remark: `통합거래 - 검사서: ${txn.insp_no}`,
         };
       }
     });
-    
+
     const result = Object.values(consolidated);
-    console.log(`[wrhousdlvr_service] 거래 통합 완료 - ${transactions.length}건 → ${result.length}건`);
-    
+    console.log(
+      `[wrhousdlvr_service] 거래 통합 완료 - ${transactions.length}건 → ${result.length}건`
+    );
+
     return result;
   } catch (error) {
     console.error("[wrhousdlvr_service] 거래 통합 실패:", error);
@@ -766,7 +781,11 @@ const processTransactions = async (requestData) => {
   try {
     const { transactionList, emp_id } = requestData;
 
-    console.log(`[wrhousdlvr_service] processTransactions 시작 - 총 ${transactionList?.length || 0}건`);
+    console.log(
+      `[wrhousdlvr_service] processTransactions 시작 - 총 ${
+        transactionList?.length || 0
+      }건`
+    );
 
     if (!Array.isArray(transactionList) || transactionList.length === 0) {
       return {
@@ -778,9 +797,11 @@ const processTransactions = async (requestData) => {
     // 동일 품목 거래 통합 (클라이언트에서 이미 처리됨 - 비활성화)
     // const consolidatedTransactions = consolidateTransactions(transactionList);
     const consolidatedTransactions = transactionList; // 클라이언트 통합 결과 그대로 사용
-    
-    console.log(`[wrhousdlvr_service] 거래 처리: ${transactionList.length}건 (클라이언트 통합 완료)`);
-    
+
+    console.log(
+      `[wrhousdlvr_service] 거래 처리: ${transactionList.length}건 (클라이언트 통합 완료)`
+    );
+
     const processedTransactions = [];
 
     // 각 거래 항목 처리
@@ -810,39 +831,46 @@ const processTransactions = async (requestData) => {
         insp_no,
         insp_type,
         warehouse_id: transaction.warehouse_id,
-        location_id: transaction.location_id
+        location_id: transaction.location_id,
       });
 
       // item_type은 이미 공통코드(E1, E2, E3)로 전달됨
       const itemTypeCode = item_type || "E3"; // 기본값: 완제품
-      
+
       console.log(`[wrhousdlvr_service] 품목유형 코드 사용: ${itemTypeCode}`);
 
       // 통합 거래의 경우 첫 번째 검사서 번호 사용, 단일 거래는 기존 방식 유지
       const primaryInspNo = insp_nos ? insp_nos[0] : insp_no;
-      const consolidatedRemark = remark || `${txn_type === "in" ? "입고" : "출고"} 처리 - 검사서: ${primaryInspNo}`;
+      const consolidatedRemark =
+        remark ||
+        `${
+          txn_type === "in" ? "입고" : "출고"
+        } 처리 - 검사서: ${primaryInspNo}`;
 
       // 필수 데이터 검증
       if (!item_code || !item_name || !qty || qty <= 0) {
         console.error(`[wrhousdlvr_service] 필수 데이터 누락:`, {
           item_code,
           item_name,
-          qty
+          qty,
         });
         return {
           isSuccessed: false,
-          error: `필수 데이터가 누락되었습니다. 품목코드: ${item_code}, 품목명: ${item_name}, 수량: ${qty}`
+          error: `필수 데이터가 누락되었습니다. 품목코드: ${item_code}, 품목명: ${item_name}, 수량: ${qty}`,
         };
       }
 
       // 출고의 경우 재고 검증
       if (txn_type === "out") {
-        const validation = await validateInventoryForOutbound(item_code, Number(qty));
+        const validation = await validateInventoryForOutbound(
+          item_code,
+          Number(qty)
+        );
         if (!validation.isValid) {
           return {
             isSuccessed: false,
             error: validation.message,
-            details: `품목 ${item_code} (${item_name}) 재고 부족`
+            details: `품목 ${item_code} (${item_name}) 재고 부족`,
           };
         }
       }
@@ -851,7 +879,9 @@ const processTransactions = async (requestData) => {
       let lotNo = null;
       if (txn_type === "in" && insp_type) {
         lotNo = await generateLotNumber(insp_type);
-        console.log(`[wrhousdlvr_service] LOT 번호 생성: ${lotNo} (입고, 타입: ${insp_type})`);
+        console.log(
+          `[wrhousdlvr_service] LOT 번호 생성: ${lotNo} (입고, 타입: ${insp_type})`
+        );
       }
 
       // 거래 ID 생성 (WRH_IN/OUT 형식)
@@ -870,7 +900,12 @@ const processTransactions = async (requestData) => {
         Number(qty) || 0, // QY
         primaryInspNo || null, // INSP_ID
         transaction.warehouse_id || "WH_001", // WRHOUS_ID (요청에서 전달된 값 사용)
-        transaction.location_id || (itemTypeCode === "E1" ? "ZONE_MAT_001" : itemTypeCode === "E2" ? "ZONE_SEMI_001" : "ZONE_PROD_001"), // ZONE_ID (공통코드 기반)
+        transaction.location_id ||
+          (itemTypeCode === "E1"
+            ? "ZONE_MAT_001"
+            : itemTypeCode === "E2"
+            ? "ZONE_SEMI_001"
+            : "ZONE_PROD_001"), // ZONE_ID (공통코드 기반)
         emp_id || "EMP_001", // EMP_ID
         lotNo || null, // LOT_NO
         consolidatedRemark || "", // RM
@@ -878,38 +913,57 @@ const processTransactions = async (requestData) => {
 
       // 파라미터 유효성 검사
       const paramNames = [
-        'WRHSDLVR_ID', 'DLVR_TY', 'ITEM_TY', 'ITEM_CODE', 'ITEM_NM',
-        'SPEC', 'UNIT', 'QY', 'INSP_ID', 'WRHOUS_ID',
-        'ZONE_ID', 'EMP_ID', 'LOT_NO', 'RM'
+        "WRHSDLVR_ID",
+        "DLVR_TY",
+        "ITEM_TY",
+        "ITEM_CODE",
+        "ITEM_NM",
+        "SPEC",
+        "UNIT",
+        "QY",
+        "INSP_ID",
+        "WRHOUS_ID",
+        "ZONE_ID",
+        "EMP_ID",
+        "LOT_NO",
+        "RM",
       ];
-      
+
       console.log(`[wrhousdlvr_service] 파라미터 검증:`);
       insertParams.forEach((param, index) => {
-        console.log(`  ${index}: ${paramNames[index]} = ${typeof param} (${param})`);
+        console.log(
+          `  ${index}: ${paramNames[index]} = ${typeof param} (${param})`
+        );
       });
 
-      console.log(`[wrhousdlvr_service] 데이터베이스 삽입 파라미터 (${insertParams.length}개):`, insertParams);
-      
+      console.log(
+        `[wrhousdlvr_service] 데이터베이스 삽입 파라미터 (${insertParams.length}개):`,
+        insertParams
+      );
+
       // 먼저 간단한 테스트 쿼리로 연결 확인
       console.log(`[wrhousdlvr_service] 데이터베이스 연결 테스트 시작`);
       const testResult = await mariadb.query("SELECT 1 as test");
       console.log(`[wrhousdlvr_service] 데이터베이스 연결 성공:`, testResult);
-      
+
       // 테이블 구조 확인
       console.log(`[wrhousdlvr_service] 테이블 구조 확인 시작`);
       const tableInfo = await mariadb.query("DESCRIBE WRHOUS_WRHSDLVR");
-      console.log(`[wrhousdlvr_service] 테이블 구조:`, tableInfo.map(col => `${col.Field} (${col.Type}, ${col.Null})`));
-      
+      console.log(
+        `[wrhousdlvr_service] 테이블 구조:`,
+        tableInfo.map((col) => `${col.Field} (${col.Type}, ${col.Null})`)
+      );
+
       // 실제 삽입 시도
       console.log(`[wrhousdlvr_service] 실제 삽입 시작`);
-      
+
       try {
         // MariaDB 연결 풀에서 직접 연결 획득하여 쿼리 실행
         let conn;
         try {
           conn = await mariadb.getConnection();
           console.log(`[wrhousdlvr_service] 연결 획득 성공`);
-          
+
           // 전체 파라미터로 정식 삽입 시도
           const fullSql = `
             INSERT INTO WRHOUS_WRHSDLVR (
@@ -918,23 +972,23 @@ const processTransactions = async (requestData) => {
               ZONE_ID, EMP_ID, LOT_NO, REG_DT, RM
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
           `;
-          
-          console.log(`[wrhousdlvr_service] 전체 삽입 시도 - 파라미터 ${insertParams.length}개`);
+
+          console.log(
+            `[wrhousdlvr_service] 전체 삽입 시도 - 파라미터 ${insertParams.length}개`
+          );
           console.log(`[wrhousdlvr_service] SQL:`, fullSql);
           console.log(`[wrhousdlvr_service] 파라미터:`, insertParams);
 
           const result = await mariadb.query(fullSql, insertParams);
           console.log(`[wrhousdlvr_service] 전체 삽입 성공!`, result);
-          
         } finally {
           if (conn) conn.release();
         }
-        
       } catch (fullError) {
         console.error(`[wrhousdlvr_service] 전체 삽입 실패:`, fullError);
         console.error(`[wrhousdlvr_service] 오류 메시지:`, fullError.message);
         console.error(`[wrhousdlvr_service] 오류 코드:`, fullError.code);
-        
+
         // 간단한 삽입으로 대체 시도
         try {
           let conn2;
@@ -945,16 +999,16 @@ const processTransactions = async (requestData) => {
                 WRHSDLVR_ID, DLVR_TY, ITEM_TY, ITEM_CODE, ITEM_NM, QY, REG_DT
               ) VALUES (?, ?, ?, ?, ?, ?, NOW())
             `;
-            
+
             const simpleParams = [
               wrhousWrhsdlvrId,
               "입고",
               "E3",
               item_code || "TEST",
               item_name || "테스트품목",
-              Number(qty) || 1
+              Number(qty) || 1,
             ];
-            
+
             console.log(`[wrhousdlvr_service] 간단한 삽입 시도:`, simpleParams);
             const result2 = await connection2.query(simpleSql, simpleParams);
             console.log(`[wrhousdlvr_service] 간단한 삽입 성공!`, result2);
@@ -962,11 +1016,14 @@ const processTransactions = async (requestData) => {
             if (connection2) connection2.release();
           }
         } catch (simpleError) {
-          console.error(`[wrhousdlvr_service] 간단한 삽입도 실패:`, simpleError);
+          console.error(
+            `[wrhousdlvr_service] 간단한 삽입도 실패:`,
+            simpleError
+          );
           throw simpleError;
         }
       }
-      
+
       console.log(`[wrhousdlvr_service] 거래 저장 성공: ${wrhousWrhsdlvrId}`);
 
       processedTransactions.push({
@@ -1116,10 +1173,167 @@ const getWarehouseMaterials = async (item_code = "", item_name = "") => {
   }
 };
 
+// 마스터-디테일 구조의 창고 입출고 거래 저장
+const saveMasterDetailTransactions = async ({
+  mode,
+  masterTransactions,
+  detailTransactions,
+}) => {
+  let conn;
+  try {
+    console.log("[wrhousdlvr_service] saveMasterDetailTransactions 시작");
+    console.log(`[wrhousdlvr_service] 모드: ${mode}`);
+    console.log(
+      `[wrhousdlvr_service] 마스터 거래: ${masterTransactions.length}건`
+    );
+    console.log(
+      `[wrhousdlvr_service] 디테일 거래: ${detailTransactions.length}건`
+    );
+
+    if (detailTransactions.length === 0) {
+      throw new Error("디테일 테이블에 값이 하나도 없으면 저장할 수 없습니다.");
+    }
+
+    conn = await mariadb.getConnection();
+    await conn.beginTransaction();
+
+    console.log("[wrhousdlvr_service] 트랜잭션 시작됨");
+
+    // 1. 마스터 테이블 저장 (WRHOUS_WRHSDLVR_MAS)
+    const masterInsertedIds = [];
+    for (const master of masterTransactions) {
+      const masterId = uuidv4();
+      masterInsertedIds.push(masterId);
+
+      console.log(
+        `[wrhousdlvr_service] 마스터 저장: ${master.item_code} - ${master.item_name}`
+      );
+
+      // 품목 유형에 따라 RSC_ID 또는 PRDT_ID 설정
+      let rscId = null;
+      let prdtId = null;
+      let prdtOptId = null;
+
+      if (master.item_type === "E1") {
+        // 자재
+        rscId = master.item_code;
+      } else {
+        // 반제품, 완제품
+        prdtId = master.item_code;
+        prdtOptId = master.item_opt_code || null;
+      }
+
+      // LOT 번호 생성
+      const lotNumber = await generateLotNumber(
+        master.item_code,
+        master.warehouse_id
+      );
+
+      await mariadb.query("insertWrhousTransactionMaster", [
+        masterId, // WRHSDLVR_MAS_ID
+        master.rcvpay_ty || (mode === "in" ? "S1" : "S2"), // RCVPAY_TY (입고: S1, 출고: S2)
+        master.emp_id || "EMP_001", // EMP_ID
+        rscId, // RSC_ID
+        prdtId, // PRDT_ID
+        prdtOptId, // PRDT_OPT_ID
+        master.warehouse_id, // WRHOUS_ID
+        master.zone_id, // ZONE_ID
+        lotNumber, // LOT_NO
+        master.item_spec || "", // SPEC
+        master.item_unit || "EA", // UNIT
+        Number(master.total_qty) || 0, // ALL_RCVPAY_QY
+        master.rcvpay_dt || new Date().toISOString().split("T")[0], // RCVPAY_DT
+        master.remark || "", // RM
+      ]);
+    }
+
+    // 2. 디테일 테이블 저장 (WRHOUS_WRHSDLVR)
+    let detailCount = 0;
+    for (const detail of detailTransactions) {
+      const detailId = uuidv4();
+
+      // 해당하는 마스터 ID 찾기 (품목코드 기준)
+      const correspondingMasterId = masterInsertedIds[0]; // 임시로 첫 번째 마스터 ID 사용
+
+      // 검사 유형에 따라 해당 컬럼에 검사 ID 설정
+      let rscQltyInspId = null;
+      let semiPrdtQltyInspId = null;
+      let endPrdtQltyInspId = null;
+      let deliDetaId = null;
+
+      if (detail.item_type === "E1") {
+        // 자재
+        rscQltyInspId = detail.inspect_id;
+      } else if (detail.item_type === "E2") {
+        // 반제품
+        semiPrdtQltyInspId = detail.inspect_id;
+      } else if (detail.item_type === "E3") {
+        // 완제품
+        endPrdtQltyInspId = detail.inspect_id;
+      }
+
+      console.log(
+        `[wrhousdlvr_service] 디테일 저장: ${detail.item_code} - 수량: ${detail.qty}`
+      );
+
+      await mariadb.query("insertWrhousTransaction", [
+        detailId, // WRHOUS_WRHSDLVR_ID
+        correspondingMasterId, // WRHSDLVR_MAS_ID
+        rscQltyInspId, // RSC_QLTY_INSP_ID
+        semiPrdtQltyInspId, // SEMI_PRDT_QLTY_INSP_ID
+        endPrdtQltyInspId, // END_PRDT_QLTY_INSP_ID
+        deliDetaId, // deli_deta_id
+        Number(detail.qty) || 0, // RCVPAY_QY
+        detail.remark || "", // RM
+      ]);
+
+      detailCount++;
+    }
+
+    await conn.commit();
+    console.log("[wrhousdlvr_service] 트랜잭션 커밋 완료");
+
+    return {
+      success: true,
+      message: `${mode === "in" ? "입고" : "출고"} 처리가 완료되었습니다.`,
+      masterCount: masterTransactions.length,
+      detailCount: detailCount,
+      masterIds: masterInsertedIds,
+    };
+  } catch (error) {
+    if (conn) {
+      try {
+        await conn.rollback();
+        console.log("[wrhousdlvr_service] 트랜잭션 롤백됨");
+      } catch (rollbackError) {
+        console.error("[wrhousdlvr_service] 롤백 실패:", rollbackError);
+      }
+    }
+
+    console.error(
+      "[wrhousdlvr_service] saveMasterDetailTransactions 오류:",
+      error
+    );
+    console.error("[wrhousdlvr_service] 오류 스택:", error.stack);
+
+    return {
+      success: false,
+      error: "마스터-디테일 거래 저장 중 오류가 발생했습니다.",
+      details: error.message,
+    };
+  } finally {
+    if (conn) {
+      conn.release();
+      console.log("[wrhousdlvr_service] DB 연결 해제됨");
+    }
+  }
+};
+
 module.exports = {
   getTransactionList,
   getInspectionList,
   saveTransaction,
+  saveMasterDetailTransactions, // 새로 추가
   deleteTransaction,
   deleteSelectedTransactions,
   getInventoryStatus,
