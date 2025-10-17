@@ -1,4 +1,4 @@
-//제품
+//생산계획
 const prodPlanSelect =
   // 생산계획 모달 마스터 검색쿼리
   `SELECT  
@@ -87,8 +87,58 @@ AND c.prdt_nm LIKE CONCAT('%', ?, '%')
 AND d.opt_nm LIKE CONCAT('%', ?, '%')
 AND a.reg_dt >= ?`;
 
+const prodPlanRealModalMasterSearch =
+  // 생산계획관리 생산계획모달 마스터 조회페이지
+  `select
+ prod_plan_id
+ ,rcvord_id
+ ,emp_id
+ ,prod_plan_nm
+ ,prod_expc_fr_dt
+ ,prod_expc_to_dt
+ ,reg_dt
+ ,rm
+from prod_plan
+where prod_plan_nm LIKE CONCAT('%', ?,'%')
+AND reg_dt >= ?
+AND prod_expc_fr_dt >= ?
+AND (
+  prod_expc_to_dt IS NULL
+  OR prod_expc_to_dt <= ?
+)`;
+
+const prodPlanRealModalDetaSearch =
+  // 생산계획관리 생산계획모달 상세 조회페이지
+  `select
+ a.prod_plan_deta_id
+ ,a.prod_plan_id
+ ,a.prdt_id
+ ,a.prdt_opt_id
+ ,d.prdt_nm
+ ,d.spec
+ ,d.unit
+ ,e.opt_nm
+ ,a.plan_qy
+ ,a.priort
+ ,a.rm
+ ,c.paprd_dt
+from prod_plan_deta a
+join prod_plan b
+on a.prod_plan_id = b.prod_plan_id
+join rcvord_deta c
+on b.rcvord_id = c.rcvord_id
+and a.prdt_id = c.prdt_id
+and a.prdt_opt_id = c.prdt_opt_id
+join prdt d
+on a.prdt_id = d.prdt_id
+join prdt_opt e
+on a.prdt_opt_id = e.prdt_opt_id
+where a.prod_plan_id = ?`;
+
 module.exports = {
   prodPlanSelect,
   prodPlanDetaSelect,
   prodPlanBoardListSearch,
+  prodPlanRealModalMasterSearch,
+  prodPlanRealModalDetaSearch,
 };

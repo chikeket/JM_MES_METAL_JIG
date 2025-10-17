@@ -10,7 +10,7 @@
           <select class="form-select" style="width: 150px" v-model="pickValue">
             <option value="rcvord_id">코드</option>
             <option value="co_nm">납품업체</option>
-            <option value="emp_nm">수주담당자</option>            
+            <option value="emp_nm">수주담당자</option>
           </select>
           <input
             type="text"
@@ -18,15 +18,12 @@
             placeholder="검색어 입력"
             v-model="searchKeyword"
           />
-          
         </div>
         <div class="d-flex gap-2 mb-3">
-            <CInputGroupText id="addon-ordr-name-2">수주 일자</CInputGroupText>
-            <input type="date" class="form-control" v-model="reg_dt" />
-            <button class="btn btn-secondary" style="width: 90px" @click="prdtSearch()">
-              검색
-            </button>
-          </div>
+          <CInputGroupText id="addon-ordr-name-2">수주 일자</CInputGroupText>
+          <input type="date" class="form-control" v-model="reg_dt" />
+          <button class="btn btn-secondary" style="width: 90px" @click="prdtSearch()">검색</button>
+        </div>
 
         <!-- 결과 테이블 -->
 
@@ -49,7 +46,7 @@
               <td>{{ userDateUtils.dateFormat(prdts.reg_dt, 'yyyy-MM-dd') }}</td>
             </tr>
           </tbody>
-        </table>        
+        </table>
       </div>
     </CModalBody>
     <CModalFooter>
@@ -66,7 +63,7 @@ import userDateUtils from '@/utils/useDates.js'
 const props = defineProps({
   visible: Boolean,
 })
-const emit = defineEmits(['close','select'])
+const emit = defineEmits(['close', 'select'])
 const close = () => {
   prdtList.value = []
   emit('close')
@@ -85,27 +82,29 @@ const prdtSearch = async () => {
     params.rcvord_id = searchKeyword.value
   } else if (pickValue.value == 'co_nm') {
     params.co_nm = searchKeyword.value
-  } else   {
+  } else {
     params.emp_nm = searchKeyword.value
-  } 
+  }
   params.reg_dt = !reg_dt.value ? '1970-01-01' : reg_dt.value
   // console.log(params)
-  let result = await axios.get('/api/prodPlanRcvordMasterSearch', { params }).catch((err) => console.log(err))
+  let result = await axios
+    .get('/api/prodPlanRcvordMasterSearch', { params })
+    .catch((err) => console.log(err))
   console.log(result.data)
   prdtList.value = result.data
 }
 
-const selectProduct = async (prdts) => {  
-  const params = { rsc_qlty_insp_id: '' }
-  params.rsc_qlty_insp_id = prdts.rsc_qlty_insp_id
+const selectProduct = async (prdts) => {
+  const params = { rcvord_id: '' }
+  params.rcvord_id = prdts.rcvord_id
   let result = await axios
-    .get('/api/rscQltyInspInferSelect', { params })
+    .get('/api/prodPlanRcvordDetaSearch', { params })
     .catch((err) => console.log(err))
   console.log(result.data)
   emit('select', {
-  detailData: prdts,
-  searchParams: prdts
-}) // 부모에게 선택된 제품 전달
+    detailData: result.data,
+    searchParams: prdts,
+  }) // 부모에게 선택된 제품 전달
   close() // 모달 닫기
 }
 </script>

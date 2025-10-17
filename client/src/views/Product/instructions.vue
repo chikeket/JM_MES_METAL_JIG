@@ -162,7 +162,7 @@ const selectedPrdt = (prdts) => {
     ? Info.value.endDate
     : prdts.searchParams.prod_expc_to_dt
   Info.value.regDate = !prdts.searchParams.reg_dt ? Info.value.regDate : prdts.searchParams.reg_dt
-  Info.value.remark = !prdts.searchParams.remark ? Info.value.remark : prdts.searchParams.remark
+  Info.value.remark = !prdts.searchParams.rm ? Info.value.remark : prdts.searchParams.rm
   let new_id = rows.value.length > 0 ? Math.max(...rows.value.map((r) => r.id ?? 0)) + 1 : 1
   if (Array.isArray(prdts.detailData)) {
     rows.value = []
