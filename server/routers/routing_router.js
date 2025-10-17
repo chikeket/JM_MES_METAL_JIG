@@ -31,7 +31,24 @@ router.get("/prcs", async (req, res) => {
   }
 });
 
+router.get("/prdt/prcs", async (req, res) => {
+  try {
+    console.log("[routing_router] 제품 공정 조회 요청:", req.query);
+    let { prdt_id } = req.query;
+    let result = await routingService.selectPrcs(prdt_id);
+    console.log(
+      "[routing_router] 제품 공정 조회 결과:",
+      result?.length || 0,
+      "건"
+    );
+    res.json(result || []);
+  } catch (error) {
+    console.error("[routing_router] 제품 공정 조회 오류:", error);
+    res.status(500).json({ message: "제품 공정 조회 중 오류가 발생했습니다." });
+  }
+});
+
 module.exports = router;
+
 // └───제품코드로 공정 조회 라우터───┘
 // └───routing_router.js───┘
-

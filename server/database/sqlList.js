@@ -67,6 +67,9 @@ const prcs = require("./sqls/prcs.js");
 // 반제품 품질 검수 관련 쿼리
 const semiPrdtQltyInsp = require("./sqls/semiPrdtQltyInsp.js");
 
+// 설비 관련 쿼리
+const eqm = require("./sqls/eqm.js");
+
 // └───각 테이블별 SQL 쿼리들을 모아놓은 중앙 관리 파일───┘
 
 module.exports = {
@@ -100,5 +103,6 @@ module.exports = {
   ...routingInfo,
   ...prcs,
   ...prcsProgPrecon,
+  ...eqm,
   ...semiPrdtQltyInsp,
 };

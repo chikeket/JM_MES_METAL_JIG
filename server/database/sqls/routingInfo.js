@@ -17,6 +17,49 @@ JOIN prcs p ON p.prcs_id = rd.prcs_id
 JOIN eqm_grp eg ON p.eqm_grp_id = eg.eqm_grp_id
 where pd.prdt_id = ?`;
 
+// 신규 공정 등록 시 기존 공정 조회용 SQL 쿼리 모듈
+const registeredPrcsCheck = `
+SELECT 1 
+FROM prcs 
+WHERE prcs_nm = ? 
+LIMIT 1
+`;
+
+// 신규 공정 상세 등록 SQL 쿼리 모듈
+const insertPrcsDeta = `
+INSERT INTO routing_deta (
+  prcs_routing_id,
+  prcs_id,
+  prcs_ord,
+  
+) VALUES (?, ?, ?, ?)
+`;
+
+// 신규 공정 등록 SQL 쿼리 모듈
+const insertPrcs = `
+INSERT INTO prcs (
+  prcs_id,
+  prcs_nm,
+  eqm_grp_id,
+  lead_tm,
+  mold_use_at,
+  prcs_ord
+) VALUES (?, ?, ?, ?, ?, ?)
+`;
+
+// 공정 수정 SQL 쿼리 모듈
+const updatePrcs = `
+UPDATE prcs
+SET prcs_ord = ?
+WHERE prcs_id = ?
+`;
+
+// 공정 삭제 SQL 쿼리 모듈
+const deletePrcs = `
+DELETE FROM prcs
+WHERE prcs_id = ?
+`;
+
 module.exports = {
   selectPrcs,
 };

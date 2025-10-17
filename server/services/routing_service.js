@@ -13,7 +13,13 @@ const getRoutingInfo = async (prdt_cd) => {
 };
 
 // 공정 모달 조회
-const getPrcsModal = async (prcs_id, prcs_nm, eqm_grp_nm, lead_tm, mold_use_at) => {
+const getPrcsModal = async (
+  prcs_id,
+  prcs_nm,
+  eqm_grp_nm,
+  lead_tm,
+  mold_use_at
+) => {
   try {
     const result = await mariadb.query("selectPrcsModal", [
       prcs_id,
@@ -29,7 +35,19 @@ const getPrcsModal = async (prcs_id, prcs_nm, eqm_grp_nm, lead_tm, mold_use_at) 
   }
 };
 
+// 제품에 관련 된 공정라우팅 조회
+const selectPrcs = async (prdt_id) => {
+  try {
+    const result = await mariadb.query("selectPrcs", [prdt_id]);
+    return result;
+  } catch (error) {
+    console.error("제품 공정 조회 에러", error);
+    throw error;
+  }
+};
+
 module.exports = {
   getRoutingInfo,
   getPrcsModal,
+  selectPrcs,
 };
