@@ -1,9 +1,9 @@
 <template>
-  <div v-if="isPrcsModalOpen" class="modal-backdrop" @click="closePrcsModal">
+  <div v-if="isPrcsModalOpen" class="modal-backdrop" @click="closeModal">
     <div class="modal-container" @click.stop>
       <div class="modal-header">
         <h5>공정검색</h5>
-        <button type="button" class="btn-close" @click="closePrcsModal"></button>
+        <button type="button" class="btn-close" @click="closeModal"></button>
       </div>
       <!-- 커밋 용 -->
       <div class="modal-body">
@@ -12,100 +12,116 @@
           <div class="row g-3">
             <div class="col-md-3">
               <label class="form-label">검색조건</label>
-              <select v-model="searchTerm.prcs_nm" class="form-select">
+              <select v-model="searchTerm.searchKind" class="form-select">
                 <option value="all">전체</option>
                 <option value="prcs_id">공정코드</option>
                 <option value="prcs_nm">공정명</option>
-                <option value="eqm_grp_nm">설비그룹명</option>
               </select>
             </div>
-            </div>
 
-            <div class="col-md-3 d-flex align-items-end">
-              <button type="button" class="btn btn-secondary me-2" @click="prcsSearch">조회</button>
-              <button type="button" class="btn btn-secondary" @click="prcsReset">초기화</button>
+            <div class="col-md-3">
+              <label class="form-label">공정코드</label>
+              <input
+                v-model="searchTerm.prcs_id"
+                type="text"
+                class="form-control"
+                placeholder="공정코드 입력"
+                @keyup.enter="prcsSearch"
+              />
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">공정명</label>
+              <input
+                v-model="searchTerm.prcs_nm"
+                type="text"
+                class="form-control"
+                placeholder="공정명 입력"
+                @keyup.enter="prcsSearch"
+              />
             </div>
           </div>
-        </div>
 
-        <!-- 공정 목록 테이블 -->
-        <div class="table-area mt-3">
-          <div class="table-responsive" style="max-height: 400px; overflow-y: auto">
-            <table class="table table-sm table-hover">
-              <thead class="table-light">
-                <tr>
-                  <th style="width: 50px">
-                    <input
-                      type="checkbox"
-                      :checked="allChoice"
-                      @change="toggleAll($event)"
-                      class="form-check-input"
-                    />
-                  </th>
-                  <th>공정아이디</th>
-                  <th>공정명</th>
-                  <th>설비그룹명</th>
-                  <th>리드타임</th>
-                  <th>금형사용유무</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="prcs in prcsList"
-                  :key="prcs.prcs_id"
-                  class="cursor-pointer"
-                  :class="{
-                    'table-active': selectedPrcs.some(
-                      (s) =>
-                        s.prcs_id === prcs.prcs_id &&
-                        s.prcs_nm === prcs.prcs_nm &&
-                        s.eqm_grp_nm === prcs.eqm_grp_nm,
-                    ),
-                  }"
-                  @click="handleRowClick(prcs)"
-                >
-                  <td @click.stop>
-                    <input
-                      type="checkbox"
-                      :checked="choiceCheck(prcs)"
-                      @change="checkboxDeselect(item)"
-                      class="form-check-input"
-                    />
-                  </td>
-                  <td>{{ prcs.prcs_id }}</td>
-                  <td>{{ prcs.prcs_nm }}</td>
-                  <td>{{ prcs.eqm_grp_nm }}</td>
-                  <td>{{ prcs.lead_tm}}</td>
-                  <td>{{ prcs.mold_use_at}}</td>
-                </tr>
-                <tr v-if="!prcsList || prcsList.length === 0">
-                  <td colspan="11" class="text-center text-muted py-4">검색 결과가 없습니다.</td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="col-md-3 d-flex align-items-end">
+            <button type="button" class="btn btn-secondary me-2" @click="prcsSearch">조회</button>
+            <button type="button" class="btn btn-secondary" @click="prcsReset">초기화</button>
           </div>
         </div>
       </div>
 
-      <div class="modal-footer">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          @click="onSelectPrcs"
-          :disabled="selectedPrcs.length === 0"
-        >
-          선택 ({{ selectedPrcs.length }}건)
-        </button>
-        <button type="button" class="btn btn-secondary" @click="closeModal">취소</button>
+      <!-- 공정 목록 테이블 -->
+      <div class="table-area mt-3">
+        <div class="table-responsive" style="max-height: 400px; overflow-y: auto">
+          <table class="table table-sm table-hover">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 50px">
+                  <input
+                    type="checkbox"
+                    :checked="allChoice"
+                    @change="toggleAll($event)"
+                    class="form-check-input"
+                  />
+                </th>
+                <th>공정아이디</th>
+                <th>공정명</th>
+                <th>설비그룹명</th>
+                <th>리드타임</th>
+                <th>금형사용유무</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="prcs in prcsList"
+                :key="prcs.prcs_id"
+                class="cursor-pointer"
+                :class="{
+                  'table-active': selectedPrcs.some(
+                    (s) => s.prcs_id === prcs.prcs_id && s.prcs_nm === prcs.prcs_nm,
+                  ),
+                }"
+                @click="handleRowClick(prcs)"
+              >
+                <td @click.stop>
+                  <input
+                    type="checkbox"
+                    :checked="choiceCheck(prcs)"
+                    @change="checkboxDeselect(prcs)"
+                    class="form-check-input"
+                  />
+                </td>
+                <td>{{ prcs.prcs_id }}</td>
+                <td>{{ prcs.prcs_nm }}</td>
+                <td>{{ prcs.eqm_grp_nm }}</td>
+                <td>{{ prcs.lead_tm }}</td>
+                <td>{{ prcs.mold_use_at }}</td>
+              </tr>
+              <tr v-if="!prcsList || prcsList.length === 0">
+                <td colspan="11" class="text-center text-muted py-4">검색 결과가 없습니다.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-  
+
+    <div class="modal-footer">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        @click="onSelectPrcs"
+        :disabled="selectedPrcs.length === 0"
+      >
+        선택 ({{ selectedPrcs.length }}건)
+      </button>
+      <button type="button" class="btn btn-secondary" @click="closeModal">취소</button>
+    </div>
+  </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import axios from 'axios'
-const pickValue = ref('')  // 검색 기준 선택값
+const pickValue = ref('') // 검색 기준 선택값
 const searchKeyword = ref('') // 검색어
 
 // Props 정의
@@ -129,7 +145,7 @@ const selectedPrcsRowNo = ref('')
 const searchTerm = reactive({
   prcs_id: '',
   prcs_nm: '', // 기본값
-  eqm_grp_nm: '', 
+  searchKind: 'all',
 })
 
 // 계산된 속성
@@ -137,12 +153,7 @@ const allChoice = computed(() => {
   return (
     prcsList.value.length > 0 &&
     prcsList.value.every((prcs) =>
-      selectedPrcs.value.some(
-        (s) =>
-          s.prcs_id === prcs.prcs_id &&
-          s.prcs_nm === prcs.prcs_nm &&
-          s.eqm_grp_nm === prcs.eqm_grp_nm,
-      ),
+      selectedPrcs.value.some((s) => s.prcs_id === prcs.prcs_id && s.prcs_nm === prcs.prcs_nm),
     )
   )
 })
@@ -152,11 +163,15 @@ const prcsSearch = async () => {
   try {
     const params = { prcs_id: '', prcs_nm: '', eqm_grp_nm: '', lead_tm: '', mold_use_at: '' }
 
-    if (pickValue.value === 'prcs_id') params.prcs_id = searchKeyword.value
-    else if (pickValue.value === 'prcs_nm') params.prcs_nm = searchKeyword.value
-    else if (pickValue.value === 'eqm_grp_nm') params.eqm_grp_nm = searchKeyword.value
-    else if (pickValue.value === 'lead_tm') params.lead_tm = searchKeyword.value
-    else if (pickValue.value === 'mold_use_at') params.mold_use_at = searchKeyword.value
+    // 간단한 매핑: 검색 종류가 pickValue 같은 외부 값이 아니라 searchTerm.searchKind 사용
+    if (searchTerm.searchKind === 'prcs_id')
+      params.prcs_id = searchTerm.prcs_id || searchTerm.prcs_nm
+    else if (searchTerm.searchKind === 'prcs_nm')
+      params.prcs_nm = searchTerm.prcs_nm || searchTerm.prcs_id
+    else {
+      params.prcs_id = searchTerm.prcs_id
+      params.prcs_nm = searchTerm.prcs_nm
+    }
 
     const result = await axios.get('/api/prcs', { params })
     prcsList.value = result.data
@@ -166,13 +181,11 @@ const prcsSearch = async () => {
   }
 }
 
-
 // 검색 조건 초기화
 const prcsReset = () => {
   searchTerm.prcs_id = ''
   searchTerm.prcs_nm = ''
-  searchTerm.eqm_grp_nm = ''
-  choiceReset()
+  selectedPrcs.value = []
 }
 
 // 행 클릭 핸들러 (체크박스 토글)
@@ -190,15 +203,15 @@ const selectSinglePrcs = (prcs) => {
 
 // 체크박스 선택/해제
 const checkboxDeselect = (prcs) => {
-  // 고유 식별자: 공정ID + 공정명 + 장비군명 조합
+  // 고유 식별자: 공정ID + 공정명 조합
   const index = selectedPrcs.value.findIndex(
-    (s) =>
-      s.prcs_id === prcs.prcs_id && s.prcs_nm === prcs.prcs_nm && s.eqm_grp_nm === prcs.eqm_grp_nm,
+    (s) => s.prcs_id === prcs.prcs_id && s.prcs_nm === prcs.prcs_nm,
   )
   if (index > -1) {
     selectedPrcs.value.splice(index, 1)
   } else {
-    selectedPrcs.value.push({ ...prcs, prcs_nm: searchTerm.prcs_nm })
+    // 선택 시 원래 데이터 그대로 push
+    selectedPrcs.value.push({ ...prcs })
   }
   console.log('[prcsModal] 선택된 공정들:', selectedPrcs.value)
 }
@@ -206,10 +219,7 @@ const checkboxDeselect = (prcs) => {
 // 전체 선택/해제
 const toggleAll = (event) => {
   if (event.target.checked) {
-    selectedPrcs.value = prcsList.value.map((prcs) => ({
-      ...prcs,
-      prcs_nm: searchTerm.prcs_nm,
-    }))
+    selectedPrcs.value = prcsList.value.map((prcs) => ({ ...prcs }))
   } else {
     selectedPrcs.value = []
   }
@@ -217,10 +227,7 @@ const toggleAll = (event) => {
 
 // 선택 여부 확인
 const choiceCheck = (prcs) => {
-  return selectedPrcs.value.some(
-    (s) =>
-      s.prcs_id === prcs.prcs_id && s.prcs_nm === prcs.prcs_nm && s.eqm_grp_nm === prcs.eqm_grp_nm,
-  )
+  return selectedPrcs.value.some((s) => s.prcs_id === prcs.prcs_id && s.prcs_nm === prcs.prcs_nm)
 }
 
 // 선택 상태 초기화
@@ -229,18 +236,6 @@ const choiceReset = () => {
   selectedPrcsRow.value = null
   selectedPrcsRowNo.value = ''
 }
-
-// 날짜 포맷팅
-//const formatDate = (dateStr) => {
-// if (!dateStr) return ''
-
-//  try {
-//    const date = new Date(dateStr)
-//    return date.toISOString().split('T')[0] // YYYY-MM-DD 형식
-//  } catch (error) {
-//    return dateStr
-//  }
-//}
 
 // 선택 확인
 const onSelectPrcs = () => {
@@ -254,8 +249,8 @@ const onSelectPrcs = () => {
   closeModal()
 }
 
-// 모달 닫기
-const closePrcsModal = () => {
+// 모달 닫기 (이름을 template과 일치시킴)
+const closeModal = () => {
   prcsReset()
   prcsList.value = []
   selectedPrcs.value = []
