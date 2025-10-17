@@ -49,4 +49,54 @@ router.get("/prcs-prog-precon/eqms", async (req, res) => {
   }
 });
 
+// 공정 상세(금형 사용 여부 확인)
+router.get("/prcs-prog-precon/prcs/:prcs_id", async (req, res) => {
+  try {
+    const { prcs_id } = req.params;
+    const row = await service.getPrcsById(prcs_id);
+    if (!row)
+      return res.status(404).json({ message: "공정을 찾을 수 없습니다." });
+    res.json(row);
+  } catch (err) {
+    console.error("prcs detail error", err);
+    res.status(500).json({ message: "오류가 발생했습니다." });
+  }
+});
+
+// 금형 목록 (모달2)
+router.get("/prcs-prog-precon/molds", async (req, res) => {
+  try {
+    const { mold_id } = req.query;
+    const rows = await service.getMoldList(mold_id || "");
+    res.json(rows);
+  } catch (err) {
+    console.error("mold list error", err);
+    res.status(500).json({ message: "오류가 발생했습니다." });
+  }
+});
+
+// 현투입 수량(= RWMATR_RTUN_TRGET.prod_expc_qy 합) 조회
+router.get("/prcs-prog-precon/run-target", async (req, res) => {
+  try {
+    const { prod_drct_deta_id } = req.query;
+    const qty = await service.getRunTargetQtyByDetaId(prod_drct_deta_id);
+    res.json({ prod_expc_qy: qty });
+  } catch (err) {
+    console.error("run target qty error", err);
+    res.status(500).json({ message: "오류가 발생했습니다." });
+  }
+});
+
+// 현투입 수량 목록(= RWMATR_RTUN_TRGET.prod_expc_qy 리스트, inpt_st='J2') 조회
+router.get("/prcs-prog-precon/run-target/list", async (req, res) => {
+  try {
+    const { prod_drct_deta_id } = req.query;
+    const list = await service.getRunTargetQtyListByDetaId(prod_drct_deta_id);
+    res.json({ list });
+  } catch (err) {
+    console.error("run target qty list error", err);
+    res.status(500).json({ message: "오류가 발생했습니다." });
+  }
+});
+
 module.exports = router;

@@ -337,13 +337,14 @@ const insertWrhousTransaction = `
 INSERT INTO WRHOUS_WRHSDLVR (
   WRHOUS_WRHSDLVR_ID,
   WRHSDLVR_MAS_ID,
+  RSC_RTUN_TRGET_ID,
   RSC_QLTY_INSP_ID,
   SEMI_PRDT_QLTY_INSP_ID,
   END_PRDT_QLTY_INSP_ID,
   DELI_DETA_ID,
   RCVPAY_QY,
   RM
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
 // 창고 입출고 마스터 거래 등록 (신규 추가) - 실제 테이블 구조에 맞춤
@@ -362,8 +363,14 @@ INSERT INTO WRHOUS_WRHSDLVR_MAS (
   UNIT,
   ALL_RCVPAY_QY,
   RCVPAY_DT,
-  RM
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  RM,
+  RCVPAY_NM
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,?)
+`;
+
+// EMP_ID 검증
+const validateEmployeeId = `
+SELECT EMP_ID FROM EMP WHERE EMP_ID = ? LIMIT 1
 `;
 
 // 창고 입출고 거래 수정
@@ -382,6 +389,21 @@ SET DLVR_TY = ?,
     EMP_ID = ?,
     RM = ?
 WHERE WRHSDLVR_ID = ?
+`;
+
+// 자재 품질검사서 PASS_QY 차감
+const deductRscInspPassQty = `
+UPDATE RSC_QLTY_INSP SET PASS_QY = GREATEST(PASS_QY - ?, 0) WHERE RSC_QLTY_INSP_ID = ?
+`;
+
+// 반제품 품질검사서 PASS_QY 차감
+const deductSemiPrdtInspPassQty = `
+UPDATE SEMI_PRDT_QLTY_INSP SET PASS_QY = GREATEST(PASS_QY - ?, 0) WHERE SEMI_PRDT_QLTY_INSP_ID = ?
+`;
+
+// 완제품 품질검사서 PASS_QY 차감
+const deductEndPrdtInspPassQty = `
+UPDATE END_PRDT_QLTY_INSP SET PASS_QY = GREATEST(PASS_QY - ?, 0) WHERE END_PRDT_QLTY_INSP_ID = ?
 `;
 
 // 창고 입출고 거래 삭제
@@ -517,28 +539,6 @@ WHERE ITEM_CODE = ? AND ITEM_TY = ?
 GROUP BY ITEM_TY, ITEM_CODE, ITEM_NM
 `;
 
-// 재고 거래 기록 삽입 (개선된 버전)
-const insertInventoryTransaction = `
-INSERT INTO WRHOUS_WRHSDLVR (
-  WRHSDLVR_ID,
-  DLVR_TY,
-  SOURCE_TY,
-  SOURCE_ID,
-  ITEM_TY,
-  ITEM_CODE,
-  ITEM_NM,
-  SPEC,
-  UNIT,
-  QY,
-  WRHOUS_ID,
-  ZONE_ID,
-  EMP_ID,
-  DLVR_DT,
-  REG_DT,
-  RM
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
-`;
-
 const getWarehousesByItemType = `
 SELECT 
         w.WRHOUS_ID as warehouse_id,
@@ -671,6 +671,26 @@ WHERE wm.RSC_ID = ?
   AND wm.PROD_DRCT_DETA_ID = ?
 `;
 
+// 납품서 개수 조회
+const selectDeliveryOrderCount = `
+SELECT COUNT(*) as cnt FROM DELI_DETA WHERE DELI_DETA_ID = ?
+`;
+
+// 자재 품질서 개수 조회
+const selectRscInspectionOrderCount = `
+SELECT COUNT(*) as cnt FROM RSC_QLTY_INSP WHERE RSC_QLTY_INSP_ID = ?
+`;
+
+// 반제품 품질서 개수 조회
+const selectSemiInspectionOrderCount = `
+SELECT COUNT(*) as cnt FROM SEMI_PRDT_QLTY_INSP WHERE SEMI_PRDT_QLTY_INSP_ID = ?
+`;
+
+// 완제품 품질서 개수 조회
+const selectEndPrdtInspectionOrderCount = `
+SELECT COUNT(*) as cnt FROM END_PRDT_QLTY_INSP WHERE END_PRDT_QLTY_INSP_ID = ?
+`;
+
 module.exports = {
   selectWrhousTransactionList,
   selectInspectionList,
@@ -696,7 +716,6 @@ module.exports = {
   selectProductionOrderDetails,
   selectMaterialByProductionOrder,
   selectInventoryByItem,
-  insertInventoryTransaction,
   getWarehousesByItemType,
   getWarehousesByNone,
   getLocationsByWarehouse,
@@ -708,4 +727,12 @@ module.exports = {
   selectAvailableLots,
   selectDeliveryCompletedQty,
   selectMaterialWithdrawalCompletedQty,
+  validateEmployeeId,
+  deductRscInspPassQty,
+  deductSemiPrdtInspPassQty,
+  deductEndPrdtInspPassQty,
+  selectDeliveryOrderCount,
+  selectRscInspectionOrderCount,
+  selectSemiInspectionOrderCount,
+  selectEndPrdtInspectionOrderCount,
 };

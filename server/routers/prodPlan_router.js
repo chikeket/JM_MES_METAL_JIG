@@ -32,11 +32,54 @@ router.get("/prodPlanDetaSearch", async (req, res) => {
 });
 
 router.get("/prodPlanRcvordMasterSearch", async (req, res) => {
-  console.log("생산계획페이지 수주서모달에서 조회할때 쓰는 라우터");
+  console.log("생산계획관리페이지 수주서모달에서 조회할때 쓰는 라우터");
   console.log(req.query);
   // req.query;
   let prdtList = await prodPlanService
     .prodPlanRcvordMasterSearch(req.query)
+    .catch((err) => console.log(err));
+  // console.log("클라로갈값");
+  // console.log(prdtList);
+  res.send(prdtList);
+  // res.json(prdtList);
+});
+
+router.get("/prodPlanRcvordDetaSearch", async (req, res) => {
+  console.log(
+    "생산계획관리페이지 수주서모달에서 수주서상세 조회할때 쓰는 라우터"
+  );
+  console.log(req.query);
+  // req.query;
+  let prdtList = await prodPlanService
+    .prodPlanRcvordDetaSearch(req.query)
+    .catch((err) => console.log(err));
+  // console.log("클라로갈값");
+  // console.log(prdtList);
+  res.send(prdtList);
+  // res.json(prdtList);
+});
+
+router.get("/prodPlanRealMasterSearch", async (req, res) => {
+  console.log("생산계획관리페이지 생산계획서모달에서 조회할때 쓰는 라우터");
+  console.log(req.query);
+  // req.query;
+  let prdtList = await prodPlanService
+    .prodPlanRealMasterSearch(req.query)
+    .catch((err) => console.log(err));
+  // console.log("클라로갈값");
+  // console.log(prdtList);
+  res.send(prdtList);
+  // res.json(prdtList);
+});
+
+router.get("/prodPlanRealDetaSearch", async (req, res) => {
+  console.log(
+    "생산계획관리페이지 생산계획서모달에서 생산계획서 상세 조회할때 쓰는 라우터"
+  );
+  console.log(req.query);
+  // req.query;
+  let prdtList = await prodPlanService
+    .prodPlanRealDetaSearch(req.query)
     .catch((err) => console.log(err));
   // console.log("클라로갈값");
   // console.log(prdtList);

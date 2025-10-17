@@ -23,18 +23,24 @@ SELECT
 	pdd.prod_drct_id,
 	ppp.prcs_ord,
 	ppp.prcs_id,
+	p.prcs_nm,
 	ppp.drct_qy,
 	ppp.inpt_qy,
 	ppp.st,
 	sc.sub_code_nm AS st_nm,
+	p.mold_use_at,
 	ppp.rm,
 	pr.prdt_nm,
-	po.opt_nm
+	po.opt_nm,
+	pdd.prdt_id,
+	pdd.prdt_opt_id,
+	ppp.prcs_prog_precon_id
 FROM prcs_prog_precon ppp
 JOIN prod_drct_deta pdd ON ppp.prod_drct_deta_id = pdd.prod_drct_deta_id
 JOIN prdt pr ON pdd.prdt_id = pr.prdt_id
 JOIN prdt_opt po ON pdd.prdt_opt_id = po.prdt_opt_id
 LEFT JOIN sub_code sc ON sc.sub_code_id = ppp.st
+LEFT JOIN prcs p ON p.prcs_id = ppp.prcs_id
 WHERE pdd.prod_drct_id = ?
 	AND ppp.st = 'J2'
 ORDER BY ppp.prcs_ord, ppp.prcs_id`;
@@ -64,4 +70,46 @@ module.exports = {
   prcsProgPreconMainList,
   prcsProgPreconEmpList,
   prcsProgPreconEqmList,
+  // 현투입 수량 조회: RWMATR_RTUN_TRGET에서 prod_drct_deta_id 기준 생산예상수량(prod_expc_qy)
+  prcsProgPreconRunTargetByDeta: `
+SELECT COALESCE(SUM(r.prod_expc_qy), 0) AS prod_expc_qy
+FROM RWMATR_RTUN_TRGET r
+WHERE r.prod_drct_deta_id = ?`,
+  // 현투입 수량 목록 조회: inpt_st = 'J2' 인 행들의 prod_expc_qy 리스트
+  prcsProgPreconRunTargetListByDeta: `
+SELECT r.prod_expc_qy
+FROM RWMATR_RTUN_TRGET r
+WHERE r.prod_drct_deta_id = ?
+	AND r.inpt_st = 'J2'
+ORDER BY r.prod_expc_qy`,
+  // 금형 조회 모달: mold 목록 (mold_id LIKE, prdt/sub_code 조인)
+  prcsProgPreconMoldList: `
+SELECT 
+	m.mold_id,
+	m.mold_nm,
+	p.prdt_nm,
+	m.mold_ty,
+	sc_ty.sub_code_nm AS mold_ty_nm,
+	m.CAVITY,
+	m.accmlt_shot,
+	m.warn_qy,
+	m.dsuse_qy,
+	m.chck_cycle,
+	m.chck_dt,
+	sc.sub_code_nm AS st_nm,
+	m.rm
+FROM mold m
+LEFT JOIN prdt p ON p.prdt_id = m.prdt_id
+LEFT JOIN sub_code sc ON sc.sub_code_id = m.st
+LEFT JOIN sub_code sc_ty ON sc_ty.sub_code_id = m.mold_ty
+WHERE (? IS NULL OR ? = '')
+	 OR m.mold_id LIKE CONCAT('%', ?, '%')
+ORDER BY m.mold_id`,
+  // 공정 단건 조회 (금형 사용 여부 확인용)
+  prcsProgPreconPrcsById: `
+SELECT 
+	p.prcs_id,
+	p.mold_use_at
+FROM prcs p
+WHERE p.prcs_id = ?`,
 };

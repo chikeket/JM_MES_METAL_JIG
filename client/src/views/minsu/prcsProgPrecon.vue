@@ -22,7 +22,7 @@
               <th class="prod-col">제품 명</th>
               <th class="opt-col">제품 옵션 명</th>
               <th class="ord-col">공정 순서</th>
-              <th class="pr-col">공정 코드</th>
+              <th class="pr-col">공정 ID</th>
               <th class="drct-col">지시 수량</th>
               <th class="inpt-col">투입 수량</th>
               <th class="st-col">상태</th>
@@ -30,7 +30,12 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(r, i) in mainRows" :key="r.prcs_id + '-' + i">
+            <tr
+              v-for="(r, i) in mainRows"
+              :key="r.prcs_id + '-' + i"
+              :class="{ 'selected-row': selectedMain && selectedMain.prcs_id === r.prcs_id }"
+              @click="onSelectMain(r)"
+            >
               <td class="cell-no">{{ i + 1 }}</td>
               <td class="cell-left">
                 <span class="cell-text" :title="fmtDate(selectedFrDt)">{{
@@ -88,7 +93,12 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(r, i) in empRows" :key="r.emp_id + '-' + i">
+              <tr
+                v-for="(r, i) in empRows"
+                :key="r.emp_id + '-' + i"
+                :class="{ 'selected-row': selectedEmp && selectedEmp.emp_id === r.emp_id }"
+                @click="onSelectEmp(r)"
+              >
                 <td class="cell-left">
                   <span class="cell-text mono" :title="r.emp_id">{{ r.emp_id }}</span>
                 </td>
@@ -123,7 +133,12 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(r, i) in eqmRows" :key="r.eqm_id + '-' + i">
+              <tr
+                v-for="(r, i) in eqmRows"
+                :key="r.eqm_id + '-' + i"
+                :class="{ 'selected-row': selectedEqm && selectedEqm.eqm_id === r.eqm_id }"
+                @click="onSelectEqm(r)"
+              >
                 <td class="cell-left">
                   <span class="cell-text mono" :title="r.eqm_id">{{ r.eqm_id }}</span>
                 </td>
@@ -148,13 +163,16 @@
     </div>
 
     <PrcsProgPreconModalOne v-model="showModal" @selected="onSelected" />
+    <PrcsProgPreconModalTwo v-model="showModalTwo" @selected="onSelectedMold" />
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 import axios from 'axios'
+import { useRouter } from 'vue-router'
 import PrcsProgPreconModalOne from '../modal/prcsProgPreconModalOne.vue'
+import PrcsProgPreconModalTwo from '../modal/prcsProgPreconModalTwo.vue'
 
 const showModal = ref(false)
 const selectedId = ref('')
@@ -164,6 +182,13 @@ const selectedNm = ref('')
 const mainRows = ref([])
 const empRows = ref([])
 const eqmRows = ref([])
+
+const selectedMain = ref(null)
+const selectedEmp = ref(null)
+const selectedEqm = ref(null)
+
+const showModalTwo = ref(false)
+const router = useRouter()
 
 const onOpenModal = () => {
   showModal.value = true
@@ -175,6 +200,9 @@ const onReset = () => {
   mainRows.value = []
   empRows.value = []
   eqmRows.value = []
+  selectedMain.value = null
+  selectedEmp.value = null
+  selectedEqm.value = null
 }
 
 const onSelected = async (payload) => {
@@ -182,6 +210,10 @@ const onSelected = async (payload) => {
   selectedFrDt.value = payload?.prod_drct_fr_dt || ''
   selectedNm.value = payload?.prod_drct_nm || ''
   showModal.value = false
+  // 선택 상태 초기화
+  selectedMain.value = null
+  selectedEmp.value = null
+  selectedEqm.value = null
   await Promise.all([fetchMainList(), fetchEmpList(), fetchEqmList()])
 }
 
@@ -219,10 +251,109 @@ const fetchEmpList = async () => {
   }
 }
 
+function onSelectMain(row) {
+  selectedMain.value = row
+  maybeProceed()
+}
+function onSelectEmp(row) {
+  selectedEmp.value = row
+  maybeProceed()
+}
+function onSelectEqm(row) {
+  selectedEqm.value = row
+  maybeProceed()
+}
+
+async function maybeProceed() {
+  // 세 개의 그리드에서 각각 하나씩 선택되었을 때만 동작
+  if (!selectedMain.value || !selectedEmp.value || !selectedEqm.value) return
+  try {
+    const prcsId = selectedMain.value.prcs_id
+    // mainRows에 mold_use_at이 포함되어 있으면 그대로 사용
+    let moldUse = selectedMain.value.mold_use_at
+    if (!moldUse) {
+      const { data } = await axios.get(`/api/prcs-prog-precon/prcs/${encodeURIComponent(prcsId)}`)
+      moldUse = data?.mold_use_at
+    }
+    if (String(moldUse || '').trim() === 'P1') {
+      showModalTwo.value = true
+    } else {
+      // 금형 미사용: 금형 관련 값은 '-'로 채워 procCtrl로 이동
+      const m = selectedMain.value || {}
+      const e = selectedEmp.value || {}
+      const q = selectedEqm.value || {}
+      const params = new URLSearchParams({
+        prod_drct_deta_id: m.prod_drct_deta_id || '',
+        prod_drct_id: selectedId.value || '',
+        prod_drct_nm: selectedNm.value || '',
+        prcs_id: m.prcs_id || '',
+        prcs_nm: m.prcs_nm || '',
+        prcs_prog_precon_id: m.prcs_prog_precon_id || '',
+        prcs_ord: m.prcs_ord != null ? String(m.prcs_ord) : '',
+        prdt_id: m.prdt_id || '',
+        prdt_nm: m.prdt_nm || '',
+        prdt_opt_id: m.prdt_opt_id || '',
+        opt_nm: m.opt_nm || '',
+        eqm_id: q.eqm_id || '',
+        eqm_nm: q.eqm_nm || '',
+        emp_id: e.emp_id || '',
+        mold_id: '-',
+        mold_nm: '-',
+        cavity: '-',
+        drct_qy: m.drct_qy != null ? String(m.drct_qy) : '',
+        prev_inpt_qy: m.inpt_qy != null ? String(m.inpt_qy) : '',
+        emp_nm: e.emp_nm || '',
+      })
+      router.push({ path: '/Minsu/procCtrl', query: Object.fromEntries(params) })
+    }
+  } catch (err) {
+    console.error('mold_use_at 확인 실패', err)
+  }
+}
+
+function onSelectedMold(moldRow) {
+  // 조립: procCtrl 에 필요한 값을 쿼리로 전달
+  const m = selectedMain.value || {}
+  const e = selectedEmp.value || {}
+  const q = selectedEqm.value || {}
+
+  const params = new URLSearchParams({
+    prod_drct_deta_id: m.prod_drct_deta_id || '',
+    prod_drct_id: selectedId.value || '',
+    prod_drct_nm: selectedNm.value || '',
+    prcs_id: m.prcs_id || '',
+    prcs_nm: m.prcs_nm || '',
+    prcs_prog_precon_id: m.prcs_prog_precon_id || '',
+    prcs_ord: m.prcs_ord != null ? String(m.prcs_ord) : '',
+    prdt_id: m.prdt_id || '',
+    prdt_nm: m.prdt_nm || '',
+    prdt_opt_id: m.prdt_opt_id || '',
+    opt_nm: m.opt_nm || '',
+    eqm_id: q.eqm_id || '',
+    eqm_nm: q.eqm_nm || '',
+    emp_id: e.emp_id || '',
+    mold_id: moldRow?.mold_id || '-',
+    mold_nm: moldRow?.mold_nm || '-',
+    cavity: moldRow?.CAVITY != null ? String(moldRow.CAVITY) : '-',
+    drct_qy: m.drct_qy != null ? String(m.drct_qy) : '',
+    prev_inpt_qy: m.inpt_qy != null ? String(m.inpt_qy) : '',
+    emp_nm: e.emp_nm || '',
+  })
+  router.push({ path: '/Minsu/procCtrl', query: Object.fromEntries(params) })
+}
+
 const fetchEqmList = async () => {
   try {
     const { data } = await axios.get('/api/prcs-prog-precon/eqms')
-    eqmRows.value = Array.isArray(data) ? data : []
+    const arr = Array.isArray(data) ? data : []
+    // 설비 상태 컬럼 값이 '비가동'인 행만 노출 (st_nm이 우선, 없으면 코드 'Q2'로 대체)
+    eqmRows.value = arr.filter((r) => {
+      const text = (r?.st_nm ?? '').toString().trim()
+      const code = (r?.st ?? '').toString().trim()
+      if (text) return text === '비가동'
+      if (code) return code === 'Q2'
+      return false
+    })
   } catch (err) {
     console.error('fetchEqmList error', err)
     eqmRows.value = []
@@ -638,5 +769,19 @@ table.data-grid {
   border: 1px solid #cde0ff;
   border-radius: 999px;
   padding: 2px 8px;
+}
+
+.selected-row td {
+  background-color: #e7f1ff !important;
+}
+
+/* 카드가 화면 좌우에서 살짝 떨어져 보이도록 외곽 여백 추가 */
+.prcs-prog-page > .grid-card {
+  margin-left: 8px;
+  margin-right: 8px;
+}
+.grid-row {
+  padding-left: 8px;
+  padding-right: 8px;
 }
 </style>
