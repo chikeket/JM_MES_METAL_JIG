@@ -17,10 +17,12 @@ const coListView = `
 
 const coCreateId = `
   SELECT 
-    CONCAT('C', LPAD(IFNULL(MAX(CAST(SUBSTRING(co_id, 2) AS UNSIGNED)), 0) + 1, 3, '0')) AS co_id
+    CONCAT('CO', DATE_FORMAT(NOW(), '%y%m'), LPAD(IFNULL(MAX(CAST(SUBSTRING(co_id, 9, 3) AS UNSIGNED)), 0) + 1, 3, '0')) AS co_id
   FROM co
-  WHERE co_id LIKE 'C%'
+  WHERE SUBSTRING(co_id, 3, 4) = DATE_FORMAT(NOW(), '%y%m')
+  FOR UPDATE
 `;
+
 
 const coInsert = `
   INSERT INTO co (
@@ -54,6 +56,7 @@ const coDelete = `
 const coCheckDuplicate = `
   SELECT co_id FROM co WHERE co_id = ?
 `;
+
 
 module.exports = {
   coListView,
