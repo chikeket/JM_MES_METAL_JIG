@@ -138,7 +138,7 @@ const rcvordMykMasterSearch = `
  a.rcvord_id
  ,b.co_nm
  ,c.emp_nm
- ,a.reg_dt
+ ,a.reg_dt "reg_dtt"
 from rcvord a
 join co b
 on a.co_id = b.co_id
@@ -178,6 +178,46 @@ and c.emp_nm LIKE CONCAT('%', ?,'%')
 and a.reg_dt > ?
 `;
 
+// 수주서 모달에서 수주서 상세테이블 조회(윤기가 쓰는 쿼리)
+const rcvordMykDetaSearch = `
+  select
+ a.rcvord_id
+ ,b.prdt_id
+ ,b.prdt_opt_id
+ ,d.prdt_nm
+ ,e.opt_nm
+ ,d.spec
+ ,d.unit
+ ,CASE 
+  WHEN b.rcvord_qy - c.plan_qy < 0 THEN 0
+  ELSE b.rcvord_qy - c.plan_qy
+END AS plan_qy
+ ,b.paprd_dt  
+from rcvord a
+join rcvord_deta b
+on a.rcvord_id = b.rcvord_id
+join (
+		select
+		 a.rcvord_id
+		 ,b.prdt_id
+		 ,b.prdt_opt_id
+		 ,SUM(b.plan_qy) "plan_qy"
+		from prod_plan a
+		join prod_plan_deta b
+		on a.prod_plan_id = b.prod_plan_id
+		group by a.rcvord_id ,b.prdt_id ,b.prdt_opt_id ) c
+on a.rcvord_id = c.rcvord_id
+and b.prdt_id = c.prdt_id
+and b.prdt_opt_id = c.prdt_opt_id
+and b.st = 'J2'
+join prdt d
+on b.prdt_id = d.prdt_id
+join prdt_opt e
+on b.prdt_opt_id = e.prdt_opt_id
+where a.rcvord_id = ?
+order by a.reg_dt desc
+`;
+
 module.exports = {
   modalRcvordFind,
   rcvordFindHeader,
@@ -195,4 +235,5 @@ module.exports = {
   rcvordDetaNewId,
   rcvordSearchList,
   rcvordMykMasterSearch,
+  rcvordMykDetaSearch,
 };

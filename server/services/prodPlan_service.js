@@ -5,7 +5,12 @@ const { convertObjToAry } = require("../utils/converts.js");
 
 // 다중조건 검색조회
 const prodPlanfindAll = async (Info) => {
-  let insertColumns = ["prod_plan_nm", "reg_dt", "prod_expc_fr_dt", "prod_expc_to_dt"];
+  let insertColumns = [
+    "prod_plan_nm",
+    "reg_dt",
+    "prod_expc_fr_dt",
+    "prod_expc_to_dt",
+  ];
   // console.log("클라에서들어가는값 서비스");
   // console.log(Info);
   let data = convertObjToAry(Info, insertColumns);
@@ -33,7 +38,7 @@ const prodPlanDetafindAll = async (Info) => {
   return list;
 };
 
-// 마스터정보로 상세내용 조회
+// 수주서 마스터정보 조회
 const prodPlanRcvordMasterSearch = async (Info) => {
   let insertColumns = ["rcvord_id", "co_nm", "emp_nm", "reg_dt"];
   // console.log("클라에서들어가는값 서비스");
@@ -48,8 +53,61 @@ const prodPlanRcvordMasterSearch = async (Info) => {
   return list;
 };
 
+// 수주서 상세정보 조회
+const prodPlanRcvordDetaSearch = async (Info) => {
+  let insertColumns = ["rcvord_id"];
+  // console.log("클라에서들어가는값 서비스");
+  // console.log(Info);
+  let data = convertObjToAry(Info, insertColumns);
+  console.log("service쪽");
+  console.log(data);
+  let list = await mariadb
+    .query("rcvordMykDetaSearch", data)
+    .catch((err) => console.log(err));
+  // console.log("조회 결과:", list);
+  return list;
+};
+
+// 생산계획관리페이지 생산계획모달 마스터정보 조회
+const prodPlanRealMasterSearch = async (Info) => {
+  let insertColumns = [
+    "prod_plan_nm",
+    "reg_dt",
+    "prod_expc_fr_dt",
+    "prod_expc_to_dt",
+  ];
+  // console.log("클라에서들어가는값 서비스");
+  // console.log(Info);
+  let data = convertObjToAry(Info, insertColumns);
+  console.log("service쪽");
+  console.log(data);
+  let list = await mariadb
+    .query("prodPlanRealModalMasterSearch", data)
+    .catch((err) => console.log(err));
+  // console.log("조회 결과:", list);
+  return list;
+};
+
+// 생산계획관리페이지 생산계획모달 상세정보 조회
+const prodPlanRealDetaSearch = async (Info) => {
+  let insertColumns = ["prod_plan_id"];
+  // console.log("클라에서들어가는값 서비스");
+  // console.log(Info);
+  let data = convertObjToAry(Info, insertColumns);
+  console.log("service쪽");
+  console.log(data);
+  let list = await mariadb
+    .query("prodPlanRealModalDetaSearch", data)
+    .catch((err) => console.log(err));
+  // console.log("조회 결과:", list);
+  return list;
+};
+
 module.exports = {
   prodPlanfindAll,
   prodPlanDetafindAll,
   prodPlanRcvordMasterSearch,
+  prodPlanRcvordDetaSearch,
+  prodPlanRealMasterSearch,
+  prodPlanRealDetaSearch,
 };

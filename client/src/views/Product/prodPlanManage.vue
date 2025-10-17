@@ -2,8 +2,8 @@
 import { ref, reactive, watch } from 'vue'
 
 import axios from 'axios'
-
-import ProdPlanModal from '../modal/prodPlanModal.vue'
+import userDateUtils from '@/utils/useDates.js'
+import ProdPlanModal from '../modal/prodPlanRealModal.vue'
 import ProdDrctModal from '../modal/rcvordMykModal.vue'
 import { useAuthStore } from '@/stores/auth.js'
 const auth = useAuthStore()
@@ -32,7 +32,8 @@ let empId = auth.user?.emp_id || 'EMP001'
 
 const Info = ref({
   ordrName1: '',
-  prod_drct_id: '',
+  prod_plan_id: '',
+  rcvord_id: '',
   regDate: new Date().toISOString().slice(0, 10),
   startDate: new Date().toISOString().slice(0, 10),
   endDate: null,
@@ -41,23 +42,24 @@ const Info = ref({
 
 const insertRowsToDB = async () => {
   // console.log(Info.value)
-
+  if (Info.value.endDate == null) {
+    return alert('종료일을 지정해주세요')
+  }
   const master = {
     rm: Info.value.remark,
-    prod_drct_nm: Info.value.ordrName1,
+    rcvord_id: Info.value.rcvord_id,
     emp_id: empId,
-    prod_drct_fr_dt: Info.value.startDate,
-    prod_drct_to_dt: Info.value.endDate,
+    prod_plan_nm: Info.value.ordrName1,
+    prod_expc_fr_dt: Info.value.startDate,
+    prod_expc_to_dt: Info.value.endDate,
     reg_dt: Info.value.regDate,
   }
 
   const detail = rows.value.map((row) => ({
     rm: row.rm,
-    prod_drct_deta_id: row.prod_drct_deta_id,
-    prod_plan_deta_id: row.prod_plan_deta_id,
     prdt_id: row.prdt_id,
     prdt_opt_id: row.prdt_opt_id,
-    drct_qy: row.drct_qy,
+    plan_qy: row.plan_qy,
     priort: row.priort,
   }))
 
@@ -66,61 +68,67 @@ const insertRowsToDB = async () => {
     detailList: detail,
   }
   console.log(payload)
-  let result = await axios.post('/api/instruction', payload).catch((err) => console.log(err))
+  let result = await axios
+    .post('/api/insertProdPlanManage', payload)
+    .catch((err) => console.log(err))
   let addRes = result.data
   if (addRes.isSuccessed) {
-    console.log('생산지시가 등록되었습니다.')
+    console.log('생산계획이 등록되었습니다.')
   } else {
-    console.log('생산지시에 실패했습니다.')
+    console.log('생산계획이 실패했습니다.')
   }
 }
 
 const updateRowsToDB = async () => {
-  // console.log(Info.value)
+  console.log(Info.value)
+  console.log(rows.value)
   const master = {
     rm: Info.value.remark,
-    prod_drct_nm: Info.value.ordrName1,
+    rcvord_id: Info.value.rcvord_id,
     emp_id: empId,
-    prod_drct_fr_dt: Info.value.startDate,
-    prod_drct_to_dt: Info.value.endDate,
+    prod_plan_nm: Info.value.ordrName1,
+    prod_expc_fr_dt: Info.value.startDate,
+    prod_expc_to_dt: Info.value.endDate,
     reg_dt: Info.value.regDate,
+    prod_plan_id: Info.value.prod_plan_id,
   }
 
   const detail = rows.value.map((row) => ({
     rm: row.rm,
-    prod_drct_deta_id: row.prod_drct_deta_id,
-    prod_plan_deta_id: row.prod_plan_deta_id,
     prdt_id: row.prdt_id,
     prdt_opt_id: row.prdt_opt_id,
-    drct_qy: row.drct_qy,
+    plan_qy: row.plan_qy,
     priort: row.priort,
+    prod_plan_id: row.prod_plan_id,
+    prod_plan_deta_id: row.prod_plan_deta_id,
   }))
 
-  //수정을 위한 prod_drct_id 정보
-  const editProdDrctId = { prod_drct_id: Info.value.prod_drct_id }
   const payload = {
     masterInfo: master,
     detailList: detail,
-    editProdDrctId: editProdDrctId,
   }
   console.log(payload)
-  let result = await axios.post('/api/updateInstruction', payload).catch((err) => console.log(err))
+  let result = await axios
+    .post('/api/updateProdPlanManage', payload)
+    .catch((err) => console.log(err))
   let addRes = result.data
   if (addRes.isSuccessed) {
-    console.log('생산지시수정이 등록되었습니다.')
+    console.log('생산계획수정이 등록되었습니다.')
   } else {
-    console.log('생산지시수정이 실패했습니다.')
+    console.log('생산계획수정이 실패했습니다.')
   }
 }
 
 const deleteRowsToDB = async () => {
-  const payload = { prod_drct_id: Info.value.prod_drct_id }
-  let result = await axios.post('/api/deleteInstruction', payload).catch((err) => console.log(err))
+  const payload = { prod_drct_id: 'test' }
+  let result = await axios
+    .post('/api/deleteProdPlanManage', payload)
+    .catch((err) => console.log(err))
   let addRes = result.data
   if (addRes.isSuccessed) {
-    console.log('생산지시삭제가 성공되었습니다.')
+    console.log('생산계획삭제가 성공되었습니다.')
   } else {
-    console.log('생산지시삭제가 실패했습니다.')
+    console.log('생산계획삭제가 실패했습니다. Info.value.prod_plan_id')
   }
 }
 
@@ -128,26 +136,30 @@ const rows = ref([
   // {
   //   id: 1,
   //   prdt_id: 'a091',
-  //   prdt_nm: 'a091',
-  //   spec: 'a091',
-  //   unit: 'a091',
-  //   plan_qy: 600,
-  //   drct_qy: 0,
-  //   base_quantity: 90,
-  //   unspecified_quantity: 500,
-  //   priort: 0,
+  //   prdt_opt_id: 'optid',
+  //   prdt_nm: 'prdt',
+  //   opt_nm: 'opt',
+  //   spec: 'spec',
+  //   unit: 'unit',
+  //   paprd_dt: '1970-01-01',
+  //   plan_qy: 100,
+  //   priort: 1,
   //   rm: '',
   // },
 ])
 
 const selectedPrdt = (prdts) => {
   console.log(prdts)
-  Info.value.prod_drct_id = !prdts.searchParams.prod_drct_id
-    ? Info.value.prod_drct_id
-    : prdts.searchParams.prod_drct_id
-  Info.value.ordrName1 = !prdts.searchParams.prod_drct_nm
+  Info.value.prod_drct_id = !prdts.searchParams.prod_plan_id
+    ? Info.value.prod_plan_id
+    : prdts.searchParams.prod_plan_id
+  Info.value.rcvord_id = !prdts.searchParams.rcvord_id
+    ? Info.value.rcvord_id
+    : prdts.searchParams.rcvord_id
+  Info.value.ordrName1 = !prdts.searchParams.prod_plan_nm
     ? Info.value.ordrName1
-    : prdts.searchParams.prod_drct_nm
+    : prdts.searchParams.prod_plan_nm
+  empId = !prdts.searchParams.emp_id ? empId : prdts.searchParams.emp_id
   Info.value.startDate = !prdts.searchParams.prod_expc_fr_dt
     ? Info.value.startDate
     : prdts.searchParams.prod_expc_fr_dt
@@ -155,48 +167,28 @@ const selectedPrdt = (prdts) => {
     ? Info.value.endDate
     : prdts.searchParams.prod_expc_to_dt
   Info.value.regDate = !prdts.searchParams.reg_dt ? Info.value.regDate : prdts.searchParams.reg_dt
-  Info.value.remark = !prdts.searchParams.remark ? Info.value.remark : prdts.searchParams.remark
+  Info.value.remark = !prdts.searchParams.rm ? Info.value.remark : prdts.searchParams.rm
   let new_id = rows.value.length > 0 ? Math.max(...rows.value.map((r) => r.id ?? 0)) + 1 : 1
-  if (Array.isArray(prdts.detailData)) {
-    rows.value = []
-    for (const prdt of prdts.detailData)
-      rows.value.push({
-        id: new_id++,
-        prod_drct_deta_id: prdt.prod_drct_deta_id,
-        prod_plan_deta_id: prdt.prod_plan_deta_id,
-        prdt_id: prdt.prdt_id,
-        prdt_nm: prdt.prdt_nm,
-        prdt_opt_id: prdt.prdt_opt_id,
-        spec: prdt.spec,
-        unit: prdt.unit,
-        plan_qy: prdt.plan_qy || 0,
-        drct_qy: prdt.drct_qy ?? 0,
-        base_quantity: prdt.base_quantity ?? 0,
-        unspecified_quantity: !prdt.drct_qy ? prdt.plan_qy : prdt.plan_qy - prdt.base_quantity,
-        priort: prdt.priort,
-        rm: prdt.rm,
-      })
-  } else {
-    console.log('제품조회할때')
-    console.log(prdts)
-    rows.value.push({
-      id: new_id,
-      prod_plan_deta_id: 'none',
-      prdt_id: prdts.detailData.prdt_id,
-      prdt_nm: prdts.detailData.prdt_nm,
-      prdt_opt_id: prdts.detailData.prdt_opt_id,
-      spec: prdts.detailData.spec,
-      unit: prdts.detailData.unit,
-      plan_qy: 0,
-      drct_qy: 0,
-      base_quantity: 0,
-      unspecified_quantity: 0,
-      priort: 0,
-      rm: '',
-    })
-  }
 
-  console.log(rows.value)
+  rows.value = []
+  for (const prdt of prdts.detailData)
+    rows.value.push({
+      id: new_id++,
+      prod_plan_deta_id: prdt.prod_plan_deta_id,
+      prod_plan_id: prdt.prod_plan_id,
+      prdt_id: prdt.prdt_id,
+      prdt_nm: prdt.prdt_nm,
+      prdt_opt_id: prdt.prdt_opt_id,
+      opt_nm: prdt.opt_nm,
+      spec: prdt.spec,
+      unit: prdt.unit,
+      plan_qy: !prdt.plan_qy ? 0 : prdt.plan_qy,
+      paprd_dt: prdt.paprd_dt,
+      priort: prdt.priort,
+      rm: prdt.rm,
+    })
+
+  // console.log(rows.value)
 }
 
 const masterReset = () => {
@@ -205,9 +197,6 @@ const masterReset = () => {
   Info.value.endDate = null
   Info.value.regDate = new Date().toISOString().slice(0, 10)
   Info.value.remark = ''
-  rows.value = []
-}
-const reset = () => {
   rows.value = []
 }
 
@@ -227,19 +216,6 @@ function startEdit(row, field) {
 function commitEdit(row, field) {
   let v = editDraft.value
   if (field === 'drct_qy') {
-    const n = Number(v)
-    const validQty = Number.isFinite(n) ? n : 0
-    //  조건 검사: 계획수량이 총합보다 작으면 경고
-    const total = validQty
-    if (!row.plan_qy) {
-    } else {
-      if (row.plan_qy < total) {
-        alert('계획수량을 초과할 수 없습1니다.')
-        cancelEdit()
-        return
-      }
-    }
-    row.drct_qy = validQty
   } else if (field === 'producible') {
     row.producible = v === 'true' || v === true
   } else if (field === 'unit') {
@@ -250,26 +226,21 @@ function commitEdit(row, field) {
   cancelEdit()
 }
 
-//미지시수량 검증
-watch(
-  rows,
-  (newRows) => {
-    for (const row of newRows) {
-      const order = Number(row.base_quantity) || 0
-      const received = Number(row.plan_qy) || 0
-      const unspecified = received - order
-      row.unspecified_quantity = unspecified < 0 ? 0 : unspecified
-    }
-  },
-  { deep: true },
-)
-
 function cancelEdit() {
   editing.id = null
   editing.field = null
   editDraft.value = null
 }
-
+watch(
+  () => Info.value.endDate,
+  (newEndDate) => {
+    if (Info.value.endDate < Info.value.startDate) {
+      alert('종료일은 시작일과 같거나 이후여야 합니다')
+    } else {
+      Info.value.endDate = newEndDate
+    }
+  },
+)
 const fmtQty = (n) => (n ?? 0).toLocaleString()
 </script>
 
@@ -320,40 +291,34 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
     <CFormTextarea v-model="Info.remark" label="비고" rows="3" text="필요 시 기재"></CFormTextarea>
 
     <div class="d-flex justify-content-end gap-2 mb-3">
-      
-<CButton color="secondary" @click="goToDrctPlan()">수주서 조회</CButton>
+      <CButton color="secondary" @click="goToDrctPlan()">수주서 조회</CButton>
       <ProdDrctModal
         :visible="isProdDrctModalVisible"
         @close="closeProdDrctModal"
         @select="selectedPrdt"
       />
-      
-
-      <CButton color="secondary" @click="reset()">초기화</CButton>
     </div>
 
     <CTable hover bordered small class="align-middle">
       <CTableHead color="dark">
         <CTableRow>
-          <CTableHeaderCell scope="col" class="text-center" style="width: 56px"
+          <CTableHeaderCell scope="col" class="text-center" style="width: 160px"
             >코드</CTableHeaderCell
           >
           <CTableHeaderCell scope="col" class="text-center">제품명</CTableHeaderCell>
-          <CTableHeaderCell scope="col" class="text-center">규격</CTableHeaderCell>
-          <CTableHeaderCell scope="col" class="text-center" style="width: 140px"
+          <CTableHeaderCell scope="col" class="text-center" style="width: 100px"
+            >규격</CTableHeaderCell
+          >
+          <CTableHeaderCell scope="col" class="text-center" style="width: 60px"
             >단위</CTableHeaderCell
+          >
+          <CTableHeaderCell scope="col" class="text-center" style="width: 140px"
+            >납품일</CTableHeaderCell
           >
           <CTableHeaderCell scope="col" class="text-center" style="width: 120px"
             >계획수량</CTableHeaderCell
           >
 
-          <CTableHeaderCell scope="col" class="text-center" style="width: 140px"
-            >기지시수량</CTableHeaderCell
-          >
-          <CTableHeaderCell scope="col" class="text-center">미지시수량</CTableHeaderCell>
-          <CTableHeaderCell scope="col" class="text-center" style="width: 90px"
-            >지시수량</CTableHeaderCell
-          >
           <CTableHeaderCell scope="col" class="text-center">우선순위</CTableHeaderCell>
           <CTableHeaderCell scope="col" class="text-center">비고</CTableHeaderCell>
         </CTableRow>
@@ -362,10 +327,10 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
       <CTableBody>
         <CTableRow v-for="(row, idx) in rows" :key="row.id ?? idx">
           <!-- 코드 명 -->
-          <CTableDataCell scope="row">{{ row.prdt_id }}</CTableDataCell>
+          <CTableDataCell scope="row">{{ row.prdt_id + ' - ' + row.prdt_opt_id }}</CTableDataCell>
 
           <!-- 제품 명 -->
-          <CTableDataCell scope="row">{{ row.prdt_nm }}</CTableDataCell>
+          <CTableDataCell scope="row">{{ row.prdt_nm + ' - ' + row.opt_nm }}</CTableDataCell>
 
           <!-- 규격 -->
           <CTableDataCell scope="row">{{ row.spec }}</CTableDataCell>
@@ -373,31 +338,27 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
           <!-- 단위 -->
           <CTableDataCell scope="row">{{ row.unit }}</CTableDataCell>
 
+          <!-- 납품 예정 일자 -->
+          <CTableDataCell scope="row">{{
+            userDateUtils.dateFormat(row.paprd_dt, 'yyyy-MM-dd')
+          }}</CTableDataCell>
+
           <!-- 계획수량 -->
-          <CTableDataCell scope="row">{{ row.plan_qy }}</CTableDataCell>
-
-          <!-- 기지시수량 -->
-          <CTableDataCell scope="row">{{ row.base_quantity }}</CTableDataCell>
-
-          <!-- 미지시수량 -->
-          <CTableDataCell scope="row">{{ row.unspecified_quantity }}</CTableDataCell>
-
-          <!-- 지시수량 -->
-          <CTableDataCell class="text-end" @dblclick="startEdit(row, 'drct_qy')">
-            <template v-if="isEditing(row, 'drct_qy')">
+          <CTableDataCell class="text-end" @dblclick="startEdit(row, 'plan_qy')">
+            <template v-if="isEditing(row, 'plan_qy')">
               <CFormInput
                 v-model.number="editDraft"
                 type="number"
                 min="0"
                 size="sm"
                 class="text-end"
-                @keyup.enter="commitEdit(row, 'drct_qy')"
+                @keyup.enter="commitEdit(row, 'plan_qy')"
                 @keyup.esc="cancelEdit"
-                @blur="commitEdit(row, 'drct_qy')"
+                @blur="commitEdit(row, 'plan_qy')"
                 placeholder="0"
               />
             </template>
-            <template v-else>{{ fmtQty(row.drct_qy) }}</template>
+            <template v-else>{{ fmtQty(row.plan_qy) }}</template>
           </CTableDataCell>
 
           <!-- 우선순위 -->
