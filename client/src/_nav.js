@@ -172,11 +172,6 @@ export default [
         name: '자재 관리',
         to: '/zooE/rsc-manage',
       },
-      {
-        component: 'CNavItem',
-        name: '생산 지시',
-        to: '/zooE/menu1',
-      },
     ],
   },
 

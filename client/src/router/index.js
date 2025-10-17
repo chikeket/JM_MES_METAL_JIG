@@ -222,11 +222,6 @@ const routes = [
             name: 'rscManage',
             component: () => import('@/views/zooE/rscManage.vue'),
           },
-          {
-            path: '/zooE/menu1',
-            name: 'menu1',
-            component: () => import('@/views/zooE/menu1.vue'),
-          },
         ],
       },
 
