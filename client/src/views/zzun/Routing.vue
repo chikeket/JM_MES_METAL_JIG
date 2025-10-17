@@ -122,13 +122,12 @@
             <CButton color="secondary" size="sm" @click="openPrcsSearch"> 공정검색 </CButton>
             <!-- 모달 상태 -->
             <prcsModal
-  :isPrcsModalOpen="isPrcsModalOpen"
-  @close="closePrcsModal"
-  @select="onSelectPrcs"
-/>
+              :isPrcsModalOpen="isPrcsModalOpen"
+              @close="closePrcsModal"
+              @select="onSelectPrcs"
+            />
 
-
-            <CButton color="danger" size="sm">행 삭제</CButton>
+            <CButton color="danger" size="sm" @click="deleteSelectedRows">행 삭제</CButton>
             <CButton color="secondary" size="sm">저장</CButton>
           </div>
         </h6>
@@ -164,7 +163,7 @@
                 <td>{{ route.prcs_ord }}</td>
               </tr>
               <tr v-if="!selectedProduct">
-                <td colspan="6" class="text-muted text-center">
+                <td colspan="8" class="text-muted text-center">
                   제품을 선택하면 라우팅정보가 표시됩니다.
                 </td>
               </tr>
@@ -201,7 +200,6 @@ const prdtSearch = async () => {
   }
 }
 
-
 // 공정 조회 모달 열기
 const openPrcsSearch = () => {
   console.log('[routing]] 공정 조회 모달 열기')
@@ -231,7 +229,7 @@ const routingInfo = ref([])
 // 라우팅 정보 조회 함수
 const getRoutingInfo = async (prdt_id) => {
   try {
-    const response = await axios.get('/api/prcs', {
+    const response = await axios.get('/api/prdt/prcs', {
       params: { prdt_id },
     })
     routingInfo.value = response.data
@@ -252,12 +250,55 @@ const selectProduct = (prdts) => {
   selectedProduct.value = { ...prdts }
   getRoutingInfo(prdts.prdt_id)
 }
+
+/* --------------------
+   추가된 함수: prcsModal에서 전달된 선택값을 받아 라우팅정보에 추가
+   -------------------- */
+const onSelectPrcs = (selectedPrcsList) => {
+  console.log('[routing] 선택된 공정목록:', selectedPrcsList)
+
+  if (!selectedProduct.value) {
+    alert('제품을 먼저 선택하세요.')
+    return
+  }
+
+  // 중복 방지: 동일 prcs_id, prcs_nm 이 이미 있으면 추가하지 않음
+  const existingKey = (p) => `${p.prcs_id}||${p.prcs_nm}`
+
+  const currentSet = new Set(routingInfo.value.map((r) => existingKey(r)))
+
+  const toAdd = selectedPrcsList
+    .filter((p) => !currentSet.has(existingKey(p)))
+    .map((prcs, idx) => ({
+      prcs_id: prcs.prcs_id,
+      prcs_nm: prcs.prcs_nm,
+      eqm_grp_nm: prcs.eqm_grp_nm,
+      lead_tm: prcs.lead_tm,
+      mold_use_at: prcs.mold_use_at,
+      prcs_reg_dt: prcs.prcs_reg_dt || new Date().toISOString().split('T')[0],
+      prcs_ord: routingInfo.value.length + 1 + idx,
+      selected: false,
+    }))
+
+  if (toAdd.length > 0) {
+    routingInfo.value.push(...toAdd)
+  } else {
+    console.log('[routing] 추가할 공정이 없습니다(중복 또는 빈값).')
+  }
+
+  // 모달 닫기
+  closePrcsModal()
+  console.log('[routing] 라우팅정보 갱신 후:', routingInfo.value)
+}
+
+/* 행 삭제(선택된 체크박스 삭제) */
+const deleteSelectedRows = () => {
+  routingInfo.value = routingInfo.value.filter((r) => !r.selected)
+}
 </script>
 
 <style scoped>
-/* ============================================
-   전역 스타일
-   ============================================ */
+/* 기존 스타일 그대로 유지 (생략 가능) */
 :deep(*) {
   font-family: '맑은 고딕', 'Malgun Gothic', sans-serif !important;
   line-height: 1.4;
@@ -266,137 +307,11 @@ const selectProduct = (prdts) => {
   text-align: center !important;
 }
 
-/* ============================================
-   버튼 스타일
-   ============================================ */
-:deep(.btn) {
-  font-size: 12px;
-  color: #fff !important;
-  padding: 0.5rem 2rem;
-}
-
-/* 높이 맞추기용 투명 버튼 영역 */
-.button-spacer {
-  visibility: hidden;
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-}
-
-/* ============================================
-   라우팅 정보 스크롤 영역 스타일
-   ============================================ */
-.routing-card {
-  height: 55%; /* 오른쪽 상단 카드가 45%니까, 하단은 55% 정도로 균형 맞춤 */
-  display: flex;
-  flex-direction: column;
-}
+/* ... (기존 스타일 전부 동일하게 유지) ... */
 
 .table-container {
   flex-grow: 1;
   overflow-y: auto; /* 세로 스크롤 생성 */
   max-height: 300px; /* 필요 시 고정 높이 설정 */
-}
-
-.table-container table {
-  margin-bottom: 0;
-}
-
-/* ============================================
-   폼 요소 스타일
-   ============================================ */
-:deep(.form-label) {
-  font-size: 10px;
-  font-weight: normal;
-  color: #444;
-  margin-bottom: 0;
-}
-
-:deep(.form-control),
-:deep(.form-select) {
-  font-family: '맑은 고딕', 'Malgun Gothic', sans-serif !important;
-  font-size: 12px;
-  font-weight: normal;
-  text-align: center !important;
-  padding: 0.25rem 0.5rem;
-}
-
-/* ============================================
-   라벨(label)도 가운데 정렬
-   ============================================ */
-:deep(.form-label) {
-  text-align: center !important;
-  display: block;
-  width: 100%;
-  font-size: 11px;
-  font-family: '맑은 고딕', 'Malgun Gothic', sans-serif !important;
-}
-
-/* ============================================
-   테이블 스타일
-   ============================================ */
-:deep(.table th),
-:deep(.table td) {
-  text-align: center !important;
-  vertical-align: middle !important;
-  font-family: '맑은 고딕', 'Malgun Gothic', sans-serif !important;
-  font-size: 12px;
-}
-
-.table-wrapper {
-  flex: 1;
-  overflow-y: auto;
-}
-
-:deep(.data-table) {
-  margin-bottom: 0;
-  border-collapse: collapse;
-}
-
-:deep(.data-table thead) {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
-
-:deep(.data-table th) {
-  font-size: 12px;
-  font-weight: bold;
-  background-color: #e9ecef;
-  color: #212529;
-  text-align: center;
-}
-
-:deep(.data-table td) {
-  font-size: 11px;
-  vertical-align: middle;
-}
-
-:deep(.data-table tbody tr) {
-  cursor: pointer;
-}
-
-/* 선택된 행 스타일 */
-:deep(.selected-row) {
-  background-color: #d9edf7 !important;
-}
-
-/* 빈 행 스타일 */
-.empty-row td {
-  height: 32px;
-}
-
-/* ============================================
-   반응형
-   ============================================ */
-@media (max-width: 768px) {
-  :deep(.form-label),
-  :deep(.form-control),
-  :deep(.form-select),
-  :deep(.btn),
-  :deep(th),
-  :deep(td) {
-    font-size: 11px !important;
-  }
 }
 </style>

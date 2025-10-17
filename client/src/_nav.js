@@ -73,6 +73,11 @@ export default [
         name: 'Sample',
         to: '/zzun/Sample',
       },
+      {
+        component: 'CNavItem',
+        name: '설비관리',
+        to: '/zzun/Eqm',
+      },
     ],
   },
   {
@@ -144,6 +149,11 @@ export default [
         name: '공정 진행 현황',
         to: '/Minsu/prcsProgPrecon',
       },
+      {
+        component: 'CNavItem',
+        name: '공정 제어',
+        to: '/Minsu/procCtrl',
+      },
     ],
   },
   {
@@ -171,11 +181,6 @@ export default [
         component: 'CNavItem',
         name: '자재 관리',
         to: '/zooE/rsc-manage',
-      },
-      {
-        component: 'CNavItem',
-        name: '생산 지시',
-        to: '/zooE/menu1',
       },
     ],
   },

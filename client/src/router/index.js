@@ -75,6 +75,11 @@ const routes = [
             name: 'prcsProgPrecon',
             component: () => import('@/views/minsu/prcsProgPrecon.vue'),
           },
+          {
+            path: '/Minsu/procCtrl',
+            name: 'procCtrl',
+            component: () => import('@/views/minsu/procCtrl.vue'),
+          },
         ],
       },
       {
@@ -129,6 +134,11 @@ const routes = [
             path: '/zzun/Sample',
             name: 'sample',
             component: () => import('@/views/zzun/Sample.vue'),
+          },
+          {
+            path: '/zzun/Eqm',
+            name: '설비관리',
+            component: () => import('@/views/zzun/Eqm.vue'),
           },
         ],
       },
@@ -221,11 +231,6 @@ const routes = [
             path: '/zooE/rsc-manage',
             name: 'rscManage',
             component: () => import('@/views/zooE/rscManage.vue'),
-          },
-          {
-            path: '/zooE/menu1',
-            name: 'menu1',
-            component: () => import('@/views/zooE/menu1.vue'),
           },
         ],
       },
@@ -539,7 +544,7 @@ router.beforeEach(async (to) => {
     // fetchSession 실패해도 user는 null 유지
     try {
       await auth.fetchSession()
-    } catch { }
+    } catch {}
   }
 
   // 보호할 경로 목록
