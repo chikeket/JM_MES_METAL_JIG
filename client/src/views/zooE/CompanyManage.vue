@@ -4,7 +4,7 @@
       <CButton color="secondary" size="sm" @click="handleSearch" class="btn-search">조회</CButton>
       <CButton color="secondary" size="sm" @click="handleReset" class="btn-reset">초기화</CButton>
     </div>
-    
+
     <!-- 검색 필터 영역 -->
     <div class="search-filter-box mb-3">
       <CRow class="g-3">
@@ -26,11 +26,7 @@
         </CCol>
         <CCol :md="4">
           <CFormLabel class="form-label">업체명</CFormLabel>
-          <CFormInput
-            v-model="searchFilters.name"
-            size="sm"
-            class="form-input-enhanced"
-          />
+          <CFormInput v-model="searchFilters.name" size="sm" class="form-input-enhanced" />
         </CCol>
         <CCol :md="3">
           <CFormLabel class="form-label">상태</CFormLabel>
@@ -56,10 +52,15 @@
       <!-- 좌측: 데이터 그리드 -->
       <CCol :md="7" class="d-flex flex-column overflow-hidden pe-1">
         <!-- 히든 버튼 (우측 버튼과 높이 맞추기) -->
-        <div class="d-flex gap-2 mb-2" style="min-height: 50px; align-items: center; padding: 0.8rem 0;">
-          <CButton color="secondary" size="sm" class="btn-hidden" style="visibility: hidden;">숨김</CButton>
+        <div
+          class="d-flex gap-2 mb-2"
+          style="min-height: 50px; align-items: center; padding: 0.8rem 0"
+        >
+          <CButton color="secondary" size="sm" class="btn-hidden" style="visibility: hidden"
+            >숨김</CButton
+          >
         </div>
-        
+
         <div class="grid-box flex-grow-1 overflow-hidden d-flex flex-column">
           <div class="table-wrapper">
             <CTable bordered hover class="data-table">
@@ -98,28 +99,34 @@
       <!-- 우측: 상세 입력 폼 -->
       <CCol :md="5" class="d-flex flex-column overflow-hidden ps-1">
         <!-- 버튼 그룹 -->
-        <div class="d-flex gap-2 justify-content-end mb-2" style="min-height: 50px; align-items: center; padding: 0.8rem 0;">
+        <div
+          class="d-flex gap-2 justify-content-end mb-2"
+          style="min-height: 50px; align-items: center; padding: 0.8rem 0"
+        >
           <CButton color="secondary" size="sm" @click="handleNew" class="btn-action">신규</CButton>
           <CButton color="secondary" size="sm" @click="handleSave" class="btn-action">저장</CButton>
           <CButton color="danger" size="sm" @click="handleDelete" class="btn-action">삭제</CButton>
         </div>
-        
+
         <div class="form-box flex-grow-1 d-flex flex-column overflow-hidden">
-          <div class="p-3 flex-grow-1 overflow-auto">
+          <div class="p-3 flex-grow-1 overflow-hidden">
             <CRow class="g-3">
-              <!-- 좌측 열: 입력 필드들 -->
               <CCol :md="7">
-                <div v-for="field in leftFormFields" :key="field.key" class="form-row-horizontal mb-2">
+                <div
+                  v-for="field in leftFormFields"
+                  :key="field.key"
+                  class="form-row-horizontal mb-2-5"
+                >
                   <CFormLabel class="form-label-inline">{{ field.label }}</CFormLabel>
                   <!-- 일반 텍스트 입력 -->
                   <CFormInput
                     v-if="field.type === 'text'"
                     v-model="formData[field.key]"
                     size="sm"
-                    :placeholder="getPlaceholder(field.key)"
                     :disabled="field.key === 'id'"
                     class="form-input-enhanced"
                   />
+
                   <!-- 날짜 입력 -->
                   <CFormInput
                     v-else-if="field.type === 'date'"
@@ -132,7 +139,11 @@
               </CCol>
 
               <!-- 우측 열: 라디오 버튼들 -->
-              <CCol :md="5" class="d-flex flex-column justify-content-center">
+              <CCol
+                :md="5"
+                class="d-flex flex-column justify-content-start"
+                style="padding-left: 56px"
+              >
                 <div v-for="field in rightFormFields" :key="field.key" class="mb-4">
                   <CFormLabel class="form-label-radio">{{ field.label }}</CFormLabel>
                   <div class="radio-group-horizontal">
@@ -356,12 +367,12 @@ const resetFormData = () => {
 const getNextId = () => {
   console.log('현재 그리드 데이터:', gridData.value)
   console.log('그리드 데이터 개수:', gridData.value.length)
-  
+
   if (gridData.value.length > 0) {
     const lastId = gridData.value[gridData.value.length - 1].id
     console.log('마지막 ID:', lastId)
     const match = lastId.match(/^CO(\d+)$/)
-    
+
     if (match) {
       const lastNumber = parseInt(match[1])
       const nextNumber = lastNumber + 1
@@ -400,6 +411,7 @@ const handleSave = async () => {
 
   try {
     const sendData = {
+      co_id: formData.id,
       bizr_reg_no: formData.businessNo,
       co_nm: formData.name,
       rpstr_nm: formData.ceo,
@@ -464,7 +476,8 @@ const getTypeLabel = (type) => {
    기본 설정 및 컨테이너
    ============================================ */
 :deep(*) {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
+    sans-serif;
   line-height: 1.6;
   box-sizing: border-box;
 }
@@ -492,7 +505,8 @@ const getTypeLabel = (type) => {
 /* ============================================
    그리드 박스와 폼 박스 - 고정 높이 (10개 행)
    ============================================ */
-.grid-box, .form-box {
+.grid-box,
+.form-box {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
@@ -976,5 +990,21 @@ const getTypeLabel = (type) => {
   .form-box {
     height: calc(42px + 10 * 42px + 2px) !important;
   }
+}
+
+.mb-2-5 {
+  margin-bottom: 0.625rem; /* 10px */
+}
+
+.form-row-horizontal {
+  display: flex;
+  align-items: center; /* 수직 중앙 정렬 */
+  margin-bottom: 0.625rem; /* mb-2-5 */
+}
+
+input,
+label {
+  height: 36px;
+  line-height: 36px;
 }
 </style>

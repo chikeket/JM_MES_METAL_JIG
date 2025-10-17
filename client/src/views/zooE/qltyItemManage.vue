@@ -53,12 +53,12 @@
               <CTableHead>
                 <CTableRow>
                   <CTableHeaderCell style="width: 12%">항목코드</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 20%">항목명</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 18%">항목명</CTableHeaderCell>
                   <CTableHeaderCell style="width: 12%">타입</CTableHeaderCell>
                   <CTableHeaderCell style="width: 10%">버전</CTableHeaderCell>
                   <CTableHeaderCell style="width: 10%">상태</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 12%">기준치</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 12%">규격</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 13%">기준치</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 13%">규격</CTableHeaderCell>
                   <CTableHeaderCell style="width: 12%">단위</CTableHeaderCell>
                 </CTableRow>
               </CTableHead>
@@ -719,7 +719,7 @@ const handleDelete = async () => {
   font-size: 13px;
   font-weight: 400;
   vertical-align: middle;
-  padding: 0.75rem 0.75rem;
+  padding: 0.4rem 0.5rem;
   border-bottom: 1px solid #e2e8f0;
   color: #334155;
   height: 46px;
@@ -774,10 +774,12 @@ const handleDelete = async () => {
   width: 100%;
   border: 1.5px solid #e2e8f0;
   background: transparent;
-  padding: 0.4rem 0.6rem;
+  padding: 0.35rem 0.5rem;
   font-size: 13px;
   border-radius: 6px;
   transition: all 0.2s ease;
+  height: 32px;
+  box-sizing: border-box;
 }
 
 .cell-input:focus {
@@ -841,7 +843,8 @@ select.cell-input {
 
   .cell-input {
     font-size: 12px !important;
-    padding: 0.35rem 0.5rem !important;
+    padding: 0.3rem 0.45rem !important;
+    height: 30px !important;
   }
 
   .grid-box,
