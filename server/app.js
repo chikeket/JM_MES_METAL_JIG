@@ -44,6 +44,7 @@ const rcvordSearch = require("./routers/rcvordSearch_router.js"); // 수주 조�
 const deli = require("./routers/deli_router.js"); // 납품
 const deliSearch = require("./routers/deliSearch_router.js"); // 납품 조회
 const prcsProgPrecon = require("./routers/prcsProgPrecon.js"); // 공정 진행 현황
+const procCtrl = require("./routers/procCtrl.js"); // 공정 제어
 const rscOrdr = require("./routers/rscOrdr_router.js"); // 자재 발주
 const prdt = require("./routers/prdt_router.js"); // 제품
 const rsc = require("./routers/rsc_router.js"); // 자재
@@ -77,6 +78,7 @@ app.use("/", rcvordSearch); // 수주 조회
 app.use("/", deli); // 납품
 app.use("/", deliSearch); // 납품 조회
 app.use("/", prcsProgPrecon); // 공정 진행 현황
+app.use("/", procCtrl); // 공정 제어
 app.use("/", rsc); // 자재
 app.use("/", rscManage); // 자재관리
 app.use("/", prodPlan); // 생산계획

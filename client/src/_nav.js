@@ -144,6 +144,11 @@ export default [
         name: '공정 진행 현황',
         to: '/Minsu/prcsProgPrecon',
       },
+      {
+        component: 'CNavItem',
+        name: '공정 제어',
+        to: '/Minsu/procCtrl',
+      },
     ],
   },
   {
