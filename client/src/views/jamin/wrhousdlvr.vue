@@ -150,6 +150,7 @@
               <CTableHeaderCell class="text-center" style="width: 150px">옵션 명</CTableHeaderCell>
               <CTableHeaderCell class="text-center" style="width: 120px">규격</CTableHeaderCell>
               <CTableHeaderCell class="text-center" style="width: 70px">단위</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 70px">수불 명</CTableHeaderCell>
               <CTableHeaderCell class="text-center" style="width: 90px">총 수량</CTableHeaderCell>
               <CTableHeaderCell class="text-center" style="width: 120px">비고</CTableHeaderCell>
             </CTableRow>
@@ -169,6 +170,14 @@
               <CTableDataCell class="text-start"> {{ row.opt_name || '-' }} </CTableDataCell>
               <CTableDataCell class="text-center"> {{ row.spec }} </CTableDataCell>
               <CTableDataCell class="text-center"> {{ row.unit }} </CTableDataCell>
+              <CTableDataCell class="text-center">
+                <CFormInput
+                  v-model="row.rcvpay_nm"
+                  size="sm"
+                  placeholder="수불 명"
+                  style="min-width: 120px"
+                />
+              </CTableDataCell>
               <CTableDataCell class="text-end"> {{ Math.round(row.total_qty) }} </CTableDataCell>
               <CTableDataCell class="text-center">
                 <CFormInput
@@ -248,29 +257,29 @@ const consolidatedRows = computed(() => {
 
   // 데이터 수집 로직 개선
   let rowsToProcess = []
-  
+
   // 1. BOM 자재가 있는 경우 (자재 불출)
   if (bomMaterials.value && bomMaterials.value.length > 0) {
     // 체크된 생산지시들의 inspect_id 목록 추출
     const checkedProductionOrderIds = checkedRows
-      .filter(row => row.id.includes('_PROD_ORDER_'))
-      .map(row => row.inspect_id)
-    
+      .filter((row) => row.id.includes('_PROD_ORDER_'))
+      .map((row) => row.inspect_id)
+
     console.log('[wrhousdlvr] 체크된 생산지시 ID 목록:', checkedProductionOrderIds)
-    
+
     // 체크된 생산지시에 해당하는 BOM 자재만 필터링
-    const filteredBomMaterials = bomMaterials.value.filter(material => 
-      checkedProductionOrderIds.includes(material.inspect_id)
+    const filteredBomMaterials = bomMaterials.value.filter((material) =>
+      checkedProductionOrderIds.includes(material.inspect_id),
     )
-    
+
     console.log('[wrhousdlvr] 필터링된 BOM 자재:', filteredBomMaterials.length, '건')
-    
+
     // 자재 불출의 경우: 체크된 생산지시에 해당하는 BOM 자재만 하단에 표시
     rowsToProcess.push(...filteredBomMaterials)
   }
-  
+
   // 2. 일반 출고서들 추가 (완제품 납품 등) - 자재 불출이 아닌 것들만
-  const regularDeliveryRows = checkedRows.filter(row => {
+  const regularDeliveryRows = checkedRows.filter((row) => {
     // 생산지시 타입이 아닌 것들만 (완제품 납품, 일반 출고 등)
     return !row.id.includes('_PROD_ORDER_')
   })
@@ -279,12 +288,22 @@ const consolidatedRows = computed(() => {
   console.log('[wrhousdlvr] 하단 그리드 처리할 데이터:', {
     체크된_행_수: checkedRows.length,
     전체_BOM_자재_수: (bomMaterials.value || []).length,
-    필터링된_BOM_자재_수: bomMaterials.value ? bomMaterials.value.filter(m => 
-      checkedRows.filter(r => r.id.includes('_PROD_ORDER_')).map(r => r.inspect_id).includes(m.inspect_id)
-    ).length : 0,
+    필터링된_BOM_자재_수: bomMaterials.value
+      ? bomMaterials.value.filter((m) =>
+          checkedRows
+            .filter((r) => r.id.includes('_PROD_ORDER_'))
+            .map((r) => r.inspect_id)
+            .includes(m.inspect_id),
+        ).length
+      : 0,
     일반_출고서_수: regularDeliveryRows.length,
     총_처리_행_수: rowsToProcess.length,
-    처리할_데이터: rowsToProcess.map(r => ({ id: r.id, type: r.type, name: r.name, inspect_id: r.inspect_id }))
+    처리할_데이터: rowsToProcess.map((r) => ({
+      id: r.id,
+      type: r.type,
+      name: r.name,
+      inspect_id: r.inspect_id,
+    })),
   })
 
   rowsToProcess.forEach((row) => {
@@ -316,7 +335,7 @@ const consolidatedRows = computed(() => {
   const result = Object.values(consolidated)
   console.log('[wrhousdlvr] consolidatedRows 계산됨:', {
     통합된_품목_수: result.length,
-    결과: result
+    결과: result,
   })
   return result
 })
@@ -325,38 +344,42 @@ const consolidatedRows = computed(() => {
 const finalConsolidatedRows = ref([])
 
 // consolidatedRows가 변경될 때마다 LOT 할당 수행
-watch(consolidatedRows, async (newRows) => {
-  if (mode.value === 'out' && newRows.length > 0) {
-    console.log('[wrhousdlvr] 출고 모드 - LOT 할당 시작')
-    await performLotAllocation(newRows)
-  } else {
-    finalConsolidatedRows.value = newRows
-  }
-}, { immediate: true })
+watch(
+  consolidatedRows,
+  async (newRows) => {
+    if (mode.value === 'out' && newRows.length > 0) {
+      console.log('[wrhousdlvr] 출고 모드 - LOT 할당 시작')
+      await performLotAllocation(newRows)
+    } else {
+      finalConsolidatedRows.value = newRows
+    }
+  },
+  { immediate: true },
+)
 
 // LOT 할당 수행 함수
 const performLotAllocation = async (rows) => {
   try {
     const finalRows = []
-    
+
     for (const row of rows) {
       try {
         console.log('[wrhousdlvr] LOT 할당 요청:', {
           type: row.type,
           code: row.code,
           opt_code: row.opt_code,
-          qty: row.total_qty
+          qty: row.total_qty,
         })
-        
+
         const lotResult = await getLotAllocations(
           row.type,
           row.code,
           row.opt_code || '',
-          row.total_qty
+          row.total_qty,
         )
-        
+
         console.log('[wrhousdlvr] LOT 할당 응답:', lotResult)
-        
+
         if (lotResult.success && lotResult.allocations.length > 0) {
           // LOT 할당 결과를 기반으로 여러 행 생성
           lotResult.allocations.forEach((allocation, index) => {
@@ -366,29 +389,29 @@ const performLotAllocation = async (rows) => {
               lot: allocation.lot_no,
               total_qty: allocation.allocated_qty,
               warehouse_id: allocation.warehouse_id,
-              zone_id: allocation.zone_id
+              zone_id: allocation.zone_id,
             })
           })
-          
+
           console.log('[wrhousdlvr] LOT 할당 성공:', {
             item: row.name,
             allocations: lotResult.allocations.length,
-            fully_allocated: lotResult.summary.fully_allocated
+            fully_allocated: lotResult.summary.fully_allocated,
           })
-          
+
           // 할당되지 않은 수량이 있는 경우 부족 알림
           if (!lotResult.summary.fully_allocated) {
             console.warn(`[wrhousdlvr] ${row.name} - 수량 부족:`, {
               요청: lotResult.summary.requested_qty,
               할당: lotResult.summary.allocated_qty,
-              부족: lotResult.summary.shortage_qty
+              부족: lotResult.summary.shortage_qty,
             })
           }
         } else {
           // LOT 할당 실패 시 원본 데이터 유지 (LOT 없음 표시)
           finalRows.push({
             ...row,
-            lot: '할당불가'
+            lot: '할당불가',
           })
           console.warn('[wrhousdlvr] LOT 할당 실패:', row.name)
         }
@@ -396,19 +419,18 @@ const performLotAllocation = async (rows) => {
         console.error(`[wrhousdlvr] ${row.name} LOT 할당 실패:`, error)
         finalRows.push({
           ...row,
-          lot: '오류'
+          lot: '오류',
         })
       }
     }
-    
+
     finalConsolidatedRows.value = finalRows
-    
+
     console.log('[wrhousdlvr] LOT 할당 완료:', {
       원본_품목_수: rows.length,
       최종_행_수: finalRows.length,
-      최종_데이터: finalRows
+      최종_데이터: finalRows,
     })
-    
   } catch (error) {
     console.error('[wrhousdlvr] LOT 할당 처리 실패:', error)
     finalConsolidatedRows.value = rows
@@ -599,17 +621,17 @@ const updateDetailTotals = () => {
 const getLotAllocations = async (itemType, itemCode, itemOptCode, quantity) => {
   try {
     console.log('[wrhousdlvr] LOT 할당 조회 시작:', { itemType, itemCode, itemOptCode, quantity })
-    
+
     const params = {
       item_type: itemType,
       item_code: itemCode,
       item_opt_code: itemOptCode || '',
-      quantity: quantity
+      quantity: quantity,
     }
-    
+
     const response = await axios.get('/api/warehouse/lots/allocations', { params })
     console.log('[wrhousdlvr] LOT 할당 조회 응답:', response.data)
-    
+
     return response.data
   } catch (error) {
     console.error('[wrhousdlvr] LOT 할당 조회 실패:', error)
@@ -620,8 +642,8 @@ const getLotAllocations = async (itemType, itemCode, itemOptCode, quantity) => {
         requested_qty: quantity,
         allocated_qty: 0,
         fully_allocated: false,
-        shortage_qty: quantity
-      }
+        shortage_qty: quantity,
+      },
     }
   }
 }
@@ -630,12 +652,12 @@ const getLotAllocations = async (itemType, itemCode, itemOptCode, quantity) => {
 const onQuantityInput = (row, event) => {
   const value = Math.round(Number(event.target.value) || 0)
   row.qty = value
-  
+
   // 자재 불출의 경우: 완제품 수량 변경 시 관련 BOM 자재 수량도 업데이트
   if (row.id && row.id.includes('_PROD_ORDER_') && bomMaterials.value) {
     updateBomMaterialQuantities(row)
   }
-  
+
   updateDetailTotals()
 }
 
@@ -645,12 +667,12 @@ const onQuantityChange = (row) => {
   if (row.qty && typeof row.qty === 'number') {
     row.qty = Math.round(row.qty)
   }
-  
+
   // 자재 불출의 경우: 완제품 수량 변경 시 관련 BOM 자재 수량도 업데이트
   if (row.id && row.id.includes('_PROD_ORDER_') && bomMaterials.value) {
     updateBomMaterialQuantities(row)
   }
-  
+
   updateDetailTotals()
 }
 
@@ -658,32 +680,34 @@ const onQuantityChange = (row) => {
 const updateBomMaterialQuantities = (productionOrderRow) => {
   const productionOrderId = productionOrderRow.inspect_id
   const newProductionQty = Math.round(productionOrderRow.qty || 0)
-  
+
   console.log('[wrhousdlvr] BOM 자재 수량 업데이트:', {
     생산지시_ID: productionOrderId,
-    새로운_생산수량: newProductionQty
+    새로운_생산수량: newProductionQty,
   })
-  
+
   // 해당 생산지시에 속한 BOM 자재들의 수량을 재계산
   if (bomMaterials.value) {
-    bomMaterials.value.forEach(material => {
+    bomMaterials.value.forEach((material) => {
       if (material.inspect_id === productionOrderId) {
         // 원본 BOM 수량 (단위 수량당)
         const unitBomQty = material.bom_qty || material.rec_qy || 1
         // 새로운 총 필요 수량 = 단위 BOM 수량 × 생산 수량 (올림 처리)
         const newMaterialQty = Math.ceil(unitBomQty * newProductionQty)
-        
+
         console.log('[wrhousdlvr] 자재 수량 재계산:', {
           자재_코드: material.code,
           자재_명: material.name,
           단위_BOM_수량: unitBomQty,
           생산_수량: newProductionQty,
-          정확한_계산값: (unitBomQty * newProductionQty),
+          정확한_계산값: unitBomQty * newProductionQty,
           계산된_자재_수량: newMaterialQty,
           기존_자재_수량: material.qty,
-          계산식: `${unitBomQty} × ${newProductionQty} = ${unitBomQty * newProductionQty} → 올림 ${newMaterialQty}`
+          계산식: `${unitBomQty} × ${newProductionQty} = ${
+            unitBomQty * newProductionQty
+          } → 올림 ${newMaterialQty}`,
         })
-        
+
         // 자재 수량 업데이트
         material.qty = newMaterialQty
       }
@@ -703,10 +727,10 @@ const onReset = () => {
   summaryRows.value = []
   selectedSummaryIds.value = []
   mode.value = 'in'
-  
+
   // BOM 자재 데이터도 초기화
   bomMaterials.value = []
-  
+
   console.log('[wrhousdlvr] 전체 초기화 완료 (BOM 자재 포함)')
 }
 
@@ -757,7 +781,8 @@ const onSelectInspection = async (inspectionList) => {
 
   // 요약 테이블에 선택된 검사서들 정보 누적 추가 (기존 데이터 유지)
   const newSummaryRows = inspectionList.map((inspection, index) => ({
-    id: inspection.insp_no + '_' + (inspection.opt_code || 'NO_OPT') + '_' + Date.now() + '_' + index, // 완전 고유 ID 생성
+    id:
+      inspection.insp_no + '_' + (inspection.opt_code || 'NO_OPT') + '_' + Date.now() + '_' + index, // 완전 고유 ID 생성
     inspect_id: inspection.insp_no,
     type: inspection.item_type || getItemTypeByInspType(inspection.insp_type),
     code: inspection.item_code || inspection.rsc_id,
@@ -846,7 +871,7 @@ const updateWarehouseLocationInfo = async (rows) => {
 
   // Vue의 반응성 시스템 강제 업데이트
   summaryRows.value = [...summaryRows.value]
-  
+
   // BOM 자재 배열도 업데이트는 이미 reactive 이므로 불필요
 }
 
@@ -900,15 +925,30 @@ const handleMaterialWithdrawal = async (deliveryList) => {
         pass_qty: delivery.pass_qty,
         insp_qty: delivery.insp_qty,
         rec_qy: delivery.rec_qy,
-        프로퍼티_목록: Object.keys(delivery)
+        프로퍼티_목록: Object.keys(delivery),
       })
-      
+
       // 수량 필드 모두 확인 (서버에서 drct_qy as required_qty로 전달됨)
-      const qty = delivery.required_qty || delivery.pass_qty || delivery.insp_qty || delivery.rec_qy || delivery.qty || delivery.total_qty || delivery.order_qty || 1
+      const qty =
+        delivery.required_qty ||
+        delivery.pass_qty ||
+        delivery.insp_qty ||
+        delivery.rec_qy ||
+        delivery.qty ||
+        delivery.total_qty ||
+        delivery.order_qty ||
+        1
       console.log('[wrhousdlvr] 최종 사용할 수량:', qty)
-      
+
       return {
-        id: delivery.insp_no + '_PROD_ORDER_' + (delivery.opt_code || 'NO_OPT') + '_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        id:
+          delivery.insp_no +
+          '_PROD_ORDER_' +
+          (delivery.opt_code || 'NO_OPT') +
+          '_' +
+          Date.now() +
+          '_' +
+          Math.random().toString(36).substr(2, 9),
         inspect_id: delivery.insp_no, // 생산지시 ID
         type: delivery.item_type || getItemTypeByInspType(delivery.insp_type), // 원래 품목 유형 유지
         code: delivery.item_code || delivery.rsc_id,
@@ -943,32 +983,57 @@ const handleMaterialWithdrawal = async (deliveryList) => {
       const materials = response.data || []
 
       console.log(`[wrhousdlvr] 조회된 자재 수:`, materials.length)
-      
+
       // 생산지시의 현재 수량 (완제품 수량) - 먼저 선언 (서버에서 drct_qy as required_qty로 전달됨)
-      const productionQty = Math.round(delivery.required_qty || delivery.pass_qty || delivery.insp_qty || delivery.rec_qy || delivery.qty || delivery.total_qty || delivery.order_qty || 1)
-      
+      const productionQty = Math.round(
+        delivery.required_qty ||
+          delivery.pass_qty ||
+          delivery.insp_qty ||
+          delivery.rec_qy ||
+          delivery.qty ||
+          delivery.total_qty ||
+          delivery.order_qty ||
+          1,
+      )
+
       // BOM 데이터 로그 출력
       if (materials.length > 0) {
-        console.log('[wrhousdlvr] BOM 자재 상세:', materials.map(m => ({
-          자재명: m.item_name,
-          BOM_단위수량: m.bom_qty,
-          생산수량: productionQty,
-          서버계산값: m.required_qty,
-          계산식: `${m.bom_qty} × ${productionQty} = ${m.bom_qty * productionQty} → 서버올림 ${m.required_qty}`,
-          최종표시수량: Math.ceil(m.required_qty || m.remaining_qty || (m.bom_qty * productionQty))
-        })))
+        console.log(
+          '[wrhousdlvr] BOM 자재 상세:',
+          materials.map((m) => ({
+            자재명: m.item_name,
+            BOM_단위수량: m.bom_qty,
+            생산수량: productionQty,
+            서버계산값: m.required_qty,
+            계산식: `${m.bom_qty} × ${productionQty} = ${m.bom_qty * productionQty} → 서버올림 ${
+              m.required_qty
+            }`,
+            최종표시수량: Math.ceil(m.required_qty || m.remaining_qty || m.bom_qty * productionQty),
+          })),
+        )
       }
-      
+
       // 각 자재를 별도 데이터로 저장 (하단 그리드용)
       const materialRows = materials.map((material, matIndex) => {
         // 원본 BOM 단위 수량 (1개 생산 시 필요한 자재 수량)
         const unitBomQty = material.bom_qty || material.rec_qy || 1
-        
+
         // 서버에서 계산된 총 필요 자재 수량 사용 (이미 올림 처리됨)
-        const totalRequiredQty = Math.ceil(material.required_qty || material.remaining_qty || (unitBomQty * productionQty))
-        
+        const totalRequiredQty = Math.ceil(
+          material.required_qty || material.remaining_qty || unitBomQty * productionQty,
+        )
+
         return {
-          id: delivery.insp_no + '_MATERIAL_' + material.item_code + '_' + Date.now() + '_' + matIndex + '_' + Math.random().toString(36).substr(2, 9),
+          id:
+            delivery.insp_no +
+            '_MATERIAL_' +
+            material.item_code +
+            '_' +
+            Date.now() +
+            '_' +
+            matIndex +
+            '_' +
+            Math.random().toString(36).substr(2, 9),
           inspect_id: delivery.insp_no, // 생산지시 ID
           type: '자재',
           code: material.item_code || material.rsc_id,
@@ -999,7 +1064,9 @@ const handleMaterialWithdrawal = async (deliveryList) => {
     console.log(`[wrhousdlvr] 총 변환된 자재 수:`, allMaterials.length)
 
     // 상단 그리드 업데이트 - 생산지시만 추가 (중복 제거)
-    const existingKeys = summaryRows.value.map((row) => `${row.inspect_id}_${row.code}_${row.opt_code || 'NO_OPT'}`)
+    const existingKeys = summaryRows.value.map(
+      (row) => `${row.inspect_id}_${row.code}_${row.opt_code || 'NO_OPT'}`,
+    )
 
     const uniqueNewRows = directOrderRows.filter((row) => {
       const key = `${row.inspect_id}_${row.code}_${row.opt_code || 'NO_OPT'}`
@@ -1015,14 +1082,14 @@ const handleMaterialWithdrawal = async (deliveryList) => {
     if (!bomMaterials.value) {
       bomMaterials.value = []
     }
-    
+
     // 중복 제거 후 BOM 자재 추가
     const existingMaterialKeys = bomMaterials.value.map((row) => `${row.inspect_id}_${row.code}`)
     const uniqueMaterials = allMaterials.filter((row) => {
       const key = `${row.inspect_id}_${row.code}`
       return !existingMaterialKeys.includes(key)
     })
-    
+
     bomMaterials.value.push(...uniqueMaterials)
 
     // 새로 추가된 생산지시들을 기본 선택 상태로 설정 (상단 그리드 표시용)
@@ -1045,7 +1112,16 @@ const handleRegularDelivery = async (deliveryList) => {
 
   // 요약 테이블에 선택된 출고서들 정보 누적 추가
   const newSummaryRows = deliveryList.map((delivery, index) => ({
-    id: delivery.insp_no + '_DELIVERY_' + (delivery.opt_code || 'NO_OPT') + '_' + Date.now() + '_' + index + '_' + Math.random().toString(36).substr(2, 9),
+    id:
+      delivery.insp_no +
+      '_DELIVERY_' +
+      (delivery.opt_code || 'NO_OPT') +
+      '_' +
+      Date.now() +
+      '_' +
+      index +
+      '_' +
+      Math.random().toString(36).substr(2, 9),
     inspect_id: delivery.insp_no,
     type: delivery.item_type || getItemTypeByInspType(delivery.insp_type),
     code: delivery.item_code || delivery.rsc_id,
@@ -1062,7 +1138,10 @@ const handleRegularDelivery = async (deliveryList) => {
     location_id: '',
     location_name: '',
     // 납품서 관련 필드 추가 - deliveryDetail 타입인 경우 insp_no가 납품서 상세 ID
-    deli_deta_id: delivery.insp_type === 'deliveryDetail' ? delivery.insp_no : (delivery.deli_deta_id || delivery.deli_id || null),
+    deli_deta_id:
+      delivery.insp_type === 'deliveryDetail'
+        ? delivery.insp_no
+        : delivery.deli_deta_id || delivery.deli_id || null,
   }))
 
   // 중복 검사서 제거 후 누적
@@ -1152,6 +1231,7 @@ const onSave = async () => {
         warehouse_id: item.warehouse_id,
         zone_id: item.location_id,
         total_qty: Number(item.total_qty) || 0,
+        rcvpay_nm: item.rcvpay_nm || '', // 수불 명 추가 (하단 그리드에서 입력한 값)
         emp_id: ownerEmpId.value,
         emp_name: ownerName.value,
         rcvpay_dt: new Date().toISOString().split('T')[0],
