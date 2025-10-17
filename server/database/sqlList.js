@@ -79,9 +79,8 @@ module.exports = {
   ...prdt,
   ...rscOrdr,
   ...rscManage,
-  ...companyManage,
   ...co,
-  ...companyManage, // 추가!
+  ...companyManage,
   ...rcvord,
   ...emp,
   ...acct,
@@ -95,9 +94,6 @@ module.exports = {
   ...qltyItem,
   ...qltyItemManage,
   ...wrhousdlvr,
-
-  // ...SSMManage,
-
   ...wrhousManage,
   ...wrhousZoneManage,
   ...routingInfo,

@@ -36,7 +36,6 @@ const companyManage = require("./routers/companyManage_router.js"); // 업체관
 const prdtManage = require("./routers/prdtManage_router.js"); // 제품관리
 const rscManage = require("./routers/rscManage_router.js"); // 자재관리
 const qltyItemManage = require("./routers/qltyItemManage_router.js"); // 품질항목관리
-// const SSMManage = require("./routers/SSMManage_router.js"); // 생산지시관리
 
 const instruction = require("./routers/instruction_router.js"); // 생산지시
 const rcvord = require("./routers/rcvord_router.js"); // 수주
@@ -90,8 +89,6 @@ app.use("/", qltyItem); // 품질항목 기준정보
 app.use("/", qltyItemManage); // 품질항목관리
 app.use("/", companyManage); // 업체관리 추가!
 app.use("/", wrhousdlvr); // 창고 입출고
-
-// app.use("/", SSMManage); // 생산지시관리
 
 app.use("/", wrhousManage); // 창고 기준정보 관리
 app.use("/", wrhousZoneManage); // 창고 로케이션 기준정보 관리
