@@ -123,6 +123,8 @@ function onReset() {
 }
 
 function onClose() {
+  // 모달을 닫을 때 검색 조건을 초기화해서, 다음에 열면 전체조회가 되도록 처리
+  keyword.value = ''
   visible.value = false
 }
 

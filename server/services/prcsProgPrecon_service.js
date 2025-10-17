@@ -27,9 +27,43 @@ async function getEqmList() {
   return rows;
 }
 
+async function getPrcsById(prcsId) {
+  if (!prcsId) return null;
+  const rows = await mariadb.query("prcsProgPreconPrcsById", [prcsId]);
+  return rows && rows[0] ? rows[0] : null;
+}
+
+async function getMoldList(keyword = "") {
+  const kw = (keyword || "").trim();
+  const rows = await mariadb.query("prcsProgPreconMoldList", [kw, kw, kw]);
+  return rows;
+}
+
+async function getRunTargetQtyByDetaId(prodDrctDetaId) {
+  if (!prodDrctDetaId) return 0;
+  const rows = await mariadb.query("prcsProgPreconRunTargetByDeta", [
+    prodDrctDetaId,
+  ]);
+  const v = rows && rows[0] ? rows[0].prod_expc_qy : 0;
+  return Number(v) || 0;
+}
+
+async function getRunTargetQtyListByDetaId(prodDrctDetaId) {
+  if (!prodDrctDetaId) return [];
+  const rows = await mariadb.query("prcsProgPreconRunTargetListByDeta", [
+    prodDrctDetaId,
+  ]);
+  // 반환값은 숫자 배열로 변환
+  return (rows || []).map((r) => Number(r.prod_expc_qy) || 0);
+}
+
 module.exports = {
   searchProdDrct,
   getMainList,
   getEmpList,
   getEqmList,
+  getPrcsById,
+  getMoldList,
+  getRunTargetQtyByDetaId,
+  getRunTargetQtyListByDetaId,
 };

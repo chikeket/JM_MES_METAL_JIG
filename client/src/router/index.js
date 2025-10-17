@@ -75,6 +75,11 @@ const routes = [
             name: 'prcsProgPrecon',
             component: () => import('@/views/minsu/prcsProgPrecon.vue'),
           },
+          {
+            path: '/Minsu/procCtrl',
+            name: 'procCtrl',
+            component: () => import('@/views/minsu/procCtrl.vue'),
+          },
         ],
       },
       {
@@ -539,7 +544,7 @@ router.beforeEach(async (to) => {
     // fetchSession 실패해도 user는 null 유지
     try {
       await auth.fetchSession()
-    } catch { }
+    } catch {}
   }
 
   // 보호할 경로 목록

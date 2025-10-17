@@ -16,6 +16,9 @@ const deli = require("./sqls/deli.js");
 // 공정 진행 현황 관련 쿼리
 const prcsProgPrecon = require("./sqls/prcsProgPrecon.js");
 
+// 공정 제어 관련 쿼리
+const procCtrl = require("./sqls/procCtrl.js");
+
 // 계정 관련 쿼리
 const acct = require("./sqls/acct.js");
 
@@ -101,4 +104,5 @@ module.exports = {
   ...prcs,
   ...prcsProgPrecon,
   ...semiPrdtQltyInsp,
+  ...procCtrl,
 };
