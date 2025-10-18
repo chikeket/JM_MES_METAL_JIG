@@ -203,14 +203,14 @@ watch(
 )
 
 const selectOrdr = (prdts) => {
-  console.log(prdts)
+  // console.log(prdts)
   inspectItems.value = []
   form.value.prdt_nm = prdts.searchParams.prdt_nm
   form.value.opt_nm = prdts.searchParams.opt_nm
   form.value.qy = Math.floor(prdts.searchParams.bePass_qy)
   form.value.insp_qy = Math.floor(prdts.searchParams.insp_qy) || 0
   form.value.pass_qy = Math.floor(prdts.searchParams.pass_qy) || 0
-  form.value.rm = prdts.searchParams.rm || ''
+  form.value.rm = !prdts.searchParams.rm ? '' : prdts.searchParams.rm
   form.value.prcs_ctrl_id = prdts.searchParams.prcs_ctrl_id
   form.value.end_prdt_qlty_insp_id = prdts.searchParams.end_prdt_qlty_insp_id
 
@@ -224,6 +224,7 @@ const selectOrdr = (prdts) => {
       qlty_item_mng_id: prdt.qlty_item_mng_id,
       end_prdt_qlty_insp_id: prdt.end_prdt_qlty_insp_id,
     })
+    console.log(form.value)
 }
 
 const saveInspection = async () => {
@@ -267,7 +268,7 @@ const update = async () => {
     })
   const payload = {
     master: {
-      rm: form.value.note,
+      rm: form.value.rm,
       prcs_ctrl_id: form.value.prcs_ctrl_id,
       emp_id: form.value.emp_id,
       infer_qy: defectQty.value,
@@ -309,13 +310,13 @@ const newFunc = async () => {
   // form.value.emp_id = '';
   // form.value.emp_nm = '';
   form.value.prdt_nm = ''
-  form.value.insp_dt = userDateUtils.dateFormat(new Date(), 'yyyy-MM-dd')
+  form.value.opt_nm = ''
+  form.value.qy = 0  
   form.value.insp_qy = 0
-  form.value.note = ''
-  form.value.qy = 0
-  form.value.rcs_nm = ''
-  form.value.rsc_ordr_deta_id = ''
-  form.value.rsc_qlty_insp_id = ''
+  form.value.insp_dt = userDateUtils.dateFormat(new Date(), 'yyyy-MM-dd')
+  form.value.rm = ''
+  form.value.prcs_ctrl_id = ''
+  form.value.end_prdt_qlty_insp_id = ''
   inspectItems.value = []
 }
 </script>

@@ -27,4 +27,18 @@ router.get("/waitingPrdtQltyDeta", async (req, res) => {
     // res.json(prdtList);
 });
 
+//품질검사 조회페이지 검색
+router.get("/qltyBoardListSearch", async (req, res) => {
+    // console.log("클라에서온값");
+    // console.log(req.query);
+    // req.query;
+    let prdtList = await service
+        .qltyBoardListSearch(req.query)
+        .catch((err) => console.log(err));
+    // console.log("클라로갈값");
+    // console.log(prdtList);
+    res.send(prdtList);
+    // res.json(prdtList);
+});
+
 module.exports = router;

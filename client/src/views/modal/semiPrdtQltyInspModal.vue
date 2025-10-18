@@ -81,7 +81,7 @@ const prdtSearch = async () => {
   }
   console.log(params)
   let result = await axios
-    .get('/api/endPrdtQltyInspSearch', { params })
+    .get('/api/semiPrdtQltyInspSearch', { params })
     .catch((err) => console.log(err))
   console.log(result.data)
   prdtList.value = result.data

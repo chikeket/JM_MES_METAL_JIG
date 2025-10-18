@@ -124,7 +124,7 @@ const deleteProdPlanManage = async (Info) => {
     conn = await mariadb.getConnection();
     await conn.beginTransaction();
 
-    // resDrctId = await mariadb.query("instructionDelete", [Info.prod_drct_id]);
+    resInfo = await mariadb.query("prodPlanManageDelete", [Info.prod_plan_id]);
 
     await conn.commit();
     let result = null;

@@ -29,7 +29,32 @@ const waitingPrdtQltyDeta = async (Info) => {
     return list;
 };
 
+// 품질검사 조회페이지 검색
+const qltyBoardListSearch = async (Info) => {
+    console.log('서비스쪽임');
+    console.log(Info);
+    const origin = Info;
+    const { type, ...filtered } = origin
+    let querys = '';
+    if (Info.type == '자재') {
+        querys = 'rscQltyBoardList'
+    } else if (Info.type == '완제품') {
+        querys = 'endPrdtQltyBoardList'
+    } else {
+        querys = 'semiPrdtQltyBoardList'
+    }
+    console.log(filtered)
+    const arr = [...Object.values(filtered)];
+    console.log(arr)
+    let list = await mariadb
+        .query(querys, arr)
+        .catch((err) => console.log(err));
+    // console.log("조회 결과:", list);
+    return list;
+};
+
 module.exports = {
     rscQltyDetaData,
     waitingPrdtQltyDeta,
+    qltyBoardListSearch,
 };

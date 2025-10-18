@@ -83,14 +83,14 @@ const prdtSearch = async () => {
   let result = await axios
     .get('/api/endPrdtQltyInspSearch', { params })
     .catch((err) => console.log(err))
-  console.log(result.data)
+  // console.log(result.data)
   prdtList.value = result.data
 }
 
 const selectProduct = async (prdts) => {
   const params = { end_prdt_qlty_insp_id: '' }
   params.end_prdt_qlty_insp_id = prdts.end_prdt_qlty_insp_id
-
+console.log(prdts)
   let result = await axios
     .get('/api/endPrdtQltyInspInferSearch', { params })
     .catch((err) => console.log(err))

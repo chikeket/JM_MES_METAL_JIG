@@ -72,6 +72,7 @@ SELECT
  b.emp_nm,
  f.co_nm,
  d.rsc_nm,
+ d.unit,
  c.rsc_id,
  c.qy,
  a.insp_qy,

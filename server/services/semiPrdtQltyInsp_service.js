@@ -127,7 +127,7 @@ const semiPrdtQltyInspDelete = async (Info) => {
     let queryResult = null;
 
     queryResult = await mariadb.query("semiPrdtQltyInspDelete", [
-      Info.end_prdt_qlty_insp_id,
+      Info.semi_prdt_qlty_insp_id,
     ]);
 
     await conn.commit();

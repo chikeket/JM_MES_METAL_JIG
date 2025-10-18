@@ -116,6 +116,11 @@ export default [
         name: '생산계획',
         to: '/product/prodPlanManage',
       },
+      {
+        component: 'CNavItem',
+        name: '품질조회페이지',
+        to: '/qlty/qltyBoardList',
+      },
     ],
   },
   {
