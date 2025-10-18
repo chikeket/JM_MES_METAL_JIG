@@ -38,4 +38,61 @@ const procCtrlInsert = `
 module.exports = {
   procCtrlNewId,
   procCtrlInsert,
+  // 금형 상태를 'P1'로 변경
+  procCtrlUpdateMoldStatusP1: `
+		UPDATE mold
+		SET st = 'P1'
+		WHERE mold_id = ?
+	`,
+  // 금형 상태를 'P2'로 변경
+  procCtrlUpdateMoldStatusP2: `
+		UPDATE mold
+		SET st = 'P2'
+		WHERE mold_id = ?
+	`,
+  // 설비 상태를 'Q1'로 변경
+  procCtrlUpdateEqmStatusQ1: `
+		UPDATE eqm
+		SET st = 'Q1'
+		WHERE eqm_id = ?
+	`,
+  // 설비 상태를 'Q2'로 변경
+  procCtrlUpdateEqmStatusQ2: `
+		UPDATE eqm
+		SET st = 'Q2'
+		WHERE eqm_id = ?
+	`,
+  // 시작 가드용 현재 상태 조회 쿼리들
+  procCtrlGetPrcsProgPreconStatus: `
+		SELECT st FROM prcs_prog_precon WHERE prcs_prog_precon_id = ?
+	`,
+  procCtrlGetEqmStatus: `
+		SELECT st FROM eqm WHERE eqm_id = ?
+	`,
+  procCtrlGetMoldStatus: `
+		SELECT st FROM mold WHERE mold_id = ?
+	`,
+  // 종료 시 전체 값 INSERT (wk_fr_dt, wk_to_dt 모두 설정, rm는 NULL)
+  procCtrlInsertFull: `
+		INSERT INTO proc_ctrl (
+			prcs_ctrl_id,
+			prcs_prog_precon_id,
+			prcs_ord,
+			mold_id,
+			eqm_id,
+			emp_id,
+			inpt_qy,
+			prod_qy,
+			infer_qy,
+			pass_qy,
+			wk_fr_dt,
+			wk_to_dt,
+			rm
+		) VALUES (
+			?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+			STR_TO_DATE(?, '%Y-%m-%d %H:%i:%s'),
+			STR_TO_DATE(?, '%Y-%m-%d %H:%i:%s'),
+			NULL
+		)
+	`,
 };

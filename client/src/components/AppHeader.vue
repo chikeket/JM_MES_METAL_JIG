@@ -44,11 +44,11 @@ onMounted(() => {
       <CHeaderToggler @click="sidebar.toggleVisible()" style="margin-inline-start: -14px">
         <CIcon icon="cil-menu" size="lg" />
       </CHeaderToggler>
-      <CHeaderNav class="d-none d-md-flex">
+      <!-- <CHeaderNav class="d-none d-md-flex">
         <CNavItem>
           <CNavLink href="/dashboard"> Dashboard </CNavLink>
         </CNavItem>
-      </CHeaderNav>
+      </CHeaderNav> -->
       <CHeaderNav class="ms-auto align-items-center gap-2 auth-area">
         <template v-if="auth.user">
           <span class="emp-name">{{ auth.user.emp_nm }}</span>
