@@ -66,6 +66,12 @@ set
  ,prod_plan_id = ?
 where prod_plan_deta_id = ?`;
 
+const prodPlanManageDelete =
+  //
+  `delete
+from prod_plan
+where prod_plan_id = ?`;
+
 module.exports = {
   prodPlanManageIdCreate,
   prodPlanManageInsert,
@@ -73,4 +79,5 @@ module.exports = {
   prodPlanManageInsertDetail,
   prodPlanManageUpdate,
   prodPlanManageUpdateDetail,
+  prodPlanManageDelete,
 };
