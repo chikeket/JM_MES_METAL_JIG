@@ -509,6 +509,13 @@ function buildCutoffDt(dateOnly) {
 }
 async function onSave() {
   try {
+    // 클라이언트 선체크: 제품/옵션별 요청합이 재고보다 큰지 확인
+    const stockOk = await validateStockBeforeSave()
+    if (!stockOk) {
+      alert('재고가 부족합니다.')
+      onNew()
+      return
+    }
     const payload = buildSavePayload()
     const { data } = await axios.post('/api/delis/save', payload)
     if (data?.ok) {
@@ -520,6 +527,12 @@ async function onSave() {
     }
   } catch (err) {
     console.error('deli save error', err)
+    const msg = err?.response?.data?.message || err?.message || '저장 중 오류가 발생했습니다.'
+    if (String(msg).includes('재고가 부족')) {
+      alert('재고가 부족합니다.')
+      onNew()
+      return
+    }
     alert('저장 중 오류가 발생했습니다.')
   }
 }
@@ -540,6 +553,23 @@ function buildSavePayload() {
     remark: l.remark || null,
   }))
   return { header: hdr, lines: ls }
+}
+
+// 재고 선검증: 라인들의 rcvord_deta_id → prdt_id/opt_id 매핑을 서버가 알고 있으므로, 서버에 일괄 질의하거나
+// 간단히 서버 저장단에서 막도록 위임. 여기서는 간단히 서버 측 검증에 의존하되,
+// 사용자가 명백히 0 이하 입력 또는 빈 입력만 있는 경우는 통과.
+async function validateStockBeforeSave() {
+  try {
+    // 요청합이 0이면 굳이 검증하지 않음
+    const total = lines.value.reduce((s, l) => s + (Number(l.requestQty) || 0), 0)
+    if (total <= 0) return true
+    // 서버에서 최종 검증을 수행하므로 여기서는 true 반환
+    // 추후 필요 시, 전용 재고 확인 API를 만들어 품목별 재고와 비교하도록 확장
+    return true
+  } catch (e) {
+    console.warn('재고 선검증 실패(무시하고 서버 검증에 위임):', e)
+    return true
+  }
 }
 // 수주 선택 시 (행 더블클릭) -> 해당 수주의 상세를 조회하여 라인들 추가
 async function onSelectRcvord(rcvordRow) {

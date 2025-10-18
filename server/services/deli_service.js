@@ -70,30 +70,14 @@ module.exports = {
       // 날짜/시간 기본값 및 정규화: 화면은 날짜만 입력해도 DB에는 초까지 저장
       header.deli_dt = normalizeDateTime(header.deli_dt);
 
-      // ID 생성 (신규)
+      // (우선 header/deli upsert 이전에 재고 검증을 완료한다)
+      // 기존 라인 조회는 header 존재 여부와 무관하게 현재 문서 기준으로 조회해야 하므로,
+      // deli_id가 없다면 임시로 현재 헤더의 deli_id를 생성만 하고(쓰기 없음) 사용
       if (!header.deli_id) {
         const idRows = await conn.query(sqlList.deliNewId);
         header.deli_id = idRows[0]?.new_id;
       }
       const deliId = header.deli_id;
-
-      // 존재 여부 후 upsert
-      const exists = await conn.query(sqlList.deliExists, [deliId]);
-      if (exists.length) {
-        await conn.query(sqlList.deliUpdate, [
-          header.emp_id,
-          header.deli_dt,
-          header.rm || null,
-          deliId,
-        ]);
-      } else {
-        await conn.query(sqlList.deliInsert, [
-          deliId,
-          header.emp_id,
-          header.deli_dt,
-          header.rm || null,
-        ]);
-      }
 
       // 기존 라인 조회 (라인 upsert를 위해)
       const existing = await conn.query(sqlList.deliFindLinesByDoc, [deliId]);
@@ -135,6 +119,68 @@ module.exports = {
             delivered
           );
         }
+      }
+
+      // 저장 전에 재고 검증: rcvord_deta_id -> prdt_id, prdt_opt_id 매핑 후 품목별 요청합이 재고 이하인지 체크
+      {
+        const targetIds = Array.from(merged.values())
+          .map((m) => m.rcvord_deta_id)
+          .filter(Boolean);
+        if (targetIds.length) {
+          // 수주상세 → 제품/옵션 매핑 조회
+          const mapRows = await conn.query(
+            sqlList.selectPrdtAndOptByRcvordDetaIds,
+            [targetIds]
+          );
+          const idToItem = new Map();
+          for (const r of mapRows || []) {
+            idToItem.set(r.rcvord_deta_id, {
+              prdt_id: r.prdt_id,
+              prdt_opt_id: r.prdt_opt_id,
+            });
+          }
+          // 제품/옵션별 요청 수량 합계 집계
+          const reqByItem = new Map(); // key: prdt_id|prdt_opt_id, val: sum qty
+          for (const m of merged.values()) {
+            const map = idToItem.get(m.rcvord_deta_id);
+            if (!map) continue;
+            const key = `${map.prdt_id}|${map.prdt_opt_id}`;
+            const add = Number(m.requestQty || 0);
+            if (!Number.isFinite(add) || add <= 0) continue;
+            reqByItem.set(key, (reqByItem.get(key) || 0) + add);
+          }
+          // 각 품목 재고 조회 및 비교
+          for (const [key, reqSum] of reqByItem.entries()) {
+            const [pid, opt] = key.split("|");
+            const rows = await conn.query(sqlList.selectNowStockByPrdtOpt, [
+              pid,
+              opt,
+            ]);
+            const nowStock = Number(rows?.[0]?.now_stock || 0);
+            if (reqSum > nowStock) {
+              // 트랜잭션 롤백 후 에러
+              throw new Error("재고가 부족합니다.");
+            }
+          }
+        }
+      }
+
+      // 재고 검증 통과 후에 헤더 upsert 수행
+      const exists = await conn.query(sqlList.deliExists, [deliId]);
+      if (exists.length) {
+        await conn.query(sqlList.deliUpdate, [
+          header.emp_id,
+          header.deli_dt,
+          header.rm || null,
+          deliId,
+        ]);
+      } else {
+        await conn.query(sqlList.deliInsert, [
+          deliId,
+          header.emp_id,
+          header.deli_dt,
+          header.rm || null,
+        ]);
       }
 
       for (const ln of merged.values()) {

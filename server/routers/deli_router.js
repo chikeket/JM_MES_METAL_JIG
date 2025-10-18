@@ -111,6 +111,12 @@ router.post("/delis/save", async (req, res) => {
   } catch (err) {
     console.error("[POST /delis/save] error:", err);
     const msg = String((err && err.message) || "");
+    // 재고 부족 시, 클라이언트가 명확히 처리할 수 있도록 메시지/상태코드 통일
+    if (msg.includes("재고가 부족")) {
+      return res
+        .status(400)
+        .json({ message: "재고가 부족합니다.", error: msg });
+    }
     if (
       msg.includes("ER_ROW_IS_REFERENCED_2") ||
       msg.toLowerCase().includes("foreign key")
