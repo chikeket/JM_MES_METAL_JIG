@@ -752,7 +752,6 @@ const selectEndPrdtInspectionOrderCount = `
 SELECT COUNT(*) as cnt FROM END_PRDT_QLTY_INSP WHERE END_PRDT_QLTY_INSP_ID = ?
 `;
 
-
 // 납품서 상세 잔여 수량 조회
 const selectDeliveryOrderRemainingQty = `
 SELECT dd.deli_qy, 
@@ -825,11 +824,13 @@ SELECT qi.PASS_QY,
           LEFT JOIN WRHOUS_WRHSDLVR_MAS wm ON wd.WRHSDLVR_MAS_ID = wm.WRHSDLVR_MAS_ID 
                  AND wm.RCVPAY_TY = 'S1'
           WHERE qi.END_PRDT_QLTY_INSP_ID = ?
+
           GROUP BY qi.END_PRDT_QLTY_INSP_ID, qi.PASS_QY`;
 
 // FK 검증용 단건 쿼리: 완제품 품질검사서 ID 존재 여부 확인
 const selectEndPrdtQltyInspById = `
 SELECT end_prdt_qlty_insp_id FROM END_PRDT_QLTY_INSP WHERE end_prdt_qlty_insp_id = ? LIMIT 1
+
 `;
 
 // 재고 검증용 추가 쿼리들
@@ -911,5 +912,4 @@ module.exports = {
 
   selectNowStockByPrdtOpt,
   selectPrdtAndOptByRcvordDetaIds,
-
 };
