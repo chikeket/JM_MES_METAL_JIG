@@ -42,9 +42,9 @@
     </div>
 
     <!-- 메인 컨텐츠 영역 -->
-    <CRow class="flex-grow-1 overflow-hidden g-2">
+    <CRow class="flex-grow-1 overflow-hidden g-2 main-content-row">
       <!-- 좌측: 데이터 그리드 -->
-      <CCol :md="6" class="d-flex flex-column overflow-hidden">
+      <CCol :md="6" class="d-flex flex-column overflow-hidden left-pane">
         <div class="button-spacer mb-2">
           <CButton color="secondary" size="sm">신규</CButton>
           <CButton color="secondary" size="sm">저장</CButton>
@@ -52,7 +52,7 @@
         </div>
 
         <div class="grid-box flex-grow-1 overflow-hidden d-flex flex-column">
-          <div class="table-wrapper">
+          <div class="table-wrapper" :style="tableWrapperStyle">
             <CTable bordered hover class="data-table">
               <CTableHead>
                 <CTableRow>
@@ -86,9 +86,6 @@
                   }}</CTableDataCell>
                   <CTableDataCell>{{ item.rm || '' }}</CTableDataCell>
                 </CTableRow>
-                <CTableRow v-for="i in emptyRowCount" :key="'empty-' + i" class="empty-row">
-                  <CTableDataCell colspan="7">&nbsp;</CTableDataCell>
-                </CTableRow>
               </CTableBody>
             </CTable>
           </div>
@@ -96,7 +93,7 @@
       </CCol>
 
       <!-- 우측: 상세 입력 폼 -->
-      <CCol :md="6" class="d-flex flex-column overflow-hidden">
+      <CCol :md="6" class="d-flex flex-column overflow-hidden right-pane">
         <div class="d-flex justify-content-end gap-2 mb-2">
           <CButton color="secondary" size="sm" @click="resetForm">신규</CButton>
           <CButton color="secondary" size="sm" @click="saveEqm">저장</CButton>
@@ -274,15 +271,30 @@ const formData = reactive({
 // 편집 모드 여부
 const isEditMode = ref(false)
 
-// 표시할 데이터 (최대 10행)
+// 표시할 데이터 (전체)
 const displayedData = computed(() => {
-  return eqmData.value.slice(0, 10)
+  return eqmData.value
 })
 
-// 빈 행 개수 계산
-const emptyRowCount = computed(() => {
-  const dataCount = displayedData.value.length
-  return dataCount < 10 ? 10 - dataCount : 0
+// 빈 행 패딩 제거 (스크롤을 위해 전체 데이터만 렌더)
+const emptyRowCount = computed(() => 0)
+
+// ==============================
+// 그리드 표시 행수/높이 설정
+// 사용자가 조절 가능한 설정 값들입니다.
+// ==============================
+// 최대 표시 줄 수 (필요 시 변경)
+const MAX_GRID_ROWS = ref(12)
+// 데이터 행 높이(px) - 테마/패딩에 따라 34~40 사이, 필요 시 조정
+const GRID_ROW_HEIGHT = ref(36)
+// 헤더 높이(px) - th padding 기준 대략 40~48, 필요 시 조정
+const GRID_HEADER_HEIGHT = ref(44)
+
+// 테이블 래퍼 스타일: 최대 높이를 계산해 초과 시 세로 스크롤
+const tableWrapperStyle = computed(() => {
+  const rows = Math.max(1, Math.min(MAX_GRID_ROWS.value, displayedData.value.length || 0))
+  const maxH = GRID_HEADER_HEIGHT.value + GRID_ROW_HEIGHT.value * rows
+  return { height: 'auto', maxHeight: `${maxH}px` }
 })
 
 // 설비 목록 조회
@@ -520,6 +532,8 @@ const mapStatusForPersist = (formCode) => {
   border-radius: 8px;
   background: #ffffff;
   overflow: hidden;
+  /* 세로 스크롤 컨테이너가 정상 축소되도록 */
+  min-height: 0;
 }
 
 /* 폼 박스 - 얇은 회색 테두리 */
@@ -666,9 +680,10 @@ const mapStatusForPersist = (formCode) => {
    ============================================ */
 .table-wrapper {
   flex: 1;
-  overflow-y: auto;
+  height: 100%;
+  overflow-y: auto; /* 상하 스크롤 */
+  overflow-x: hidden; /* 좌우 스크롤 제거 */
   border-radius: 10px;
-  max-height: calc(100vh - 400px);
 }
 
 :deep(.data-table) {
@@ -677,6 +692,8 @@ const mapStatusForPersist = (formCode) => {
   border-spacing: 0;
   user-select: none;
   cursor: default;
+  table-layout: fixed; /* 가로 폭 고정으로 가로 스크롤 방지 */
+  width: 100%;
 }
 
 :deep(.data-table thead) {
@@ -711,6 +728,9 @@ const mapStatusForPersist = (formCode) => {
   padding: 0.55rem 0.5rem;
   border-bottom: 1px solid #e9ecef;
   color: #2c3e50;
+  overflow: hidden; /* 긴 텍스트 말줄임 */
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 :deep(.data-table tbody tr) {
@@ -721,7 +741,6 @@ const mapStatusForPersist = (formCode) => {
 
 :deep(.data-table tbody tr:hover) {
   background-color: #f8f9fa;
-  transform: scale(1.005);
 }
 
 /* 선택된 행 스타일 - 모던 그레이 테마 */
@@ -756,6 +775,20 @@ const mapStatusForPersist = (formCode) => {
   overflow-x: hidden;
   scrollbar-gutter: stable;
   -webkit-overflow-scrolling: touch;
+}
+
+/* 좌측 컬럼이 스크롤 컨테이너를 만들 수 있도록 */
+.left-pane {
+  min-height: 0;
+}
+
+/* 메인 컨텐츠 행과 우측 패널도 자식 스크롤 허용 */
+.main-content-row {
+  min-height: 0;
+}
+
+.right-pane {
+  min-height: 0;
 }
 
 /* 모던 스크롤바 스타일 (Glass / Minimal) */
