@@ -28,14 +28,14 @@ on a.prcs_prog_precon_id = b.prcs_prog_precon_id
 join (
 		SELECT
 		 a.prdt_id,
-		 a.opt_id,
+		 a.prdt_opt_id,
 		 MAX(b.prcs_ord) "prcs_ord"
 		FROM routing a
 		JOIN routing_deta b
 		ON a.prcs_routing_id = b.prcs_routing_id
-		GROUP BY a.prdt_id, a.opt_id) c
+		GROUP BY a.prdt_id, a.prdt_opt_id) c
 on b.prdt_id = c.prdt_id
-and b.prdt_opt_id = c.opt_id
+and b.prdt_opt_id = c.prdt_opt_id
 and a.prcs_ord <> c.prcs_ord
 join(
 		select
@@ -59,6 +59,7 @@ const semiPrdtQltyInspSearch = `
 SELECT 
  b.emp_nm,
  c.pass_qy "bePass_qy",
+ a.emp_id,
  a.prcs_ctrl_id,
  a.semi_prdt_qlty_insp_id,
  a.insp_qy,
@@ -121,6 +122,14 @@ INSERT INTO semi_prdt_qlty_insp(
  semi_prdt_qlty_insp_id)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?)`;
 
+const semiPrdtQltyInspInferInsert = `
+INSERT INTO semi_prdt_qlty_insp_infer_qy(
+infer_qy
+,qlty_item_mng_id
+,semi_prdt_qlty_insp_id)
+VALUES(?, ?, ?)`;
+
+
 const semiPrdtQltyInspUpdate = `
 UPDATE semi_prdt_qlty_insp
 SET
@@ -132,6 +141,15 @@ SET
  insp_qy = ?,
  insp_dt = ?
 WHERE semi_prdt_qlty_insp_id = ?`;
+
+//반제품 품질 검사 불량 수량 테이블 쿼리수정
+const semiPrdtQltyInspInferUpdate = `
+UPDATE semi_prdt_qlty_insp_infer_qy
+SET
+ infer_qy = ?
+WHERE qlty_item_mng_id = ?
+AND semi_prdt_qlty_insp_id = ?
+`;
 
 const semiPrdtQltyInspDelete = `
 DELETE
@@ -146,4 +164,6 @@ module.exports = {
 	semiPrdtQltyInspUpdate,
 	semiPrdtQltyInspDelete,
 	semiPrdtQltyInspInferSearch,
+	semiPrdtQltyInspInferInsert,
+	semiPrdtQltyInspInferUpdate,
 };

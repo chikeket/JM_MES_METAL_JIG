@@ -21,6 +21,7 @@ let rscQltyInspInferInsertColumns = [
   "qlty_item_mng_id",
   "rsc_qlty_insp_id",
 ];
+let conn = null;
 let callQuery = null;
 //rseOrdrModal.vue 자재발주서 마스터정보 조회
 const rscOrdrQltyList = async (Info) => {
@@ -41,7 +42,7 @@ const rscQltyInspInsert = async (Info) => {
     await conn.beginTransaction();
     let createId = null;
     callQuery = sqlList["rscQltyInspCreateId"];
-    createId = await mariadb.query(callQuery);
+    createId = await conn.query(callQuery);
     console.log("서비스쪽 id생성쿼리후");
     console.log(createId);
     let queryResult = null;
@@ -50,7 +51,7 @@ const rscQltyInspInsert = async (Info) => {
     let data = convertObjToAry(beforeData, rscQltyInspInsertColumns);
     console.log(data);
     callQuery = sqlList["rscQltyInspInsert"];
-    queryResult = await mariadb.query(callQuery, data);
+    queryResult = await conn.query(callQuery, data);
     for (const item of Info.infer) {
       let queryResult = null;
       let beforeInferData = { ...item, ...createId[0] };
@@ -60,7 +61,7 @@ const rscQltyInspInsert = async (Info) => {
       );
       console.log(item);
       callQuery = sqlList["rscQltyInspInferInsert"];
-      queryResult = await mariadb.query(callQuery, data);
+      queryResult = await conn.query(callQuery, data);
     }
     await conn.commit();
     let result = null;
@@ -90,9 +91,8 @@ const rscQltyInspSelect = async (Info) => {
   let data = convertObjToAry(Info, insertColumns);
   console.log("service쪽");
   console.log(data);
-  callQuery = sqlList["rscQltyInspSelect"];
   let list = await mariadb
-    .query(callQuery, data)
+    .query("rscQltyInspSelect", data)
     .catch((err) => console.log(err));
   // console.log("조회 결과:", list);
   return list;
@@ -106,9 +106,8 @@ const rscQltyInspInferSelect = async (Info) => {
   let data = convertObjToAry(Info, insertColumns);
   console.log("service쪽");
   console.log(data);
-  callQuery = sqlList["rscQltyInspInferSearch"];
   let list = await mariadb
-    .query(callQuery, data)
+    .query("rscQltyInspInferSearch", data)
     .catch((err) => console.log(err));
   // console.log("조회 결과:", list);
   return list;
@@ -127,12 +126,12 @@ const rscQltyInspUpdate = async (Info) => {
     let data = convertObjToAry(Info.master, rscQltyInspInsertColumns);
     console.log(data);
     callQuery = sqlList["rscQltyInspUpdate"];
-    queryResult = await mariadb.query(callQuery, data);
+    queryResult = await conn.query(callQuery, data);
     for (const item of Info.infer) {
       let data = convertObjToAry(item, rscQltyInspInferInsertColumns);
       console.log(data);
       callQuery = sqlList["rscQltyInspInferUpdate"];
-      queryResult = await mariadb.query(callQuery, data);
+      queryResult = await conn.query(callQuery, data);
     }
     await conn.commit();
     let result = null;
@@ -164,7 +163,7 @@ const rscQltyInspDelete = async (Info) => {
 
     let queryResult = null;
     callQuery = sqlList["rscQltyInspDelete"];
-    queryResult = await mariadb.query(callQuery, [
+    queryResult = await conn.query(callQuery, [
       Info.rsc_qlty_insp_id,
     ]);
 

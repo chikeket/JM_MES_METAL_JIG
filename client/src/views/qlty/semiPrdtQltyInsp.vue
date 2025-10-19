@@ -230,7 +230,8 @@ const selectOrdr = (prdts) => {
   form.value.pass_qy = Math.floor(prdts.searchParams.pass_qy) || 0
   form.value.rm = prdts.searchParams.rm || ''
   form.value.prcs_ctrl_id = prdts.searchParams.prcs_ctrl_id
-  form.value.end_prdt_qlty_insp_id = prdts.searchParams.end_prdt_qlty_insp_id
+  form.value.semi_prdt_qlty_insp_id = prdts.searchParams.semi_prdt_qlty_insp_id
+  form.value.emp_id = prdts.searchParams.emp_id ?? auth.user?.emp_id ?? 'EMP001'
   defectQty.value = prdts.searchParams.infer_qy || 0
   for (const prdt of prdts.detailData)
     inspectItems.value.push({
@@ -240,23 +241,32 @@ const selectOrdr = (prdts) => {
       eror_scope_max: prdt.eror_scope_max,
       infer_qy: prdt.infer_qy || 0,
       qlty_item_mng_id: prdt.qlty_item_mng_id,
-      end_prdt_qlty_insp_id: prdt.end_prdt_qlty_insp_id,
+      semi_prdt_qlty_insp_id: prdt.semi_prdt_qlty_insp_id,
     })
 }
 
 const saveInspection = async () => {
+  let inferData = []
+  for (const prdt of inspectItems.value)
+    inferData.push({
+      infer_qy: prdt.infer_qy,
+      qlty_item_mng_id: prdt.qlty_item_mng_id,
+    })
   const payload = {
-    rm: form.value.rm,
-    prcs_ctrl_id: form.value.prcs_ctrl_id,
-    emp_id: form.value.emp_id,
-    infer_qy: defectQty.value,
-    pass_qy: form.value.pass_qy,
-    insp_qy: form.value.insp_qy,
-    insp_dt: form.value.insp_dt,
+    master: {
+      rm: form.value.rm,
+      prcs_ctrl_id: form.value.prcs_ctrl_id,
+      emp_id: form.value.emp_id,
+      infer_qy: defectQty.value,
+      pass_qy: pass_qy.value,
+      insp_qy: form.value.insp_qy,
+      insp_dt: form.value.insp_dt,
+    },
+    infer: inferData,
   }
   console.log(payload)
   let result = await axios
-    .post('/api/endPrdtQltyInspInsert', payload)
+    .post('/api/semiPrdtQltyInspInsert', payload)
     .catch((err) => console.log(err))
   let addRes = result.data
   if (addRes.isSuccessed) {
@@ -267,33 +277,43 @@ const saveInspection = async () => {
 }
 
 const update = async () => {
+  let inferData = []
+  for (const prdt of inspectItems.value)
+    inferData.push({
+      infer_qy: prdt.infer_qy,
+      qlty_item_mng_id: prdt.qlty_item_mng_id,
+      semi_prdt_qlty_insp_id: prdt.semi_prdt_qlty_insp_id,
+    })
   const payload = {
-    rm: form.value.note,
-    prcs_ctrl_id: form.value.prcs_ctrl_id,
-    emp_id: form.value.emp_id,
-    infer_qy: defectQty.value,
-    pass_qy: form.value.pass_qy,
-    insp_qy: form.value.insp_qy,
-    insp_dt: form.value.insp_dt,
-    end_prdt_qlty_insp_id: form.value.end_prdt_qlty_insp_id,
+    master: {
+      rm: form.value.rm,
+      prcs_ctrl_id: form.value.prcs_ctrl_id,
+      emp_id: form.value.emp_id,
+      infer_qy: defectQty.value,
+      pass_qy: form.value.pass_qy,
+      insp_qy: form.value.insp_qy,
+      insp_dt: form.value.insp_dt,
+      semi_prdt_qlty_insp_id: form.value.semi_prdt_qlty_insp_id,
+    },
+    infer: inferData,
   }
   let result = await axios
-    .post('/api/endPrdtQltyInspUpdate', payload)
+    .post('/api/semiPrdtQltyInspUpdate', payload)
     .catch((err) => console.log(err))
   let addRes = result.data
   if (addRes.isSuccessed) {
-    console.log('반제품 검수 수정이 등록되었습니다.')
+    console.log('완제품 검수 수정이 등록되었습니다.')
   } else {
-    console.log('반제품 검수 수정에 실패했습니다.')
+    console.log('완제품 검수 수정에 실패했습니다.')
   }
 }
 
 const deleteFunc = async () => {
   const payload = {
-    end_prdt_qlty_insp_id: form.value.end_prdt_qlty_insp_id,
+    semi_prdt_qlty_insp_id: form.value.semi_prdt_qlty_insp_id,
   }
   let result = await axios
-    .post('/api/endPrdtQltyInspDelete', payload)
+    .post('/api/semiPrdtQltyInspDelete', payload)
     .catch((err) => console.log(err))
   let addRes = result.data
   if (addRes.isSuccessed) {
