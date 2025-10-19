@@ -97,7 +97,7 @@
           </CTableDataCell>
         </CTableRow>
         <CTableRow v-if="inspectItems.length === 0">
-          <CTableDataCell colspan="3" class="text-center text-muted py-4"
+          <CTableDataCell colspan="4" class="text-center text-muted py-4"
             >검사항목이 없습니다.</CTableDataCell
           >
         </CTableRow>

@@ -120,7 +120,7 @@ const updateRowsToDB = async () => {
 }
 
 const deleteRowsToDB = async () => {
-  const payload = { prod_drct_id: 'test' }
+  const payload = { prod_plan_id: Info.value.prod_plan_id }
   let result = await axios
     .post('/api/deleteProdPlanManage', payload)
     .catch((err) => console.log(err))
@@ -150,7 +150,7 @@ const rows = ref([
 
 const selectedPrdt = (prdts) => {
   console.log(prdts)
-  Info.value.prod_drct_id = !prdts.searchParams.prod_plan_id
+  Info.value.prod_plan_id = !prdts.searchParams.prod_plan_id
     ? Info.value.prod_plan_id
     : prdts.searchParams.prod_plan_id
   Info.value.rcvord_id = !prdts.searchParams.rcvord_id

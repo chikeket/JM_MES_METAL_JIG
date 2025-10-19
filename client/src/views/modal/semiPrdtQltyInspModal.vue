@@ -81,18 +81,17 @@ const prdtSearch = async () => {
   }
   console.log(params)
   let result = await axios
-    .get('/api/endPrdtQltyInspSearch', { params })
+    .get('/api/semiPrdtQltyInspSearch', { params })
     .catch((err) => console.log(err))
   console.log(result.data)
   prdtList.value = result.data
 }
 
 const selectProduct = async (prdts) => {
-  const params = { prdt_id: '', prdt_opt_id: '' }
-  params.prdt_id = prdts.prdt_id
-  params.prdt_opt_id = prdts.prdt_opt_id
+  const params = { semi_prdt_qlty_insp_id: ''}
+  params.semi_prdt_qlty_insp_id = prdts.semi_prdt_qlty_insp_id  
   let result = await axios
-    .get('/api/waitingPrdtQltyDeta', { params })
+    .get('/api/semiPrdtQltyInspInferSearch', { params })
     .catch((err) => console.log(err))
   console.log(result.data)
   emit('select', {

@@ -81,12 +81,12 @@
       </div>
       <div class="field-set">
         <div class="label">현투입 수량</div>
-        <select v-model="form.curr_inpt_qy" :disabled="started">
-          <option value="" disabled>선택하세요</option>
-          <option v-for="(opt, idx) in currInptOptions" :key="idx" :value="String(opt)">
-            {{ opt }}
-          </option>
-        </select>
+        <input
+          type="number"
+          v-model="form.curr_inpt_qy"
+          :readonly="started"
+          @blur="onCurrInptBlur"
+        />
       </div>
     </div>
 
@@ -143,16 +143,18 @@
 </template>
 
 <script setup>
-import { reactive, computed, onMounted, onBeforeUnmount, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { reactive, computed, onMounted, onBeforeUnmount, ref, watch, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 
 // 화면 상태
 const form = reactive({
+  prcs_prog_precon_id: '',
   prod_drct_id: '',
   prod_drct_nm: '',
   prcs_id: '',
   prcs_nm: '',
+  prcs_ord: '',
   prdt_id: '',
   prdt_nm: '',
   prdt_opt_id: '',
@@ -169,22 +171,33 @@ const form = reactive({
   prod_qy: '',
   ng_qy: '',
   ok_qy: '',
+  emp_id: '',
   emp_nm: '',
   work_start_dt: '',
   work_end_dt: '',
 })
 
 const route = useRoute()
-const currInptOptions = ref([])
+const router = useRouter()
 const started = ref(false)
 const ended = ref(false)
 
+// 안전한 숫자 변환 유틸 (콤마 포함 문자열 처리)
+function toNumber(val) {
+  if (val === null || val === undefined) return NaN
+  const s = String(val).replace(/,/g, '').trim()
+  const n = Number(s)
+  return Number.isFinite(n) ? n : NaN
+}
+
 function fillFromQuery() {
   const q = route.query || {}
+  form.prcs_prog_precon_id = q.prcs_prog_precon_id || ''
   form.prod_drct_id = q.prod_drct_id || ''
   form.prod_drct_nm = q.prod_drct_nm || ''
   form.prcs_id = q.prcs_id || ''
   form.prcs_nm = q.prcs_nm || ''
+  form.prcs_ord = q.prcs_ord || ''
   form.prdt_id = q.prdt_id || ''
   form.prdt_nm = q.prdt_nm || ''
   form.prdt_opt_id = q.prdt_opt_id || ''
@@ -205,6 +218,7 @@ function fillFromQuery() {
   form.prod_qy = ''
   form.ng_qy = ''
   form.ok_qy = ''
+  form.emp_id = q.emp_id || ''
   form.emp_nm = q.emp_nm || ''
   form.work_start_dt = ''
   form.work_end_dt = ''
@@ -229,7 +243,79 @@ async function startWork() {
     alert('현투입 수량을 선택하세요.')
     return
   }
+  // 시작 전 한 번 더 제한 검증 (금형 여부에 따라 CAVITY 또는 미투입 수량 기준)
+  {
+    const curr = toNumber(form.curr_inpt_qy)
+    const hasMold = !!(form.mold_id && form.mold_id !== '-')
+    if (hasMold) {
+      const cavity = toNumber(form.cavity)
+      const notInpt = toNumber(form.not_inpt_qy)
+      if (
+        Number.isFinite(curr) &&
+        ((Number.isFinite(cavity) && curr > cavity) || (Number.isFinite(notInpt) && curr > notInpt))
+      ) {
+        alert('최대 수량을 초과하였습니다.')
+        resetCurrInptToPlaceholder()
+        return
+      }
+    } else {
+      const notInpt = toNumber(form.not_inpt_qy)
+      if (Number.isFinite(curr) && Number.isFinite(notInpt) && curr > notInpt) {
+        alert('최대 수량을 초과하였습니다.')
+        resetCurrInptToPlaceholder()
+        return
+      }
+    }
+  }
+  // 시작 전 중복 가드: ppp.st='J2' AND eqm.st='Q2' AND (if mold) mold.st='P2'
+  try {
+    await axios.post('/api/proc-ctrl/prestart-guard', {
+      prcs_prog_precon_id: form.prcs_prog_precon_id,
+      eqm_id: form.eqm_id || null,
+      mold_id: form.mold_id && form.mold_id !== '-' ? form.mold_id : null,
+    })
+  } catch (e) {
+    console.error('prestart-guard 실패', e)
+    alert('정보 중복 오류')
+    router.push({ path: '/Minsu/prcsProgPrecon' })
+    return
+  }
   // 시작 시각 설정 및 타이머 시작
+  // 금형이 있는 경우: mold 상태를 P1로 업데이트 (서버)
+  if (form.mold_id && form.mold_id !== '-') {
+    try {
+      await axios.post('/api/proc-ctrl/mold/p1', { mold_id: form.mold_id })
+    } catch (e) {
+      console.error('금형 상태 변경(P1) 실패', e)
+      alert('금형 상태 변경(P1)에 실패했습니다.')
+      return
+    }
+  }
+  // 설비가 있는 경우: eqm 상태를 Q1로 업데이트 (서버)
+  if (form.eqm_id) {
+    try {
+      await axios.post('/api/proc-ctrl/eqm/q1', { eqm_id: form.eqm_id })
+    } catch (e) {
+      console.error('설비 상태 변경(Q1) 실패', e)
+      alert('설비 상태 변경(Q1)에 실패했습니다.')
+      return
+    }
+  }
+  // 공정 진행 행 상태(st)를 NULL로 초기화 (리스트에서 제외되도록)
+  if (!form.prcs_prog_precon_id) {
+    alert('대상 prcs_prog_precon_id가 없습니다. 화면으로 돌아가 다시 시도해주세요.')
+    return
+  }
+  try {
+    await axios.post('/api/prcs-prog-precon/clear-status', {
+      prcs_prog_precon_id: form.prcs_prog_precon_id,
+    })
+  } catch (e) {
+    console.error('공정 상태 초기화 실패(st=NULL)', e)
+    alert('공정 상태 초기화에 실패했습니다.')
+    return
+  }
+  // UI 타이머 및 잠금 처리
   if (!form.work_start_dt) form.work_start_dt = nowStr()
   if (!endTimer) {
     endTimer = setInterval(() => {
@@ -239,47 +325,97 @@ async function startWork() {
   // 현투입 수량 잠금
   started.value = true
   ended.value = false
-
-  // 서버 저장: proc_ctrl 행 생성
-  try {
-    const q = route.query || {}
-    const payload = {
-      prcs_prog_precon_id: q.prcs_prog_precon_id || '',
-      prcs_ord: q.prcs_ord ? Number(q.prcs_ord) : null,
-      mold_id: form.mold_id && form.mold_id !== '-' ? form.mold_id : null,
-      eqm_id: form.eqm_id || null,
-      emp_id: q.emp_id || null,
-      inpt_qy: Number(form.curr_inpt_qy || 0),
-      prod_qy: 0,
-      infer_qy: 0,
-      pass_qy: 0,
-      wk_fr_dt: form.work_start_dt,
-    }
-    const { data } = await axios.post('/api/proc-ctrl/start', payload)
-    // 성공 시, 생성된 ID를 보관하고 싶다면 아래에 상태 확장 가능
-    // form.prcs_ctrl_id = data?.prcs_ctrl_id
-  } catch (err) {
-    console.error('작업 시작 저장 실패', err)
-    alert('작업 시작 저장에 실패했습니다.')
-    // 실패 시 다시 잠금 해제 및 타이머 중지
-    started.value = false
+}
+function stopTimer() {
+  // 아직 작업 시작 전인 경우: 공정 진행 화면으로 이동 (초기화 상태)
+  if (!started.value) {
+    router.push({ path: '/Minsu/prcsProgPrecon' })
+    return
+  }
+  // 1차 클릭: 종료 모드로 전환 (타이머 정지 및 입력 가능)
+  if (!ended.value) {
     if (endTimer) {
       clearInterval(endTimer)
       endTimer = null
     }
+    // 종료 시각을 즉시 최종값으로 고정
+    form.work_end_dt = nowStr()
+    // 생산/불량 입력 가능화 및 생산량 초기값 설정(= 현투입 수량)
+    ended.value = true
+    form.prod_qy = String(form.curr_inpt_qy || '0')
+    return
   }
-}
-function stopTimer() {
-  if (!started.value) return
-  if (endTimer) {
-    clearInterval(endTimer)
-    endTimer = null
+  // 2차 클릭: 서버에 UPDATE 적용 후, 공정 진행 화면으로 이동
+  // 필수값 확인: 작업자/설비가 없으면 종료 불가
+  if (!form.emp_id) {
+    alert('작업자를 선택한 후 진행해 주세요.')
+    router.push({ path: '/Minsu/prcsProgPrecon' })
+    return
   }
-  // 종료 시각을 즉시 최종값으로 고정
-  form.work_end_dt = nowStr()
-  // 생산/불량 입력 가능화 및 생산량 초기값 설정(= 현투입 수량)
-  ended.value = true
-  form.prod_qy = String(form.curr_inpt_qy || '0')
+  if (!form.eqm_id) {
+    alert('설비를 선택한 후 진행해 주세요.')
+    router.push({ path: '/Minsu/prcsProgPrecon' })
+    return
+  }
+  // 공정 순서 값 확인
+  const prcsOrdNum = Number(form.prcs_ord)
+  if (!Number.isFinite(prcsOrdNum)) {
+    alert('공정 순서(prcs_ord) 값이 올바르지 않습니다. 처음 화면으로 돌아갑니다.')
+    router.push({ path: '/Minsu/prcsProgPrecon' })
+    return
+  }
+  const payload = {
+    // proc_ctrl 저장용 전체 페이로드
+    prcs_prog_precon_id: form.prcs_prog_precon_id || '',
+    // 라우트 쿼리 대신 폼 상태에서 가져와 명확히 전달
+    prcs_ord: prcsOrdNum,
+    mold_id: form.mold_id && form.mold_id !== '-' ? form.mold_id : null,
+    eqm_id: form.eqm_id || null,
+    emp_id: form.emp_id || route.query?.emp_id || null,
+    inpt_qy: Number(form.curr_inpt_qy || 0),
+    prod_qy: Number(form.prod_qy || 0),
+    infer_qy: Number(form.ng_qy || 0),
+    pass_qy: Number(okQty.value || 0),
+    wk_fr_dt: form.work_start_dt,
+    wk_to_dt: form.work_end_dt,
+  }
+  // 1) proc_ctrl 완료행 INSERT
+  axios
+    .post('/api/proc-ctrl/finish', payload)
+    .then(() => {
+      // 2) PRCS_PROG_PRECON 수량 재계산(= proc_ctrl 합계)으로 UPDATE
+      return axios.post('/api/prcs-prog-precon/recompute-quantities', {
+        prcs_prog_precon_id: payload.prcs_prog_precon_id,
+      })
+    })
+    .then(async () => {
+      // 3) 설비/금형 상태 원복: eqm → Q2, mold → P2 (존재 시)
+      try {
+        if (form.eqm_id) {
+          await axios.post('/api/proc-ctrl/eqm/q2', { eqm_id: form.eqm_id })
+        }
+        if (form.mold_id && form.mold_id !== '-') {
+          await axios.post('/api/proc-ctrl/mold/p2', { mold_id: form.mold_id })
+        }
+      } catch (e) {
+        console.error('설비/금형 상태 원복 실패', e)
+        // 원복 실패는 치명적이지 않으므로 이동은 계속함
+      }
+    })
+    .then(() => {
+      // 4) 다음 공정(prcs_ord+1) drct_qy를 같은 deta의 생산합으로 설정하고 st='J2'
+      return axios.post('/api/prcs-prog-precon/advance-next-step', {
+        prcs_prog_precon_id: payload.prcs_prog_precon_id,
+      })
+    })
+    .then(() => {
+      router.push({ path: '/Minsu/prcsProgPrecon' })
+    })
+    .catch((err) => {
+      console.error('작업 종료 처리 실패', err)
+      const msg = err?.response?.data?.message || err?.message || '작업 종료 처리에 실패했습니다.'
+      alert(`작업 종료 처리에 실패했습니다.\n${msg}`)
+    })
 }
 
 const okQty = computed(() => {
@@ -291,55 +427,83 @@ const okQty = computed(() => {
 
 onMounted(() => {
   fillFromQuery()
-  // 현투입 수량: prod_drct_deta_id로 조회
-  const detaId = route.query?.prod_drct_deta_id
-  if (detaId) {
-    // 1) J2 상태 목록 조회
-    axios
-      .get('/api/prcs-prog-precon/run-target/list', { params: { prod_drct_deta_id: detaId } })
-      .then(({ data }) => {
-        const list = Array.isArray(data?.list) ? data.list : []
-        currInptOptions.value = list
-        // 목록이 하나면 자동 선택 (시작 전에만 가능)
-        if (!started.value && list.length === 1) {
-          form.curr_inpt_qy = String(list[0])
-        } else {
-          if (!started.value) form.curr_inpt_qy = ''
-        }
-        // 목록이 비어있으면 합계 API로 폴백(기존 동작 유지)
-        if (list.length === 0) {
-          return axios.get('/api/prcs-prog-precon/run-target', {
-            params: { prod_drct_deta_id: detaId },
-          })
-        }
-        return null
-      })
-      .then((resp) => {
-        if (resp && resp.data) {
-          const v = resp.data?.prod_expc_qy
-          // 옵션이 없을 때만 값 설정
-          if (!currInptOptions.value.length) {
-            currInptOptions.value = v != null ? [Number(v) || 0] : []
-            if (!started.value) form.curr_inpt_qy = v != null ? String(v) : ''
-          }
-        }
-      })
-      .catch((err) => {
-        console.error('현투입 수량 조회 실패', err)
-      })
-  }
 })
 onBeforeUnmount(() => stopTimer())
 
-function onSave() {
-  // TODO: 서버 저장 API 연동 예정. 현재는 임시로 콘솔 출력만 수행.
-  try {
-    console.log('저장 클릭 - 현재 입력 값:', { ...form })
-    // 예: 유효성 검사 자리
-    // if (!form.prod_qy || !form.ng_qy) { /* show toast */ }
-  } catch (e) {
-    console.error('저장 처리 중 오류', e)
+// 현투입 수량 최대치 검증: 포커스 아웃 시 수행
+function onCurrInptBlur() {
+  const v = form.curr_inpt_qy
+  if (!v && v !== 0) return
+  const curr = toNumber(v)
+  if (!Number.isFinite(curr)) return
+  const hasMold = !!(form.mold_id && form.mold_id !== '-')
+  if (hasMold) {
+    const cavity = toNumber(form.cavity)
+    const notInpt = toNumber(form.not_inpt_qy)
+    if (
+      (Number.isFinite(cavity) && curr > cavity) ||
+      (Number.isFinite(notInpt) && curr > notInpt)
+    ) {
+      alert('최대 수량을 초과하였습니다.')
+      resetCurrInptToPlaceholder()
+    }
+  } else {
+    const notInpt = toNumber(form.not_inpt_qy)
+    if (Number.isFinite(notInpt) && curr > notInpt) {
+      alert('최대 수량을 초과하였습니다.')
+      resetCurrInptToPlaceholder()
+    }
   }
+}
+
+function resetCurrInptToPlaceholder() {
+  form.curr_inpt_qy = ''
+}
+
+function onSave() {
+  const prcsProgPreconId = form.prcs_prog_precon_id || ''
+  if (!prcsProgPreconId) {
+    alert('저장할 대상(prcs_prog_precon_id)이 없습니다. 다시 시도해주세요.')
+    return
+  }
+  if (!form.curr_inpt_qy) {
+    alert('현투입 수량을 선택하세요.')
+    return
+  }
+  const payload = {
+    prcs_prog_precon_id: prcsProgPreconId,
+    inpt_qy: Number(form.curr_inpt_qy || 0),
+    prod_qy: Number(form.prod_qy || 0),
+    infer_qy: Number(form.ng_qy || 0),
+    pass_qy: Number(okQty.value || 0),
+  }
+  axios
+    .post('/api/prcs-prog-precon/update-quantities', payload)
+    .then(async () => {
+      // 마지막 단계: 선택한 현투입 수량 행의 inpt_st를 J3로 변경
+      const detaId = route.query?.prod_drct_deta_id || ''
+      const qty = Number(form.curr_inpt_qy || 0)
+      if (detaId && Number.isFinite(qty) && qty > 0) {
+        try {
+          await axios.post('/api/prcs-prog-precon/mark-run-target-j3', {
+            prod_drct_deta_id: detaId,
+            prod_expc_qy: qty,
+          })
+        } catch (e) {
+          console.error('현투입 수량 상태 J3 변경 실패', e)
+          // 실패해도 저장 플로우는 계속
+        }
+      }
+    })
+    .then(() => {
+      // 저장 성공 안내 후 공정 진행 화면(초기화 상태)으로 이동
+      alert('저장이 완료 되었습니다.')
+      router.push({ path: '/Minsu/prcsProgPrecon' })
+    })
+    .catch((e) => {
+      console.error('작업 저장 실패', e)
+      alert('작업 저장에 실패했습니다.')
+    })
 }
 </script>
 

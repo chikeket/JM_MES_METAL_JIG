@@ -752,6 +752,7 @@ const selectEndPrdtInspectionOrderCount = `
 SELECT COUNT(*) as cnt FROM END_PRDT_QLTY_INSP WHERE END_PRDT_QLTY_INSP_ID = ?
 `;
 
+
 // 납품서 상세 잔여 수량 조회
 const selectDeliveryOrderRemainingQty = `
 SELECT dd.deli_qy, 
@@ -825,6 +826,25 @@ SELECT qi.PASS_QY,
                  AND wm.RCVPAY_TY = 'S1'
           WHERE qi.END_PRDT_QLTY_INSP_ID = ?
           GROUP BY qi.END_PRDT_QLTY_INSP_ID, qi.PASS_QY
+
+// 재고 검증용 추가 쿼리들
+// 주어진 제품/옵션에 대한 현재 재고 합계 (LOT_STC_PRECON 기준)
+const selectNowStockByPrdtOpt = `
+SELECT 
+  COALESCE(SUM(lsp.NOW_STC_QY), 0) AS now_stock
+FROM LOT_STC_PRECON lsp
+JOIN WRHOUS_WRHSDLVR_MAS wm 
+  ON wm.WRHSDLVR_MAS_ID = lsp.WRHSDLVR_MAS_ID
+WHERE wm.PRDT_ID = ?
+  AND wm.PRDT_OPT_ID <=> ?
+`;
+
+// 수주 상세ID들로부터 제품/옵션 매핑 조회
+const selectPrdtAndOptByRcvordDetaIds = `
+SELECT rcvord_deta_id, prdt_id, prdt_opt_id
+FROM rcvord_deta
+WHERE rcvord_deta_id IN (?)
+
 `;
 
 module.exports = {
@@ -871,6 +891,7 @@ module.exports = {
   selectRscInspectionOrderCount,
   selectSemiInspectionOrderCount,
   selectEndPrdtInspectionOrderCount,
+
   selectDeliveryOrderRemainingQty,
   selectProductionOrderDetailsById,
   selectRscInspectionDetails,
@@ -879,4 +900,8 @@ module.exports = {
   // 개별 품목 타입별 재고 조회
   selectRscInventoryStatus,
   selectPrdtInventoryStatus,
+
+  selectNowStockByPrdtOpt,
+  selectPrdtAndOptByRcvordDetaIds,
+
 };

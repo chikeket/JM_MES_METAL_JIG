@@ -70,6 +70,38 @@ module.exports = {
   prcsProgPreconMainList,
   prcsProgPreconEmpList,
   prcsProgPreconEqmList,
+  // PRCS_PROG_PRECON 수량 업데이트 (UPDATE)
+  prcsProgPreconUpdateQuantities: `
+UPDATE prcs_prog_precon
+SET inpt_qy = ?,
+		prod_qy = ?,
+		infer_qy = ?,
+		pass_qy = ?
+WHERE prcs_prog_precon_id = ?`,
+  // proc_ctrl 합계 집계: 특정 prcs_prog_precon_id를 참조하는 모든 행의 합계
+  prcsProgPreconAggregateQuantities: `
+SELECT 
+	COALESCE(SUM(inpt_qy), 0) AS inpt_qy,
+	COALESCE(SUM(prod_qy), 0) AS prod_qy,
+	COALESCE(SUM(infer_qy), 0) AS infer_qy,
+	COALESCE(SUM(pass_qy), 0) AS pass_qy
+FROM proc_ctrl
+WHERE prcs_prog_precon_id = ?`,
+  // 현재 PRCS_PROG_PRECON의 지시/생산 수량 조회
+  prcsProgPreconGetDrctProdById: `
+SELECT drct_qy, prod_qy
+FROM prcs_prog_precon
+WHERE prcs_prog_precon_id = ?`,
+  // 상태 코드 업데이트
+  prcsProgPreconUpdateStatus: `
+UPDATE prcs_prog_precon
+SET st = ?
+WHERE prcs_prog_precon_id = ?`,
+  // 작업 시작 시 상태를 NULL로 초기화
+  prcsProgPreconClearStatus: `
+UPDATE prcs_prog_precon
+SET st = NULL
+WHERE prcs_prog_precon_id = ?`,
   // 현투입 수량 조회: RWMATR_RTUN_TRGET에서 prod_drct_deta_id 기준 생산예상수량(prod_expc_qy)
   prcsProgPreconRunTargetByDeta: `
 SELECT COALESCE(SUM(r.prod_expc_qy), 0) AS prod_expc_qy
@@ -82,6 +114,14 @@ FROM RWMATR_RTUN_TRGET r
 WHERE r.prod_drct_deta_id = ?
 	AND r.inpt_st = 'J2'
 ORDER BY r.prod_expc_qy`,
+  // 작업 저장 시: 선택된 현투입 수량(prod_expc_qy) 행의 inpt_st를 J3로 변경
+  prcsProgPreconUpdateRunTargetToJ3: `
+UPDATE RWMATR_RTUN_TRGET
+SET inpt_st = 'J3'
+WHERE prod_drct_deta_id = ?
+	AND inpt_st = 'J2'
+	AND prod_expc_qy = ?
+LIMIT 1`,
   // 금형 조회 모달: mold 목록 (mold_id LIKE, prdt/sub_code 조인)
   prcsProgPreconMoldList: `
 SELECT 
@@ -112,4 +152,26 @@ SELECT
 	p.mold_use_at
 FROM prcs p
 WHERE p.prcs_id = ?`,
+  // 특정 ppp ID로 deta_id와 prcs_ord 조회
+  prcsProgPreconGetDetaAndOrdById: `
+SELECT prod_drct_deta_id, prcs_ord
+FROM prcs_prog_precon
+WHERE prcs_prog_precon_id = ?`,
+  // 같은 prod_drct_deta_id를 참조하는 모든 proc_ctrl.prod_qy 합계
+  prcsProgPreconSumProdByDetaId: `
+SELECT COALESCE(SUM(pc.prod_qy), 0) AS sum_prod_qy
+FROM proc_ctrl pc
+JOIN prcs_prog_precon ppp ON ppp.prcs_prog_precon_id = pc.prcs_prog_precon_id
+WHERE ppp.prod_drct_deta_id = ?`,
+  // 다음 공정(prcs_ord=현재+1) 행의 drct_qy와 st를 갱신
+  prcsProgPreconUpdateNextDrctAndStatus: `
+UPDATE prcs_prog_precon
+SET drct_qy = ?, st = 'J2'
+WHERE prod_drct_deta_id = ? AND prcs_ord = ?`,
+  // 특정 deta와 prcs_ord로 행 존재 여부/식별자 조회
+  prcsProgPreconFindByDetaAndOrd: `
+SELECT prcs_prog_precon_id
+FROM prcs_prog_precon
+WHERE prod_drct_deta_id = ? AND prcs_ord = ?
+LIMIT 1`,
 };

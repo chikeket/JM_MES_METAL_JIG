@@ -99,4 +99,121 @@ router.get("/prcs-prog-precon/run-target/list", async (req, res) => {
   }
 });
 
+// PRCS_PROG_PRECON 업데이트 (DELETE/INSERT가 아닌 UPDATE)
+router.post("/prcs-prog-precon/update-quantities", async (req, res) => {
+  try {
+    const {
+      prcs_prog_precon_id,
+      inpt_qy,
+      prod_qy,
+      infer_qy,
+      pass_qy,
+      recompute,
+    } = req.body || {};
+    if (!prcs_prog_precon_id) {
+      return res
+        .status(400)
+        .json({ message: "prcs_prog_precon_id가 없습니다." });
+    }
+    // recompute 플래그가 true이면 proc_ctrl 합계로 재계산
+    if (recompute === true) {
+      const result = await service.recomputeAndUpdateQuantities(
+        prcs_prog_precon_id
+      );
+      return res.json({ ok: true, ...result });
+    }
+    // 간단한 서버측 숫자 보정
+    const payload = {
+      prcs_prog_precon_id,
+      inpt_qy: Number(inpt_qy) || 0,
+      prod_qy: Number(prod_qy) || 0,
+      infer_qy: Number(infer_qy) || 0,
+      pass_qy: Number(pass_qy) || 0,
+    };
+    console.log("[update-quantities] payload", payload);
+    await service.updatePrcsProgPreconQuantities(payload);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("update quantities error", err);
+    res
+      .status(500)
+      .json({ message: err?.message || "업데이트에 실패했습니다." });
+  }
+});
+
+// proc_ctrl 합계로 PRCS_PROG_PRECON 수량 일괄 재계산/적용
+router.post("/prcs-prog-precon/recompute-quantities", async (req, res) => {
+  try {
+    const { prcs_prog_precon_id } = req.body || {};
+    if (!prcs_prog_precon_id) {
+      return res
+        .status(400)
+        .json({ message: "prcs_prog_precon_id가 없습니다." });
+    }
+    const result = await service.recomputeAndUpdateQuantities(
+      prcs_prog_precon_id
+    );
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    console.error("recompute quantities error", err);
+    res.status(500).json({ message: err?.message || "재계산에 실패했습니다." });
+  }
+});
+
+// 작업 저장 시: 선택된 현투입 수량(prod_expc_qy) 행의 inpt_st를 J3로 변경
+router.post("/prcs-prog-precon/mark-run-target-j3", async (req, res) => {
+  try {
+    const { prod_drct_deta_id, prod_expc_qy } = req.body || {};
+    if (!prod_drct_deta_id || prod_expc_qy == null) {
+      return res
+        .status(400)
+        .json({ message: "필수값 누락(prod_drct_deta_id, prod_expc_qy)" });
+    }
+    const result = await service.markRunTargetUsedToJ3({
+      prod_drct_deta_id,
+      prod_expc_qy,
+    });
+    res.json(result);
+  } catch (err) {
+    console.error("mark-run-target-j3 error", err);
+    res.status(500).json({ message: err?.message || "상태 변경 실패" });
+  }
+});
+
+// 다음 공정(prcs_ord+1) 행의 drct_qy를 같은 deta의 생산합으로 설정하고 st='J2'
+router.post("/prcs-prog-precon/advance-next-step", async (req, res) => {
+  try {
+    const { prcs_prog_precon_id } = req.body || {};
+    if (!prcs_prog_precon_id) {
+      return res
+        .status(400)
+        .json({ message: "prcs_prog_precon_id가 없습니다." });
+    }
+    const result = await service.advanceNextStepWithSum(prcs_prog_precon_id);
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    console.error("advance-next-step error", err);
+    res
+      .status(500)
+      .json({ message: err?.message || "다음 공정 갱신에 실패했습니다." });
+  }
+});
+
+// 작업 시작 시 상태 NULL 처리 (st=NULL)
+router.post("/prcs-prog-precon/clear-status", async (req, res) => {
+  try {
+    const { prcs_prog_precon_id } = req.body || {};
+    if (!prcs_prog_precon_id) {
+      return res
+        .status(400)
+        .json({ message: "prcs_prog_precon_id가 필요합니다." });
+    }
+    const result = await service.clearPrcsProgPreconStatus(prcs_prog_precon_id);
+    res.json(result);
+  } catch (err) {
+    console.error("clear-status error", err);
+    res.status(500).json({ message: "오류가 발생했습니다." });
+  }
+});
+
 module.exports = router;

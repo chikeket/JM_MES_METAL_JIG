@@ -110,7 +110,9 @@ async function fetchMolds() {
     const kw = (keyword.value || '').trim()
     const params = kw ? { mold_id: kw } : {}
     const { data } = await axios.get('/api/prcs-prog-precon/molds', { params })
-    rows.value = Array.isArray(data) ? data : []
+    const list = Array.isArray(data) ? data : []
+    // 상태가 '미사용'인 금형만 표시
+    rows.value = list.filter((row) => (row?.st_nm || '').trim() === '미사용')
   } catch (err) {
     console.error('금형 조회 실패', err)
     rows.value = []

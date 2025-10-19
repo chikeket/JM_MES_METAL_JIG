@@ -2,8 +2,7 @@
 const waitingFinishedPrdt = `
 select 
  a.prcs_ctrl_id
- ,a.prcs_prog_precon_id
- ,a.prcs_routing_id
+ ,a.prcs_prog_precon_id 
  ,a.prcs_ord
  ,a.pass_qy - d.end_insp_qy "bePass_qy"
  ,a.wk_to_dt
@@ -70,6 +69,7 @@ SELECT
  e.prdt_id,
  e.prdt_opt_id,
  f.prdt_nm,
+ f.unit,
  g.opt_nm
 FROM end_prdt_qlty_insp a
 JOIN emp b
@@ -155,13 +155,13 @@ FROM end_prdt_qlty_insp
 WHERE end_prdt_qlty_insp_id = ?`;
 
 module.exports = {
-  waitingFinishedPrdt,
-  endPrdtQltyInspSearch,
-  endPrdtQltyInspInferSearch,
-  endPrdtQltyInspCreateId,
-  endPrdtQltyInspInsert,
-  endPrdtQltyInspInferInsert,
-  endPrdtQltyInspUpdate,
-  endPrdtQltyInspInferUpdate,
-  endPrdtQltyInspDelete,
+	waitingFinishedPrdt,
+	endPrdtQltyInspSearch,
+	endPrdtQltyInspInferSearch,
+	endPrdtQltyInspCreateId,
+	endPrdtQltyInspInsert,
+	endPrdtQltyInspInferInsert,
+	endPrdtQltyInspUpdate,
+	endPrdtQltyInspInferUpdate,
+	endPrdtQltyInspDelete,
 };

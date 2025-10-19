@@ -1,20 +1,9 @@
 <template>
+  <CModal ref="modalRef" :visible="visible" @close="emitClose" size="xl">
   <CContainer fluid>
-    <!-- 상단 버튼 -->
-    <div class="d-flex justify-content-end gap-2 mb-3">
-      완제품 품질검사 관리
-      <CButton color="secondary" @click="newFunc()">신규</CButton>
-      <CButton color="secondary" @click="openWaitingFinishedPrdtModal()">생산실적조회</CButton>
-      <waitingFinishedPrdtModal
-        :visible="isWaitingFinishedPrdtModalVisible"
-        @close="closeWaitingFinishedPrdtModal"
-        @select="selectOrdr"
-      />
-      <CButton color="secondary" @click="saveInspection()">저장</CButton>
-      <CButton color="secondary" @click="update()">수정</CButton>
-      <CButton color="danger" @click="deleteFunc()">삭제</CButton>
+    <div class="d-flex justify-content-end gap-2 mb-3" style="margin-top: 16px;">
+      <CButton color="secondary" @click="close()">닫기</CButton>      
     </div>
-
     <!-- 기본 정보 입력 -->
     <CRow class="g-3 mb-3">
       <CCol md="3">
@@ -25,7 +14,7 @@
       </CCol>
       <CCol md="3">
         <CInputGroup>
-          <CInputGroupText style="min-width: 95px">완제품명</CInputGroupText>
+          <CInputGroupText style="min-width: 95px">반제품명</CInputGroupText>
           <CFormInput v-model="form.prdt_nm" readonly class="bg-light" />
         </CInputGroup>
       </CCol>
@@ -69,14 +58,7 @@
       </CCol>
     </CRow>
     <CFormTextarea v-model="form.rm" label="비고" rows="3" text="필요 시 기재"></CFormTextarea>
-    <div class="d-flex justify-content-end gap-2 mb-3">
-      <CButton color="secondary" @click="openEndPrdtQltyInspModal()">완제품 품질조회</CButton>
-      <endPrdtQltyInspModal
-        :visible="isEndPrdtQltyInspModalVisible"
-        @close="closeEndPrdtQltyInspModal"
-        @select="selectOrdr"
-      />
-    </div>
+    
     <!-- 검사 항목 테이블 -->
     <CTable hover bordered small class="align-middle mt-4">
       <CTableHead color="dark">
@@ -92,9 +74,7 @@
           <CTableDataCell>{{ item.insp_item_nm }}</CTableDataCell>
           <CTableDataCell>{{ item.basi_val }}</CTableDataCell>
           <CTableDataCell>{{ item.eror_scope_min + '~' + item.eror_scope_max }}</CTableDataCell>
-          <CTableDataCell class="text-start" style="width: 120px">
-            <CFormInput v-model="item.infer_qy" size="sm" placeholder="불량수량기입" />
-          </CTableDataCell>
+          <CTableDataCell class="text-end" style="width: 120px" readonly>{{ item.infer_qy }}</CTableDataCell>
         </CTableRow>
         <CTableRow v-if="inspectItems.length === 0">
           <CTableDataCell colspan="4" class="text-center text-muted py-4"
@@ -104,6 +84,7 @@
       </CTableBody>
     </CTable>
   </CContainer>
+  </CModal>
 </template>
 
 <script setup>
@@ -121,28 +102,15 @@ import {
   CTableDataCell,
 } from '@coreui/vue'
 import { ref, computed, watch } from 'vue'
-import waitingFinishedPrdtModal from '../modal/waitingFinishedPrdtModal.vue'
-import endPrdtQltyInspModal from '../modal/endPrdtQltyInspModal.vue'
 import userDateUtils from '@/utils/useDates.js'
-import axios from 'axios'
 import { useAuthStore } from '@/stores/auth.js'
 const auth = useAuthStore()
-//생산실적조회 검색모달
-const isWaitingFinishedPrdtModalVisible = ref(false)
-const openWaitingFinishedPrdtModal = () => {
-  isWaitingFinishedPrdtModalVisible.value = true
-}
-const closeWaitingFinishedPrdtModal = () => {
-  isWaitingFinishedPrdtModalVisible.value = false
-}
+const props = defineProps(['modaldata', 'visible']);
 
-//완제품 품질검사조회 검색모달
-const isEndPrdtQltyInspModalVisible = ref(false)
-const openEndPrdtQltyInspModal = () => {
-  isEndPrdtQltyInspModalVisible.value = true
-}
-const closeEndPrdtQltyInspModal = () => {
-  isEndPrdtQltyInspModalVisible.value = false
+const emit = defineEmits(['close'])
+
+const emitClose = () => {
+  emit('close')
 }
 
 const form = ref({
@@ -160,9 +128,16 @@ const form = ref({
 const inspectItems = ref([
   // { name: '외관검사', standard: '1mm', tolerance: '2%' },
 ])
+
 //불량수량
 const defectQty = ref(0)
-//항목별 불량수량 입력반응
+//합격수량
+const pass_qy = computed(() => {
+  const order = Number(form.value.insp_qy) || 0
+  const received = Number(defectQty.value) || 0
+  return order - received
+})
+//각각 검사항목별 불합격 수량 입력후 합격수량이 정해지는 코드
 watch(
   inspectItems,
   (newItems) => {
@@ -178,12 +153,23 @@ watch(
   { deep: true },
 )
 
-//합격수량
-const pass_qy = computed(() => {
-  const order = Number(form.value.insp_qy) || 0
-  const received = Number(defectQty.value) || 0
-  return order - received
-})
+//합격수량검증
+watch(
+  () => form.value.pass_qy,
+  (newVal) => {
+    const order = Number(form.value.insp_qy) || 0
+    const received = Number(newVal)
+    if (isNaN(received) || received < 0) {
+      // alert('합격 수량은 0 이상의 숫자만 입력 가능합니다.')
+      form.value.pass_qy = 0
+      return
+    }
+    if (received > order) {
+      // alert('합격 수량이 검수량보다 많을 수 없습니다.')
+      form.value.pass_qy = 0
+    }
+  },
+)
 //검수수량검증
 watch(
   () => form.value.insp_qy,
@@ -191,29 +177,29 @@ watch(
     const order = Number(form.value.qy) || 0
     const received = Number(newVal)
     if (isNaN(received) || received < 0) {
-      alert('검수 수량은 0 이상의 숫자만 입력 가능합니다.')
+      // alert('검수 수량은 0 이상의 숫자만 입력 가능합니다.')
       form.value.pass_qy = 0
       return
     }
     if (received > order) {
-      alert('검수 수량이 실적 수량보다 많을 수 없습니다.')
-      form.value.pass_qy = 0
+      // alert('검수 수량이 실적 수량보다 많을 수 없습니다.')
+      form.value.insp_qy = 0
     }
   },
 )
 
 const selectOrdr = (prdts) => {
-  // console.log(prdts)
+  console.log(prdts)
   inspectItems.value = []
   form.value.prdt_nm = prdts.searchParams.prdt_nm
   form.value.opt_nm = prdts.searchParams.opt_nm
   form.value.qy = Math.floor(prdts.searchParams.bePass_qy)
   form.value.insp_qy = Math.floor(prdts.searchParams.insp_qy) || 0
   form.value.pass_qy = Math.floor(prdts.searchParams.pass_qy) || 0
-  form.value.rm = !prdts.searchParams.rm ? '' : prdts.searchParams.rm
+  form.value.rm = prdts.searchParams.rm || ''
   form.value.prcs_ctrl_id = prdts.searchParams.prcs_ctrl_id
   form.value.end_prdt_qlty_insp_id = prdts.searchParams.end_prdt_qlty_insp_id
-
+  defectQty.value = prdts.searchParams.infer_qy || 0
   for (const prdt of prdts.detailData)
     inspectItems.value.push({
       insp_item_nm: prdt.insp_item_nm,
@@ -224,101 +210,13 @@ const selectOrdr = (prdts) => {
       qlty_item_mng_id: prdt.qlty_item_mng_id,
       end_prdt_qlty_insp_id: prdt.end_prdt_qlty_insp_id,
     })
-    console.log(form.value)
+}
+defineExpose({ selectOrdr });
+
+const close = () => {  
+  emit('close')
 }
 
-const saveInspection = async () => {
-  let inferData = []
-  for (const prdt of inspectItems.value)
-    inferData.push({
-      infer_qy: prdt.infer_qy,
-      qlty_item_mng_id: prdt.qlty_item_mng_id,
-    })
-  const payload = {
-    master: {
-      rm: form.value.rm,
-      prcs_ctrl_id: form.value.prcs_ctrl_id,
-      emp_id: form.value.emp_id,
-      infer_qy: defectQty.value,
-      pass_qy: pass_qy.value,
-      insp_qy: form.value.insp_qy,
-      insp_dt: form.value.insp_dt,
-    },
-    infer: inferData,
-  }
-  console.log(payload)
-  let result = await axios
-    .post('/api/endPrdtQltyInspInsert', payload)
-    .catch((err) => console.log(err))
-  let addRes = result.data
-  if (addRes.isSuccessed) {
-    console.log('완제품 검수가 등록되었습니다.')
-  } else {
-    console.log('완제품 검수에 실패했습니다.')
-  }
-}
-
-const update = async () => {
-  let inferData = []
-  for (const prdt of inspectItems.value)
-    inferData.push({
-      infer_qy: prdt.infer_qy,
-      qlty_item_mng_id: prdt.qlty_item_mng_id,
-      end_prdt_qlty_insp_id: prdt.end_prdt_qlty_insp_id,
-    })
-  const payload = {
-    master: {
-      rm: form.value.rm,
-      prcs_ctrl_id: form.value.prcs_ctrl_id,
-      emp_id: form.value.emp_id,
-      infer_qy: defectQty.value,
-      pass_qy: form.value.pass_qy,
-      insp_qy: form.value.insp_qy,
-      insp_dt: form.value.insp_dt,
-      end_prdt_qlty_insp_id: form.value.end_prdt_qlty_insp_id,
-    },
-    infer: inferData,
-  }
-  let result = await axios
-    .post('/api/endPrdtQltyInspUpdate', payload)
-    .catch((err) => console.log(err))
-  let addRes = result.data
-  if (addRes.isSuccessed) {
-    console.log('완제품 검수 수정이 등록되었습니다.')
-  } else {
-    console.log('완제품 검수 수정에 실패했습니다.')
-  }
-}
-
-const deleteFunc = async () => {
-  const payload = {
-    end_prdt_qlty_insp_id: form.value.end_prdt_qlty_insp_id,
-  }
-  let result = await axios
-    .post('/api/endPrdtQltyInspDelete', payload)
-    .catch((err) => console.log(err))
-  let addRes = result.data
-  if (addRes.isSuccessed) {
-    console.log('완제품 검수 삭제가 성공되었습니다.')
-  } else {
-    console.log('완제품 검수 삭제가 실패했습니다.')
-  }
-}
-
-const newFunc = async () => {
-  // console.log(form)
-  // form.value.emp_id = '';
-  // form.value.emp_nm = '';
-  form.value.prdt_nm = ''
-  form.value.opt_nm = ''
-  form.value.qy = 0  
-  form.value.insp_qy = 0
-  form.value.insp_dt = userDateUtils.dateFormat(new Date(), 'yyyy-MM-dd')
-  form.value.rm = ''
-  form.value.prcs_ctrl_id = ''
-  form.value.end_prdt_qlty_insp_id = ''
-  inspectItems.value = []
-}
 </script>
 
 <style scoped>
