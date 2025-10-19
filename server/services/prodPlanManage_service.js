@@ -100,13 +100,13 @@ const updateProdPlanManage = async (Info) => {
 
     //생산계획마스터 업데이트
     callQuery = sqlList["prodPlanManageUpdate"];
-    resInfo = await mariadb.query(callQuery, data);
+    resInfo = await conn.query(callQuery, data);
 
     for (detail of Info.detailList) {
       let dataDeta = convertObjToAry(detail, insertColumnsDeta);
       //생산계획상세 업데이트
       callQuery = sqlList["prodPlanManageUpdateDetail"];
-      resInfo = await mariadb.query(callQuery, dataDeta);
+      resInfo = await conn.query(callQuery, dataDeta);
     }
 
     await conn.commit();
@@ -132,7 +132,7 @@ const deleteProdPlanManage = async (Info) => {
     conn = await mariadb.getConnection();
     await conn.beginTransaction();
     callQuery = sqlList["prodPlanManageDelete"];
-    resInfo = await mariadb.query(callQuery, [Info.prod_plan_id]);
+    resInfo = await conn.query(callQuery, [Info.prod_plan_id]);
 
     await conn.commit();
     let result = null;
