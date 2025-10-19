@@ -33,6 +33,20 @@ router.get("/semiPrdtQltyInspSearch", async (req, res) => {
   // res.json(prdtList);
 });
 
+//제품 품질검사 항목별 불량수량 열람 쿼리
+router.get("/semiPrdtQltyInspInferSearch", async (req, res) => {
+  // console.log("클라에서온값");
+  // console.log(req.query);
+  // req.query;
+  let prdtList = await Service.semiPrdtQltyInspInferSearch(req.query).catch(
+    (err) => console.log(err)
+  );
+  // console.log("클라로갈값");
+  // console.log(prdtList);
+  res.send(prdtList);
+  // res.json(prdtList);
+});
+
 router.post("/semiPrdtQltyInspInsert", async (req, res) => {
   let Info = req.body;
   let result = await Service.semiPrdtQltyInspInsert(Info).catch((err) =>

@@ -78,10 +78,23 @@
     </c-card-body>
   </CContainer>
   <rscQltyInspModal
+        ref="rscModalRef"
         :visible="isRscQltyInspModalVisible"
-        :modaldata="cleanData.value"
+        :modaldata="modaldata.value"
         @close="closerRscQltyInspModal"        
       />
+  <endQltyInspModal
+    ref="endModalRef"
+    :visible="isEndQltyInspModalVisible"
+    :modaldata="modaldata.value"
+    @close="closerEndQltyInspModal"        
+  />
+  <semiQltyInspModal
+    ref="semiModalRef"
+    :visible="isSemiQltyInspModalVisible"
+    :modaldata="modaldata.value"
+    @close="closerSemiQltyInspModal"        
+  />
 </template>
 
 <script setup>
@@ -108,6 +121,8 @@ import { ref } from 'vue'
 import userDateUtils from '@/utils/useDates.js'
 import axios from 'axios'
 import rscQltyInspModal from '../modal/rscQltyBoardModal.vue'
+import endQltyInspModal from '../modal/endPrdtQltyBoardModal.vue'
+import semiQltyInspModal from '../modal/semiPrdtQltyBoardModal.vue'
 //자재품질이력검색모달
 const isRscQltyInspModalVisible = ref(false)
 const openRscQltyInspModal = () => {
@@ -115,6 +130,22 @@ const openRscQltyInspModal = () => {
 }
 const closerRscQltyInspModal = () => {
   isRscQltyInspModalVisible.value = false
+}
+//완제품 품질이력검색모달
+const isEndQltyInspModalVisible = ref(false)
+const openEndQltyInspModal = () => {
+  isEndQltyInspModalVisible.value = true
+}
+const closerEndQltyInspModal = () => {
+  isEndQltyInspModalVisible.value = false
+}
+//반제품 품질이력검색모달
+const isSemiQltyInspModalVisible = ref(false)
+const openSemiQltyInspModal = () => {
+  isSemiQltyInspModalVisible.value = true
+}
+const closerSemiQltyInspModal = () => {
+  isSemiQltyInspModalVisible.value = false
 }
 const form = ref({  
   emp_nm: '',
@@ -124,26 +155,26 @@ const form = ref({
 })
 
 const tableData = ref([
-  {
-    qlty_id: 'qlty_id',
-    insp_dt: 'insp_dt',
-    prdt_id: 'prdt_id',
-    prdt_opt_id: 'prdt_opt_id',
-    prdt_nm: 'prdt_nm',
-    opt_nm: 'opt_nm',
-    insp_qy: 'insp_qy',
-    pass_qy: 'pass_qy',
-    unit: 'unit',
-    emp_nm: 'emp_nm',
-    rm: 'rm',
-},
+//   {
+//     qlty_id: 'qlty_id',
+//     insp_dt: 'insp_dt',
+//     prdt_id: 'prdt_id',
+//     prdt_opt_id: 'prdt_opt_id',
+//     prdt_nm: 'prdt_nm',
+//     opt_nm: 'opt_nm',
+//     insp_qy: 'insp_qy',
+//     pass_qy: 'pass_qy',
+//     unit: 'unit',
+//     emp_nm: 'emp_nm',
+//     rm: 'rm',
+// },
 ])
 const type = ref('')
-const modaldata = ref({
-  detailData: '',
-  searchParams: ''
-});
-const cleanData = ref({ detailData: [], searchParams: {} });
+const modaldata = ref({ detailData: [], searchParams: {} });
+const rscModalRef = ref(null)
+const endModalRef = ref(null)
+const semiModalRef = ref(null)
+
 
 const search = async () => {
   // tableData.value = [];
@@ -169,19 +200,40 @@ if(type.value == '자재'){
 }
 
 const detail = async (data) => { 
+  let result = null;
     if(type.value == '자재') {
   const params = { rsc_qlty_insp_id: '' }
   params.rsc_qlty_insp_id = data.rsc_qlty_insp_id
-  let result = await axios
+      result = await axios
     .get('/api/rscQltyInspInferSelect', { params })
     .catch((err) => console.log(err))  
   modaldata.value.detailData = result.data
   modaldata.value.searchParams = data  
-    console.log(modaldata.value)
-    cleanData.value = JSON.parse(JSON.stringify(modaldata.value));
-    console.log(cleanData)
-
+    console.log(modaldata.value)    
     openRscQltyInspModal()    
+     rscModalRef.value?.selectOrdr(modaldata.value);
+    }else if(type.value == '완제품'){
+      const params = { end_prdt_qlty_insp_id: '' }
+  params.end_prdt_qlty_insp_id = data.end_prdt_qlty_insp_id
+      result = await axios
+    .get('/api/endPrdtQltyInspInferSearch', { params })
+    .catch((err) => console.log(err))
+    modaldata.value.detailData = result.data
+  modaldata.value.searchParams = data  
+    console.log(modaldata.value)    
+    openEndQltyInspModal()    
+     endModalRef.value?.selectOrdr(modaldata.value);
+    }else{
+      const params = { semi_prdt_qlty_insp_id: ''}
+  params.semi_prdt_qlty_insp_id = data.semi_prdt_qlty_insp_id  
+      result = await axios
+    .get('/api/semiPrdtQltyInspInferSearch', { params })
+    .catch((err) => console.log(err))
+    modaldata.value.detailData = result.data
+  modaldata.value.searchParams = data  
+    console.log(modaldata.value) 
+      openSemiQltyInspModal()
+      semiModalRef.value?.selectOrdr(modaldata.value);
     }
 }
 </script>
