@@ -1091,13 +1091,33 @@ const processTransactions = async (requestData) => {
           const dtlPrefix = doc.master.rcvpay_ty === 'S1' ? 'WRH_IN_' : 'WRH_OUT_';
           const detailIdRows = await mariadb.query('createWrhousDetailId', [dtlPrefix, dtlPrefix]);
           const detailId = detailIdRows[0]?.detail_id;
-          // 출고(불출)일 때 검사서ID 컬럼은 null, 납품상세/생산지시상세만 값 세팅
           let rsc_qlty_insp_id = null, semi_prdt_qlty_insp_id = null, end_prdt_qlty_insp_id = null;
-          if (doc.master.rcvpay_ty === 'S1') {
-            // 입고일 때만 검사서ID 세팅
-            rsc_qlty_insp_id = detail.rsc_qlty_insp_id || null;
-            semi_prdt_qlty_insp_id = detail.semi_prdt_qlty_insp_id || null;
+          // 검사서ID/납품상세ID/생산지시상세ID 매핑 (자재 불출 분기 처리)
+          if (detail.item_type === 'E1' || (detail.item_type === 'E3' && detail.prod_drct_deta_id)) {
+            // 자재 불출(생산지시 기반): prod_drct_deta_id만 세팅, end_prdt_qlty_insp_id는 강제로 null
+            rsc_qlty_insp_id = null;
+            semi_prdt_qlty_insp_id = null;
+            end_prdt_qlty_insp_id = null;
+            detail.end_prdt_qlty_insp_id = null;
+            detail.deli_deta_id = null;
+          } else if (detail.item_type === 'E3') {
+            // 완제품 출고: end_prdt_qlty_insp_id만 세팅, 나머지는 null
+            rsc_qlty_insp_id = null;
+            semi_prdt_qlty_insp_id = null;
             end_prdt_qlty_insp_id = detail.end_prdt_qlty_insp_id || null;
+            detail.deli_deta_id = null;
+          } else if (detail.item_type === 'S2') {
+            // 납품상세 출고: deli_deta_id만 세팅, 나머지는 null
+            rsc_qlty_insp_id = null;
+            semi_prdt_qlty_insp_id = null;
+            end_prdt_qlty_insp_id = null;
+            detail.deli_deta_id = detail.deli_deta_id || null;
+          } else {
+            // 기타: 모두 null
+            rsc_qlty_insp_id = null;
+            semi_prdt_qlty_insp_id = null;
+            end_prdt_qlty_insp_id = null;
+            detail.deli_deta_id = null;
           }
           const rowInspectId = rsc_qlty_insp_id || semi_prdt_qlty_insp_id || end_prdt_qlty_insp_id || detail.deli_deta_id || null;
           const rowItemId = detail.rsc_id || detail.prdt_id || null;
@@ -1118,45 +1138,110 @@ const processTransactions = async (requestData) => {
           if (!rowInspectId) {
             console.warn('[processTransactions] 디테일 행ID(검사서ID)가 null/undefined입니다:', detail);
           }
-          // 자재 불출(출고)일 때 RWMATR_RTUN_TRGET 테이블에 먼저 insert
-          if (
-            doc.master.rcvpay_ty === 'S2' && doc.master.rsc_id &&
-            (detail.rsc_rtun_trget_id || detail.prod_drct_deta_id)
-          ) {
+
+          // 자재 출고(S2)일 때, 자재 불출 테이블 ID 생성 및 insert
+          let rtunId = null;
+          if (doc.master.rcvpay_ty === 'S2' && detail.end_prdt_qlty_insp_id) {
+            // 1. 자재 불출 ID 생성
             const rtunIdRows = await mariadb.query('createRwmatrRtunTrgetId');
-            const rtunId = rtunIdRows[0]?.txn_id;
-            const rwmatrParams = [
-              rtunId,
-              detail.rsc_rtun_trget_id || detail.prod_drct_deta_id || null,
-              doc.master.rsc_id || null,
-              doc.master.prdt_opt_id || null,
-              detail.qty || detail.rcvpay_qy || 0,
-              'OUT',
-              detail.remark || detail.rm || ''
-            ];
-            console.log('[insertRwmatrRtunTrget] params:', rwmatrParams);
-            await mariadb.query('insertRwmatrRtunTrget', rwmatrParams);
+            // 반환값 컬럼명 유연하게 처리
+            rtunId = rtunIdRows[0]?.txn_id || rtunIdRows[0]?.rtun_id || rtunIdRows[0]?.id || null;
+            console.log('[createRwmatrRtunTrgetId] 생성된 rtunId:', rtunId, '원본:', rtunIdRows);
+            // 2. prod_drct_deta_id가 DB에 존재하는지 검증
+            let prodDrctDetaExists = false;
+            if (detail.prod_drct_deta_id) {
+              const prodDrctRows = await mariadb.query('selectProdDrctDetaById', [detail.prod_drct_deta_id]);
+              prodDrctDetaExists = Array.isArray(prodDrctRows) && prodDrctRows.length > 0;
+            }
+            if (prodDrctDetaExists) {
+              // 3. 자재 불출 테이블 insert (ID, 생산지시 상세ID, 제품ID, 옵션ID, 수량)
+              const rwmatrParams = [
+                rtunId,
+                detail.prod_drct_deta_id || null, // 생산지시 상세ID(prod_drct_deta 테이블 PK)로 매핑
+                detail.prdt_id || null,
+                detail.prdt_opt_id || null,
+                detail.qty || detail.rcvpay_qy || 0,
+                'J2', // inpt_st 값을 항상 'J2'로 고정
+                detail.remark || detail.rm || ''
+              ];
+              console.log('[insertRwmatrRtunTrget] insert 직전 파라미터:', rwmatrParams);
+              const rwmatrResult = await mariadb.query('insertRwmatrRtunTrget', rwmatrParams);
+              console.log('[insertRwmatrRtunTrget] 실행 결과:', rwmatrResult);
+            } else {
+              console.warn('[insertRwmatrRtunTrget] prod_drct_deta_id가 DB에 존재하지 않아 insert를 skip합니다:', detail.prod_drct_deta_id);
+            }
           }
-          // 디테일 insert
-          await mariadb.query("insertWrhousTransaction", [
-            detailId,
-            masId,
-            detail.rsc_rtun_trget_id || null,
-            rsc_qlty_insp_id,
-            semi_prdt_qlty_insp_id,
-            end_prdt_qlty_insp_id,
-            detail.deli_deta_id || null,
-            detail.qty || detail.rcvpay_qy || 0,
-            detail.remark || detail.rm || ""
-          ]);
-          // 출고일 때 LOT_STC_PRECON 테이블에 출고 수량 update
+
+          // 3. 마스터/디테일 insert: 입고/출고/납품 분기
+          let wrhousDtlParams;
+          // FK 검사: end_prdt_qlty_insp_id가 실제로 존재하지 않으면 null로 강제 세팅
+          let safeEndPrdtQltyInspId = end_prdt_qlty_insp_id;
+          if (end_prdt_qlty_insp_id) {
+            const inspRows = await mariadb.query('selectEndPrdtQltyInspById', [end_prdt_qlty_insp_id]);
+            if (!inspRows || inspRows.length === 0) safeEndPrdtQltyInspId = null;
+          }
+          if (doc.master.rcvpay_ty === 'S1') {
+            // 입고: 검사서ID 매핑
+            wrhousDtlParams = [
+              detailId,
+              masId,
+              null,
+              rsc_qlty_insp_id,
+              semi_prdt_qlty_insp_id,
+              safeEndPrdtQltyInspId,
+              null,
+              detail.qty || detail.rcvpay_qy || 0,
+              detail.remark || detail.rm || ""
+            ];
+          } else if (doc.master.rcvpay_ty === 'S2' && doc.master.rsc_id) {
+            // 자재 출고: 자재 불출 ID 매핑
+            wrhousDtlParams = [
+              detailId,
+              masId,
+              rtunId,
+              null,
+              null,
+              null,
+              null,
+              detail.qty || detail.rcvpay_qy || 0,
+              detail.remark || detail.rm || ""
+            ];
+          } else if (doc.master.rcvpay_ty === 'S2' && detail.deli_deta_id) {
+            // 납품 출고: 납품 상세 ID 매핑
+            wrhousDtlParams = [
+              detailId,
+              masId,
+              null,
+              null,
+              null,
+              null,
+              detail.deli_deta_id,
+              detail.qty || detail.rcvpay_qy || 0,
+              detail.remark || detail.rm || ""
+            ];
+          } else {
+            // 기타: 기존 로직 유지
+            wrhousDtlParams = [
+              detailId,
+              masId,
+              detail.rsc_rtun_trget_id || null,
+              rsc_qlty_insp_id,
+              semi_prdt_qlty_insp_id,
+              safeEndPrdtQltyInspId,
+              detail.deli_deta_id || null,
+              detail.qty || detail.rcvpay_qy || 0,
+              detail.remark || detail.rm || ""
+            ];
+          }
+          await mariadb.query("insertWrhousTransaction", wrhousDtlParams);
+
+          // 4. LOT 재고 현황 update
           if (doc.master.rcvpay_ty === 'S2' && (detail.lot || detail.lot_no)) {
             console.log('[updateLotStcPreconOnOut] params:', {
               qty: detail.qty || detail.rcvpay_qy || 0,
               lot: detail.lot,
               lot_no: detail.lot_no
             });
-            // LOT_NO로 WRHSDLVR_MAS_ID 여러 건 조회 후 모두 update
             const masIdRows = await mariadb.query("selectMasByLotNo", [detail.lot_no || null]);
             if (Array.isArray(masIdRows)) {
               for (const row of masIdRows) {

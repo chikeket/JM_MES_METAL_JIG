@@ -1200,6 +1200,7 @@ const handleMaterialWithdrawal = async (deliveryList) => {
         production_order_id: delivery.insp_no,
         production_item_name: delivery.item_name,
         insp_type: delivery.insp_type,
+        prod_drct_deta_id: delivery.prod_drct_deta_id || '', // 생산지시 상세ID를 직접 포함
       }
     })
 
@@ -1503,7 +1504,7 @@ const onSave = async () => {
           details: [],
         };
       }
-      // 디테일 검사서ID 컬럼명 매핑
+      // 디테일 검사서ID 및 생산지시 상세ID 매핑
       let detailObj = {
         item_type: itemTypeCode,
         warehouse_id: row.warehouse_id,
@@ -1516,9 +1517,17 @@ const onSave = async () => {
         lot: row.lot || '',
         lot_no: row.lot || '',
       };
-      if (itemTypeCode === 'E1') detailObj.rsc_qlty_insp_id = row.inspect_id;
-      else if (itemTypeCode === 'E2') detailObj.semi_prdt_qlty_insp_id = row.inspect_id;
-      else if (itemTypeCode === 'E3') detailObj.end_prdt_qlty_insp_id = row.inspect_id;
+      if (itemTypeCode === 'E1') {
+        detailObj.rsc_qlty_insp_id = row.inspect_id;
+        // 생산지시 상세ID가 있으면 prod_drct_deta_id로 매핑
+        if (row.prod_drct_deta_id) {
+          detailObj.prod_drct_deta_id = row.prod_drct_deta_id;
+        }
+      } else if (itemTypeCode === 'E2') {
+        detailObj.semi_prdt_qlty_insp_id = row.inspect_id;
+      } else if (itemTypeCode === 'E3') {
+        detailObj.end_prdt_qlty_insp_id = row.inspect_id;
+      }
       detailObj.deli_deta_id = row.deli_deta_id || null;
       detailObj.prdt_id = row.code;
       detailObj.prdt_opt_id = row.opt_code || '';
