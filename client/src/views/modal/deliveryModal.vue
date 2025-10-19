@@ -285,7 +285,17 @@ const loadProductionOrders = async (params) => {
 
   console.log('[deliveryModal] 생산지시 응답:', response.data)
 
-  productionOrderList.value = response.data || []
+  // 중복 제거: withdrawal_id + item_code + opt_code 조합으로 한 번만 출력
+  const uniqueList = []
+  const seen = new Set()
+  for (const item of (response.data || [])) {
+    const key = `${item.withdrawal_id}_${item.item_code}_${item.opt_code || ''}`
+    if (!seen.has(key)) {
+      seen.add(key)
+      uniqueList.push(item)
+    }
+  }
+  productionOrderList.value = uniqueList
   materialList.value = []
   selectedProductionOrder.value = null
   resetSelection()
@@ -324,7 +334,17 @@ const loadDeliveryProducts = async (params) => {
     console.warn('[deliveryModal] 조회 결과가 100건을 초과합니다!')
   }
 
-  inspectionList.value = response.data || []
+  // 중복 제거: insp_no + item_code + opt_code 조합으로 한 번만 출력
+  const uniqueList = []
+  const seen = new Set()
+  for (const item of (response.data || [])) {
+    const key = `${item.insp_no}_${item.item_code}_${item.opt_code || ''}`
+    if (!seen.has(key)) {
+      seen.add(key)
+      uniqueList.push(item)
+    }
+  }
+  inspectionList.value = uniqueList
   resetSelection()
 }
 

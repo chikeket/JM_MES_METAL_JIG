@@ -35,11 +35,29 @@ WHERE LOT_INVNTRY_PRECON_ID LIKE CONCAT('LOT_STC_', DATE_FORMAT(NOW(), '%y%m'), 
 `;
 
 
+// LOT별 자재 재고 현황 조회 쿼리
+const selectLotRscStockByMasId = `
+SELECT 
+  wm.LOT_NO AS lot_no,
+  lsp.NOW_STC_QY AS now_stock,
+  lsp.WRHSDLVR_MAS_ID,
+  wm.RSC_ID,
+  r.RSC_NM AS item_name,
+  wm.WRHOUS_ID,
+  wm.ZONE_ID
+FROM LOT_STC_PRECON lsp
+JOIN WRHOUS_WRHSDLVR_MAS wm ON lsp.WRHSDLVR_MAS_ID = wm.WRHSDLVR_MAS_ID
+LEFT JOIN RSC r ON wm.RSC_ID = r.RSC_ID
+WHERE lsp.WRHSDLVR_MAS_ID = ?
+ORDER BY wm.LOT_NO ASC
+`;
+
 module.exports = {
   selectMasByLotNo,
   insertLotStcPrecon,
   updateLotStcPreconOnOut,
   selectLotStcPreconById,
   createLotId,
+  selectLotRscStockByMasId,
 };
 

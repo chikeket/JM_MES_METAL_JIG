@@ -55,6 +55,27 @@ export default [
         name: '창고 로케이션 관리',
         to: '/jamin/wrhousZoneManage',
       },
+      {
+        component: 'CNavItem',
+        name: '자재 발주 조회',
+        to: '/jamin/rscOrdrSearch',
+      },
+      {
+        component: 'CNavItem',
+        name: 'BOM 관리',
+        to: '/jamin/bomManage',
+      },
+      {
+        component: 'CNavItem',
+        name: 'LOT 조회',
+        to: '/jamin/lotSearch',
+      },
+      {
+        component: 'CNavItem',
+        name: '창고 입출고 내역 조회',
+        to: '/jamin/wrhousDlvrSearch',
+      },
+      
     ],
   },
   {

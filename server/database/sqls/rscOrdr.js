@@ -1,6 +1,6 @@
 // 테이블: rsc_ordr <자재 발주> 관련 SQL 쿼리들
 
-// 자재 발주서 목록 조회 (마스터 정보 + 상세 건수)
+// 자재 발주서 목록 조회 (상세 라인 기준으로 헤더+라인 조인, 헤더만 있는 건도 LEFT JOIN으로 포함)
 const selectRscOrdrList = `
 SELECT
   c.RSC_ORDR_ID AS rsc_ordr_id,
@@ -24,6 +24,33 @@ WHERE (? IS NULL OR c.RSC_ORDR_NM LIKE CONCAT('%', ?, '%'))
 GROUP BY c.RSC_ORDR_ID
 ORDER BY substr(c.rsc_ordr_id,-6) desc
 LIMIT 500
+`;
+
+// 자재 조회 페이지
+const selectRscOrdrAllList = `
+  SELECT
+    R.rsc_ordr_id,
+    E.emp_nm,
+    C.co_nm,
+    A.rsc_nm,
+    A.spec,
+    A.unit,
+    D.qy,
+    R.reg_dt,
+    D.deli_expc_dt,
+    R.rm
+  FROM rsc_ordr R
+    JOIN co C ON C.co_id = R.co_id
+    JOIN emp E ON E.emp_id = R.emp_id
+    LEFT JOIN rsc_ordr_deta D ON D.rsc_ordr_id = R.rsc_ordr_id
+    LEFT JOIN rsc A ON A.rsc_id = D.rsc_id
+  WHERE
+    (? = '' OR R.rsc_ordr_id LIKE CONCAT('%', ?, '%'))
+    AND (? = '' OR C.co_nm LIKE CONCAT('%', ?, '%'))
+    AND (? = '' OR A.rsc_nm LIKE CONCAT('%', ?, '%'))
+    AND (? = '' OR R.reg_dt >= ?)
+    AND (? = '' OR R.reg_dt <= ?)
+  ORDER BY R.rsc_ordr_id DESC, D.rsc_ordr_deta_id DESC
 `;
 
 // 자재 발주서 상세 조회 (발주서 ID로 상세 리스트 반환)
@@ -127,4 +154,5 @@ module.exports = {
   deleteRscOrdrDetaById,
   rscOrdrCreateId,
   rscOrdrDetaCreateId,
+  selectRscOrdrAllList,
 };

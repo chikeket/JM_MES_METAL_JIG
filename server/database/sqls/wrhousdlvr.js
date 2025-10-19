@@ -276,7 +276,7 @@ LIMIT 200
 // 창고 입출고 거래 목록 조회 (사용자별 필터링)
 const selectWrhousTransactionList = `
 SELECT
-  w.WRHSDLVR_ID AS txn_id,
+  w.WRHOUS_WRHSDLVR_ID AS txn_id,
   w.DLVR_TY AS txn_type,
   w.ITEM_TY AS item_type,
   w.ITEM_CODE AS item_code,
@@ -672,6 +672,7 @@ WHERE wm.PRDT_ID = ?
 `;
 
 // 품목별 재고 현황 조회 (LOT별)
+// 품목별 재고 현황 조회 (LOT별, OPT_ID 조건 추가)
 const selectInventoryByItemWithLot = `
 SELECT 
   wm.LOT_NO as lot_no,
@@ -685,7 +686,7 @@ SELECT
   wm.WRHOUS_ID as warehouse_id,
   wm.ZONE_ID as zone_id
 FROM WRHOUS_WRHSDLVR_MAS wm
-WHERE (wm.RSC_ID = ? OR wm.PRDT_ID = ?)
+WHERE (wm.RSC_ID = ? OR (wm.PRDT_ID = ? AND wm.PRDT_OPT_ID = ?))
 GROUP BY wm.LOT_NO, wm.RSC_ID, wm.PRDT_ID, wm.PRDT_OPT_ID, wm.SPEC, wm.UNIT, wm.WRHOUS_ID, wm.ZONE_ID
 HAVING current_stock > 0
 ORDER BY first_rcvpay_dt ASC, wm.LOT_NO ASC
@@ -703,7 +704,12 @@ SELECT
   wm.WRHOUS_ID as warehouse_id,
   wm.ZONE_ID as zone_id
 FROM WRHOUS_WRHSDLVR_MAS wm
-WHERE (? = '' OR wm.RSC_ID = ?)
+WHERE (
+    (? = 'E1' AND wm.RSC_ID IS NOT NULL AND wm.PRDT_ID IS NULL)
+    OR (? = 'E2' AND wm.PRDT_ID IS NOT NULL AND wm.PRDT_OPT_ID IS NULL)
+    OR (? = 'E3' AND wm.PRDT_ID IS NOT NULL AND wm.PRDT_OPT_ID IS NOT NULL)
+  )
+  AND (? = '' OR wm.RSC_ID = ?)
   AND (? = '' OR wm.PRDT_ID = ?)
   AND (? = '' OR wm.PRDT_OPT_ID = ?)
 GROUP BY wm.LOT_NO, wm.RSC_ID, wm.PRDT_ID, wm.PRDT_OPT_ID, wm.WRHOUS_ID, wm.ZONE_ID
