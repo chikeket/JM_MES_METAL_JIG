@@ -752,7 +752,6 @@ const selectEndPrdtInspectionOrderCount = `
 SELECT COUNT(*) as cnt FROM END_PRDT_QLTY_INSP WHERE END_PRDT_QLTY_INSP_ID = ?
 `;
 
-
 // 납품서 상세 잔여 수량 조회
 const selectDeliveryOrderRemainingQty = `
 SELECT dd.deli_qy, 
@@ -826,6 +825,7 @@ SELECT qi.PASS_QY,
                  AND wm.RCVPAY_TY = 'S1'
           WHERE qi.END_PRDT_QLTY_INSP_ID = ?
           GROUP BY qi.END_PRDT_QLTY_INSP_ID, qi.PASS_QY
+`;
 
 // 재고 검증용 추가 쿼리들
 // 주어진 제품/옵션에 대한 현재 재고 합계 (LOT_STC_PRECON 기준)
@@ -903,5 +903,4 @@ module.exports = {
 
   selectNowStockByPrdtOpt,
   selectPrdtAndOptByRcvordDetaIds,
-
 };
