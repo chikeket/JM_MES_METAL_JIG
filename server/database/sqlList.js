@@ -77,6 +77,12 @@ const prodPlanManage = require("./sqls/prodPlanManage.js");
 // 설비 관련 쿼리
 const eqm = require("./sqls/eqm.js");
 
+// LOT 재고 현황 관련 쿼리
+const lotStcPrecon = require("./sqls/lotStcPrecon.js");
+
+// 자재 불출 관련 쿼리
+const rwmatrRtun = require("./sqls/rwmatrRtunTrget.js");
+
 
 // └───각 테이블별 SQL 쿼리들을 모아놓은 중앙 관리 파일───┘
 
@@ -111,5 +117,6 @@ module.exports = {
   ...semiPrdtQltyInsp,
   ...prodPlanManage,
   ...procCtrl,
-
+  ...lotStcPrecon,
+  ...rwmatrRtun,
 };

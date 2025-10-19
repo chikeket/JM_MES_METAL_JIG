@@ -2,6 +2,36 @@ const express = require("express");
 // Express의 Router 모듈을 사용해서 라우팅 등록, 라우팅을 별도 파일로 관리
 const router = express.Router();
 
+// 검사서ID로 남은 수량(remaining_qty) 단건 조회
+router.get('/warehouse/inspection-remaining-qty', async (req, res) => {
+  try {
+    const { inspect_id, item_type } = req.query;
+    const result = await wrhousdlvrService.getInspectionRemainingQty({ inspect_id, item_type });
+    res.json(result);
+  } catch (err) {
+    console.error('[API] /warehouse/inspection-remaining-qty error:', err);
+    res.status(500).json({ error: err?.message ?? 'server error' });
+  }
+});
+
+
+// 가용 수량 단건 조회 (E1/E2/E3 + 코드 + 옵션)
+router.get('/warehouse/available-qty', async (req, res) => {
+  try {
+    let { item_type, item_code, item_opt_code = '' } = req.query;
+    item_type = item_type ?? '';
+    item_code = item_code ?? '';
+    item_opt_code = item_opt_code ?? '';
+    console.log('[API] /warehouse/available-qty params:', { item_type, item_code, item_opt_code });
+    const result = await wrhousdlvrService.getAvailableQty({ item_type, item_code, item_opt_code });
+    res.json(result);
+  } catch (err) {
+    console.error('[API] /warehouse/available-qty error:', err);
+    res.status(500).json({ error: err?.message ?? 'server error' });
+  }
+});
+
+
 // 해당 라우터를 통해 제공할 서비스를 가져옴
 const wrhousdlvrService = require("../services/wrhousdlvr_service.js");
 
@@ -109,10 +139,9 @@ router.get("/warehouse/rscQltyInsp/list", async (req, res) => {
       insp_status,
     });
 
-    const results = await wrhousdlvrService.getRscQualityInspectionList(
+    const results = await wrhousdlvrService.getWarehouseRscInspections(
       item_code,
-      item_name,
-      insp_status
+      item_name
     );
 
     console.log("[wrhousdlvr_router] 자재 검사서 응답 건수:", results.length);
@@ -144,10 +173,9 @@ router.get("/warehouse/endPrdtQltyInsp/list", async (req, res) => {
       insp_status,
     });
 
-    const results = await wrhousdlvrService.getFinishedQualityInspectionList(
+    const results = await wrhousdlvrService.getWarehouseEndPrdtInspections(
       item_code,
-      item_name,
-      insp_status
+      item_name
     );
 
     console.log("[wrhousdlvr_router] 완제품 검사서 응답 건수:", results.length);
@@ -179,10 +207,9 @@ router.get("/warehouse/semiPrdtQltyInsp/list", async (req, res) => {
       insp_status,
     });
 
-    const results = await wrhousdlvrService.getSemiQualityInspectionList(
+    const results = await wrhousdlvrService.getWarehouseSemiInspections(
       item_code,
-      item_name,
-      insp_status
+      item_name
     );
 
     console.log("[wrhousdlvr_router] 반제품 검사서 응답 건수:", results.length);
@@ -473,53 +500,45 @@ router.post("/warehouse/transactions", async (req, res) => {
     console.log("[wrhousdlvr_router] 요청 헤더:", req.headers);
     console.log("[wrhousdlvr_router] 요청 본문:", req.body);
 
-    // 새로운 마스터-디테일 구조 처리
-    const { mode, masterTransactions, detailTransactions } = req.body;
+    // transactionList 구조 분기 처리
+    if (Array.isArray(req.body.transactionList)) {
+      // transactionList 구조면 processTransactions로 위임
+      try {
+        const result = await wrhousdlvrService.processTransactions(req.body);
+        res.status(result.success ? 200 : 400).json(result);
+      } catch (err) {
+        console.error("[wrhousdlvr_router] processTransactions error:", err);
+        res.status(500).json({ success: false, error: err?.message ?? "server error" });
+      }
+      return;
+    }
 
-    // 유효성 검사
-    if (
-      !mode ||
-      !Array.isArray(masterTransactions) ||
-      !Array.isArray(detailTransactions)
-    ) {
+    // 기존 방식 (mode, masterTransactions, detailTransactions)
+    const { mode, masterTransactions, detailTransactions } = req.body;
+    if (!mode || !Array.isArray(masterTransactions) || !Array.isArray(detailTransactions)) {
       return res.status(400).json({
         success: false,
         error: "mode, masterTransactions, detailTransactions가 필요합니다.",
       });
     }
-
     if (detailTransactions.length === 0) {
       return res.status(400).json({
         success: false,
         error: "디테일 테이블에 값이 하나도 없으면 저장할 수 없습니다.",
       });
     }
-
-    console.log(
-      `[wrhousdlvr_router] 마스터 거래: ${masterTransactions.length}건`
-    );
-    console.log(
-      `[wrhousdlvr_router] 디테일 거래: ${detailTransactions.length}건`
-    );
-
-    // 새로운 서비스를 통해 마스터-디테일 저장 처리 (LOT 관리, 재고 확인 포함)
+    console.log(`[wrhousdlvr_router] 마스터 거래: ${masterTransactions.length}건`);
+    console.log(`[wrhousdlvr_router] 디테일 거래: ${detailTransactions.length}건`);
     const result = await wrhousdlvrService.saveWarehouseTransactions({
       mode,
       masterTransactions,
       detailTransactions,
     });
-
     console.log("[wrhousdlvr_router] 창고 거래 저장 결과:", result);
-
     res.json(result);
   } catch (err) {
-    console.error(
-      "[wrhousdlvr_router] POST error:",
-      err && err.stack ? err.stack : err
-    );
-    res
-      .status(500)
-      .json({ success: false, error: err?.message ?? "server error" });
+    console.error("[wrhousdlvr_router] POST error:", err && err.stack ? err.stack : err);
+    res.status(500).json({ success: false, error: err?.message ?? "server error" });
   }
 });
 

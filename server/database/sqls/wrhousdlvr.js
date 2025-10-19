@@ -12,7 +12,7 @@ SELECT
   qi.PASS_QY          AS pass_qty,
   COALESCE(SUM(qii.INFER_QY), 0) AS fail_qty,
   COALESCE(SUM(wd.RCVPAY_QY), 0) AS received_qty,
-  (qi.PASS_QY - COALESCE(SUM(wd.RCVPAY_QY), 0)) AS remaining_qty,
+  (qi.PASS_QY - COALESCE(SUM(wd.RCVPAY_QY), 0)) AS available_qty,
   CASE 
     WHEN qi.INSP_QY > 0 
          AND qi.INSP_QY = qi.PASS_QY + COALESCE(SUM(qii.INFER_QY), 0)
@@ -44,7 +44,7 @@ GROUP BY
   qi.RSC_QLTY_INSP_ID, r.RSC_ID, r.RSC_NM, r.SPEC, r.UNIT,
   qi.INSP_QY, qi.PASS_QY, qi.RTNGUD_QY, rod.QY,
   qi.INSP_DT, qi.EMP_ID, e.EMP_NM, qi.RM
-HAVING remaining_qty > 0
+HAVING available_qty > 0
 ORDER BY qi.INSP_DT DESC
 LIMIT 200
 `;
@@ -60,7 +60,7 @@ SELECT  epqi.end_prdt_qlty_insp_id AS insp_no,
         epqi.pass_qy  AS pass_qty,
         epqi.infer_qy AS fail_qty,
         COALESCE(SUM(wd.RCVPAY_QY), 0) AS received_qty,
-        (epqi.pass_qy - COALESCE(SUM(wd.RCVPAY_QY), 0)) AS remaining_qty,
+  (epqi.pass_qy - COALESCE(SUM(wd.RCVPAY_QY), 0)) AS available_qty,
         p.spec AS item_spec,
         p.unit AS item_unit,
         CASE 
@@ -88,7 +88,7 @@ AND (? = '' OR p.prdt_nm LIKE CONCAT('%', ?, '%'))
 GROUP BY epqi.end_prdt_qlty_insp_id, pdd.prdt_id, p.prdt_nm, po.prdt_opt_id, po.opt_nm,
          epqi.insp_qy, epqi.pass_qy, epqi.infer_qy, p.spec, p.unit,
          epqi.INSP_DT, e.emp_nm, epqi.RM
-HAVING remaining_qty > 0
+HAVING available_qty > 0
 ORDER BY epqi.INSP_DT ASC,
          SUBSTR(epqi.end_prdt_qlty_insp_id,-3) DESC
 LIMIT 200
@@ -105,7 +105,7 @@ SELECT  spqi.semi_prdt_qlty_insp_id AS insp_no,
         spqi.pass_qy  AS pass_qty,
         spqi.infer_qy AS fail_qty,
         COALESCE(SUM(wd.RCVPAY_QY), 0) AS received_qty,
-        (spqi.pass_qy - COALESCE(SUM(wd.RCVPAY_QY), 0)) AS remaining_qty,
+  (spqi.pass_qy - COALESCE(SUM(wd.RCVPAY_QY), 0)) AS available_qty,
         p.spec AS item_spec,
         p.unit AS item_unit,
         CASE 
@@ -133,7 +133,7 @@ AND (? = '' OR p.prdt_nm LIKE CONCAT('%', ?, '%'))
 GROUP BY spqi.semi_prdt_qlty_insp_id, pdd.prdt_id, p.prdt_nm, po.prdt_opt_id, po.opt_nm,
          spqi.insp_qy, spqi.pass_qy, spqi.infer_qy, p.spec, p.unit,
          spqi.insp_dt, e.emp_nm, spqi.RM
-HAVING remaining_qty > 0
+HAVING available_qty > 0
 ORDER BY spqi.insp_dt ASC,
          SUBSTR(spqi.semi_prdt_qlty_insp_id,-3) DESC
 LIMIT 200
@@ -341,7 +341,7 @@ INSERT INTO WRHOUS_WRHSDLVR (
   RSC_QLTY_INSP_ID,
   SEMI_PRDT_QLTY_INSP_ID,
   END_PRDT_QLTY_INSP_ID,
-  DELI_DETA_ID,
+  deli_deta_id,
   RCVPAY_QY,
   RM
 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -445,37 +445,98 @@ FROM WRHOUS_WRHSDLVR_MAS
 WHERE LOT_NO LIKE CONCAT(?, DATE_FORMAT(NOW(), '%y%m'), '%')
 `;
 
-// 현재 재고 현황 조회
+// 현재 재고 현황 조회 (마스터-디테일 구조)
 const selectInventoryStatus = `
 SELECT 
-  ITEM_TY as item_type,
-  ITEM_CODE as item_code,
-  ITEM_NM as item_name,
-  SPEC as spec,
-  UNIT as unit,
-  SUM(CASE WHEN DLVR_TY = 'IN' THEN QY ELSE -QY END) AS current_stock
-FROM WRHOUS_WRHSDLVR
-WHERE ITEM_CODE = ?
-GROUP BY ITEM_TY, ITEM_CODE, ITEM_NM, SPEC, UNIT
+  CASE 
+    WHEN wm.RSC_ID IS NOT NULL THEN 'E1'
+    WHEN wm.PRDT_ID IS NOT NULL AND wm.PRDT_OPT_ID IS NULL THEN 'E2' 
+    WHEN wm.PRDT_ID IS NOT NULL AND wm.PRDT_OPT_ID IS NOT NULL THEN 'E3'
+    ELSE 'E3'
+  END AS item_type,
+  COALESCE(wm.RSC_ID, wm.PRDT_ID) AS item_code,
+  COALESCE(r.RSC_NM, p.PRDT_NM) AS item_name,
+  wm.SPEC AS spec,
+  wm.UNIT AS unit,
+  SUM(CASE WHEN wm.RCVPAY_TY = 'S1' THEN wd.RCVPAY_QY ELSE -wd.RCVPAY_QY END) AS current_stock
+FROM WRHOUS_WRHSDLVR_MAS wm
+JOIN WRHOUS_WRHSDLVR wd ON wd.WRHSDLVR_MAS_ID = wm.WRHSDLVR_MAS_ID
+LEFT JOIN RSC r ON wm.RSC_ID = r.RSC_ID
+LEFT JOIN PRDT p ON wm.PRDT_ID = p.PRDT_ID
+WHERE (wm.RSC_ID = ? OR wm.PRDT_ID = ?)
+GROUP BY 
+  CASE 
+    WHEN wm.RSC_ID IS NOT NULL THEN 'E1'
+    WHEN wm.PRDT_ID IS NOT NULL AND wm.PRDT_OPT_ID IS NULL THEN 'E2' 
+    WHEN wm.PRDT_ID IS NOT NULL AND wm.PRDT_OPT_ID IS NOT NULL THEN 'E3'
+    ELSE 'E3'
+  END,
+  COALESCE(wm.RSC_ID, wm.PRDT_ID),
+  COALESCE(r.RSC_NM, p.PRDT_NM),
+  wm.SPEC, wm.UNIT
 HAVING current_stock > 0
 `;
 
-// 품목별 입출고 이력 조회
+// 품목별 입출고 이력 조회 (마스터-디테일 구조)
 const selectItemTransactionHistory = `
 SELECT
-  WRHSDLVR_ID as txn_id,
-  DLVR_TY as txn_type,
-  QY as qty,
-  INSP_ID as inspect_id,
-  EMP_ID as emp_id,
-  e.emp_nm,
-  DATE_FORMAT(REG_DT, '%Y-%m-%d %H:%i:%s') AS reg_dt,
-  RM as rm
-FROM WRHOUS_WRHSDLVR w
-LEFT JOIN emp e ON w.EMP_ID = e.emp_id
-WHERE w.ITEM_CODE = ?
-ORDER BY w.REG_DT DESC
-LIMIT 100
+  wm.WRHSDLVR_MAS_ID AS txn_id,
+  wm.RCVPAY_TY AS txn_type,   -- 'S1'(입고) / 'S2'(출고)
+  wd.RCVPAY_QY AS qty,
+  COALESCE(wd.RSC_QLTY_INSP_ID, wd.SEMI_PRDT_QLTY_INSP_ID, wd.END_PRDT_QLTY_INSP_ID) AS inspect_id,
+  wm.EMP_ID AS emp_id,
+  e.EMP_NM AS emp_nm,
+  DATE_FORMAT(wm.RCVPAY_DT, '%Y-%m-%d %H:%i:%s') AS rcvpay_dt,
+  wm.RM AS rm
+FROM WRHOUS_WRHSDLVR_MAS wm
+JOIN WRHOUS_WRHSDLVR wd ON wd.WRHSDLVR_MAS_ID = wm.WRHSDLVR_MAS_ID
+LEFT JOIN EMP e ON wm.EMP_ID = e.EMP_ID
+WHERE 
+  (
+    (? = 'E1' AND wm.RSC_ID = ?)
+    OR
+    (? IN ('E2','E3') AND wm.PRDT_ID = ? AND (? = '' OR wm.PRDT_OPT_ID = ?))
+  )
+ORDER BY wm.RCVPAY_DT DESC
+LIMIT 200
+`;
+
+// 품목 유형별 개별 재고 조회 (자재)
+const selectRscInventoryStatus = `
+SELECT 
+  'E1' AS item_type,
+  wm.RSC_ID AS item_code,
+  r.RSC_NM AS item_name,
+  wm.SPEC AS spec,
+  wm.UNIT AS unit,
+  SUM(CASE WHEN wm.RCVPAY_TY = 'S1' THEN wd.RCVPAY_QY ELSE -wd.RCVPAY_QY END) AS current_stock
+FROM WRHOUS_WRHSDLVR_MAS wm
+JOIN WRHOUS_WRHSDLVR wd ON wd.WRHSDLVR_MAS_ID = wm.WRHSDLVR_MAS_ID
+LEFT JOIN RSC r ON wm.RSC_ID = r.RSC_ID
+WHERE wm.RSC_ID = ?
+GROUP BY wm.RSC_ID, r.RSC_NM, wm.SPEC, wm.UNIT
+HAVING current_stock > 0
+`;
+
+// 품목 유형별 개별 재고 조회 (제품 - 반제품/완제품)
+const selectPrdtInventoryStatus = `
+SELECT 
+  CASE 
+    WHEN wm.PRDT_OPT_ID IS NULL THEN 'E2'
+    ELSE 'E3'
+  END AS item_type,
+  wm.PRDT_ID AS item_code,
+  p.PRDT_NM AS item_name,
+  wm.PRDT_OPT_ID AS opt_code,
+  wm.SPEC AS spec,
+  wm.UNIT AS unit,
+  SUM(CASE WHEN wm.RCVPAY_TY = 'S1' THEN wd.RCVPAY_QY ELSE -wd.RCVPAY_QY END) AS current_stock
+FROM WRHOUS_WRHSDLVR_MAS wm
+JOIN WRHOUS_WRHSDLVR wd ON wd.WRHSDLVR_MAS_ID = wm.WRHSDLVR_MAS_ID
+LEFT JOIN PRDT p ON wm.PRDT_ID = p.PRDT_ID
+WHERE wm.PRDT_ID = ? AND (? = '' OR wm.PRDT_OPT_ID = ?)
+GROUP BY wm.PRDT_ID, p.PRDT_NM, wm.PRDT_OPT_ID, wm.SPEC, wm.UNIT
+HAVING current_stock > 0
 `;
 
 // 창고 자재 목록 조회 (자재 불출용) - 자재 검사서에서 조회
@@ -691,6 +752,81 @@ const selectEndPrdtInspectionOrderCount = `
 SELECT COUNT(*) as cnt FROM END_PRDT_QLTY_INSP WHERE END_PRDT_QLTY_INSP_ID = ?
 `;
 
+// 납품서 상세 잔여 수량 조회
+const selectDeliveryOrderRemainingQty = `
+SELECT dd.deli_qy, 
+               COALESCE(SUM(wd.RCVPAY_QY), 0) AS delivered_qty,
+               (dd.deli_qy - COALESCE(SUM(wd.RCVPAY_QY), 0)) AS remaining_qty,
+               p.prdt_nm AS item_name
+        FROM deli_deta dd 
+        JOIN rcvord_deta rd ON dd.rcvord_deta_id = rd.rcvord_deta_id
+        JOIN prdt p ON rd.prdt_id = p.prdt_id
+        LEFT JOIN WRHOUS_WRHSDLVR wd ON dd.deli_deta_id = wd.DELI_DETA_ID
+        LEFT JOIN WRHOUS_WRHSDLVR_MAS wm ON wd.WRHSDLVR_MAS_ID = wm.WRHSDLVR_MAS_ID 
+               AND wm.RCVPAY_TY = 'S2'
+        WHERE dd.deli_deta_id = ?
+        GROUP BY dd.deli_deta_id, dd.deli_qy, p.prdt_nm
+`;
+
+// 생산지시 상세 ID인 경우: 생산지시 수량에서 이미 불출된 수량 제외
+const selectProductionOrderDetailsById = `
+ SELECT pdd.drct_qy, 
+               COALESCE(SUM(wd.RCVPAY_QY), 0) AS withdrawn_qty,
+               (pdd.drct_qy - COALESCE(SUM(wd.RCVPAY_QY), 0)) AS remaining_qty,
+               p.prdt_nm AS item_name
+        FROM prod_drct_deta pdd 
+        JOIN prdt p ON pdd.prdt_id = p.prdt_id
+        LEFT JOIN WRHOUS_WRHSDLVR wd ON pdd.prod_drct_deta_id = wd.RSC_QLTY_INSP_ID
+        LEFT JOIN WRHOUS_WRHSDLVR_MAS wm ON wd.WRHSDLVR_MAS_ID = wm.WRHSDLVR_MAS_ID 
+               AND wm.RCVPAY_TY = 'S2'
+        WHERE pdd.prod_drct_deta_id = ?
+        GROUP BY pdd.prod_drct_deta_id, pdd.drct_qy, p.prdt_nm
+`;
+
+// 품질검사서인 경우: PASS_QY에서 이미 입고된 수량 제외
+const selectRscInspectionDetails = `
+  SELECT qi.PASS_QY,
+                 COALESCE(SUM(wd.RCVPAY_QY), 0) AS received_qty,
+                 (qi.PASS_QY - COALESCE(SUM(wd.RCVPAY_QY), 0)) AS remaining_qty,
+                 r.RSC_NM AS item_name
+          FROM RSC_QLTY_INSP qi
+          LEFT JOIN RSC_ORDR_DETA rod ON qi.RSC_ORDR_DETA_ID = rod.RSC_ORDR_DETA_ID
+          LEFT JOIN RSC r ON rod.RSC_ID = r.RSC_ID
+          LEFT JOIN WRHOUS_WRHSDLVR wd ON qi.RSC_QLTY_INSP_ID = wd.RSC_QLTY_INSP_ID
+          LEFT JOIN WRHOUS_WRHSDLVR_MAS wm ON wd.WRHSDLVR_MAS_ID = wm.WRHSDLVR_MAS_ID 
+                 AND wm.RCVPAY_TY = 'S1'
+          WHERE qi.RSC_QLTY_INSP_ID = ?
+          GROUP BY qi.RSC_QLTY_INSP_ID, qi.PASS_QY, r.RSC_NM
+`;
+
+// 반제품 품질검사서 목록 조회 (사용) - 완전 입고된 것 제외
+const selectSemiInspectionListById = `
+SELECT qi.PASS_QY,
+                 COALESCE(SUM(wd.RCVPAY_QY), 0) AS received_qty,
+                 (qi.PASS_QY - COALESCE(SUM(wd.RCVPAY_QY), 0)) AS remaining_qty,
+                 'semi_product' AS item_name
+          FROM SEMI_PRDT_QLTY_INSP qi
+          LEFT JOIN WRHOUS_WRHSDLVR wd ON qi.SEMI_PRDT_QLTY_INSP_ID = wd.SEMI_PRDT_QLTY_INSP_ID
+          LEFT JOIN WRHOUS_WRHSDLVR_MAS wm ON wd.WRHSDLVR_MAS_ID = wm.WRHSDLVR_MAS_ID 
+                 AND wm.RCVPAY_TY = 'S1'
+          WHERE qi.SEMI_PRDT_QLTY_INSP_ID = ?
+          GROUP BY qi.SEMI_PRDT_QLTY_INSP_ID, qi.PASS_QY
+`;
+
+// 완제품 품질검사서 목록 조회 (사용) - 완전 입고된 것 제외
+const selectEndPrdtInspectionListById = `
+SELECT qi.PASS_QY,
+                 COALESCE(SUM(wd.RCVPAY_QY), 0) AS received_qty,
+                 (qi.PASS_QY - COALESCE(SUM(wd.RCVPAY_QY), 0)) AS remaining_qty,
+                 'N/A' AS item_name
+          FROM END_PRDT_QLTY_INSP qi
+          LEFT JOIN WRHOUS_WRHSDLVR wd ON qi.END_PRDT_QLTY_INSP_ID = wd.END_PRDT_QLTY_INSP_ID
+          LEFT JOIN WRHOUS_WRHSDLVR_MAS wm ON wd.WRHSDLVR_MAS_ID = wm.WRHSDLVR_MAS_ID 
+                 AND wm.RCVPAY_TY = 'S1'
+          WHERE qi.END_PRDT_QLTY_INSP_ID = ?
+          GROUP BY qi.END_PRDT_QLTY_INSP_ID, qi.PASS_QY
+`;
+
 module.exports = {
   selectWrhousTransactionList,
   selectInspectionList,
@@ -735,4 +871,12 @@ module.exports = {
   selectRscInspectionOrderCount,
   selectSemiInspectionOrderCount,
   selectEndPrdtInspectionOrderCount,
+  selectDeliveryOrderRemainingQty,
+  selectProductionOrderDetailsById,
+  selectRscInspectionDetails,
+  selectSemiInspectionListById,
+  selectEndPrdtInspectionListById,
+  // 개별 품목 타입별 재고 조회
+  selectRscInventoryStatus,
+  selectPrdtInventoryStatus,
 };

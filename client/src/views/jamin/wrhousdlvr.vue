@@ -19,6 +19,9 @@
       </div>
       <div class="ms-auto d-flex gap-2">
         <CButton color="secondary" size="sm" @click="onReset">초기화</CButton>
+        <CButton color="secondary" size="sm" @click="openWrhousdlvrModal">
+          수불서 조회
+        </CButton>
         <CButton v-if="mode === 'in'" color="secondary" size="sm" @click="openInspectionSearch">
           입고서 조회
         </CButton>
@@ -29,6 +32,13 @@
         <CButton color="danger" size="sm">삭제</CButton>
       </div>
     </div>
+
+    <!-- 수불서 선택 모달 -->
+    <WrhousdlvrModal
+      :isOpen="isWrhousdlvrModalOpen"
+      @close="closeWrhousdlvrModal"
+      @select="onSelectWrhousdlvr"
+    />
 
     <!-- 입고서 선택 모달 -->
     <InspectionModal
@@ -59,9 +69,9 @@
               <CTableHeaderCell class="text-center" style="width: 120px"
                 >수불 담당자 명</CTableHeaderCell
               >
-              <CTableHeaderCell class="text-center" style="width: 120px"
-                >검사서 ID</CTableHeaderCell
-              >
+              <CTableHeaderCell class="text-center" style="width: 120px">
+                {{ mode === 'in' ? '입고서 ID' : '출고서 ID' }}
+              </CTableHeaderCell>
               <CTableHeaderCell class="text-center" style="width: 100px"
                 >품목 유형</CTableHeaderCell
               >
@@ -75,7 +85,8 @@
               <CTableHeaderCell class="text-center" style="width: 150px">옵션 명</CTableHeaderCell>
               <CTableHeaderCell class="text-center" style="width: 120px">규격</CTableHeaderCell>
               <CTableHeaderCell class="text-center" style="width: 70px">단위</CTableHeaderCell>
-              <CTableHeaderCell class="text-center" style="width: 90px">수량</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 110px">가용 수량</CTableHeaderCell>
+              <CTableHeaderCell class="text-center" style="width: 90px">요청 수량</CTableHeaderCell>
               <CTableHeaderCell class="text-center" style="width: 90px">비고</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
@@ -96,6 +107,9 @@
               <CTableDataCell class="text-start">{{ r.opt_name || '-' }}</CTableDataCell>
               <CTableDataCell class="text-center">{{ r.spec || '' }}</CTableDataCell>
               <CTableDataCell class="text-center">{{ r.unit || '' }}</CTableDataCell>
+              <CTableDataCell class="text-end" :style="getAvailableQtyStyle(r)">
+                {{ r.available_qty !== undefined ? `${r.available_qty} ${r.unit || 'EA'}` : 'N/A' }}
+              </CTableDataCell>
               <CTableDataCell class="text-end">
                 <CFormInput
                   :value="Math.round(r.qty || 0)"
@@ -105,6 +119,7 @@
                   min="0"
                   step="1"
                   @blur="roundQuantity(r)"
+                  :style="getQuantityInputStyle(r)"
                 />
               </CTableDataCell>
               <CTableDataCell class="text-center">
@@ -112,7 +127,7 @@
               </CTableDataCell>
             </CTableRow>
             <CTableRow v-if="summaryRows.length === 0">
-              <CTableDataCell colspan="12" class="text-center text-muted"
+              <CTableDataCell colspan="13" class="text-center text-muted"
                 >데이터 없음</CTableDataCell
               >
             </CTableRow>
@@ -202,8 +217,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import axios from 'axios'
+import WrhousdlvrModal from '../modal/wrhsdlvrModal.vue'
 import InspectionModal from '../modal/inspectionModal.vue'
 import DeliveryModal from '../modal/deliveryModal.vue'
 import { useAuthStore } from '@/stores/auth.js'
@@ -227,6 +243,128 @@ const auth = useAuthStore()
 const mode = ref('in') // 'in' | 'out'
 const summaryRows = ref([])
 const bomMaterials = ref([]) // Vue reactive BOM 자재 데이터
+
+// 실제 창고 가용수량을 summaryRows에 단건 API로 보정하여 할당하는 함수
+const updateAvailableQtyFromInventory = async () => {
+  if (mode.value === 'out') {
+    // 자재 불출(생산지시 기반 출고)일 때: 완제품의 가용 수량을 BOM 자재 재고 기준으로 계산
+    for (const row of summaryRows.value) {
+      // 생산지시 기반 완제품(자재 불출)만 해당, id에 '_PROD_ORDER_' 포함
+      if (row.id && row.id.includes('_PROD_ORDER_')) {
+        // 해당 생산지시의 BOM 자재 목록 추출
+        const bomList = (bomMaterials.value || []).filter(m => m.inspect_id === row.inspect_id);
+        console.log('[가용수량계산][완제품]', row.name, row.code, row.opt_code, 'BOM자재목록:', bomList);
+        if (bomList.length === 0) {
+          row.available_qty = 0;
+        } else {
+          // 1. 자재코드+옵션 단위로 stock_qty 합산
+          const materialMap = {};
+          for (const mat of bomList) {
+            const key = `${mat.code || mat.item_code || ''}_${mat.opt_code || ''}`;
+            if (!materialMap[key]) {
+              materialMap[key] = { stock: 0, bomQty: Number(mat.bom_qty) || 0 };
+            }
+            materialMap[key].stock += Number(mat.stock_qty) || 0;
+            // bomQty는 동일 자재코드+옵션이면 동일하다고 가정
+          }
+          // 2. 각 자재별 (합산재고 / bomQty) 계산 및 상세 로그
+          let minPossible = Infinity;
+          let usedCount = 0;
+          for (const key in materialMap) {
+            const { stock, bomQty } = materialMap[key];
+            if (!bomQty || isNaN(bomQty) || bomQty <= 0) {
+              console.warn(`[가용수량계산][${key}] BOM 소요량(bomQty)이 0 또는 NaN, 계산에서 제외`, { stock, bomQty });
+              continue;
+            }
+            const possible = Math.floor(stock / bomQty);
+            usedCount++;
+            console.log(`[가용수량계산][${key}] 합산재고:`, stock, 'BOM소요량:', bomQty, '생산가능수량:', possible);
+            if (possible < minPossible) minPossible = possible;
+          }
+          if (usedCount === 0) {
+            row.available_qty = 0;
+            console.warn('[가용수량계산] 모든 BOM 자재의 소요량이 0 또는 NaN이어서 가용수량 0 처리');
+          } else {
+            row.available_qty = isFinite(minPossible) ? minPossible : 0;
+          }
+        }
+        // qty가 0, undefined, null, NaN이면 available_qty로 동기화 (초기값 세팅)
+        if (
+          row.qty === undefined || row.qty === null || isNaN(row.qty) || Number(row.qty) === 0
+        ) {
+          row.qty = row.available_qty;
+        }
+        // 최초 요청 수량을 _init_qty로 저장 (출고 모드에서만)
+        if (row._init_qty === undefined) {
+          row._init_qty = row.qty;
+        }
+      } else {
+        // 일반 출고(납품 등)는 기존대로 item+option별 가용수량 집계
+        const params = {
+          item_type: row.type === '자재' ? 'E1' : (row.type === '반제품' ? 'E2' : 'E3'),
+          item_code: row.code,
+          item_opt_code: row.opt_code || ''
+        };
+        try {
+          const { data } = await axios.get('/api/warehouse/available-qty', { params });
+          const availableQty = data?.available_qty ?? 0;
+          row.available_qty = availableQty;
+          if (
+            row.qty === undefined || row.qty === null || isNaN(row.qty) || Number(row.qty) === 0
+          ) {
+            row.qty = availableQty;
+          }
+          if (row._init_qty === undefined) {
+            row._init_qty = row.qty;
+          }
+        } catch (e) {
+          row.available_qty = 0;
+          if (row.qty === undefined || row.qty === null || isNaN(row.qty)) {
+            row.qty = 0;
+          }
+          if (row._init_qty === undefined) {
+            row._init_qty = row.qty;
+          }
+        }
+      }
+    }
+  } else {
+    // 입고 모드: 기존대로 검사서별/LOT별로 개별 API 호출
+    for (const row of summaryRows.value) {
+      if (!row.code) continue;
+      try {
+        if (row.inspect_id) {
+          const params = {
+            inspect_id: row.inspect_id,
+            item_type: row.type === '자재' ? 'E1' : (row.type === '반제품' ? 'E2' : 'E3')
+          };
+          const { data } = await axios.get('/api/warehouse/inspection-remaining-qty', { params });
+          row.available_qty = data?.remaining_qty ?? 0;
+        } else {
+          const params = {
+            item_type: row.type === '자재' ? 'E1' : (row.type === '반제품' ? 'E2' : 'E3'),
+            item_code: row.code,
+            item_opt_code: row.opt_code || ''
+          };
+          const { data } = await axios.get('/api/warehouse/available-qty', { params });
+          row.available_qty = data?.available_qty ?? 0;
+        }
+        if (
+          row.qty === undefined || row.qty === null || isNaN(row.qty) || Number(row.qty) === 0
+        ) {
+          row.qty = row.available_qty;
+        }
+          // 입고 모드에서는 _init_qty 저장하지 않음
+      } catch (e) {
+        row.available_qty = 0;
+        if (row.qty === undefined || row.qty === null || isNaN(row.qty)) {
+          row.qty = 0;
+        }
+          // 입고 모드에서는 _init_qty 저장하지 않음
+      }
+    }
+  }
+}
 
 // 상단 그리드 선택 관리
 const selectedSummaryIds = ref([])
@@ -327,7 +465,8 @@ const consolidatedRows = computed(() => {
         spec: row.spec,
         unit: row.unit,
         total_qty: Math.ceil(Number(row.qty) || 0),
-        master_remark: `${mode.value === 'in' ? '입고' : '출고'} 처리 - ${row.name}`, // 마스터 비고 (하단 그리드 전용)
+        rcvpay_nm: `${mode.value === 'in' ? '입고' : '출고'} 처리 - ${row.name}`, // 수불명에 제품명 포함
+        master_remark: '', // 마스터 비고는 빈값으로 설정
       }
     }
   })
@@ -491,6 +630,7 @@ const changeMode = (newMode) => {
 // const selectedIds = ref([])
 
 // 모달 상태
+const isWrhousdlvrModalOpen = ref(false)
 const isInspectionModalOpen = ref(false)
 const isDeliveryModalOpen = ref(false)
 
@@ -534,6 +674,12 @@ onMounted(async () => {
   console.log('[wrhousdlvr] 컴포넌트 마운트됨')
   await loadAllWarehouses()
   await loadAllLocations()
+  await updateAvailableQtyFromInventory()
+})
+
+// summaryRows가 변경될 때마다 실제 가용수량 보정 갱신
+watch(summaryRows, () => {
+  updateAvailableQtyFromInventory()
 })
 
 // 전체 창고 목록 조회
@@ -650,8 +796,33 @@ const getLotAllocations = async (itemType, itemCode, itemOptCode, quantity) => {
 
 // 수량 입력 시 호출되는 함수
 const onQuantityInput = (row, event) => {
-  const value = Math.round(Number(event.target.value) || 0)
+
+  let value = Math.round(Number(event.target.value) || 0)
+  let limited = false;
+  // 입고: 가용수량 초과 불가
+  if (mode.value === 'in') {
+    if (value > (row.available_qty || 0)) {
+      value = row.available_qty || 0
+      alert('요청 수량은 가용 수량을 초과할 수 없습니다.')
+      limited = true;
+    }
+  }
+
+  // 출고: 출고서(검사서)별 요청수량(remaining_qty/pass_qty/...) 초과 불가
+  if (mode.value === 'out') {
+    // 출고 모드에서는 최초 요청 수량(_init_qty) 초과 불가
+    let maxQty = row._init_qty !== undefined ? row._init_qty : 0;
+    if (maxQty > 0 && value > maxQty) {
+      value = maxQty;
+      alert('요청 수량은 출고서의 최초 요청 수량을 초과할 수 없습니다.');
+      limited = true;
+    }
+  }
   row.qty = value
+  // input 필드의 값도 강제로 제한값으로 반영 (초과 입력시)
+  if (limited && event && event.target) {
+    event.target.value = value;
+  }
 
   // 자재 불출의 경우: 완제품 수량 변경 시 관련 BOM 자재 수량도 업데이트
   if (row.id && row.id.includes('_PROD_ORDER_') && bomMaterials.value) {
@@ -734,6 +905,18 @@ const onReset = () => {
   console.log('[wrhousdlvr] 전체 초기화 완료 (BOM 자재 포함)')
 }
 
+// 수불서 모달 관련 함수들
+const openWrhousdlvrModal = () => {
+  console.log('[wrhousdlvr] 수불서 모달 열기')
+  isWrhousdlvrModalOpen.value = true
+}
+
+const closeWrhousdlvrModal = () => {
+  console.log('[wrhousdlvr] 수불서 모달 닫기')
+  isWrhousdlvrModalOpen.value = false
+}
+
+
 // 입고서 모달 관련 함수들
 const openInspectionSearch = () => {
   console.log('[wrhousdlvr] 검사서 조회 모달 열기')
@@ -765,6 +948,17 @@ const onSelectInspection = async (inspectionList) => {
   console.log('[wrhousdlvr] 검사서 선택됨:', inspectionList)
   console.log(`[wrhousdlvr] 선택된 검사서 수: ${inspectionList.length}`)
 
+    // 각 검사서의 available_qty 값 콘솔 출력
+    inspectionList.forEach((inspection, idx) => {
+      console.log(`[검사서 ${idx}]`, {
+        insp_no: inspection.insp_no,
+        code: inspection.item_code || inspection.rsc_id,
+        name: inspection.item_name || inspection.rsc_nm,
+          available_qty: inspection.available_qty || 0,
+          available_qty_display: inspection.available_qty_display || `0 ${inspection.item_unit || inspection.rsc_unit || 'EA'}`
+      });
+    });
+
   if (!Array.isArray(inspectionList) || inspectionList.length === 0) {
     alert('선택된 검사서가 없습니다.')
     return
@@ -779,27 +973,61 @@ const onSelectInspection = async (inspectionList) => {
     mode.value = 'in'
   }
 
-  // 요약 테이블에 선택된 검사서들 정보 누적 추가 (기존 데이터 유지)
-  const newSummaryRows = inspectionList.map((inspection, index) => ({
-    id:
-      inspection.insp_no + '_' + (inspection.opt_code || 'NO_OPT') + '_' + Date.now() + '_' + index, // 완전 고유 ID 생성
-    inspect_id: inspection.insp_no,
-    type: inspection.item_type || getItemTypeByInspType(inspection.insp_type),
-    code: inspection.item_code || inspection.rsc_id,
-    name: inspection.item_name || inspection.rsc_nm,
-    opt_code: inspection.opt_code || '',
-    opt_name: inspection.opt_name || '',
-    spec: inspection.item_spec || inspection.rsc_spec || '',
-    unit: inspection.item_unit || inspection.rsc_unit || '',
-    qty: inspection.pass_qty || inspection.insp_qty || 0,
-    emp_nm: ownerName.value, // 로그인 사용자명 사용
-    remark: `${mode.value === 'in' ? '입고' : '출고'} 처리`,
-    // 창고/로케이션 정보 추가 필요
-    warehouse_id: '',
-    warehouse_name: '',
-    location_id: '',
-    location_name: '',
-  }))
+  // 요약 테이블에 선택된 검사서들 정보 누적 추가 (가용수량을 먼저 조회해서 qty/available_qty 동시 세팅)
+  const newSummaryRows = [];
+  for (let index = 0; index < inspectionList.length; index++) {
+    const inspection = inspectionList[index];
+    const itemType = inspection.item_type || getItemTypeByInspType(inspection.insp_type);
+    const itemCode = inspection.item_code || inspection.rsc_id;
+    const itemOptCode = inspection.opt_code || '';
+    let availableQty = 0;
+    try {
+      if (inspection.insp_no) {
+        // 검사서별 잔여수량 API
+        const params = {
+          inspect_id: inspection.insp_no,
+          item_type: itemType === '자재' ? 'E1' : (itemType === '반제품' ? 'E2' : 'E3')
+        };
+        const { data } = await axios.get('/api/warehouse/inspection-remaining-qty', { params });
+        availableQty = data?.remaining_qty ?? 0;
+      } else {
+        // 기존 가용수량 API
+        const params = {
+          item_type: itemType === '자재' ? 'E1' : (itemType === '반제품' ? 'E2' : 'E3'),
+          item_code: itemCode,
+          item_opt_code: itemOptCode
+        };
+        const { data } = await axios.get('/api/warehouse/available-qty', { params });
+        availableQty = data?.available_qty ?? 0;
+      }
+    } catch (e) {
+      availableQty = 0;
+    }
+    newSummaryRows.push({
+      id:
+        inspection.insp_no + '_' + (inspection.opt_code || 'NO_OPT') + '_' + Date.now() + '_' + index, // 완전 고유 ID 생성
+      inspect_id: inspection.insp_no,
+      type: itemType,
+      code: itemCode,
+      name: inspection.item_name || inspection.rsc_nm,
+      opt_code: itemOptCode,
+      opt_name: inspection.opt_name || '',
+      spec: inspection.item_spec || inspection.rsc_spec || '',
+      unit: inspection.item_unit || inspection.rsc_unit || '',
+      qty: availableQty,
+      emp_nm: ownerName.value, // 로그인 사용자명 사용
+      remark: `${mode.value === 'in' ? '입고' : '출고'} 처리`,
+      warehouse_id: '',
+      warehouse_name: '',
+      location_id: '',
+      location_name: '',
+      available_qty: availableQty,
+      available_qty_display:
+        (typeof availableQty === 'number' && availableQty > 0)
+          ? `${availableQty} ${inspection.item_unit || inspection.rsc_unit || 'EA'}`
+          : `0 ${inspection.item_unit || inspection.rsc_unit || 'EA'}`,
+    });
+  }
 
   console.log(`[wrhousdlvr] 요약 테이블에 추가할 행 수: ${newSummaryRows.length}`)
 
@@ -824,7 +1052,11 @@ const onSelectInspection = async (inspectionList) => {
   // 창고/로케이션 정보 즉시 업데이트 (UI 반응성 개선)
   await updateWarehouseLocationInfo(uniqueNewRows)
 
-  // alert 표시
+  // 창고/로케이션 정보 반영 후, 가용수량도 동기화
+  await updateAvailableQtyFromInventory()
+
+  // 화면이 먼저 갱신되도록 nextTick 이후 alert 표시
+  await nextTick()
   alert(`${uniqueNewRows.length}건의 입고서 품목이 추가되었습니다.`)
 }
 
@@ -1178,10 +1410,32 @@ const onSave = async () => {
 
     console.log('[wrhousdlvr] 저장 전 선택된 데이터:', selectedSummaryIds.value.length, '건')
 
+
     // 선택된 행만 필터링
     const selectedRows = summaryRows.value.filter((row) =>
       selectedSummaryIds.value.includes(row.id),
     )
+
+    // LOT 자동 매핑: 상단 체크된 summaryRows <-> 하단 finalConsolidatedRows
+    // (code, opt_code, warehouse_id, location_id, qty 등으로 1:1 매칭)
+    if (mode.value === 'out') {
+      for (const row of selectedRows) {
+        // LOT이 이미 있으면 skip
+        if (row.lot && row.lot !== '') continue;
+        // 하단 LOT 테이블에서 매칭되는 LOT 찾기
+        const lotRow = finalConsolidatedRows.value.find(lr =>
+          lr.code === row.code &&
+          lr.opt_code === row.opt_code &&
+          lr.warehouse_id === row.warehouse_id &&
+          lr.location_id === row.location_id &&
+          Math.round(Number(lr.total_qty)) === Math.round(Number(row.qty))
+        );
+        if (lotRow && lotRow.lot) {
+          row.lot = lotRow.lot;
+          row.lot_no = lotRow.lot;
+        }
+      }
+    }
 
     // 디테일 테이블에 값이 없으면 저장 불가
     if (selectedRows.length === 0) {
@@ -1211,78 +1465,79 @@ const onSave = async () => {
       return
     }
 
-    // 하단 그리드 데이터 (마스터 테이블용) - 체크된 항목만 기준
-    const masterTransactions = consolidatedRows.value.map((item) => {
-      // 품목 유형 코드 매핑
-      let itemTypeCode = 'E3' // 기본값: 완제품
-      if (item.type === '자재') itemTypeCode = 'E1'
-      else if (item.type === '반제품') itemTypeCode = 'E2'
-      else if (item.type === '완제품') itemTypeCode = 'E3'
 
-      return {
-        rcvpay_ty: mode.value === 'in' ? 'S1' : 'S2', // 입고: S1, 출고: S2
-        item_type: itemTypeCode,
-        item_code: item.code,
-        item_name: item.name,
-        item_opt_code: item.opt_code || '',
-        item_opt_name: item.opt_name || '',
-        item_spec: item.spec || '',
-        item_unit: item.unit || 'EA',
-        warehouse_id: item.warehouse_id,
-        zone_id: item.location_id,
-        total_qty: Number(item.total_qty) || 0,
-        rcvpay_nm: item.rcvpay_nm || '', // 수불 명 추가 (하단 그리드에서 입력한 값)
-        emp_id: ownerEmpId.value,
-        emp_name: ownerName.value,
-        rcvpay_dt: new Date().toISOString().split('T')[0],
-        remark: item.master_remark || `${mode.value === 'in' ? '입고' : '출고'} 처리`, // 마스터 테이블 비고
+    // === 품목ID+옵션ID+창고ID+zone_id별로 마스터+디테일 묶음으로 변환 ===
+    const grouped = {};
+    for (const row of selectedRows) {
+      // item_type을 E1/E2/E3 코드로 변환
+      let itemTypeCode = 'E3';
+      if (row.type === '자재') itemTypeCode = 'E1';
+      else if (row.type === '반제품') itemTypeCode = 'E2';
+      else if (row.type === '완제품') itemTypeCode = 'E3';
+
+      // 품목ID+옵션ID+창고ID+zone_id 기준 그룹핑키 생성
+      const key = `${row.code}|${row.opt_code || 'NO_OPT'}|${row.warehouse_id}|${row.location_id || ''}`;
+      if (!grouped[key]) {
+        // 마스터 품목ID 컬럼명 매핑
+        let masterObj = {
+          item_type: itemTypeCode,
+          warehouse_id: row.warehouse_id,
+          zone_id: row.location_id,
+          qty: Number(row.qty) || 0,
+          rcvpay_ty: mode.value === 'in' ? 'S1' : 'S2',
+          rcvpay_nm: `${mode.value === 'in' ? '입고' : '출고'} 처리 - ${row.name}`,
+          emp_id: ownerEmpId.value,
+          emp_name: ownerName.value,
+          rcvpay_dt: new Date().toISOString().split('T')[0],
+          remark: row.master_remark || '',
+          lot_no: row.lot || '',
+        };
+        if (itemTypeCode === 'E1') masterObj.rsc_id = row.code;
+        else masterObj.prdt_id = row.code;
+        masterObj.prdt_opt_id = row.opt_code || '';
+        masterObj.item_name = row.name;
+        masterObj.item_spec = row.spec || '';
+        masterObj.item_unit = row.unit || 'EA';
+        grouped[key] = {
+          master: masterObj,
+          details: [],
+        };
       }
-    })
-
-    // 마스터 테이블에도 데이터가 없으면 저장 불가
-    if (masterTransactions.length === 0) {
-      alert('마스터 테이블에 저장할 데이터가 없습니다. 항목을 선택해주세요.')
-      return
-    }
-
-    // 상단 그리드 선택된 데이터 (디테일 테이블용)
-    const detailTransactions = selectedRows.map((row) => {
-      // 품목 유형 코드 매핑
-      let itemTypeCode = 'E3' // 기본값: 완제품
-      if (row.type === '자재') itemTypeCode = 'E1'
-      else if (row.type === '반제품') itemTypeCode = 'E2'
-      else if (row.type === '완제품') itemTypeCode = 'E3'
-
-      return {
-        rcvpay_ty: mode.value === 'in' ? 'S1' : 'S2', // 입고: S1, 출고: S2
+      // 디테일 검사서ID 컬럼명 매핑
+      let detailObj = {
         item_type: itemTypeCode,
-        item_code: row.code,
-        item_name: row.name,
-        item_opt_code: row.opt_code || '',
-        item_opt_name: row.opt_name || '',
-        item_spec: row.spec || '',
-        item_unit: row.unit || 'EA',
         warehouse_id: row.warehouse_id,
         zone_id: row.location_id,
         qty: Number(row.qty) || 0,
-        inspect_id: row.inspect_id,
-        deli_deta_id: row.deli_deta_id || null, // 납품서 상세 ID 추가
         emp_id: ownerEmpId.value,
         emp_name: ownerName.value,
         rcvpay_dt: new Date().toISOString().split('T')[0],
-        remark: row.remark || `${mode.value === 'in' ? '입고' : '출고'} 처리`, // 디테일 테이블 비고
-      }
-    })
+        remark: row.remark || '',
+        lot: row.lot || '',
+        lot_no: row.lot || '',
+      };
+      if (itemTypeCode === 'E1') detailObj.rsc_qlty_insp_id = row.inspect_id;
+      else if (itemTypeCode === 'E2') detailObj.semi_prdt_qlty_insp_id = row.inspect_id;
+      else if (itemTypeCode === 'E3') detailObj.end_prdt_qlty_insp_id = row.inspect_id;
+      detailObj.deli_deta_id = row.deli_deta_id || null;
+      detailObj.prdt_id = row.code;
+      detailObj.prdt_opt_id = row.opt_code || '';
+      detailObj.item_name = row.name;
+      detailObj.item_spec = row.spec || '';
+      detailObj.item_unit = row.unit || 'EA';
+      grouped[key].details.push(detailObj);
+    }
+
+    const transactionList = Object.values(grouped);
 
     const payload = {
-      mode: mode.value,
-      masterTransactions,
-      detailTransactions,
-    }
+      transactionList,
+      emp_id: ownerEmpId.value,
+    };
 
     console.log('[wrhousdlvr] 저장 요청 데이터:', payload)
     console.log(
-      `[wrhousdlvr] 마스터 거래: ${masterTransactions.length}건, 디테일 거래: ${detailTransactions.length}건`,
+      `[wrhousdlvr] 문서(마스터) 수: ${transactionList.length}, 전체 디테일 수: ${selectedRows.length}건`,
     )
 
     const response = await axios.post('/api/warehouse/transactions', payload)
@@ -1291,9 +1546,9 @@ const onSave = async () => {
 
     if (response.data?.success) {
       alert(
-        `${mode.value === 'in' ? '입고' : '출고'} 처리가 완료되었습니다.\n마스터: ${
-          masterTransactions.length
-        }건\n디테일: ${detailTransactions.length}건`,
+        `${mode.value === 'in' ? '입고' : '출고'} 처리가 완료되었습니다.\n문서(마스터): ${
+          transactionList.length
+        }건\n디테일: ${selectedRows.length}건`,
       )
       onReset()
     } else {
@@ -1304,5 +1559,32 @@ const onSave = async () => {
     console.error('[wrhousdlvr] 저장 오류 상세:', err)
     alert('저장 중 오류가 발생했습니다: ' + (err.response?.data?.error || err.message))
   }
+}
+
+// 가용 수량 스타일 함수
+const getAvailableQtyStyle = (row) => {
+  const availableQty = row.available_qty || 0
+  if (availableQty < 10) {
+    return { color: 'red', fontWeight: 'bold' }
+  } else if (availableQty < 50) {
+    return { color: 'orange', fontWeight: 'bold' }
+  }
+  return { color: 'green' }
+}
+
+// 요청 수량 입력 스타일 함수
+const getQuantityInputStyle = (row) => {
+  const requestedQty = row.qty || 0
+  const availableQty = row.available_qty || 0
+  
+  if (mode.value === 'out' && requestedQty > availableQty) {
+    return { 
+      borderColor: 'red', 
+      backgroundColor: '#ffebee',
+      color: 'red',
+      fontWeight: 'bold'
+    }
+  }
+  return {}
 }
 </script>
