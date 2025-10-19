@@ -1,76 +1,52 @@
 <template>
-  <div v-if="isPrcsModalOpen" class="modal-backdrop" @click="closeModal">
-    <div class="modal-container" @click.stop>
-      <div class="modal-header">
-        <h5>공정검색</h5>
-        <button type="button" class="btn-close" @click="closeModal"></button>
-      </div>
-      <!-- 커밋 용 -->
-      <div class="modal-body">
-        <!-- 검색 조건 영역 -->
-        <div class="search-area">
-          <div class="row g-3">
-            <div class="col-md-3">
-              <label class="form-label">검색조건</label>
-              <select v-model="searchTerm.searchKind" class="form-select">
-                <option value="all">전체</option>
-                <option value="prcs_id">공정코드</option>
-                <option value="prcs_nm">공정명</option>
-              </select>
-            </div>
-
-            <div class="col-md-3">
-              <label class="form-label">공정코드</label>
-              <input
-                v-model="searchTerm.prcs_id"
-                type="text"
-                class="form-control"
-                placeholder="공정코드 입력"
-                @keyup.enter="prcsSearch"
-              />
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">공정명</label>
-              <input
-                v-model="searchTerm.prcs_nm"
-                type="text"
-                class="form-control"
-                placeholder="공정명 입력"
-                @keyup.enter="prcsSearch"
-              />
-            </div>
-          </div>
-
-          <div class="col-md-3 d-flex align-items-end">
-            <button type="button" class="btn btn-secondary me-2" @click="prcsSearch">조회</button>
-            <button type="button" class="btn btn-secondary" @click="prcsReset">초기화</button>
-          </div>
+  <CModal :visible="isPrcsModalOpen" @close="closeModal" size="xl">
+    <CModalHeader class="modal-header-custom">
+      <CModalTitle>공정 조회</CModalTitle>
+    </CModalHeader>
+    <CModalBody>
+      <!-- 검색 영역 -->
+      <div class="search-bar mb-3">
+        <div class="left-controls d-flex gap-2 align-items-center">
+          <label class="search-label">공정 ID</label>
+          <CFormInput v-model="searchTerm.prcs_id" style="width: 180px" @keyup.enter="prcsSearch" />
+          <label class="search-label">공정 명</label>
+          <CFormInput v-model="searchTerm.prcs_nm" style="width: 180px" @keyup.enter="prcsSearch" />
+        </div>
+        <div class="flex-spacer"></div>
+        <div class="right-controls">
+          <CButton color="secondary" @click="prcsReset">초기화</CButton>
+          <CButton color="secondary" @click="prcsSearch">조회</CButton>
+          <CButton color="secondary" @click="onSelectPrcs" :disabled="selectedPrcs.length === 0">
+            선택 ({{ selectedPrcs.length }}건)
+          </CButton>
         </div>
       </div>
 
-      <!-- 공정 목록 테이블 -->
-      <div class="table-area mt-3">
+      <!-- 결과 테이블 -->
+      <div class="col-width-scope">
         <div class="table-responsive" style="max-height: 400px; overflow-y: auto">
-          <table class="table table-sm table-hover">
-            <thead class="table-light">
-              <tr>
-                <th style="width: 50px">
+          <CTable bordered hover small>
+            <CTableHead color="dark">
+              <CTableRow>
+                <CTableHeaderCell class="text-center" style="width: 50px">
                   <input
                     type="checkbox"
                     :checked="allChoice"
                     @change="toggleAll($event)"
                     class="form-check-input"
                   />
-                </th>
-                <th>공정아이디</th>
-                <th>공정명</th>
-                <th>설비그룹명</th>
-                <th>리드타임</th>
-                <th>금형사용유무</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
+                </CTableHeaderCell>
+                <CTableHeaderCell class="text-center">공정ID</CTableHeaderCell>
+                <CTableHeaderCell class="text-center">공정 명</CTableHeaderCell>
+                <CTableHeaderCell class="text-center">설비 그룹 명</CTableHeaderCell>
+                <CTableHeaderCell class="text-center">금형 사용 유무</CTableHeaderCell>
+                <CTableHeaderCell class="text-center">리드 타임</CTableHeaderCell>
+                <CTableHeaderCell class="text-center">공정 상태</CTableHeaderCell>
+                <CTableHeaderCell class="text-center">비고</CTableHeaderCell>
+              </CTableRow>
+            </CTableHead>
+            <CTableBody>
+              <CTableRow
                 v-for="prcs in prcsList"
                 :key="prcs.prcs_id"
                 class="cursor-pointer"
@@ -81,61 +57,49 @@
                 }"
                 @click="handleRowClick(prcs)"
               >
-                <td @click.stop>
+                <CTableDataCell @click.stop>
                   <input
                     type="checkbox"
                     :checked="choiceCheck(prcs)"
                     @change="checkboxDeselect(prcs)"
                     class="form-check-input"
                   />
-                </td>
-                <td>{{ prcs.prcs_id }}</td>
-                <td>{{ prcs.prcs_nm }}</td>
-                <td>{{ prcs.eqm_grp_nm }}</td>
-                <td>{{ prcs.lead_tm }}</td>
-                <td>{{ prcs.mold_use_at }}</td>
-              </tr>
-              <tr v-if="!prcsList || prcsList.length === 0">
-                <td colspan="11" class="text-center text-muted py-4">검색 결과가 없습니다.</td>
-              </tr>
-            </tbody>
-          </table>
+                </CTableDataCell>
+                <CTableDataCell>{{ prcs.prcs_id }}</CTableDataCell>
+                <CTableDataCell>{{ prcs.prcs_nm }}</CTableDataCell>
+                <CTableDataCell>{{ prcs.eqm_grp_nm }}</CTableDataCell>
+                <CTableDataCell>{{ prcs.mold_use_at_nm || prcs.mold_use_at }}</CTableDataCell>
+                <CTableDataCell>{{ prcs.lead_tm }}</CTableDataCell>
+                <CTableDataCell>{{ prcs.st_nm || prcs.st }}</CTableDataCell>
+                <CTableDataCell>{{ prcs.rm }}</CTableDataCell>
+              </CTableRow>
+              <CTableRow v-if="!prcsList || prcsList.length === 0">
+                <CTableDataCell colspan="8" class="text-center text-muted py-3">
+                  검색 결과가 없습니다.
+                </CTableDataCell>
+              </CTableRow>
+            </CTableBody>
+          </CTable>
         </div>
       </div>
-    </div>
-
-    <div class="modal-footer">
-      <button
-        type="button"
-        class="btn btn-secondary"
-        @click="onSelectPrcs"
-        :disabled="selectedPrcs.length === 0"
-      >
-        선택 ({{ selectedPrcs.length }}건)
-      </button>
-      <button type="button" class="btn btn-secondary" @click="closeModal">취소</button>
-    </div>
-  </div>
+    </CModalBody>
+    <!-- CModalFooter 제거: 선택/취소 버튼 삭제, 선택버튼은 검색바 오른쪽에 배치 -->
+  </CModal>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import axios from 'axios'
-const pickValue = ref('') // 검색 기준 선택값
-const searchKeyword = ref('') // 검색어
 
 // Props 정의
 const props = defineProps({
-  isPrcsModalOpen: {
-    type: Boolean,
-    default: false,
-  },
+  isPrcsModalOpen: { type: Boolean, default: false },
 })
 
 // Emit 정의
 const emit = defineEmits(['close', 'select'])
 
-// 반응형 데이터
+// 상태
 const prcsList = ref([])
 const selectedPrcs = ref([])
 const selectedPrcsRow = ref(null)
@@ -144,7 +108,7 @@ const selectedPrcsRowNo = ref('')
 // 검색 조건
 const searchTerm = reactive({
   prcs_id: '',
-  prcs_nm: '', // 기본값
+  prcs_nm: '',
   searchKind: 'all',
 })
 
@@ -158,12 +122,10 @@ const allChoice = computed(() => {
   )
 })
 
-// 공정 목록 조회
+// 서버 조회
 const prcsSearch = async () => {
   try {
     const params = { prcs_id: '', prcs_nm: '', eqm_grp_nm: '', lead_tm: '', mold_use_at: '' }
-
-    // 간단한 매핑: 검색 종류가 pickValue 같은 외부 값이 아니라 searchTerm.searchKind 사용
     if (searchTerm.searchKind === 'prcs_id')
       params.prcs_id = searchTerm.prcs_id || searchTerm.prcs_nm
     else if (searchTerm.searchKind === 'prcs_nm')
@@ -181,7 +143,7 @@ const prcsSearch = async () => {
   }
 }
 
-// 검색 조건 초기화
+// 초기화
 const prcsReset = () => {
   searchTerm.prcs_id = ''
   searchTerm.prcs_nm = ''
@@ -194,7 +156,7 @@ const handleRowClick = (prcs) => {
   selectSinglePrcs(prcs)
 }
 
-// 단일 공정 선택 (행 클릭 시)
+// 단일 선택
 const selectSinglePrcs = (prcs) => {
   selectedPrcsRow.value = { ...prcs }
   selectedPrcsRowNo.value = prcs.prcs_id
@@ -203,39 +165,25 @@ const selectSinglePrcs = (prcs) => {
 
 // 체크박스 선택/해제
 const checkboxDeselect = (prcs) => {
-  // 고유 식별자: 공정ID + 공정명 조합
   const index = selectedPrcs.value.findIndex(
     (s) => s.prcs_id === prcs.prcs_id && s.prcs_nm === prcs.prcs_nm,
   )
   if (index > -1) {
     selectedPrcs.value.splice(index, 1)
   } else {
-    // 선택 시 원래 데이터 그대로 push
     selectedPrcs.value.push({ ...prcs })
   }
-  console.log('[prcsModal] 선택된 공정들:', selectedPrcs.value)
 }
 
 // 전체 선택/해제
 const toggleAll = (event) => {
-  if (event.target.checked) {
-    selectedPrcs.value = prcsList.value.map((prcs) => ({ ...prcs }))
-  } else {
-    selectedPrcs.value = []
-  }
+  if (event.target.checked) selectedPrcs.value = prcsList.value.map((p) => ({ ...p }))
+  else selectedPrcs.value = []
 }
 
 // 선택 여부 확인
-const choiceCheck = (prcs) => {
-  return selectedPrcs.value.some((s) => s.prcs_id === prcs.prcs_id && s.prcs_nm === prcs.prcs_nm)
-}
-
-// 선택 상태 초기화
-const choiceReset = () => {
-  selectedPrcs.value = []
-  selectedPrcsRow.value = null
-  selectedPrcsRowNo.value = ''
-}
+const choiceCheck = (prcs) =>
+  selectedPrcs.value.some((s) => s.prcs_id === prcs.prcs_id && s.prcs_nm === prcs.prcs_nm)
 
 // 선택 확인
 const onSelectPrcs = () => {
@@ -243,13 +191,11 @@ const onSelectPrcs = () => {
     alert('공정을 선택해주세요.')
     return
   }
-
-  console.log('[prcsModal] 최종 선택된 공정들:', selectedPrcs.value)
   emit('select', selectedPrcs.value)
   closeModal()
 }
 
-// 모달 닫기 (이름을 template과 일치시킴)
+// 닫기
 const closeModal = () => {
   prcsReset()
   prcsList.value = []
@@ -257,122 +203,117 @@ const closeModal = () => {
   emit('close')
 }
 
-// 컴포넌트 마운트 시 초기화
 onMounted(() => {
-  console.log('[prcsModal] 컴포넌트 마운트됨')
+  // 초기 로그
 })
 </script>
 
 <style scoped>
-.modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1050;
+:deep(*) {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
+    sans-serif;
+  line-height: 1.5;
+  box-sizing: border-box;
 }
-
-.modal-container {
-  background: white;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 1200px;
-  max-height: 90vh;
-  overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-
-.modal-header {
+.modal-header-custom {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #dee2e6;
-  background-color: #f8f9fa;
+  padding-right: 12px;
 }
-
-.modal-header h5 {
-  margin: 0;
-  font-weight: 600;
-  color: #495057;
-}
-
-.btn-close {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  padding: 0;
-  width: 24px;
-  height: 24px;
+.search-bar {
   display: flex;
   align-items: center;
-  justify-content: center;
 }
-
-.btn-close:before {
-  content: '×';
+.flex-spacer {
+  flex: 1;
 }
-
-.modal-body {
-  padding: 1.5rem;
-  max-height: calc(90vh - 140px);
-  overflow-y: auto;
-}
-
-.search-area {
-  background-color: #f8f9fa;
-  padding: 1rem;
-  border-radius: 6px;
-  border: 1px solid #e9ecef;
-}
-
-.table-area {
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.cursor-pointer {
-  cursor: pointer;
-}
-
-.table tbody tr:hover {
-  background-color: #f8f9fa;
-}
-
-.table tbody tr.table-active {
-  background-color: #e3f2fd !important;
-}
-
-.modal-footer {
+.right-controls {
   display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #dee2e6;
-  background-color: #f8f9fa;
+  align-items: center;
+  gap: 10px;
+}
+.search-label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #222;
+  display: inline-block;
+  min-width: 72px;
+  text-align: right;
 }
 
-.badge {
-  font-size: 0.75rem;
-  padding: 0.25em 0.5em;
+/* 표 스타일 - rcvordModalOne 준용 */
+:deep(.table-responsive) {
+  border-radius: 10px;
+}
+:deep(.table-responsive thead) {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+:deep(.table-responsive thead th) {
+  font-size: 13px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #495057 0%, #343a40 100%) !important;
+  color: #ffffff !important;
+  text-align: center;
+  padding: 0.6rem 0.5rem;
+  border: none;
+}
+:deep(.table-responsive tbody td) {
+  font-size: 14px;
+  vertical-align: middle;
+}
+:deep(.table-responsive tbody tr) {
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+}
+:deep(.table-responsive tbody tr:hover) {
+  background-color: #f8f9fa !important;
+}
+:deep(.table-responsive tbody tr:hover) td {
+  background-color: #f8f9fa !important;
 }
 
-.form-label {
-  font-weight: 500;
-  color: #495057;
-  margin-bottom: 0.25rem;
+/* 모던 스크롤바 */
+:deep(.table-responsive) {
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+:deep(.table-responsive::-webkit-scrollbar) {
+  width: 8px;
+}
+:deep(.table-responsive::-webkit-scrollbar-track) {
+  background: rgba(240, 240, 240, 0.6);
+  border-radius: 10px;
+}
+:deep(.table-responsive::-webkit-scrollbar-thumb) {
+  background: linear-gradient(180deg, #bfc2c7, #9ea2a8);
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+}
+:deep(.table-responsive::-webkit-scrollbar-thumb:hover) {
+  background: linear-gradient(180deg, #a4a8ae, #7e838a);
 }
 
-.form-control:focus,
-.form-select:focus {
-  border-color: #80bdff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+/* CoreUI 버튼 톤 유지 */
+:deep(.btn) {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0.5rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  letter-spacing: -0.3px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+:deep(.btn-secondary) {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+  color: #fff !important;
+}
+:deep(.btn-secondary:hover) {
+  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.25);
 }
 </style>

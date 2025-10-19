@@ -3,13 +3,19 @@
 
 const selectPrcsModal = `
 SELECT DISTINCT
-    p.prcs_id,
-    p.prcs_nm,
-    eg.eqm_grp_nm,
-    p.lead_tm,
-    p.mold_use_at
+  p.prcs_id,
+  p.prcs_nm,
+  eg.eqm_grp_nm,
+  sc_mold.sub_code_nm AS mold_use_at_nm,
+  p.mold_use_at,
+  p.lead_tm,
+  sc_st.sub_code_nm AS st_nm,
+  p.st,
+  p.rm
 FROM prcs p
 JOIN eqm_grp eg ON p.eqm_grp_id = eg.eqm_grp_id
+LEFT JOIN sub_code sc_mold ON p.mold_use_at = sc_mold.sub_code_id
+LEFT JOIN sub_code sc_st ON p.st = sc_st.sub_code_id
 LEFT JOIN routing_deta rd ON p.prcs_id = rd.prcs_id
 WHERE p.prcs_id LIKE IFNULL(NULLIF(?, ''), p.prcs_id)
 AND p.prcs_nm LIKE IFNULL(CONCAT('%', NULLIF(?, ''), '%'), p.prcs_nm)
