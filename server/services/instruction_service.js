@@ -1,5 +1,5 @@
 const mariadb = require("../database/mapper.js");
-
+const sqlList = require("../database/sqlList.js");
 // 공통으로 사용하는 기능들 중 필요한 함수만 구조분해할당(Destructuring)으로 가져옴
 const { convertObjToAry } = require("../utils/converts.js");
 
@@ -39,7 +39,7 @@ let prcsProgPrecon = [
 ];
 
 let conn = null;
-
+let callQuery = null;
 let resDrctId = null;
 let resInfo = null;
 let resDrctDetaId = null;
@@ -56,7 +56,8 @@ const addNewInstruction = async (Info) => {
     await conn.beginTransaction();
 
     //생산지시ID생성
-    resDrctId = await mariadb.query("prodDrctIdCreate");
+    callQuery = sqlList["prodDrctIdCreate"];
+    resDrctId = await mariadb.query(callQuery);
     // .catch((err) => console.log(err));
 
     let masterInfoMerge = { ...Info.masterInfo, ...resDrctId[0] };
@@ -65,13 +66,15 @@ const addNewInstruction = async (Info) => {
     let data = convertObjToAry(masterInfoMerge, insertColumns);
 
     //생산지시마스터 인서트
-    resInfo = await mariadb.query("instructionInsert", data);
+    callQuery = sqlList["instructionInsert"];
+    resInfo = await mariadb.query(callQuery, data);
     // .catch((err) => console.log(err));
 
     // console.log("상세 인서트쪽")
     for (detail of Info.detailList) {
       //생산지시상세ID생성
-      resDrctDetaId = await mariadb.query("prodDrctDetaIdCreate");
+      callQuery = sqlList["instructionInsert"];
+      resDrctDetaId = await mariadb.query(callQuery);
       // .catch((err) => console.log(err));
       let detailInfoMerge = {
         rm: detail.rm,
@@ -87,20 +90,23 @@ const addNewInstruction = async (Info) => {
       let dataDeta = convertObjToAry(detailInfoMerge, insertColumnsDeta);
 
       //생산지시상세 인서트
-      resInfoDeta = await mariadb.query("instructionInsertDetail", dataDeta);
+      callQuery = sqlList["instructionInsertDetail"];
+      resInfoDeta = await mariadb.query(callQuery, dataDeta);
       // .catch((err) => console.log(err));
 
       let prdtInfo = [detail.prdt_id, detail.prdt_opt_id];
       // 제품ID로 라우팅과 공정 열람
+      callQuery = sqlList["prcsSelect"];
       resInfoPrcs = await mariadb
-        .query("prcsSelect", prdtInfo)
+        .query(callQuery, prdtInfo)
         .catch((err) => console.log(err));
       console.log("제품ID로 라우팅과 공정 열람");
       console.log(resInfoPrcs);
       for (prcs of resInfoPrcs) {
         //공정진행현황 ID생성
+        callQuery = sqlList["prcsProgPreconIdCreate"];
         resInfoPrcsProgId = await mariadb
-          .query("prcsProgPreconIdCreate")
+          .query(callQuery)
           .catch((err) => console.log(err));
         console.log("공정진행현황 ID생성");
         console.log(resInfoPrcsProgId);
@@ -119,8 +125,9 @@ const addNewInstruction = async (Info) => {
           prcsProgPrecon
         );
         // 공정진행현황 인서트
+        callQuery = sqlList["prcsProgPreconInsert"];
         prcsProgInsert = await mariadb
-          .query("prcsProgPreconInsert", prcsProgPreconData)
+          .query(callQuery, prcsProgPreconData)
           .catch((err) => console.log(err));
 
         if (resInfoDeta.affectedRows == 0) {
@@ -161,7 +168,8 @@ const updateInstruction = async (Info) => {
     console.log("=====값확인======");
     console.log(data);
     //생산지시마스터 업데이트
-    resInfo = await mariadb.query("instructionUpdate", data);
+    callQuery = sqlList["instructionUpdate"];
+    resInfo = await mariadb.query(callQuery, data);
 
     for (detail of Info.detailList) {
       let detailInfoMerge = {
@@ -176,19 +184,22 @@ const updateInstruction = async (Info) => {
       };
       let dataDeta = convertObjToAry(detailInfoMerge, insertColumnsDeta);
       //생산지시상세 업데이트
-      resInfoDeta = await mariadb.query("instructionDetaUpdate", dataDeta);
+      callQuery = sqlList["instructionDetaUpdate"];
+      resInfoDeta = await mariadb.query(callQuery, dataDeta);
 
       //공정진행현황 ID검색
+      callQuery = sqlList["prcsProgPreconIdSearch"];
       resInfoPrcsProgId = await mariadb
-        .query("prcsProgPreconIdSearch", [detail.prod_drct_deta_id])
+        .query(callQuery, [detail.prod_drct_deta_id])
         .catch((err) => console.log(err));
       console.log("공정진행현황 ID생성");
       console.log(resInfoPrcsProgId);
 
       let prdtInfo = [detail.prdt_id, detail.prdt_opt_id];
       // 제품ID로 라우팅과 공정 열람
+      callQuery = sqlList["prcsSelect"];
       resInfoPrcs = await mariadb
-        .query("prcsSelect", prdtInfo)
+        .query(callQuery, prdtInfo)
         .catch((err) => console.log(err));
       console.log("제품ID로 라우팅과 공정 열람");
       console.log(resInfoPrcs);
@@ -206,8 +217,9 @@ const updateInstruction = async (Info) => {
         prcsProgPrecon
       );
       // 공정진행현황 업데이트
+      callQuery = sqlList["prcsProgPreconUpdate"];
       prcsProgInsert = await mariadb
-        .query("prcsProgPreconUpdate", prcsProgPreconData)
+        .query(callQuery, prcsProgPreconData)
         .catch((err) => console.log(err));
       if (resInfoDeta.affectedRows == 0) {
         throw new Error("상세 인서트 실패");
@@ -240,7 +252,8 @@ const deleteInstruction = async (Info) => {
   try {
     conn = await mariadb.getConnection();
     await conn.beginTransaction();
-    resDrctId = await mariadb.query("instructionDelete", [Info.prod_drct_id]);
+    callQuery = sqlList["instructionDelete"];
+    resDrctId = await mariadb.query(callQuery, [Info.prod_drct_id]);
 
     await conn.commit();
     let result = null;
