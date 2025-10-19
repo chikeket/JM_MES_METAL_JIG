@@ -44,6 +44,20 @@ const semiPrdtQltyInspSearch = async (Info) => {
   return list;
 };
 
+// 반제품 품질검사에 등록된 불량수량 데이터 조회
+const semiPrdtQltyInspInferSearch = async (Info) => {
+
+  console.log("클라에서들어가는값 서비스");
+  console.log(Info);
+
+  // console.log("service쪽");
+
+  let list = await mariadb
+    .query("semiPrdtQltyInspInferSearch", [Info.semi_prdt_qlty_insp_id])
+    .catch((err) => console.log(err));
+  // console.log("조회 결과:", list);
+  return list;
+};
 //반제품 품질검사등록
 const semiPrdtQltyInspInsert = async (Info) => {
   console.log("서비스쪽");
@@ -155,4 +169,5 @@ module.exports = {
   semiPrdtQltyInspInsert,
   semiPrdtQltyInspUpdate,
   semiPrdtQltyInspDelete,
+  semiPrdtQltyInspInferSearch,
 };

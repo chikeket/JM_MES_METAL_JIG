@@ -93,9 +93,7 @@
           <CTableDataCell>{{ item.insp_item_nm }}</CTableDataCell>
           <CTableDataCell>{{ item.basi_val }}</CTableDataCell>
           <CTableDataCell>{{ item.eror_scope_min + '~' + item.eror_scope_max }}</CTableDataCell>
-          <CTableDataCell class="text-start" style="width: 120px">
-            <CFormInput v-model="item.infer_qy" size="sm" placeholder="불량수량기입" />
-          </CTableDataCell>
+          <CTableDataCell class="text-end" style="width: 120px" readonly>{{ item.infer_qy }}</CTableDataCell>
         </CTableRow>
         <CTableRow v-if="inspectItems.length === 0">
           <CTableDataCell colspan="4" class="text-center text-muted py-4"
@@ -237,6 +235,7 @@ const selectOrdr = (prdts) => {
     })
   console.log(prdts)
 }
+defineExpose({ selectOrdr });
 
 
 const close = () => {  
