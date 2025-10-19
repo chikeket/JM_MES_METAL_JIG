@@ -112,6 +112,26 @@ const routes = [
             name: '창고 로케이션 관리',
             component: () => import('@/views/jamin/wrhousZoneManage.vue'),
           },
+          {
+            path: '/jamin/rscOrdrSearch',
+            name: '자재 발주 조회',
+            component: () => import('@/views/jamin/rscOrdrSearch.vue'),
+          },
+          {
+            path: '/jamin/bomManage',
+            name: 'BOM 관리',
+            component: () => import('@/views/jamin/bomManage.vue'),
+          },
+          {
+            path: '/jamin/lotSearch',
+            name: 'LOT 재고 조회',
+            component: () => import('@/views/jamin/lotSearch.vue'),
+          },
+          {
+            path: '/jamin/wrhousDlvrSearch',
+            name: '창고 입출고 내역 조회',
+            component: () => import('@/views/jamin/invntrySearch.vue'),
+          },
         ],
       },
 

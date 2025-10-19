@@ -28,6 +28,8 @@ const emp = require("./sqls/emp.js");
 // 제품 관련 쿼리
 const prdt = require("./sqls/prdt.js");
 const prdtManage = require("./sqls/prdtManage.js");
+// BOM 관련 쿼리
+const bom = require("./sqls/bom.js");
 
 // 자재 발주 관련 쿼리
 const rscOrdr = require("./sqls/rscOrdr.js");
@@ -82,11 +84,17 @@ const lotStcPrecon = require("./sqls/lotStcPrecon.js");
 // 자재 불출 관련 쿼리
 const rwmatrRtun = require("./sqls/rwmatrRtunTrget.js");
 
+
+// 창고 입출고 모달 관련 쿼리
+const wrhsdlvr = require("./sqls/wrhsdlvr.js");
+
+
 // └───각 테이블별 SQL 쿼리들을 모아놓은 중앙 관리 파일───┘
 
 module.exports = {
   // 스프레드 연산자(...) 를 사용하여 각 파일의 쿼리들을 하나의 객체로 병합
   // 이렇게 하면 모든 쿼리를 하나의 객체에서 별칭으로 접근 가능
+  ...bom,
   ...instructions,
   ...prdt,
   ...rscOrdr,
@@ -117,4 +125,5 @@ module.exports = {
   ...procCtrl,
   ...lotStcPrecon,
   ...rwmatrRtun,
+  ...wrhsdlvr,
 };

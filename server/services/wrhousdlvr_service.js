@@ -1,4 +1,173 @@
+/**
+ * LOT 할당 결과를 프론트로 반환할 때 lot_no가 반드시 포함되도록 반환하는 예시
+ * @param {Array} allocations - LOT 할당 결과 배열
+ * @param {Object} summary - 할당 요약 정보
+ * @returns {Object} 프론트 응답 객체
+ */
+function buildLotAllocationResponse(allocations, summary) {
+  // allocations 배열의 각 객체에 lot_no가 포함되어 있는지 확인
+  const safeAllocations = allocations.map(a => ({
+    lot_no: a.lot_no || a.LOT_NO || a.lot || '',
+    allocated_qty: a.allocated_qty,
+    warehouse_id: a.warehouse_id || '',
+    zone_id: a.zone_id || ''
+  }));
+  return {
+    success: true,
+    allocations: safeAllocations,
+    summary: summary
+  };
+}
+/**
+ * 자재ID만으로 LOT_STC_PRECON에서 재고가 남아있는 LOT_NO를 선입선출로 조회하는 함수
+ * @param {string} rscId - 자재ID
+ * @returns {Promise<Array>} 사용가능 LOT 리스트 [{lot_no, now_stock}]
+ */
+async function getAvailableLotsByRscId(rscId) {
+  const conn = await mariadb.getConnection();
+  try {
+    const lots = await conn.query(
+      `SELECT LOT_NO, NOW_STC_QY FROM LOT_STC_PRECON WHERE RSC_ID = ? AND NOW_STC_QY > 0 ORDER BY LOT_NO ASC`,
+      [rscId]
+    );
+    return lots;
+  } finally {
+    conn.release();
+  }
+}
+/**
+ * 자재 불출 처리 시 자재 리스트에 LOT 번호를 매핑하여 반환하는 연동 예시
+ * @param {Array} materials - 자재 리스트 (각 행에 rsc_id 필드 필요)
+ * @returns {Promise<Array>} LOT이 매핑된 자재 리스트
+ */
+async function processMaterialWithdrawalWithLotNo(materials) {
+  const materialsWithLot = await assignLotToMaterials(materials);
+  return materialsWithLot;
+}
+/**
+ * 자재 리스트에 LOT 번호를 매핑하는 함수 (완제품과 동일 로직)
+ * @param {Array} materials - 자재 리스트 (각 행에 rsc_id 필드 필요)
+ * @returns {Promise<Array>} LOT이 매핑된 자재 리스트
+ */
+async function assignLotToMaterials(materials) {
+  for (const material of materials) {
+    if (!material.rsc_id) continue;
+    const lotStocks = await getLotStockByRscId(material.rsc_id);
+    // lot_no, LOT_NO 모두 체크, 없으면 ''
+    const firstLot = lotStocks.length > 0 ? (lotStocks[0].lot_no || lotStocks[0].LOT_NO || '') : '';
+    material.lot_no = firstLot;
+    material.lot = firstLot; // 프론트/백엔드 일관성 위해 둘 다
+    // 필요시 material.lot_allocations = lotStocks; // 전체 LOT별 재고 정보 저장
+  }
+  return materials;
+}
+/**
+ * 자재ID로 LOT별 자재 재고 현황을 조회하는 함수
+ * @param {string} rscId - 자재ID
+ * @returns {Promise<Array>} LOT별 자재 재고 리스트 [{lot_no, wrhsdlvr_mas_id, now_stock}]
+ */
+async function getLotStockByRscId(rscId) {
+  const conn = await mariadb.getConnection();
+  try {
+    // 1. 창고 입출고 마스터에서 자재ID로 LOT_NO, WRHSDLVR_MAS_ID 조회
+    const masRows = await conn.query(
+      `SELECT WRHSDLVR_MAS_ID, LOT_NO FROM WRHOUS_WRHSDLVR_MAS WHERE RSC_ID = ? AND LOT_NO IS NOT NULL`,
+      [rscId]
+    );
+    const result = [];
+    // 2. 각 마스터ID로 LOT_STC_PRECON에서 재고 수량 조회
+    for (const mas of masRows) {
+      const lotRows = await conn.query(
+        `SELECT NOW_STC_QY FROM LOT_STC_PRECON WHERE WRHSDLVR_MAS_ID = ?`,
+        [mas.WRHSDLVR_MAS_ID]
+      );
+      result.push({
+        lot_no: mas.LOT_NO || '',
+        wrhsdlvr_mas_id: mas.WRHSDLVR_MAS_ID || '',
+        now_stock: lotRows[0]?.NOW_STC_QY ?? 0
+      });
+    }
+    return result;
+  } finally {
+    conn.release();
+  }
+}
+/**
+ * 자재 불출 처리 예시: BOM 자재 리스트에 LOT 할당 결과 반영
+ * @param {Array} bomMaterials - BOM 자재 리스트
+ * @param {string} wrhsdlvrMasId - 창고 입출고 마스터ID
+ * @returns {Promise<Array>} LOT이 반영된 BOM 자재 리스트
+ */
+async function processMaterialWithdrawalWithLot(bomMaterials, wrhsdlvrMasId) {
+  // LOT 할당 결과 반영
+  const bomMaterialsWithLot = await assignLotToBomMaterials(bomMaterials, wrhsdlvrMasId);
+  // 이후 bomMaterialsWithLot를 프론트로 반환하거나 화면에 표시
+  return bomMaterialsWithLot;
+}
+/**
+ * BOM 자재 리스트에 LOT 할당 결과를 반영하는 함수 예시
+ * @param {Array} bomMaterials - BOM 자재 리스트
+ * @param {string} wrhsdlvrMasId - 창고 입출고 마스터ID
+ * @returns {Promise<Array>} LOT이 매핑된 BOM 자재 리스트
+ */
+async function assignLotToBomMaterials(bomMaterials, wrhsdlvrMasId) {
+  // LOT별 재고 현황 조회 및 전체 수량 합산
+  for (const material of bomMaterials) {
+    // 각 자재별로 LOT별 할당 결과 계산
+    const allocations = await allocateLotForMaterialWithdrawal(wrhsdlvrMasId, material.qty);
+    // 첫 번째 할당 LOT을 material.lot에 매핑 (여러 LOT 분할 시 로직 확장 가능)
+    material.lot = allocations.length > 0 ? allocations[0].lot_no : '';
+    // 필요시 material.lot_allocations = allocations; // 전체 할당 결과 저장
+  }
+  return bomMaterials;
+}
+/**
+ * 자재 불출 시 LOT별로 출고 수량을 분할 할당하는 함수
+ * @param {string} wrhsdlvrMasId - 창고 입출고 마스터ID
+ * @param {number} withdrawalQty - 출고 요청 수량
+ * @returns {Promise<Array>} LOT별 할당 결과 [{lot_no, allocated_qty, wrhsdlvr_mas_id, rsc_id, warehouse_id, zone_id}]
+ */
+async function allocateLotForMaterialWithdrawal(wrhsdlvrMasId, withdrawalQty) {
+  const lotStocks = await getLotRscStockByMasId(wrhsdlvrMasId);
+  let remainingQty = withdrawalQty;
+  const allocations = [];
+  // lotStocks의 lot_no가 undefined/null인 경우 LOT_NO, 또는 둘 다 없으면 빈 값
+  for (const lot of lotStocks) {
+    const lotNo = lot.lot_no || lot.LOT_NO || '';
+    if (!lotNo) continue; // lot_no가 없으면 건너뜀
+    if (remainingQty <= 0) break;
+    const allocQty = Math.min(lot.now_stock, remainingQty);
+    if (allocQty > 0) {
+      allocations.push({
+        lot_no: lotNo,
+        allocated_qty: allocQty,
+        wrhsdlvr_mas_id: lot.wrhsdlvr_mas_id,
+        rsc_id: lot.rsc_id,
+        warehouse_id: lot.wrhous_id,
+        zone_id: lot.zone_id,
+      });
+      remainingQty -= allocQty;
+    }
+  }
+  return allocations;
+}
 const mariadb = require("../database/mapper.js");
+const sqlList = require("../database/sqlList.js");
+
+/**
+ * 특정 창고 입출고 마스터ID로 LOT별 자재 재고 현황 조회
+ * @param {string} wrhsdlvrMasId
+ * @returns {Promise<Array>} LOT별 재고 현황 리스트
+ */
+const getLotRscStockByMasId = async (wrhsdlvrMasId) => {
+  const conn = await mariadb.getConnection();
+  try {
+    const rows = await conn.query(sqlList['selectLotRscStockByMasId'], [wrhsdlvrMasId]);
+    return rows;
+  } finally {
+    conn.release();
+  }
+};
 
 // 검사서ID로 남은 수량(remaining_qty) 단건 조회 API용 래퍼
 async function getInspectionRemainingQty({ inspect_id, item_type }) {
@@ -1023,7 +1192,7 @@ const processTransactions = async (requestData) => {
         });
       }
       const masPrefix = doc.master.rcvpay_ty === 'S1' ? 'WRHM_IN_' : 'WRHM_OUT_';
-      const masIdRows = await mariadb.query('createWrhousTransactionId', [masPrefix, masPrefix]);
+      const masIdRows = await conn.query(sqlList['createWrhousTransactionId'], [masPrefix, masPrefix]);
       const masId = masIdRows[0]?.txn_id;
 
       // LOT 번호 자동 생성 (DB 일련번호)
@@ -1053,7 +1222,7 @@ const processTransactions = async (requestData) => {
       if (!doc.master.rsc_id && !doc.master.prdt_id) {
         console.warn('[processTransactions] 마스터 품목ID가 null/undefined입니다:', doc.master);
       }
-      await mariadb.query("insertWrhousTransactionMaster", [
+      await conn.query(sqlList["insertWrhousTransactionMaster"], [
         masId,
         doc.master.rcvpay_ty || "S1",
         requestData.emp_id,
@@ -1073,9 +1242,9 @@ const processTransactions = async (requestData) => {
 
       // 입고일 때 LOT_STC_PRECON 테이블에 insert
       if (doc.master.rcvpay_ty === 'S1') {
-        const lotIdRows = await mariadb.query('createLotId', ['LOT_STC_', 'LOT_STC_']);
+        const lotIdRows = await conn.query(sqlList['createLotId'], ['LOT_STC_', 'LOT_STC_']);
         const lotId = lotIdRows[0]?.txn_id;
-        await mariadb.query('insertLotStcPrecon', [
+        await conn.query(sqlList['insertLotStcPrecon'], [
           lotId,
           masId,
           Number(doc.master.all_rcvpay_qy || doc.master.qty || 0),
@@ -1089,7 +1258,7 @@ const processTransactions = async (requestData) => {
       for (const docDetail of docs) {
         for (const detail of docDetail.details) {
           const dtlPrefix = doc.master.rcvpay_ty === 'S1' ? 'WRH_IN_' : 'WRH_OUT_';
-          const detailIdRows = await mariadb.query('createWrhousDetailId', [dtlPrefix, dtlPrefix]);
+          const detailIdRows = await conn.query(sqlList['createWrhousDetailId'], [dtlPrefix, dtlPrefix]);
           const detailId = detailIdRows[0]?.detail_id;
           let rsc_qlty_insp_id = null, semi_prdt_qlty_insp_id = null, end_prdt_qlty_insp_id = null;
           // 검사서ID/납품상세ID/생산지시상세ID 매핑 (자재 불출 분기 처리)
@@ -1141,35 +1310,34 @@ const processTransactions = async (requestData) => {
 
           // 자재 출고(S2)일 때, 자재 불출 테이블 ID 생성 및 insert
           let rtunId = null;
-          if (doc.master.rcvpay_ty === 'S2' && detail.end_prdt_qlty_insp_id) {
+          if (doc.master.rcvpay_ty === 'S2' && detail.prod_drct_deta_id) {
             // 1. 자재 불출 ID 생성
-            const rtunIdRows = await mariadb.query('createRwmatrRtunTrgetId');
-            // 반환값 컬럼명 유연하게 처리
+            const rtunIdRows = await conn.query(sqlList['createRwmatrRtunTrgetId']);
             rtunId = rtunIdRows[0]?.txn_id || rtunIdRows[0]?.rtun_id || rtunIdRows[0]?.id || null;
+            detail.rsc_rtun_trget_id = rtunId; // detail에 할당
             console.log('[createRwmatrRtunTrgetId] 생성된 rtunId:', rtunId, '원본:', rtunIdRows);
-            // 2. prod_drct_deta_id가 DB에 존재하는지 검증
-            let prodDrctDetaExists = false;
-            if (detail.prod_drct_deta_id) {
-              const prodDrctRows = await mariadb.query('selectProdDrctDetaById', [detail.prod_drct_deta_id]);
-              prodDrctDetaExists = Array.isArray(prodDrctRows) && prodDrctRows.length > 0;
+            // 2. 자재 불출 테이블 insert (ID, 생산지시 상세ID, 제품ID, 옵션ID, 수량, LOT)
+            const rwmatrParams = [
+              rtunId,
+              detail.prod_drct_deta_id || null,
+              detail.prdt_id || null,
+              detail.prdt_opt_id || null,
+              detail.qty || detail.rcvpay_qy || 0,
+              'J2',
+              detail.remark || detail.rm || ''
+            ];
+            // LOT 정보가 있으면 추가로 저장 (예: update 쿼리 또는 별도 insert 필요시)
+            if (detail.lot || detail.lot_no) {
+              detail.lot_no = detail.lot_no || detail.lot;
+              // LOT 번호를 자재 불출 테이블에 저장하는 쿼리 실행 (예시, 실제 쿼리명/파라미터 맞게 수정 필요)
+              if (sqlList['updateRwmatrRtunTrgetLot']) {
+                await conn.query(sqlList['updateRwmatrRtunTrgetLot'], [detail.lot_no, rtunId]);
+                console.log('[updateRwmatrRtunTrgetLot] LOT 저장:', detail.lot_no, rtunId);
+              }
             }
-            if (prodDrctDetaExists) {
-              // 3. 자재 불출 테이블 insert (ID, 생산지시 상세ID, 제품ID, 옵션ID, 수량)
-              const rwmatrParams = [
-                rtunId,
-                detail.prod_drct_deta_id || null, // 생산지시 상세ID(prod_drct_deta 테이블 PK)로 매핑
-                detail.prdt_id || null,
-                detail.prdt_opt_id || null,
-                detail.qty || detail.rcvpay_qy || 0,
-                'J2', // inpt_st 값을 항상 'J2'로 고정
-                detail.remark || detail.rm || ''
-              ];
-              console.log('[insertRwmatrRtunTrget] insert 직전 파라미터:', rwmatrParams);
-              const rwmatrResult = await mariadb.query('insertRwmatrRtunTrget', rwmatrParams);
-              console.log('[insertRwmatrRtunTrget] 실행 결과:', rwmatrResult);
-            } else {
-              console.warn('[insertRwmatrRtunTrget] prod_drct_deta_id가 DB에 존재하지 않아 insert를 skip합니다:', detail.prod_drct_deta_id);
-            }
+            console.log('[insertRwmatrRtunTrget] insert 직전 파라미터:', rwmatrParams);
+            const rwmatrResult = await conn.query(sqlList['insertRwmatrRtunTrget'], rwmatrParams);
+            console.log('[insertRwmatrRtunTrget] 실행 결과:', rwmatrResult);
           }
 
           // 3. 마스터/디테일 insert: 입고/출고/납품 분기
@@ -1177,7 +1345,7 @@ const processTransactions = async (requestData) => {
           // FK 검사: end_prdt_qlty_insp_id가 실제로 존재하지 않으면 null로 강제 세팅
           let safeEndPrdtQltyInspId = end_prdt_qlty_insp_id;
           if (end_prdt_qlty_insp_id) {
-            const inspRows = await mariadb.query('selectEndPrdtQltyInspById', [end_prdt_qlty_insp_id]);
+            const inspRows = await conn.query(sqlList['selectEndPrdtQltyInspById'], [end_prdt_qlty_insp_id]);
             if (!inspRows || inspRows.length === 0) safeEndPrdtQltyInspId = null;
           }
           if (doc.master.rcvpay_ty === 'S1') {
@@ -1194,18 +1362,25 @@ const processTransactions = async (requestData) => {
               detail.remark || detail.rm || ""
             ];
           } else if (doc.master.rcvpay_ty === 'S2' && doc.master.rsc_id) {
-            // 자재 출고: 자재 불출 ID 매핑
+            // 자재 출고: 자재 불출 ID와 할당된 LOT_NO 저장
+            // LOT 할당 함수로 LOT_NO를 받아옴 (예시)
+            let lotNo = '';
+            if (detail.rsc_id) {
+              const lots = await getAvailableLotsByRscId(detail.rsc_id);
+              if (lots && lots.length > 0) lotNo = lots[0].lot_no || lots[0].LOT_NO || '';
+            }
             wrhousDtlParams = [
               detailId,
               masId,
-              rtunId,
+              detail.rsc_rtun_trget_id, // 자재 불출 ID
               null,
               null,
               null,
-              null,
+              lotNo, // LOT_NO 저장
               detail.qty || detail.rcvpay_qy || 0,
               detail.remark || detail.rm || ""
             ];
+            console.log('[processTransactions] 자재 출고 디테일 파라미터:', wrhousDtlParams);
           } else if (doc.master.rcvpay_ty === 'S2' && detail.deli_deta_id) {
             // 납품 출고: 납품 상세 ID 매핑
             wrhousDtlParams = [
@@ -1220,20 +1395,20 @@ const processTransactions = async (requestData) => {
               detail.remark || detail.rm || ""
             ];
           } else {
-            // 기타: 기존 로직 유지
+            // 기타: 자재 불출 ID만 저장
             wrhousDtlParams = [
               detailId,
               masId,
-              detail.rsc_rtun_trget_id || null,
+              detail.rsc_rtun_trget_id,
               rsc_qlty_insp_id,
               semi_prdt_qlty_insp_id,
               safeEndPrdtQltyInspId,
-              detail.deli_deta_id || null,
+              detail.deli_deta_id,
               detail.qty || detail.rcvpay_qy || 0,
               detail.remark || detail.rm || ""
             ];
           }
-          await mariadb.query("insertWrhousTransaction", wrhousDtlParams);
+          await conn.query(sqlList["insertWrhousTransaction"], wrhousDtlParams);
 
           // 4. LOT 재고 현황 update
           if (doc.master.rcvpay_ty === 'S2' && (detail.lot || detail.lot_no)) {
@@ -1242,11 +1417,11 @@ const processTransactions = async (requestData) => {
               lot: detail.lot,
               lot_no: detail.lot_no
             });
-            const masIdRows = await mariadb.query("selectMasByLotNo", [detail.lot_no || null]);
+            const masIdRows = await conn.query(sqlList["selectMasByLotNo"], [detail.lot_no || null]);
             if (Array.isArray(masIdRows)) {
               for (const row of masIdRows) {
                 if (row?.wrhsdlvr_mas_id) {
-                  await mariadb.query("updateLotStcPreconOnOut", [
+                  await conn.query(sqlList["updateLotStcPreconOnOut"], [
                     detail.qty || detail.rcvpay_qy || 0,
                     row.wrhsdlvr_mas_id
                   ]);
@@ -1611,6 +1786,8 @@ const saveMasterDetailTransactions = async ({
       error: "마스터-디테일 거래 저장 중 오류가 발생했습니다.",
       details: error.message,
     };
+  } finally {
+    if (conn) conn.release();
   }
 };
 
@@ -1867,10 +2044,15 @@ const generateNewLotNumber = async (prefix) => {
 // 출고 가능한 LOT 조회
 const getAvailableLotsForItem = async (item) => {
   try {
-    const rscId = item.item_type === "E1" ? item.item_code : "";
-    const prdtId = ["E2", "E3"].includes(item.item_type) ? item.item_code : "";
-    const prdtOptId = item.item_opt_code || "";
-
+    let rscId = "";
+    let prdtId = "";
+    let prdtOptId = "";
+    if (item.item_type === "E1") {
+      rscId = item.item_code;
+    } else if (item.item_type === "E2" || item.item_type === "E3") {
+      prdtId = item.item_code;
+      prdtOptId = item.item_opt_code || "";
+    }
     const result = await mariadb.query("selectAvailableLots", [
       rscId,
       rscId,
@@ -1879,8 +2061,20 @@ const getAvailableLotsForItem = async (item) => {
       prdtOptId,
       prdtOptId,
     ]);
-
-    return result || [];
+    // LOT명 접두사 보정: 완제품은 LOT_END_, 반제품은 LOT_SEMI_, 자재는 LOT_RSC_
+    const prefixMap = {
+      E1: "LOT_RSC_",
+      E2: "LOT_SEMI_",
+      E3: "LOT_END_",
+    };
+    const prefix = prefixMap[item.item_type] || "";
+    return (result || []).map(lot => ({
+      ...lot,
+      lot_no:
+        lot.lot_no == null || lot.lot_no === undefined || lot.lot_no === ''
+          ? ''
+          : (!lot.lot_no.startsWith(prefix) ? prefix + lot.lot_no : lot.lot_no)
+    }));
   } catch (error) {
     console.error("[wrhousdlvr_service] 사용 가능한 LOT 조회 실패:", error);
     throw error;
@@ -2501,6 +2695,9 @@ const getLotAllocations = async (info = {}) => {
         await conn.end();
       } catch (endError) {
         console.error("[wrhousdlvr_service] 연결 종료 실패:", endError);
+      } finally {
+        conn.release();
+        console.log("[wrhousdlvr_service] DB 연결 해제됨");
       }
     }
   }

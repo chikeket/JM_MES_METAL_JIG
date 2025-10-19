@@ -249,8 +249,8 @@ router.get("/warehouse/lots/allocations", async (req, res) => {
       quantity: Number(quantity)
     });
 
-    console.log("[wrhousdlvr_router] LOT 할당 결과:", result.length, "건");
-    console.log("[wrhousdlvr_router] LOT 할당 상세:", result);
+    console.log("[wrhousdlvr_router] LOT 할당 결과:", Array.isArray(result?.allocations) ? result.allocations.length : 0, "건");
+    console.log("[wrhousdlvr_router] LOT 할당 상세:", result?.allocations);
 
     res.json(result);
   } catch (error) {

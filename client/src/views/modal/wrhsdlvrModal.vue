@@ -5,37 +5,22 @@
     </CModalHeader>
     <CModalBody>
       <div class="d-flex gap-2 mb-3">
-        
         <div class="left-controls d-flex gap-2 align-items-center">
           <label class="search-label">수불 명</label>
-          <CFormInput v-model="searchOrderNm" style="width: 200px" />
+          <CFormInput v-model="searchOrderNm" style="width: 140px" />
         </div>
-
-        <select class="form-select" style="width: 160px" v-model="pickValue">
-          <option value="rsc_ordr_nm">수불 유형</option>
-          <option value="co_nm">입고</option>
-          <option value="emp_nm">출고</option>
-        </select>
-
+        <div class="left-controls d-flex gap-2 align-items-center">
+          <label class="search-label">수불 유형</label>
+          <CFormInput v-model="searchOrderType" style="width: 100px" placeholder="IN/OUT" />
+        </div>
         <div class="left-controls d-flex gap-2 align-items-center">
           <label class="search-label">담당자 명</label>
-          <CFormInput v-model="searchOrderEmp" style="width: 200px" />
+          <CFormInput v-model="searchOrderEmp" style="width: 100px" />
         </div>
-
         <div class="left-controls d-flex gap-2 align-items-center">
           <label class="search-label">수불 일자</label>
-          <CFormInput type="date" v-model="searchOrderDate" style="width: 200px" />
+          <CFormInput type="date" v-model="searchOrderDate" style="width: 120px" />
         </div>
-        <!-- 검색어 입력 너비 축소 -->
-        <input
-          class="form-control"
-          type="text"
-          v-model="searchKeyword"
-          @keyup.enter="search"
-          placeholder="검색어 입력"
-          style="width: 250px"
-        />
-        <input class="form-control" type="date" v-model="reg_dt" style="width: 160px" />
         <div class="ms-auto d-flex gap-2">
           <button class="btn btn-secondary" @click="search">검색</button>
           <button class="btn btn-secondary" @click="resetSearch">초기화</button>
@@ -48,18 +33,24 @@
             <tr>
               <th>수불 ID</th>
               <th>수불 명</th>
-              <th></th>
+              <th>수불 유형</th>
               <th>담당자명</th>
               <th>등록일</th>
+              <th>품목 명</th>
+              <th>옵션 명</th>
+              <th>수량</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(p, i) in list" :key="p.rsc_ordr_id || i" @dblclick="select(p)">
-              <td>{{ p.rsc_ordr_id }}</td>
-              <td>{{ p.rsc_ordr_nm }}</td>
-              <td>{{ p.co_nm }}</td>
+            <tr v-for="(p, i) in list" :key="p.wrhsdlvr_mas_id || i" @dblclick="select(p)">
+              <td>{{ p.wrhsdlvr_mas_id }}</td>
+              <td>{{ p.rcvpay_nm }}</td>
+              <td>{{ p.rcvpay_ty }}</td>
               <td>{{ p.emp_nm }}</td>
-              <td>{{ p.reg_dt }}</td>
+              <td>{{ p.rcvpay_dt }}</td>
+              <td>{{ p.prdt_nm || '-' }}</td>
+              <td>{{ p.opt_nm || '-' }}</td>
+              <td>{{ p.all_rcvpay_qy ?? '-' }}</td>
             </tr>
             <tr v-if="list.length === 0">
               <td colspan="5" class="text-center text-muted">검색 결과 없음</td>
@@ -84,9 +75,10 @@ const emit = defineEmits(['close', 'select'])
 
 const auth = useAuthStore()
 
-const pickValue = ref('rsc_ordr_nm')
-const searchKeyword = ref('')
-const reg_dt = ref('')
+const searchOrderNm = ref('')
+const searchOrderType = ref('')
+const searchOrderEmp = ref('')
+const searchOrderDate = ref('')
 const list = shallowRef([])
 
 const close = () => {
@@ -96,9 +88,10 @@ const close = () => {
 
 const resetSearch = () => {
   console.log('[rscOrdrModal] 검색 조건 초기화')
-  pickValue.value = 'rsc_ordr_nm'
-  searchKeyword.value = ''
-  reg_dt.value = ''
+  searchOrderNm.value = ''
+  searchOrderType.value = ''
+  searchOrderEmp.value = ''
+  searchOrderDate.value = ''
   list.value = []
 }
 
@@ -110,62 +103,36 @@ const search = async () => {
       alert('로그인이 필요합니다.')
       return
     }
-
     const empId = currentUser.emp_id ?? currentUser.id
     if (!empId) {
       alert('사용자 정보를 찾을 수 없습니다.')
       return
     }
-
-    // 서버가 소문자 키를 기대하므로 소문자 필드로 전송
     const params = {
-      rsc_ordr_nm: null,
-      co_nm: null,
-      emp_nm: null,
-      reg_dt: null,
-      emp_id: empId, // 로그인 사용자 ID 추가
+      rsc_ordr_nm: searchOrderNm.value || null,
+      rcvpay_ty: searchOrderType.value || null,
+      emp_nm: searchOrderEmp.value || null,
+      reg_dt: searchOrderDate.value || null,
+      emp_id: empId,
     }
-
-    if (pickValue.value === 'rsc_ordr_nm') params.rsc_ordr_nm = searchKeyword.value
-    else if (pickValue.value === 'co_nm') params.co_nm = searchKeyword.value
-    else if (pickValue.value === 'emp_nm') params.emp_nm = searchKeyword.value
-    if (reg_dt.value) params.reg_dt = reg_dt.value
-
-    console.log('[rscOrdrModal] request params:', params)
-    const res = await axios.get('/api/rscOrdr', { params })
+    const res = await axios.get('/api/wrhsdlvr/search', { params })
     const data = res?.data
-    console.log('[rscOrdrModal] raw response:', data)
-
-    // 방어 처리: 배열이면 그대로, 아니면 빈 배열
-    list.value = Array.isArray(data)
-      ? data.map((it) => ({
-          rsc_ordr_id: it.rsc_ordr_id ?? it.RSC_ORDR_ID ?? '',
-          co_id: it.co_id ?? it.CO_ID ?? '',
-          rsc_ordr_nm: it.rsc_ordr_nm ?? it.RSC_ORDR_NM ?? '',
-          rm: it.rm ?? it.RM ?? '', // 비고 필드 추가
-          co_nm: it.co_nm ?? it.CO_NM ?? '',
-          emp_nm: it.emp_nm ?? it.EMP_NM ?? '',
-          reg_dt: it.reg_dt ? String(it.reg_dt).slice(0, 10) : '',
-          deta_count: Number(it.deta_count ?? it.DETA_COUNT ?? 0),
-        }))
-      : []
+    list.value = Array.isArray(data) ? data : []
   } catch (err) {
-    console.error('[rscOrdrModal] rscOrdr search error', err)
+    console.error('[wrhsdlvrModal] search error', err)
     list.value = []
   }
 }
 
 const select = async (row) => {
   try {
-    console.log('[rscOrdrModal] select row ->', row)
-    const res = await axios.get('/api/rscOrdrDeta', { params: { rsc_ordr_id: row.rsc_ordr_id } })
-    const detail = Array.isArray(res.data) ? res.data : []
-    console.log('[rscOrdrModal] detail length ->', detail.length)
-    emit('select', { master: row, detailList: detail })
+    const res = await axios.get(`/api/wrhsdlvr/${row.WRHSDLVR_MAS_ID}`)
+    const { master, details } = res.data || {}
+    emit('select', { master, details })
     close()
   } catch (err) {
-    console.error('[rscOrdrModal] select error:', err)
-    emit('select', { master: row, detailList: [] })
+    console.error('[wrhsdlvrModal] select error:', err)
+    emit('select', { master: row, details: [] })
     close()
   }
 }
