@@ -161,7 +161,31 @@
                 </td>
                 <td>{{ route.prcs_reg_dt }}</td>
                 <td>{{ route.prcs_ord }}</td>
+              
+                <td class="cell-number editable" @click="startEdit(row, 'requestQty')">
+              <template v-if="isCellEditing(row, 'requestQty')">
+                <input
+                  ref="qtyInputs"
+                  type="text"
+                  v-model="editValue"
+                  @keyup.enter="commitEdit"
+                  @blur="commitEdit"
+                  @keyup.esc="cancelEdit"
+                  class="editor-input text-end"
+                  placeholder="입력"
+                />
+              </template>
+              <template v-else>
+                <div class="input-like input-like--compact input-like--number">
+                  <span class="value" :class="{ 'placeholder-text': !row.requestQty }">
+                    {{ row.requestQty ? formatNumber(row.requestQty) : '입력' }}
+                  </span>
+                </div>
+              </template>
+            </td>
+              
               </tr>
+
               <tr v-if="!selectedProduct">
                 <td colspan="8" class="text-muted text-center">
                   제품을 선택하면 라우팅정보가 표시됩니다.

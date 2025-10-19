@@ -101,7 +101,7 @@
         <div class="d-flex justify-content-end gap-2 mb-2">
           <CButton color="secondary" size="sm" @click="resetForm">신규</CButton>
           <CButton color="secondary" size="sm" @click="saveEqm">저장</CButton>
-          <CButton color="danger" size="sm" @click="deleteWrhous" :disabled="!selectedEqm">삭제</CButton>
+          <CButton color="danger" size="sm" @click="deleteEqm" :disabled="!selectedEqm">삭제</CButton>
         </div>
 
         <!-- 입력 폼 -->
@@ -241,7 +241,6 @@ const emptyRowCount = computed(() => {
 
 // 설비 목록 조회
 const searchEqm = async () => {
-  const searchEqm = async () => {
   try {
     console.log('[eqm] 조회 조건:', searchForm)
     const response = await axios.get('/api/eqm', {
@@ -251,11 +250,9 @@ const searchEqm = async () => {
     selectedRowIndex.value = null
     console.log('[eqm] 조회 결과:', response.data)
   } catch (error) {
-    console.error('[eqmManage] 조회 에러:', error)
+    console.error('[eqm] 조회 에러:', error)
     alert('설비 목록 조회 중 오류가 발생했습니다.')
   }
-}
-
 }
 
 // 조회 조건 초기화
@@ -307,13 +304,13 @@ const saveEqm = async () => {
       return
     }
 
-    console.log('[wrhousManage] 저장 데이터:', formData)
+    console.log('[eqm] 저장 데이터:', formData)
     
     const response = await axios.post('/api/eqm', formData)
     
     if (response.data.success) {
       alert(isEditMode.value ? '창고 정보가 수정되었습니다.' : '새 창고가 등록되었습니다.')
-      await searchWrhous() // 목록 재조회
+      await searchEqm() // 목록 재조회
       resetForm() // 폼 초기화
     }
   } catch (error) {
@@ -323,28 +320,28 @@ const saveEqm = async () => {
 }
 
 // 창고 삭제
-const deleteWrhous = async () => {
-  if (!selectedWrhous.value) {
+const deleteEqm = async () => {
+  if (!selectedEqm.value) {
     alert('삭제할 창고를 선택해주세요.')
     return
   }
 
-  if (!confirm(`창고 '${selectedWrhous.value.wrhous_nm}'를 삭제하시겠습니까?`)) {
+  if (!confirm(`창고 '${selectedEqm.value.eqm_grp_nm}'를 삭제하시겠습니까?`)) {
     return
   }
 
   try {
-    console.log('[wrhousManage] 삭제 ID:', selectedWrhous.value.wrhous_id)
+    console.log('[eqm] 삭제 ID:', selectedEqm.value.eqm_grp_nm)
     
-    const response = await axios.delete(`/api/wrhousManage/${selectedWrhous.value.wrhous_id}`)
+    const response = await axios.delete(`/api/eqm/${selectedEqm.value.eqm_grp_nm}`)
     
     if (response.data.success) {
-      alert('창고가 삭제되었습니다.')
-      await searchWrhous() // 목록 재조회
+      alert('설비가 삭제되었습니다.')
+      await searchEqm() // 목록 재조회
       resetForm() // 폼 초기화
     }
   } catch (error) {
-    console.error('[wrhousManage] 삭제 에러:', error)
+    console.error('[eqm] 삭제 에러:', error)
     alert('창고 삭제 중 오류가 발생했습니다.')
   }
 }
@@ -365,6 +362,8 @@ const getEqmMakeCoLabel = (makeCoType) => {
   }
   return makeCoType[makeCoType] || makeCoType || ''
 }
+
+
 </script>
 
 <style scoped>
@@ -688,3 +687,4 @@ const getEqmMakeCoLabel = (makeCoType) => {
   }
 }
 </style>
+
