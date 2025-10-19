@@ -1,64 +1,64 @@
 <template>
-  <CRow class="mb-3" style="margin: 0 5%">
+  <CRow class="mb-3 vars-scope" style="margin: 0 5%">
     <CCol md="12">
       <h6 class="fw-semibold mb-3" style="text-align: left; margin-left: 10px">공정 라우팅관리</h6>
     </CCol>
   </CRow>
 
   <!-- 검색 영역 -->
-  <CCard class="mb-3" style="margin: 0 5%; overflow-y: auto">
-    <CCardBody class="p-2 flex-column">
-      <div
-        class="table-wrapper"
-        style="display: flex; align-items: center; justify-content: center"
-      >
-        <select class="form-select" style="width: 130px; margin-right: 5px" v-model="pickValue">
-          <option value="prdt_id">코드</option>
-          <option value="prdt_nm">제품명</option>
-        </select>
-        <input
-          type="text"
-          class="form-control"
-          style="width: 150px; margin-right: 8px"
-          v-model="searchKeyword"
-          placeholder="검색어 입력"
-        />
-        <CButton color="secondary" class="me-2" @click="masterReset()">초기화</CButton>
-        <button class="btn btn-secondary" @click="prdtSearch">검색</button>
-      </div>
-    </CCardBody>
-  </CCard>
+  <div class="global-toolbar vars-scope" style="margin: 0 5%">
+    <div
+      class="toolbar-buttons"
+      style="display: flex; align-items: center; gap: 8px; width: 100%; justify-content: center"
+    >
+      <select class="form-select" style="width: 130px" v-model="pickValue">
+        <option value="prdt_id">코드</option>
+        <option value="prdt_nm">제품명</option>
+      </select>
+      <input
+        type="text"
+        class="form-control"
+        style="width: 180px"
+        v-model="searchKeyword"
+        placeholder="검색어 입력"
+      />
+      <button class="btn btn-sm btn-outline-secondary" @click="masterReset">초기화</button>
+      <button class="btn btn-sm btn-outline-secondary" @click="prdtSearch">검색</button>
+    </div>
+  </div>
 
   <!-- 왼쪽영역 그리드 : 검색 결과 테이블 -->
   <CRow style="height: 600px; margin: 0 5%">
     <CCol md="5">
       <CCard class="p-3 h-100">
-        <table class="table table-bordered table-hover text-center align-middle">
-          <thead class="table-light">
-            <tr>
-              <th>코드</th>
-              <th>제품명</th>
-              <th>규격</th>
-              <th>옵션</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="(prdts, i) in prdtList"
-              :key="i"
-              @click="selectProduct(prdts)"
-              style="cursor: pointer"
-            >
-              <td>{{ prdts.prdt_id }}</td>
-              <td>{{ prdts.prdt_nm }}</td>
-              <td>{{ prdts.spec }}</td>
-              <td>{{ prdts.opt_nm }}</td>
-            </tr>
-            <tr v-if="prdtList.length === 0">
-              <td colspan="4" class="text-center text-muted">검색 결과가 없습니다.</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="table-wrapper table-wrapper-expanded">
+          <table class="data-grid">
+            <thead class="table-light">
+              <tr>
+                <th>코드</th>
+                <th>제품명</th>
+                <th>규격</th>
+                <th>옵션</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(prdts, i) in prdtList"
+                :key="i"
+                @click="selectProduct(prdts)"
+                style="cursor: pointer"
+              >
+                <td>{{ prdts.prdt_id }}</td>
+                <td>{{ prdts.prdt_nm }}</td>
+                <td>{{ prdts.spec }}</td>
+                <td>{{ prdts.opt_nm }}</td>
+              </tr>
+              <tr v-if="prdtList.length === 0">
+                <td colspan="4" class="text-center text-muted">검색 결과가 없습니다.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </CCard>
     </CCol>
 
@@ -131,8 +131,8 @@
             <CButton color="secondary" size="sm">저장</CButton>
           </div>
         </h6>
-        <div class="table-container">
-          <table class="table table-bordered table-hover text-center align-middle">
+        <div class="table-wrapper table-wrapper-expanded">
+          <table class="data-grid">
             <thead class="table-light">
               <tr>
                 <th>
@@ -161,29 +161,6 @@
                 </td>
                 <td>{{ route.prcs_reg_dt }}</td>
                 <td>{{ route.prcs_ord }}</td>
-              
-                <td class="cell-number editable" @click="startEdit(row, 'requestQty')">
-              <template v-if="isCellEditing(row, 'requestQty')">
-                <input
-                  ref="qtyInputs"
-                  type="text"
-                  v-model="editValue"
-                  @keyup.enter="commitEdit"
-                  @blur="commitEdit"
-                  @keyup.esc="cancelEdit"
-                  class="editor-input text-end"
-                  placeholder="입력"
-                />
-              </template>
-              <template v-else>
-                <div class="input-like input-like--compact input-like--number">
-                  <span class="value" :class="{ 'placeholder-text': !row.requestQty }">
-                    {{ row.requestQty ? formatNumber(row.requestQty) : '입력' }}
-                  </span>
-                </div>
-              </template>
-            </td>
-              
               </tr>
 
               <tr v-if="!selectedProduct">
@@ -322,20 +299,195 @@ const deleteSelectedRows = () => {
 </script>
 
 <style scoped>
-/* 기존 스타일 그대로 유지 (생략 가능) */
 :deep(*) {
-  font-family: '맑은 고딕', 'Malgun Gothic', sans-serif !important;
-  line-height: 1.4;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
+    sans-serif;
+  line-height: 1.5;
   box-sizing: border-box;
-  color: #000;
-  text-align: center !important;
 }
 
-/* ... (기존 스타일 전부 동일하게 유지) ... */
+.vars-scope {
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --color-btn-gray: #6e7b85;
+  --color-btn-gray-hover: #5d6871;
+  --color-btn-danger: #c53030;
+  --color-btn-danger-hover: #a82323;
+  --color-btn-text: #fff;
+  --table-visible-rows: 10;
+  --row-h: 34px;
+  --thead-h: 34px;
+}
 
-.table-container {
-  flex-grow: 1;
-  overflow-y: auto; /* 세로 스크롤 생성 */
-  max-height: 300px; /* 필요 시 고정 높이 설정 */
+.global-toolbar {
+  display: flex;
+  justify-content: center;
+  padding: 0 14px;
+  margin-bottom: 8px;
+}
+.global-toolbar .toolbar-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.btn {
+  cursor: pointer;
+  border-radius: 8px;
+  border: none;
+  color: var(--color-btn-text);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: -0.3px;
+  transition: all 0.3s ease;
+  line-height: 1.5;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.5rem 1.2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.btn-sm,
+.btn-xs {
+  height: auto;
+  padding: 0.5rem 1.2rem;
+  font-size: 13px;
+}
+.btn-outline-secondary {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+  color: var(--color-btn-text);
+}
+.btn-outline-secondary:hover {
+  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+.btn-outline-danger,
+.btn.btn-outline-danger,
+.btn-danger {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  color: var(--color-btn-text);
+}
+.btn-outline-danger:hover,
+.btn-danger:hover {
+  background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+.table-wrapper {
+  height: calc(var(--row-h) * var(--table-visible-rows) + var(--thead-h));
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid #bcbcbc;
+  border-radius: var(--radius-md);
+}
+.table-wrapper-expanded {
+  margin-top: 0;
+  background: #ffffff;
+  padding: 0;
+}
+.data-grid {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-size: 12px;
+}
+.data-grid thead th {
+  position: sticky;
+  top: 0;
+  background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+  color: #fff;
+  z-index: 10;
+  border: none;
+  padding: 0.65rem 0.5rem;
+  font-weight: 700;
+  text-align: center;
+  height: var(--thead-h);
+}
+.data-grid thead th:first-child {
+  border-top-left-radius: var(--radius-sm);
+}
+.data-grid thead th:last-child {
+  border-top-right-radius: var(--radius-sm);
+}
+.data-grid tbody td {
+  border: none;
+  border-bottom: 1px solid #e9ecef;
+  border-right: 2px solid #e9ecef;
+  padding: 0.55rem 0.5rem;
+  background: #fff;
+  height: var(--row-h);
+}
+.data-grid tbody td:last-child {
+  border-right: none;
+}
+.data-grid tbody tr {
+  height: var(--row-h);
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+}
+.data-grid tbody tr:hover:not(.empty-row),
+.data-grid tbody tr:hover:not(.empty-row) td,
+.data-grid tbody tr:hover:not(.empty-row) .input-like {
+  background-color: var(
+    --cui-table-hover-bg,
+    var(--bs-table-hover-bg, rgba(33, 37, 41, 0.075))
+  ) !important;
+}
+.data-grid input,
+.data-grid select,
+.data-grid textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 2px 4px;
+  font-size: 12px;
+  border-radius: var(--radius-sm);
+}
+.data-grid input[readonly],
+.data-grid input[readonly='readonly'] {
+  background: #e9e9e9;
+}
+.data-grid input:focus,
+.data-grid select:focus,
+.data-grid textarea:focus {
+  outline: none;
+  border-color: #5b9dd9;
+  background: #fff;
+}
+.status-cell.empty {
+  background: #e9e9e9;
+}
+.empty-row td {
+  background-color: #fafbfc;
+}
+.table-wrapper {
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+.table-wrapper::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.table-wrapper::-webkit-scrollbar-track {
+  background: rgba(240, 240, 240, 0.6);
+  border-radius: 10px;
+}
+.table-wrapper::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #bfc2c7, #9ea2a8);
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+}
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #a4a8ae, #7e838a);
+}
+
+@media (max-width: 1600px) {
+  .btn {
+    font-size: 11px !important;
+    padding: 0.4rem 1rem;
+  }
 }
 </style>
