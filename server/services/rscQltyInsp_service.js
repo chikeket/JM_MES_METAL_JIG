@@ -1,5 +1,5 @@
 const mariadb = require("../database/mapper.js");
-
+const sqlList = require("../database/sqlList.js");
 // 공통으로 사용하는 기능들 중 필요한 함수만 구조분해할당(Destructuring)으로 가져옴
 const { convertObjToAry } = require("../utils/converts.js");
 
@@ -21,7 +21,8 @@ let rscQltyInspInferInsertColumns = [
   "qlty_item_mng_id",
   "rsc_qlty_insp_id",
 ];
-
+let conn = null;
+let callQuery = null;
 //rseOrdrModal.vue 자재발주서 마스터정보 조회
 const rscOrdrQltyList = async (Info) => {
   console.log("서비스쪽");
@@ -40,7 +41,8 @@ const rscQltyInspInsert = async (Info) => {
     conn = await mariadb.getConnection();
     await conn.beginTransaction();
     let createId = null;
-    createId = await mariadb.query("rscQltyInspCreateId");
+    callQuery = sqlList["rscQltyInspCreateId"];
+    createId = await conn.query(callQuery);
     console.log("서비스쪽 id생성쿼리후");
     console.log(createId);
     let queryResult = null;
@@ -48,7 +50,8 @@ const rscQltyInspInsert = async (Info) => {
     console.log(beforeData);
     let data = convertObjToAry(beforeData, rscQltyInspInsertColumns);
     console.log(data);
-    queryResult = await mariadb.query("rscQltyInspInsert", data);
+    callQuery = sqlList["rscQltyInspInsert"];
+    queryResult = await conn.query(callQuery, data);
     for (const item of Info.infer) {
       let queryResult = null;
       let beforeInferData = { ...item, ...createId[0] };
@@ -57,7 +60,8 @@ const rscQltyInspInsert = async (Info) => {
         rscQltyInspInferInsertColumns
       );
       console.log(item);
-      queryResult = await mariadb.query("rscQltyInspInferInsert", data);
+      callQuery = sqlList["rscQltyInspInferInsert"];
+      queryResult = await conn.query(callQuery, data);
     }
     await conn.commit();
     let result = null;
@@ -121,11 +125,13 @@ const rscQltyInspUpdate = async (Info) => {
 
     let data = convertObjToAry(Info.master, rscQltyInspInsertColumns);
     console.log(data);
-    queryResult = await mariadb.query("rscQltyInspUpdate", data);
+    callQuery = sqlList["rscQltyInspUpdate"];
+    queryResult = await conn.query(callQuery, data);
     for (const item of Info.infer) {
       let data = convertObjToAry(item, rscQltyInspInferInsertColumns);
       console.log(data);
-      queryResult = await mariadb.query("rscQltyInspInferUpdate", data);
+      callQuery = sqlList["rscQltyInspInferUpdate"];
+      queryResult = await conn.query(callQuery, data);
     }
     await conn.commit();
     let result = null;
@@ -156,8 +162,8 @@ const rscQltyInspDelete = async (Info) => {
     await conn.beginTransaction();
 
     let queryResult = null;
-
-    queryResult = await mariadb.query("rscQltyInspDelete", [
+    callQuery = sqlList["rscQltyInspDelete"];
+    queryResult = await conn.query(callQuery, [
       Info.rsc_qlty_insp_id,
     ]);
 

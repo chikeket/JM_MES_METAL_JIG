@@ -151,11 +151,6 @@ const routes = [
             component: () => import('@/views/zzun/Routing.vue'),
           },
           {
-            path: '/zzun/Sample',
-            name: 'sample',
-            component: () => import('@/views/zzun/Sample.vue'),
-          },
-          {
             path: '/zzun/Eqm',
             name: '설비관리',
             component: () => import('@/views/zzun/Eqm.vue'),

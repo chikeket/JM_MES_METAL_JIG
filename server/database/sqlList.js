@@ -72,7 +72,6 @@ const prcs = require("./sqls/prcs.js");
 // 반제품 품질 검수 관련 쿼리
 const semiPrdtQltyInsp = require("./sqls/semiPrdtQltyInsp.js");
 
-
 // 생산계획관리 페이지 cud관련 쿼리
 const prodPlanManage = require("./sqls/prodPlanManage.js");
 
@@ -85,8 +84,10 @@ const lotStcPrecon = require("./sqls/lotStcPrecon.js");
 // 자재 불출 관련 쿼리
 const rwmatrRtun = require("./sqls/rwmatrRtunTrget.js");
 
+
 // 창고 입출고 모달 관련 쿼리
 const wrhsdlvr = require("./sqls/wrhsdlvr.js");
+
 
 // └───각 테이블별 SQL 쿼리들을 모아놓은 중앙 관리 파일───┘
 

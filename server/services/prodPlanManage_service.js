@@ -1,4 +1,5 @@
 const mariadb = require("../database/mapper.js");
+const sqlList = require("../database/sqlList.js");
 
 // 공통으로 사용하는 기능들 중 필요한 함수만 구조분해할당(Destructuring)으로 가져옴
 const { convertObjToAry } = require("../utils/converts.js");
@@ -27,6 +28,7 @@ let insertColumnsDeta = [
 ];
 
 let conn = null;
+let callQuery = null;
 let resDrctId = null;
 let resInfo = null;
 let resDrctDetaId = null;
@@ -39,7 +41,8 @@ const addNewProdPlanManage = async (Info) => {
     await conn.beginTransaction();
 
     //생산계획ID생성
-    resDrctId = await mariadb.query("prodPlanManageIdCreate");
+    callQuery = sqlList["prodPlanManageIdCreate"];
+    resDrctId = await conn.query(callQuery);
 
     let masterInfoMerge = { ...Info.masterInfo, ...resDrctId[0] };
     // console.log(masterInfoMerge);
@@ -47,12 +50,14 @@ const addNewProdPlanManage = async (Info) => {
     let data = convertObjToAry(masterInfoMerge, insertColumns);
 
     //생산계획마스터 인서트
-    resInfo = await mariadb.query("prodPlanManageInsert", data);
+    callQuery = sqlList["prodPlanManageInsert"];
+    resInfo = await conn.query(callQuery, data);
 
     // console.log("상세 인서트쪽")
     for (detail of Info.detailList) {
       //생산계획상세ID생성
-      resDrctDetaId = await mariadb.query("prodPlanManageDetaIdCreate");
+      callQuery = sqlList["prodPlanManageDetaIdCreate"];
+      resDrctDetaId = await conn.query(callQuery);
 
       let detailInfoMerge = {
         ...detail,
@@ -63,7 +68,8 @@ const addNewProdPlanManage = async (Info) => {
       let dataDeta = convertObjToAry(detailInfoMerge, insertColumnsDeta);
 
       //생산계획상세 인서트
-      resInfo = await mariadb.query("prodPlanManageInsertDetail", dataDeta);
+      callQuery = sqlList["prodPlanManageInsertDetail"];
+      resInfo = await conn.query(callQuery, dataDeta);
     }
 
     await conn.commit();
@@ -93,12 +99,14 @@ const updateProdPlanManage = async (Info) => {
     let data = convertObjToAry(masterInfoMerge, insertColumns);
 
     //생산계획마스터 업데이트
-    resInfo = await mariadb.query("prodPlanManageUpdate", data);
+    callQuery = sqlList["prodPlanManageUpdate"];
+    resInfo = await conn.query(callQuery, data);
 
     for (detail of Info.detailList) {
       let dataDeta = convertObjToAry(detail, insertColumnsDeta);
       //생산계획상세 업데이트
-      resInfo = await mariadb.query("prodPlanManageUpdateDetail", dataDeta);
+      callQuery = sqlList["prodPlanManageUpdateDetail"];
+      resInfo = await conn.query(callQuery, dataDeta);
     }
 
     await conn.commit();
@@ -123,8 +131,8 @@ const deleteProdPlanManage = async (Info) => {
   try {
     conn = await mariadb.getConnection();
     await conn.beginTransaction();
-
-    resInfo = await mariadb.query("prodPlanManageDelete", [Info.prod_plan_id]);
+    callQuery = sqlList["prodPlanManageDelete"];
+    resInfo = await conn.query(callQuery, [Info.prod_plan_id]);
 
     await conn.commit();
     let result = null;

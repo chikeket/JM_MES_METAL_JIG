@@ -1,5 +1,5 @@
 const mariadb = require("../database/mapper.js");
-
+const sqlList = require("../database/sqlList.js");
 // 공통으로 사용하는 기능들 중 필요한 함수만 구조분해할당(Destructuring)으로 가져옴
 const { convertObjToAry } = require("../utils/converts.js");
 
@@ -11,9 +11,11 @@ let columns = [
   "pass_qy",
   "insp_qy",
   "insp_dt",
-  "end_prdt_qlty_insp_id",
+  "semi_prdt_qlty_insp_id",
 ];
-
+let inferColumns = ["infer_qy", "qlty_item_mng_id", "semi_prdt_qlty_insp_id"];
+let conn = null;
+let callQuery = null;
 // 반제품 품질 실적대기완제품 조회
 const waitingSemiPrdt = async (Info) => {
   let insertColumns = ["prdt_nm", "pass_qy", "wk_to_dt"];
@@ -50,8 +52,7 @@ const semiPrdtQltyInspInferSearch = async (Info) => {
   console.log("클라에서들어가는값 서비스");
   console.log(Info);
 
-  // console.log("service쪽");
-
+  // console.log("service쪽");  
   let list = await mariadb
     .query("semiPrdtQltyInspInferSearch", [Info.semi_prdt_qlty_insp_id])
     .catch((err) => console.log(err));
@@ -66,16 +67,25 @@ const semiPrdtQltyInspInsert = async (Info) => {
     conn = await mariadb.getConnection();
     await conn.beginTransaction();
     let createId = null;
-    createId = await mariadb.query("semiPrdtQltyInspCreateId");
+    callQuery = sqlList["semiPrdtQltyInspCreateId"];
+    createId = await conn.query(callQuery);
     console.log("서비스쪽 id생성쿼리후");
     console.log(createId);
     let queryResult = null;
-    let beforeData = { ...Info, ...createId[0] };
+    let beforeData = { ...Info.master, ...createId[0] };
     console.log(beforeData);
     let data = convertObjToAry(beforeData, columns);
     console.log(data);
-    queryResult = await mariadb.query("semiPrdtQltyInspInsert", data);
-
+    callQuery = sqlList["semiPrdtQltyInspInsert"];
+    queryResult = await conn.query(callQuery, data);
+    for (const item of Info.infer) {
+      let queryResult = null;
+      let beforeInferData = { ...item, ...createId[0] };
+      let data = convertObjToAry(beforeInferData, inferColumns);
+      console.log(item);
+      callQuery = sqlList["semiPrdtQltyInspInferInsert"];
+      queryResult = await conn.query(callQuery, data);
+    }
     await conn.commit();
     let result = null;
     result = {
@@ -106,10 +116,18 @@ const semiPrdtQltyInspUpdate = async (Info) => {
 
     let queryResult = null;
 
-    let data = convertObjToAry(Info, columns);
+    let data = convertObjToAry(Info.master, columns);
     console.log(data);
-    queryResult = await mariadb.query("semiPrdtQltyInspUpdate", data);
-
+    callQuery = sqlList["semiPrdtQltyInspUpdate"];
+    queryResult = await conn.query(callQuery, data);
+    for (const item of Info.infer) {
+      let queryResult = null;
+      let beforeInferData = { ...item };
+      let data = convertObjToAry(beforeInferData, inferColumns);
+      console.log(item);
+      callQuery = sqlList["semiPrdtQltyInspInferUpdate"];
+      queryResult = await conn.query(callQuery, data);
+    }
     await conn.commit();
     let result = null;
     result = {
@@ -139,8 +157,8 @@ const semiPrdtQltyInspDelete = async (Info) => {
     await conn.beginTransaction();
 
     let queryResult = null;
-
-    queryResult = await mariadb.query("semiPrdtQltyInspDelete", [
+    callQuery = sqlList["semiPrdtQltyInspDelete"];
+    queryResult = await conn.query(callQuery, [
       Info.semi_prdt_qlty_insp_id,
     ]);
 

@@ -330,19 +330,19 @@ const deleteFunc = async () => {
 }
 
 const newFunc = async () => {
-  // console.log(form)
-  // form.value.emp_id = ''
-  // form.value.emp_nm = ''
   form.value.insp_dt = userDateUtils.dateFormat(new Date(), 'yyyy-MM-dd')
   form.value.insp_qy = 0
+  form.value.insp_qy_base = 0
   form.value.note = ''
   form.value.pass_qy = 0
   form.value.qy = 0
   form.value.rcs_nm = ''
-  form.value.receivedQty = ''
+  form.value.receivedQty = 0
+  form.value.receivedQty_base = 0
   form.value.rsc_ordr_deta_id = ''
   form.value.rsc_qlty_insp_id = ''
   inspectItems.value = []
+
 }
 </script>
 

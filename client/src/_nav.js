@@ -91,11 +91,6 @@ export default [
       },
       {
         component: 'CNavItem',
-        name: 'Sample',
-        to: '/zzun/Sample',
-      },
-      {
-        component: 'CNavItem',
         name: '설비관리',
         to: '/zzun/Eqm',
       },
