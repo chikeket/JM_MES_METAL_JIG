@@ -6,7 +6,8 @@ const prodPlanSelect =
  a.prod_plan_nm,
  a.prod_expc_fr_dt,
  a.prod_expc_to_dt,
- a.reg_dt 
+ a.reg_dt,
+ a.rm
 FROM prod_plan a
 JOIN (SELECT 
  a.prod_plan_id
@@ -16,12 +17,13 @@ JOIN (SELECT
  ,a.plan_qy
  ,a.priort
  ,a.rm
- ,SUM(b.drct_qy) "drct_qy" 
+ ,COALESCE(SUM(b.drct_qy), 0) AS drct_qy 
 FROM prod_plan_deta a
-JOIN prod_drct_deta b
+left JOIN prod_drct_deta b
 ON a.prod_plan_deta_id = b.prod_plan_deta_id
-GROUP BY a.prod_plan_id ,a.prod_plan_deta_id ,a.prdt_id ,a.prdt_opt_id ,a.plan_qy ,a.priort ,a.rm
-HAVING a.plan_qy > SUM(b.drct_qy) ) ae
+GROUP BY a.prod_plan_id ,a.prod_plan_deta_id ,a.prdt_id ,a.prdt_opt_id ,a.plan_qy ,a.priort ,a.rm 
+HAVING COALESCE(SUM(b.drct_qy), 0) <= a.plan_qy
+) ae
 WHERE a.prod_plan_id = ae.prod_plan_id
 AND prod_plan_nm LIKE CONCAT('%', ?, '%')
 AND reg_dt >= ?
@@ -39,14 +41,15 @@ const prodPlanDetaSelect =
  ,a.prdt_id
  ,a.prdt_opt_id
  ,a.plan_qy
- ,SUM(b.drct_qy) "base_quantity" 
+ ,a.rm
+ ,COALESCE(SUM(b.drct_qy),0) "base_quantity" 
  ,a.priort
  ,c.prdt_nm
  ,c.spec
  ,c.unit
  ,d.opt_nm  
 FROM prod_plan_deta a
-JOIN prod_drct_deta b
+left JOIN prod_drct_deta b
 ON a.prod_plan_deta_id = b.prod_plan_deta_id
 JOIN prdt c
 ON a.prdt_id = c.prdt_id
@@ -54,7 +57,7 @@ JOIN prdt_opt d
 ON a.prdt_opt_id = d.prdt_opt_id
 WHERE a.prod_plan_id = ?
 GROUP BY a.prod_plan_id ,a.prod_plan_deta_id ,a.prdt_id ,a.prdt_opt_id ,a.plan_qy ,a.priort ,a.rm ,c.prdt_nm ,c.spec ,c.unit ,d.opt_nm
-HAVING a.plan_qy > SUM(b.drct_qy)`;
+HAVING a.plan_qy > COALESCE(SUM(b.drct_qy),0)`;
 
 const prodPlanBoardListSearch =
   // 생산계획 조회페이지

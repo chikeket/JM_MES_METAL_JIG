@@ -59,7 +59,7 @@ ON a.prcs_routing_id = b.prcs_routing_id
 JOIN prcs c
 ON b.prcs_id = c.prcs_id
 WHERE a.prdt_id = ?
-AND a.opt_id = ?`;
+AND a.prdt_opt_id = ?`;
 
 const prcsProgPreconInsert =
   // 공정진행현황 정보입력

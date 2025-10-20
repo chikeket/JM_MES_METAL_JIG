@@ -153,11 +153,11 @@ where a.rcvord_id IN(
 							 ,b.prdt_id
 							 ,b.prdt_opt_id
 							 ,b.rcvord_qy
-							 ,c.plan_qy
+							 ,COALESCE(c.plan_qy, 0) AS plan_qy
 							from rcvord a
 							join rcvord_deta b
 							on a.rcvord_id = b.rcvord_id
-							join (
+							left join (
 									select
 									 a.rcvord_id
 									 ,b.prdt_id
@@ -187,16 +187,16 @@ const rcvordMykDetaSearch = `
  ,d.prdt_nm
  ,e.opt_nm
  ,d.spec
- ,d.unit
- ,CASE 
-  WHEN b.rcvord_qy - c.plan_qy < 0 THEN 0
-  ELSE b.rcvord_qy - c.plan_qy
+ ,d.unit 
+ ,CASE
+  WHEN b.rcvord_qy - COALESCE(c.plan_qy, 0) < 0 THEN 0
+  ELSE b.rcvord_qy - COALESCE(c.plan_qy, 0)
 END AS plan_qy
  ,b.paprd_dt  
 from rcvord a
 join rcvord_deta b
 on a.rcvord_id = b.rcvord_id
-join (
+left join (
 		select
 		 a.rcvord_id
 		 ,b.prdt_id
