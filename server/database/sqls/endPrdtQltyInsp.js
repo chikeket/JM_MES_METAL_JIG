@@ -4,7 +4,7 @@ select
  a.prcs_ctrl_id
  ,a.prcs_prog_precon_id 
  ,a.prcs_ord
- ,a.pass_qy - d.end_insp_qy "bePass_qy"
+ ,a.pass_qy - COALESCE(d.end_insp_qy,0) "bePass_qy"
  ,a.wk_to_dt
  ,e.prdt_nm
  ,f.opt_nm
@@ -37,10 +37,10 @@ join (
 on b.prdt_id = c.prdt_id
 and b.prdt_opt_id = c.prdt_opt_id
 and a.prcs_ord = c.prcs_ord
-join(
+left join(
 		select
 		 prcs_ctrl_id
-		 ,SUM(insp_qy) "end_insp_qy"
+		 ,COALESCE(SUM(insp_qy),0) "end_insp_qy"
 		from end_prdt_qlty_insp
 		group by prcs_ctrl_id) d
 on a.prcs_ctrl_id = d.prcs_ctrl_id

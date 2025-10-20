@@ -54,7 +54,8 @@ const addNewInstruction = async (Info) => {
   try {
     conn = await mariadb.getConnection();
     await conn.beginTransaction();
-
+    console.log('생산지시생산지시생산지시')
+    console.log(Info)
     //생산지시ID생성
     callQuery = sqlList["prodDrctIdCreate"];
     resDrctId = await conn.query(callQuery);
@@ -64,7 +65,7 @@ const addNewInstruction = async (Info) => {
     // console.log(masterInfoMerge);
 
     let data = convertObjToAry(masterInfoMerge, insertColumns);
-
+    console.log(data)
     //생산지시마스터 인서트
     callQuery = sqlList["instructionInsert"];
     resInfo = await conn.query(callQuery, data);
@@ -73,7 +74,7 @@ const addNewInstruction = async (Info) => {
     // console.log("상세 인서트쪽")
     for (detail of Info.detailList) {
       //생산지시상세ID생성
-      callQuery = sqlList["instructionInsert"];
+      callQuery = sqlList["prodDrctDetaIdCreate"];
       resDrctDetaId = await conn.query(callQuery);
       // .catch((err) => console.log(err));
       let detailInfoMerge = {
