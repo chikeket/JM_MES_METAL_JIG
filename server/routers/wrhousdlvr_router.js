@@ -2,6 +2,28 @@ const express = require("express");
 // Express의 Router 모듈을 사용해서 라우팅 등록, 라우팅을 별도 파일로 관리
 const router = express.Router();
 
+// 창고 입출고(수불서) 마스터+디테일 검색 (모달용)
+router.get('/wrhsdlvr/search', async (req, res) => {
+  try {
+    const { rsc_ordr_nm, rcvpay_ty, emp_nm, reg_dt } = req.query;
+    const result = await wrhousdlvrService.searchWrhsdlvrMasterDetail({ rsc_ordr_nm, rcvpay_ty, emp_nm, reg_dt });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 창고 입출고 단건 마스터+디테일 조회 (ID 기준)
+router.get('/wrhsdlvr/:wrhsdlvr_mas_id', async (req, res) => {
+  try {
+    const masId = req.params.wrhsdlvr_mas_id;
+    const result = await wrhousdlvrService.getWrhsdlvrMasterDetailById(masId);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 검사서ID로 남은 수량(remaining_qty) 단건 조회
 router.get('/warehouse/inspection-remaining-qty', async (req, res) => {
   try {
@@ -14,6 +36,17 @@ router.get('/warehouse/inspection-remaining-qty', async (req, res) => {
   }
 });
 
+// 수량 update (입고/출고)
+router.post('/warehouse/update-qty', async (req, res) => {
+  try {
+    const rows = req.body;
+    const result = await wrhousdlvrService.updateQty(rows);
+    res.json({ success: true, result });
+  } catch (err) {
+    console.error('[API] /warehouse/update-qty error:', err);
+    res.status(500).json({ error: err?.message ?? 'server error' });
+  }
+});
 
 // 가용 수량 단건 조회 (E1/E2/E3 + 코드 + 옵션)
 router.get('/warehouse/available-qty', async (req, res) => {

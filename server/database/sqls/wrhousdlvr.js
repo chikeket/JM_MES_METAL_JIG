@@ -1,3 +1,35 @@
+// wrhous_wrhsdlvr_mas 수량 update
+const updateWrhousdlvrMasQty = `
+  UPDATE WRHOUS_WRHSDLVR_MAS SET ALL_RCVPAY_QY = ? WHERE WRHSDLVR_MAS_ID = ?
+`;
+
+
+// wrhous_wrhsdlvr 디테일 수량 update
+const updateWrhousdlvrDetailQty = `
+  UPDATE WRHOUS_WRHSDLVR SET RCVPAY_QY = ? WHERE WRHSDLVR_MAS_ID = ?
+`;
+
+
+// lot_stc_precon 입고 IST_QY update
+const updateLotStcPreconIstQty = `
+  UPDATE LOT_STC_PRECON SET IST_QY = ? WHERE WRHSDLVR_MAS_ID = ?
+`;
+
+
+// lot_stc_precon 출고 OUST_QY update
+const updateLotStcPreconOustQty = `
+  UPDATE LOT_STC_PRECON SET OUST_QY = ? WHERE WRHSDLVR_MAS_ID = ?
+`;
+
+// 자재 불출 테이블 수량
+const updateMaterialWithdrawalQty = `
+UPDATE rwmatr_rtun_trget
+SET PROD_EXPC_QY = ?
+WHERE RSC_RTUN_TRGET_ID = (
+select rsc_rtun_trget_id from wrhous_wrhsdlvr
+where WRHSDLVR_MAS_ID = ?);
+`;
+
 // 테이블: WRHOUS_WRHSDLVR <창고 입출고> 관련 SQL 쿼리들
 
 // 자재 품질검사서 목록 조회 (사용) - 완전 입고된 것 제외
@@ -54,7 +86,7 @@ const selectEndPrdtInspectionList = `
 SELECT  epqi.end_prdt_qlty_insp_id AS insp_no,
         pdd.prdt_id AS item_code,
         p.prdt_nm AS item_name,
-        po.prdt_opt_id AS opt_code,
+        pdd.prdt_opt_id AS opt_code,
         po.opt_nm AS opt_name,
         epqi.insp_qy AS insp_qty,
         epqi.pass_qy  AS pass_qty,
@@ -856,7 +888,36 @@ const selectPrdtAndOptByRcvordDetaIds = `
 SELECT rcvord_deta_id, prdt_id, prdt_opt_id
 FROM rcvord_deta
 WHERE rcvord_deta_id IN (?)
+`;
 
+// 자재 불출용 가용 수량
+const selectMaterialByProductOrder = `
+SELECT 
+  b.PRDT_ID,
+  b.PRDT_OPT_ID,
+  COALESCE(
+    FLOOR(MIN( COALESCE(stk.STOCK_QY,0) / NULLIF(req.REC_QY_PER_UNIT, 0) )),
+    0
+  ) AS AVAILABLE_QY
+FROM BOM b
+JOIN (
+  SELECT bd.BOM_ID, b.PRDT_ID, b.PRDT_OPT_ID, bd.RSC_ID, SUM(bd.REC_QY) AS REC_QY_PER_UNIT
+  FROM BOM b
+  JOIN BOM_DETA bd ON bd.BOM_ID = b.BOM_ID
+  WHERE b.PRDT_ID    = ?
+    AND b.PRDT_OPT_ID = ?
+  GROUP BY bd.BOM_ID, b.PRDT_ID, b.PRDT_OPT_ID, bd.RSC_ID
+) req
+  ON req.BOM_ID = b.BOM_ID
+LEFT JOIN (
+  SELECT l.RSC_ID, SUM(l.NOW_STC_QY) AS STOCK_QY
+  FROM LOT_STC_PRECON l
+  GROUP BY l.RSC_ID
+) stk
+  ON stk.RSC_ID = req.RSC_ID
+WHERE b.PRDT_ID     = ?
+  AND b.PRDT_OPT_ID = ?            
+GROUP BY b.PRDT_ID, b.PRDT_OPT_ID
 `;
 
 module.exports = {
@@ -918,4 +979,11 @@ module.exports = {
 
   selectNowStockByPrdtOpt,
   selectPrdtAndOptByRcvordDetaIds,
+
+  selectMaterialByProductOrder,
+  updateWrhousdlvrDetailQty,
+  updateWrhousdlvrMasQty,
+  updateLotStcPreconIstQty,
+  updateLotStcPreconOustQty,
+  updateMaterialWithdrawalQty,
 };

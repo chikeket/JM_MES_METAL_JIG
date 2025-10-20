@@ -237,7 +237,12 @@ const onSearch = async () => {
       console.warn('[inspectionModal] 조회 결과가 100건을 초과합니다!')
     }
 
-    inspectionList.value = response.data || []
+    // 반제품 품질 검사서 조회 시 opt_code가 없는 검사서만 표시
+    if (searchCondition.insp_type === 'semiQuality') {
+      inspectionList.value = (response.data || []).filter(item => !item.opt_code)
+    } else {
+      inspectionList.value = response.data || []
+    }
     resetSelection()
   } catch (error) {
     console.error('[inspectionModal] 검사서 조회 실패:', error)
