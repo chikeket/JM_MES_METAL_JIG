@@ -97,23 +97,23 @@ const resetSearch = () => {
 
 const search = async () => {
   try {
-    // 로그인 사용자 정보 가져오기
-    const currentUser = auth.user
-    if (!currentUser) {
-      alert('로그인이 필요합니다.')
-      return
-    }
-    const empId = currentUser.emp_id ?? currentUser.id
-    if (!empId) {
-      alert('사용자 정보를 찾을 수 없습니다.')
-      return
-    }
+    // // 로그인 사용자 정보 가져오기
+    // const currentUser = auth.user
+    // if (!currentUser) {
+    //   alert('로그인이 필요합니다.')
+    //   return
+    // }
+    // const empId = currentUser.emp_id ?? currentUser.id
+    // if (!empId) {
+    //   alert('사용자 정보를 찾을 수 없습니다.')
+    //   return
+    // }
     const params = {
       rsc_ordr_nm: searchOrderNm.value || null,
       rcvpay_ty: searchOrderType.value || null,
       emp_nm: searchOrderEmp.value || null,
       reg_dt: searchOrderDate.value || null,
-      emp_id: empId,
+      emp_id: 'EMP005' ||empId || null,
     }
     const res = await axios.get('/api/wrhsdlvr/search', { params })
     const data = res?.data
@@ -126,13 +126,13 @@ const search = async () => {
 
 const select = async (row) => {
   try {
-    const res = await axios.get(`/api/wrhsdlvr/${row.WRHSDLVR_MAS_ID}`)
+    const res = await axios.get(`/api/wrhsdlvr/${row.wrhsdlvr_mas_id}`)
     const { master, details } = res.data || {}
     emit('select', { master, details })
     close()
   } catch (err) {
     console.error('[wrhsdlvrModal] select error:', err)
-    emit('select', { master: row, details: [] })
+    emit('select', { master: row, details: mappedDetails })
     close()
   }
 }

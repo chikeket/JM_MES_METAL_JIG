@@ -30,8 +30,6 @@ app.listen(3000, () => {
 
 // 라우팅 등록 영역
 
-const wrhsdlvr = require("./routers/wrhsdlvr_router.js");
-
 
 const co = require("./routers/co_router.js"); // 업체(테스트 완료 주익이 나중에 쓰면 됨)
 const companyManage = require("./routers/companyManage_router.js"); // 업체관리 추가!
@@ -109,4 +107,3 @@ app.use("/api", prcs_Router); // 공정목록 조회
 app.use("/", semiPrdtQltyInsp); // 반제품 품질검수
 app.use("/", prodPlanManage); // 생산계획관리 rud관련
 app.use('/', bomRouter); // BOM 관리
-app.use("/", wrhsdlvr);

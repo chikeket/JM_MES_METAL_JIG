@@ -1,3 +1,5 @@
+const mariadb = require('../database/mapper');
+
 // 제품명으로 제품ID 반환
 async function getPrdtIdByName(prdt_nm) {
   const rows = await mariadb.query('SELECT prdt_id FROM prdt WHERE prdt_nm = ? LIMIT 1', [prdt_nm]);
@@ -9,7 +11,6 @@ async function getOptIdByName(opt_nm) {
   const rows = await mariadb.query('SELECT prdt_opt_id as opt_id FROM prdt_opt WHERE opt_nm = ? LIMIT 1', [opt_nm]);
   return rows[0]?.opt_id || '';
 }
-const mariadb = require('../database/mapper');
 
 // BOM 마스터 전체/조건 조회 (제품명/옵션명으로 조회)
 async function getBomMasterList({ productName = '', optionName = '', status = '' } = {}) {
