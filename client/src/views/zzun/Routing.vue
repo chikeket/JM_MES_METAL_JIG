@@ -79,40 +79,40 @@
           <div>
             <CRow>
               <CCol md="6" class="mb-2">
-                <label class="form-label fw-semibold" style="font-size: 0.85rem">제품 상태</label>
+                <label class="form-label fw-semibold" style="font-size: 0.85rem">제품명</label>
                 <input
                   type="text"
                   class="form-control form-control-sm"
-                  :value="selectedView.prdt_st_nm"
+                  :value="selectedView.prdt_nm"
                   readonly
                 />
               </CCol>
               <CCol md="6" class="mb-2">
-                <label class="form-label fw-semibold" style="font-size: 0.85rem">옵션 상태</label>
+                <label class="form-label fw-semibold" style="font-size: 0.85rem">옵션명</label>
                 <input
                   type="text"
                   class="form-control form-control-sm"
-                  :value="selectedView.opt_st_nm"
+                  :value="selectedView.opt_nm"
                   readonly
                 />
               </CCol>
             </CRow>
             <CRow>
               <CCol md="6" class="mb-2">
-                <label class="form-label fw-semibold" style="font-size: 0.85rem">제품 비고</label>
+                <label class="form-label fw-semibold" style="font-size: 0.85rem">규격</label>
                 <input
                   type="text"
                   class="form-control form-control-sm"
-                  :value="selectedView.rm"
+                  :value="selectedView.spec"
                   readonly
                 />
               </CCol>
               <CCol md="6" class="mb-2">
-                <label class="form-label fw-semibold" style="font-size: 0.85rem">옵션 비고</label>
+                <label class="form-label fw-semibold" style="font-size: 0.85rem">단위</label>
                 <input
                   type="text"
                   class="form-control form-control-sm"
-                  :value="selectedView.opt_rm"
+                  :value="selectedView.unit"
                   readonly
                 />
               </CCol>
@@ -129,8 +129,8 @@
             @close="closePrcsModal"
             @select="onSelectPrcs"
           />
-          <CButton color="danger" size="sm" @click="deleteSelectedRows">행 삭제</CButton>
           <CButton color="secondary" size="sm" @click="saveRoutingRows">저장</CButton>
+          <CButton color="danger" size="sm" @click="deleteSelectedRows">삭제</CButton>
         </div>
 
         <!-- 오른쪽 下영역: 라우팅 정보 -->
@@ -198,10 +198,10 @@ const selectedProduct = ref(null) // 선택된 제품 저장
 
 // 상세 패널 표시용 null-안전 뷰 모델
 const selectedView = computed(() => ({
-  prdt_st_nm: selectedProduct.value?.prdt_st_nm ?? '',
-  opt_st_nm: selectedProduct.value?.opt_st_nm ?? '',
-  rm: selectedProduct.value?.rm ?? '',
-  opt_rm: selectedProduct.value?.opt_rm ?? '',
+  prdt_nm: selectedProduct.value?.prdt_nm ?? '',
+  opt_nm: selectedProduct.value?.opt_nm ?? '',
+  spec: selectedProduct.value?.spec ?? '',
+  unit: selectedProduct.value?.unit ?? '',
 }))
 
 const prdtSearch = async () => {
