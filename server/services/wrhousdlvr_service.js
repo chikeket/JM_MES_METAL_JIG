@@ -10,18 +10,54 @@ async function updateQty(rows) {
       // wrhous_wrhsdlvr_mas, wrhous_wrhsdlvr, lot_stc_precon 모두 update
       // 1. wrhous_wrhsdlvr_mas
       console.log(rows);
-      await conn.query(sqlList['updateWrhousdlvrMasQty'], [row.qty, row.wrhsdlvr_mas_id]);
+      await conn.query(sqlList["updateWrhousdlvrMasQty"], [
+        row.qty,
+        row.wrhsdlvr_mas_id,
+      ]);
       // 2. wrhous_wrhsdlvr
-      await conn.query(sqlList['updateWrhousdlvrDetailQty'], [row.qty, row.wrhsdlvr_mas_id]);
+      await conn.query(sqlList["updateWrhousdlvrDetailQty"], [
+        row.qty,
+        row.wrhsdlvr_mas_id,
+      ]);
       // 3. lot_stc_precon: 입고/출고 모드에 따라 IST_QY/OUST_QY 변경
-      if (row.mode === 'in') {
-        await conn.query(sqlList['updateLotStcPreconIstQty'], [row.qty, row.wrhsdlvr_mas_id]);
-      } else if (row.mode === 'out') {
-        await conn.query(sqlList['updateLotStcPreconOustQty'], [row.qty, row.wrhsdlvr_mas_id]);
+      if (row.mode === "in") {
+        await conn.query(sqlList["updateLotStcPreconIstQty"], [
+          row.qty,
+          row.wrhsdlvr_mas_id,
+        ]);
+      } else if (row.mode === "out") {
+        await conn.query(sqlList["updateLotStcPreconOustQty"], [
+          row.qty,
+          row.wrhsdlvr_mas_id,
+        ]);
       }
     }
     conn.commit();
     return { affectedRows: rows.length };
+  } finally {
+    conn.release();
+  }
+}
+
+// 창고 입출고 삭제
+async function deleteWrhousdlvr(wrhsdlvrMasId) {
+  const conn = await mariadb.getConnection();
+  await conn.beginTransaction();
+  try {
+    await conn.query(sqlList["deleteMaterialWithdrawalByMasId"], [
+      wrhsdlvrMasId,
+    ]);
+    await conn.query(sqlList["deleteWrhousdlvrDetailsByMasId,"], [
+      wrhsdlvrMasId,
+    ]);
+    await conn.query(sqlList["deleteLotStcPreconByMasId"], [wrhsdlvrMasId]);
+    await conn.query(sqlList["deleteWrhousdlvrMasById"], [wrhsdlvrMasId]);
+
+    conn.commit();
+    return { success: true };
+  } catch (err) {
+    await conn.rollback();
+    throw err;
   } finally {
     conn.release();
   }
@@ -35,16 +71,16 @@ async function updateQty(rows) {
  */
 function buildLotAllocationResponse(allocations, summary) {
   // allocations 배열의 각 객체에 lot_no가 포함되어 있는지 확인
-  const safeAllocations = allocations.map(a => ({
-    lot_no: a.lot_no || a.LOT_NO || a.lot || '',
+  const safeAllocations = allocations.map((a) => ({
+    lot_no: a.lot_no || a.LOT_NO || a.lot || "",
     allocated_qty: a.allocated_qty,
-    warehouse_id: a.warehouse_id || '',
-    zone_id: a.zone_id || ''
+    warehouse_id: a.warehouse_id || "",
+    zone_id: a.zone_id || "",
   }));
   return {
     success: true,
     allocations: safeAllocations,
-    summary: summary
+    summary: summary,
   };
 }
 /**
@@ -83,7 +119,10 @@ async function assignLotToMaterials(materials) {
     if (!material.rsc_id) continue;
     const lotStocks = await getLotStockByRscId(material.rsc_id);
     // lot_no, LOT_NO 모두 체크, 없으면 ''
-    const firstLot = lotStocks.length > 0 ? (lotStocks[0].lot_no || lotStocks[0].LOT_NO || '') : '';
+    const firstLot =
+      lotStocks.length > 0
+        ? lotStocks[0].lot_no || lotStocks[0].LOT_NO || ""
+        : "";
     material.lot_no = firstLot;
     material.lot = firstLot; // 프론트/백엔드 일관성 위해 둘 다
     // 필요시 material.lot_allocations = lotStocks; // 전체 LOT별 재고 정보 저장
@@ -111,9 +150,9 @@ async function getLotStockByRscId(rscId) {
         [mas.WRHSDLVR_MAS_ID]
       );
       result.push({
-        lot_no: mas.LOT_NO || '',
-        wrhsdlvr_mas_id: mas.WRHSDLVR_MAS_ID || '',
-        now_stock: lotRows[0]?.NOW_STC_QY ?? 0
+        lot_no: mas.LOT_NO || "",
+        wrhsdlvr_mas_id: mas.WRHSDLVR_MAS_ID || "",
+        now_stock: lotRows[0]?.NOW_STC_QY ?? 0,
       });
     }
     return result;
@@ -129,7 +168,10 @@ async function getLotStockByRscId(rscId) {
  */
 async function processMaterialWithdrawalWithLot(bomMaterials, wrhsdlvrMasId) {
   // LOT 할당 결과 반영
-  const bomMaterialsWithLot = await assignLotToBomMaterials(bomMaterials, wrhsdlvrMasId);
+  const bomMaterialsWithLot = await assignLotToBomMaterials(
+    bomMaterials,
+    wrhsdlvrMasId
+  );
   // 이후 bomMaterialsWithLot를 프론트로 반환하거나 화면에 표시
   return bomMaterialsWithLot;
 }
@@ -143,9 +185,12 @@ async function assignLotToBomMaterials(bomMaterials, wrhsdlvrMasId) {
   // LOT별 재고 현황 조회 및 전체 수량 합산
   for (const material of bomMaterials) {
     // 각 자재별로 LOT별 할당 결과 계산
-    const allocations = await allocateLotForMaterialWithdrawal(wrhsdlvrMasId, material.qty);
+    const allocations = await allocateLotForMaterialWithdrawal(
+      wrhsdlvrMasId,
+      material.qty
+    );
     // 첫 번째 할당 LOT을 material.lot에 매핑 (여러 LOT 분할 시 로직 확장 가능)
-    material.lot = allocations.length > 0 ? allocations[0].lot_no : '';
+    material.lot = allocations.length > 0 ? allocations[0].lot_no : "";
     // 필요시 material.lot_allocations = allocations; // 전체 할당 결과 저장
   }
   return bomMaterials;
@@ -162,7 +207,7 @@ async function allocateLotForMaterialWithdrawal(wrhsdlvrMasId, withdrawalQty) {
   const allocations = [];
   // lotStocks의 lot_no가 undefined/null인 경우 LOT_NO, 또는 둘 다 없으면 빈 값
   for (const lot of lotStocks) {
-    const lotNo = lot.lot_no || lot.LOT_NO || '';
+    const lotNo = lot.lot_no || lot.LOT_NO || "";
     if (!lotNo) continue; // lot_no가 없으면 건너뜀
     if (remainingQty <= 0) break;
     const allocQty = Math.min(lot.now_stock, remainingQty);
@@ -189,7 +234,9 @@ async function allocateLotForMaterialWithdrawal(wrhsdlvrMasId, withdrawalQty) {
 const getLotRscStockByMasId = async (wrhsdlvrMasId) => {
   const conn = await mariadb.getConnection();
   try {
-    const rows = await conn.query(sqlList['selectLotRscStockByMasId'], [wrhsdlvrMasId]);
+    const rows = await conn.query(sqlList["selectLotRscStockByMasId"], [
+      wrhsdlvrMasId,
+    ]);
     return rows;
   } finally {
     conn.release();
@@ -200,67 +247,79 @@ const getLotRscStockByMasId = async (wrhsdlvrMasId) => {
 async function getInspectionRemainingQty({ inspect_id, item_type }) {
   if (!inspect_id || !item_type) return { remaining_qty: 0 };
   let remaining_qty = 0;
-  let itemName = '';
-  const typeMap = { 자재: 'E1', 반제품: 'E2', 완제품: 'E3' };
+  let itemName = "";
+  const typeMap = { 자재: "E1", 반제품: "E2", 완제품: "E3" };
   const itemTypeCode = typeMap[item_type] || item_type;
-  if (itemTypeCode === 'E1') {
-    const result = await mariadb.query("selectRscInspectionDetails", [inspect_id]);
+  if (itemTypeCode === "E1") {
+    const result = await mariadb.query("selectRscInspectionDetails", [
+      inspect_id,
+    ]);
     if (result.length > 0) {
       remaining_qty = Number(result[0].remaining_qty);
-      itemName = result[0].item_name || '';
+      itemName = result[0].item_name || "";
     }
-  } else if (itemTypeCode === 'E2') {
-    const result = await mariadb.query("selectSemiInspectionListById", [inspect_id]);
+  } else if (itemTypeCode === "E2") {
+    const result = await mariadb.query("selectSemiInspectionListById", [
+      inspect_id,
+    ]);
     if (result.length > 0) {
       remaining_qty = Number(result[0].remaining_qty);
-      itemName = result[0].item_name || '';
+      itemName = result[0].item_name || "";
     }
-  } else if (itemTypeCode === 'E3') {
-    const result = await mariadb.query("selectEndPrdtInspectionListById", [inspect_id]);
+  } else if (itemTypeCode === "E3") {
+    const result = await mariadb.query("selectEndPrdtInspectionListById", [
+      inspect_id,
+    ]);
     if (result.length > 0) {
       remaining_qty = Number(result[0].remaining_qty);
-      itemName = result[0].item_name || '';
+      itemName = result[0].item_name || "";
     }
   }
   return { remaining_qty, item_name: itemName };
 }
 // 가용 수량 단건 조회 API용 래퍼
-async function getAvailableQty({ item_type, item_code, item_opt_code = '' }) {
-  const qty = await getAvailableQtyForItem({ item_type, item_code, item_opt_code });
+async function getAvailableQty({ item_type, item_code, item_opt_code = "" }) {
+  const qty = await getAvailableQtyForItem({
+    item_type,
+    item_code,
+    item_opt_code,
+  });
   return { available_qty: Number(qty || 0) };
 }
 // 품목별(필요시 옵션 포함) 현재 가용 수량 계산
-const getAvailableQtyForItem = async ({ item_type, item_code, item_opt_code = "" }) => {
+const getAvailableQtyForItem = async ({
+  item_type,
+  item_code,
+  item_opt_code = "",
+}) => {
   // selectAvailableLots 쿼리 파라미터 9개로 맞춤
   let params = [];
   if (item_type === "E1") {
     // 자재
-    params = [
-      "E1", "E1", "E1",
-      item_code || "", item_code,
-      "", "",
-      "", ""
-    ];
+    params = ["E1", "E1", "E1", item_code || "", item_code, "", "", "", ""];
   } else if (item_type === "E2") {
     // 반제품
-    params = [
-      "E2", "E2", "E2",
-      "", "",
-      item_code || "", item_code,
-      "", ""
-    ];
+    params = ["E2", "E2", "E2", "", "", item_code || "", item_code, "", ""];
   } else if (item_type === "E3") {
     // 완제품
     params = [
-      "E3", "E3", "E3",
-      "", "",
-      item_code || "", item_code,
-      item_opt_code || "", item_opt_code
+      "E3",
+      "E3",
+      "E3",
+      "",
+      "",
+      item_code || "",
+      item_code,
+      item_opt_code || "",
+      item_opt_code,
     ];
   }
   const lots = await mariadb.query("selectAvailableLots", params);
   // LOT별 가용수량을 합산(출고 전용이면 LOT 단위로도 활용 가능)
-  const total = (lots || []).reduce((sum, lot) => sum + Number(lot.available_qty || 0), 0);
+  const total = (lots || []).reduce(
+    (sum, lot) => sum + Number(lot.available_qty || 0),
+    0
+  );
   return total; // 숫자
 };
 
@@ -445,18 +504,20 @@ const getInspectionList = async (Info) => {
         FROM WRHOUS_WRHSDLVR_MAS wm
         WHERE wm.INSPECT_ID = ? AND wm.DEL_YN = 'N'
       `;
-      const availableQtyResult = await mariadb.query(availableQtyQuery, [inspection.INSP_NO]);
+      const availableQtyResult = await mariadb.query(availableQtyQuery, [
+        inspection.INSP_NO,
+      ]);
       const availableQty = availableQtyResult[0]?.available_qty || 0;
       enhancedResult.push({
         ...inspection,
         available_qty: Number(availableQty),
-        available_qty_display: `${availableQty} ${inspection.UNIT || 'EA'}`
+        available_qty_display: `${availableQty} ${inspection.UNIT || "EA"}`,
       });
     } catch (err) {
       enhancedResult.push({
         ...inspection,
         available_qty: 0,
-        available_qty_display: `0 ${inspection.UNIT || 'EA'}`
+        available_qty_display: `0 ${inspection.UNIT || "EA"}`,
       });
     }
   }
@@ -487,9 +548,9 @@ const saveTransaction = async ({ transactionList, emp_id = null } = {}) => {
     console.error("[wrhousdlvr_service] saveTransaction 오류:", error);
     console.error("[wrhousdlvr_service] 오류 스택:", error.stack);
     return {
-  success: false,
-  error: "거래 저장 중 오류가 발생했습니다.",
-  details: error.message,
+      success: false,
+      error: "거래 저장 중 오류가 발생했습니다.",
+      details: error.message,
     };
   }
 };
@@ -508,7 +569,7 @@ const deleteTransaction = async (txnId) => {
     await mariadb.query("deleteWrhousTransaction", [txnId]);
 
     await conn.commit();
-  return { success: true };
+    return { success: true };
   } catch (err) {
     if (conn)
       try {
@@ -528,7 +589,7 @@ const deleteTransaction = async (txnId) => {
 const deleteSelectedTransactions = async (ids = []) => {
   const list = Array.isArray(ids) ? ids.filter(Boolean) : [];
   if (!list.length) {
-  return { success: true, count: 0 };
+    return { success: true, count: 0 };
   }
 
   let conn;
@@ -541,7 +602,7 @@ const deleteSelectedTransactions = async (ids = []) => {
     }
 
     await conn.commit();
-  return { success: true, count: list.length };
+    return { success: true, count: list.length };
   } catch (err) {
     if (conn)
       try {
@@ -558,20 +619,32 @@ const deleteSelectedTransactions = async (ids = []) => {
 };
 
 // 품목별 현재 재고 조회 (개선된 버전)
-const getInventoryStatusByType = async (itemType, itemCode, itemOptCode = "") => {
+const getInventoryStatusByType = async (
+  itemType,
+  itemCode,
+  itemOptCode = ""
+) => {
   try {
-    console.log("[wrhousdlvr_service] getInventoryStatusByType ->", { itemType, itemCode, itemOptCode });
-    
+    console.log("[wrhousdlvr_service] getInventoryStatusByType ->", {
+      itemType,
+      itemCode,
+      itemOptCode,
+    });
+
     let result = [];
-    
+
     if (itemType === "E1") {
       // 자재 재고 조회
       result = await mariadb.query("selectRscInventoryStatus", [itemCode]);
     } else {
       // 반제품/완제품 재고 조회
-      result = await mariadb.query("selectPrdtInventoryStatus", [itemCode, itemOptCode, itemOptCode]);
+      result = await mariadb.query("selectPrdtInventoryStatus", [
+        itemCode,
+        itemOptCode,
+        itemOptCode,
+      ]);
     }
-    
+
     console.log("[wrhousdlvr_service] 재고 조회 결과:", result.length, "건");
     return result;
   } catch (error) {
@@ -588,29 +661,37 @@ const getInventoryStatus = async (itemCode) => {
 
   console.log("[wrhousdlvr_service] getInventoryStatus itemCode ->", itemCode);
   // 마스터-디테일 구조에 맞게 파라미터 2개 전달 (RSC_ID와 PRDT_ID 모두 체크)
-  const result = await mariadb.query("selectInventoryStatus", [itemCode, itemCode]);
+  const result = await mariadb.query("selectInventoryStatus", [
+    itemCode,
+    itemCode,
+  ]);
   return result;
 };
 
 // 품목별 입출고 이력 조회 (품목 유형별 분기 처리)
-const getItemTransactionHistory = async (itemCode, itemType = "E3", itemOptCode = "") => {
+const getItemTransactionHistory = async (
+  itemCode,
+  itemType = "E3",
+  itemOptCode = ""
+) => {
   if (!itemCode) {
     return [];
   }
 
-  console.log(
-    "[wrhousdlvr_service] getItemTransactionHistory ->",
-    { itemCode, itemType, itemOptCode }
-  );
-  
+  console.log("[wrhousdlvr_service] getItemTransactionHistory ->", {
+    itemCode,
+    itemType,
+    itemOptCode,
+  });
+
   // 품목 유형에 따라 파라미터 전달 (E1: 자재, E2/E3: 반제품/완제품)
   const result = await mariadb.query("selectItemTransactionHistory", [
-    itemType,     // 첫 번째 조건용
-    itemCode,     // 자재 코드 또는 제품 코드
-    itemType,     // 두 번째 조건용  
-    itemCode,     // 제품 코드
-    itemOptCode,  // 옵션 코드 (빈 문자열 체크용)
-    itemOptCode   // 실제 옵션 코드
+    itemType, // 첫 번째 조건용
+    itemCode, // 자재 코드 또는 제품 코드
+    itemType, // 두 번째 조건용
+    itemCode, // 제품 코드
+    itemOptCode, // 옵션 코드 (빈 문자열 체크용)
+    itemOptCode, // 실제 옵션 코드
   ]);
   return result;
 };
@@ -653,9 +734,9 @@ const getFinishedQualityInspectionList = async (
       let available_qty = 0;
       try {
         available_qty = await getAvailableQtyForItem({
-          item_type: 'E3',
+          item_type: "E3",
           item_code: inspection.item_code,
-          item_opt_code: inspection.opt_code || ''
+          item_opt_code: inspection.opt_code || "",
         });
       } catch (err) {
         available_qty = 0;
@@ -663,7 +744,9 @@ const getFinishedQualityInspectionList = async (
       enhancedResults.push({
         ...inspection,
         available_qty,
-        available_qty_display: `${available_qty} ${inspection.item_unit || 'EA'}`
+        available_qty_display: `${available_qty} ${
+          inspection.item_unit || "EA"
+        }`,
       });
     }
     return enhancedResults;
@@ -709,9 +792,9 @@ const getSemiQualityInspectionList = async (
       let available_qty = 0;
       try {
         available_qty = await getAvailableQtyForItem({
-          item_type: 'E2',
+          item_type: "E2",
           item_code: inspection.item_code,
-          item_opt_code: inspection.opt_code || ''
+          item_opt_code: inspection.opt_code || "",
         });
       } catch (err) {
         available_qty = 0;
@@ -719,7 +802,9 @@ const getSemiQualityInspectionList = async (
       enhancedResults.push({
         ...inspection,
         available_qty,
-        available_qty_display: `${available_qty} ${inspection.item_unit || 'EA'}`
+        available_qty_display: `${available_qty} ${
+          inspection.item_unit || "EA"
+        }`,
       });
     }
     return enhancedResults;
@@ -767,8 +852,8 @@ const getRscQualityInspectionList = async (
       let available_qty = 0;
       try {
         available_qty = await getAvailableQtyForItem({
-          item_type: 'E1',
-          item_code: inspection.item_code
+          item_type: "E1",
+          item_code: inspection.item_code,
         });
       } catch (err) {
         available_qty = 0;
@@ -776,7 +861,9 @@ const getRscQualityInspectionList = async (
       enhancedResults.push({
         ...inspection,
         available_qty,
-        available_qty_display: `${available_qty} ${inspection.item_unit || 'EA'}`
+        available_qty_display: `${available_qty} ${
+          inspection.item_unit || "EA"
+        }`,
       });
     }
     return enhancedResults;
@@ -1037,14 +1124,18 @@ const resolveLotPrefix = (type) => {
   switch (type) {
     case "materialQuality":
     case "E1": // 자재
-    case "자재": return "LOT_RSC_";
+    case "자재":
+      return "LOT_RSC_";
     case "semiQuality":
     case "E2": // 반제품
-    case "반제품": return "LOT_SEMI_";
+    case "반제품":
+      return "LOT_SEMI_";
     case "finishedQuality":
     case "E3": // 완제품
-    case "완제품": return "LOT_END_";
-    default:   return "LOT_END_";
+    case "완제품":
+      return "LOT_END_";
+    default:
+      return "LOT_END_";
   }
 };
 
@@ -1102,7 +1193,10 @@ const validateInventoryForOutbound = async (itemCode, requestQty) => {
     );
 
     // 신규 마스터-디테일 구조 쿼리 사용 (파라미터 2개 필요)
-    const results = await mariadb.query("selectInventoryStatus", [itemCode, itemCode]);
+    const results = await mariadb.query("selectInventoryStatus", [
+      itemCode,
+      itemCode,
+    ]);
 
     if (!results || results.length === 0) {
       return {
@@ -1180,15 +1274,18 @@ const consolidateTransactions = (transactions) => {
 // 창고 입출고 거래 처리 (다중 검사서 대응)
 const processTransactions = async (requestData) => {
   // 그룹핑 키와 값 로그 출력
-  console.log('[processTransactions] 그룹핑 대상 transactionList:', requestData.transactionList.map(doc => ({
-    rsc_qlty_insp_id: doc.master.rsc_qlty_insp_id,
-    semi_prdt_qlty_insp_id: doc.master.semi_prdt_qlty_insp_id,
-    end_prdt_qlty_insp_id: doc.master.end_prdt_qlty_insp_id,
-    deli_deta_id: doc.master.deli_deta_id,
-    rsc_id: doc.master.rsc_id,
-    prdt_id: doc.master.prdt_id,
-    warehouse_id: doc.master.warehouse_id
-  })));
+  console.log(
+    "[processTransactions] 그룹핑 대상 transactionList:",
+    requestData.transactionList.map((doc) => ({
+      rsc_qlty_insp_id: doc.master.rsc_qlty_insp_id,
+      semi_prdt_qlty_insp_id: doc.master.semi_prdt_qlty_insp_id,
+      end_prdt_qlty_insp_id: doc.master.end_prdt_qlty_insp_id,
+      deli_deta_id: doc.master.deli_deta_id,
+      rsc_id: doc.master.rsc_id,
+      prdt_id: doc.master.prdt_id,
+      warehouse_id: doc.master.warehouse_id,
+    }))
+  );
   // === 문서(입고서/출고서) 1장마다 마스터-디테일 1:N 구조 보장 ===
   // transactionList: [{ master: {...}, details: [{...}, ...] }, ...]
   const conn = await mariadb.getConnection();
@@ -1199,11 +1296,11 @@ const processTransactions = async (requestData) => {
     const groupKey = (doc) => {
       const m = doc.master;
       return [
-        m.rsc_id || m.prdt_id || '',
-        m.prdt_opt_id || '',
-        m.warehouse_id || '',
-        m.zone_id || ''
-      ].join('|');
+        m.rsc_id || m.prdt_id || "",
+        m.prdt_opt_id || "",
+        m.warehouse_id || "",
+        m.zone_id || "",
+      ].join("|");
     };
     const grouped = {};
     for (const doc of requestData.transactionList) {
@@ -1216,42 +1313,55 @@ const processTransactions = async (requestData) => {
     for (const docs of Object.values(grouped)) {
       const doc = docs[0];
       // 그룹키와 마스터 주요 값 로그 출력
-      console.log('[processTransactions] 마스터 생성 직전 그룹키:', groupKey(doc));
-      console.log('[processTransactions] 마스터 주요 값:', {
+      console.log(
+        "[processTransactions] 마스터 생성 직전 그룹키:",
+        groupKey(doc)
+      );
+      console.log("[processTransactions] 마스터 주요 값:", {
         rsc_qlty_insp_id: doc.master.rsc_qlty_insp_id,
         semi_prdt_qlty_insp_id: doc.master.semi_prdt_qlty_insp_id,
         end_prdt_qlty_insp_id: doc.master.end_prdt_qlty_insp_id,
         deli_deta_id: doc.master.deli_deta_id,
         rsc_id: doc.master.rsc_id,
         prdt_id: doc.master.prdt_id,
-        warehouse_id: doc.master.warehouse_id
+        warehouse_id: doc.master.warehouse_id,
       });
       // 그룹 내 첫번째 doc 기준으로 마스터 생성
       // LOT_NO 세팅 전 디버깅 로그
-      if (doc.master.rcvpay_ty === 'S2') {
+      if (doc.master.rcvpay_ty === "S2") {
         const firstDetail = doc?.details?.[0];
-        console.log('[processTransactions] 출고 마스터 LOT_NO 세팅 직전 details[0]:', {
-          lot: firstDetail?.lot,
-          lot_no: firstDetail?.lot_no
-        });
+        console.log(
+          "[processTransactions] 출고 마스터 LOT_NO 세팅 직전 details[0]:",
+          {
+            lot: firstDetail?.lot,
+            lot_no: firstDetail?.lot_no,
+          }
+        );
       }
-      const masPrefix = doc.master.rcvpay_ty === 'S1' ? 'WRHM_IN_' : 'WRHM_OUT_';
-      const masIdRows = await conn.query(sqlList['createWrhousTransactionId'], [masPrefix, masPrefix]);
+      const masPrefix =
+        doc.master.rcvpay_ty === "S1" ? "WRHM_IN_" : "WRHM_OUT_";
+      const masIdRows = await conn.query(sqlList["createWrhousTransactionId"], [
+        masPrefix,
+        masPrefix,
+      ]);
       const masId = masIdRows[0]?.txn_id;
 
       // LOT 번호 자동 생성 (DB 일련번호)
       let lotNo = doc.master.lot_no;
-      if (doc.master.rcvpay_ty === 'S1' && !lotNo) {
+      if (doc.master.rcvpay_ty === "S1" && !lotNo) {
         const lotPrefix = resolveLotPrefix(doc.master.item_type);
-        const lotRows = await mariadb.query('createLotno', [lotPrefix, lotPrefix]);
+        const lotRows = await mariadb.query("createLotno", [
+          lotPrefix,
+          lotPrefix,
+        ]);
         lotNo = lotRows[0]?.lot_no;
-      } else if (doc.master.rcvpay_ty === 'S2') {
+      } else if (doc.master.rcvpay_ty === "S2") {
         // 출고일 때는 해당 마스터(그룹)의 첫 번째 디테일 LOT_NO를 마스터에 세팅
-        lotNo = '';
+        lotNo = "";
       }
 
       // 마스터 등록
-      console.log('[processTransactions] 마스터 insert 직전:', {
+      console.log("[processTransactions] 마스터 insert 직전:", {
         masId,
         rsc_id: doc.master.rsc_id,
         prdt_id: doc.master.prdt_id,
@@ -1260,10 +1370,13 @@ const processTransactions = async (requestData) => {
         zone_id: doc.master.zone_id,
         lotNo,
         all_rcvpay_qy: doc.master.all_rcvpay_qy,
-        qty: doc.master.qty
+        qty: doc.master.qty,
       });
       if (!doc.master.rsc_id && !doc.master.prdt_id) {
-        console.warn('[processTransactions] 마스터 품목ID가 null/undefined입니다:', doc.master);
+        console.warn(
+          "[processTransactions] 마스터 품목ID가 null/undefined입니다:",
+          doc.master
+        );
       }
       await conn.query(sqlList["insertWrhousTransactionMaster"], [
         masId,
@@ -1280,54 +1393,75 @@ const processTransactions = async (requestData) => {
         doc.master.qty || doc.master.all_rcvpay_qy || 0,
         doc.master.rcvpay_dt || new Date(),
         doc.master.remark || doc.master.rm || "",
-        doc.master.rcvpay_nm || "자동입력"
+        doc.master.rcvpay_nm || "자동입력",
       ]);
 
       // 입고일 때 LOT_STC_PRECON 테이블에 insert
-      if (doc.master.rcvpay_ty === 'S1') {
-        const lotIdRows = await conn.query(sqlList['createLotId'], ['LOT_STC_', 'LOT_STC_']);
+      if (doc.master.rcvpay_ty === "S1") {
+        const lotIdRows = await conn.query(sqlList["createLotId"], [
+          "LOT_STC_",
+          "LOT_STC_",
+        ]);
         const lotId = lotIdRows[0]?.txn_id;
-        await conn.query(sqlList['insertLotStcPrecon'], [
+        await conn.query(sqlList["insertLotStcPrecon"], [
           lotId,
           masId,
           Number(doc.master.all_rcvpay_qy || doc.master.qty || 0),
           0,
           Number(doc.master.all_rcvpay_qy || doc.master.qty || 0),
-          doc.master.rm || ''
+          doc.master.rm || "",
         ]);
       }
 
       // 그룹 내 모든 디테일 등록
       for (const docDetail of docs) {
         for (const detail of docDetail.details) {
-          const dtlPrefix = doc.master.rcvpay_ty === 'S1' ? 'WRH_IN_' : 'WRH_OUT_';
-          const detailIdRows = await conn.query(sqlList['createWrhousDetailId'], [dtlPrefix, dtlPrefix]);
+          const dtlPrefix =
+            doc.master.rcvpay_ty === "S1" ? "WRH_IN_" : "WRH_OUT_";
+          const detailIdRows = await conn.query(
+            sqlList["createWrhousDetailId"],
+            [dtlPrefix, dtlPrefix]
+          );
           const detailId = detailIdRows[0]?.detail_id;
-          let rsc_qlty_insp_id = null, semi_prdt_qlty_insp_id = null, end_prdt_qlty_insp_id = null;
+          let rsc_qlty_insp_id = null,
+            semi_prdt_qlty_insp_id = null,
+            end_prdt_qlty_insp_id = null;
           // 검사서ID 매핑 (자재 불출 분기 처리)
-          if (detail.item_type === 'E1' ||  detail.rsc_qlty_insp_id) {
+          if (detail.item_type === "E1" || detail.rsc_qlty_insp_id) {
             // 자재 불출(생산지시 기반): prod_drct_deta_id만 세팅, end_prdt_qlty_insp_id는 강제로 null
             rsc_qlty_insp_id = detail.rsc_qlty_insp_id || null;
             semi_prdt_qlty_insp_id = null;
             end_prdt_qlty_insp_id = null;
             deli_deta_id = null;
-          } else if (detail.item_type === 'E3' || detail.end_prdt_qlty_insp_id) {
+          } else if (
+            detail.item_type === "E3" ||
+            detail.end_prdt_qlty_insp_id
+          ) {
             // 완제품 출고: end_prdt_qlty_insp_id만 세팅, 나머지는 null
             rsc_qlty_insp_id = null;
             semi_prdt_qlty_insp_id = null;
             end_prdt_qlty_insp_id = detail.end_prdt_qlty_insp_id || null;
             deli_deta_id = null;
-          } else if (detail.item_type === 'E2' || detail.semi_prdt_qlty_insp_id) {
+          } else if (
+            detail.item_type === "E2" ||
+            detail.semi_prdt_qlty_insp_id
+          ) {
             // 납품상세 출고: deli_deta_id만 세팅, 나머지는 null
             rsc_qlty_insp_id = null;
             semi_prdt_qlty_insp_id = detail.semi_prdt_qlty_insp_id || null;
             end_prdt_qlty_insp_id = null;
             deli_deta_id = null;
-          } 
-          const rowInspectId = rsc_qlty_insp_id || semi_prdt_qlty_insp_id || end_prdt_qlty_insp_id || detail.deli_deta_id || null;
+          }
+          const rowInspectId =
+            rsc_qlty_insp_id ||
+            semi_prdt_qlty_insp_id ||
+            end_prdt_qlty_insp_id ||
+            detail.deli_deta_id ||
+            null;
           const rowItemId = detail.rsc_id || detail.prdt_id || null;
-          const rowWarehouseId = detail.warehouse_id || doc.master.warehouse_id || null;
-          console.log('[processTransactions] 디테일 insert 직전:', {
+          const rowWarehouseId =
+            detail.warehouse_id || doc.master.warehouse_id || null;
+          console.log("[processTransactions] 디테일 insert 직전:", {
             detailId,
             masId,
             rowInspectId,
@@ -1338,20 +1472,34 @@ const processTransactions = async (requestData) => {
             end_prdt_qlty_insp_id,
             deli_deta_id: detail.deli_deta_id,
             rsc_rtun_trget_id: detail.rsc_rtun_trget_id,
-            qty: detail.rcvpay_qy || detail.qty
+            qty: detail.rcvpay_qy || detail.qty,
           });
           if (!rowInspectId) {
-            console.warn('[processTransactions] 디테일 행ID(검사서ID)가 null/undefined입니다:', detail);
+            console.warn(
+              "[processTransactions] 디테일 행ID(검사서ID)가 null/undefined입니다:",
+              detail
+            );
           }
 
           // 자재 출고(S2)일 때, 자재 불출 테이블 ID 생성 및 insert
           let rtunId = null;
-          if (doc.master.rcvpay_ty === 'S2' && detail.prod_drct_deta_id) {
+          if (doc.master.rcvpay_ty === "S2" && detail.prod_drct_deta_id) {
             // 1. 자재 불출 ID 생성
-            const rtunIdRows = await conn.query(sqlList['createRwmatrRtunTrgetId']);
-            rtunId = rtunIdRows[0]?.txn_id || rtunIdRows[0]?.rtun_id || rtunIdRows[0]?.id || null;
+            const rtunIdRows = await conn.query(
+              sqlList["createRwmatrRtunTrgetId"]
+            );
+            rtunId =
+              rtunIdRows[0]?.txn_id ||
+              rtunIdRows[0]?.rtun_id ||
+              rtunIdRows[0]?.id ||
+              null;
             detail.rsc_rtun_trget_id = rtunId; // detail에 할당
-            console.log('[createRwmatrRtunTrgetId] 생성된 rtunId:', rtunId, '원본:', rtunIdRows);
+            console.log(
+              "[createRwmatrRtunTrgetId] 생성된 rtunId:",
+              rtunId,
+              "원본:",
+              rtunIdRows
+            );
             // 2. 자재 불출 테이블 insert (ID, 생산지시 상세ID, 제품ID, 옵션ID, 수량, LOT)
             const rwmatrParams = [
               rtunId,
@@ -1359,26 +1507,39 @@ const processTransactions = async (requestData) => {
               detail.prdt_id || null,
               detail.prdt_opt_id || null,
               detail.qty || detail.rcvpay_qy || 0,
-              'J2',
-              detail.remark || detail.rm || ''
+              "J2",
+              detail.remark || detail.rm || "",
             ];
             // LOT 정보가 있으면 추가로 저장 (예: update 쿼리 또는 별도 insert 필요시)
             if (detail.lot || detail.lot_no) {
               detail.lot_no = detail.lot_no || detail.lot;
               // LOT 번호를 자재 불출 테이블에 저장하는 쿼리 실행 (예시, 실제 쿼리명/파라미터 맞게 수정 필요)
-              if (sqlList['updateRwmatrRtunTrgetLot']) {
-                await conn.query(sqlList['updateRwmatrRtunTrgetLot'], [detail.lot_no, rtunId]);
-                console.log('[updateRwmatrRtunTrgetLot] LOT 저장:', detail.lot_no, rtunId);
+              if (sqlList["updateRwmatrRtunTrgetLot"]) {
+                await conn.query(sqlList["updateRwmatrRtunTrgetLot"], [
+                  detail.lot_no,
+                  rtunId,
+                ]);
+                console.log(
+                  "[updateRwmatrRtunTrgetLot] LOT 저장:",
+                  detail.lot_no,
+                  rtunId
+                );
               }
             }
-            console.log('[insertRwmatrRtunTrget] insert 직전 파라미터:', rwmatrParams);
-            const rwmatrResult = await conn.query(sqlList['insertRwmatrRtunTrget'], rwmatrParams);
-            console.log('[insertRwmatrRtunTrget] 실행 결과:', rwmatrResult);
+            console.log(
+              "[insertRwmatrRtunTrget] insert 직전 파라미터:",
+              rwmatrParams
+            );
+            const rwmatrResult = await conn.query(
+              sqlList["insertRwmatrRtunTrget"],
+              rwmatrParams
+            );
+            console.log("[insertRwmatrRtunTrget] 실행 결과:", rwmatrResult);
           }
 
           // 3. 마스터/디테일 insert: 입고/출고/납품 분기
           let wrhousDtlParams;
-          if (doc.master.rcvpay_ty === 'S1') {
+          if (doc.master.rcvpay_ty === "S1") {
             // 입고: 검사서ID 매핑
             wrhousDtlParams = [
               detailId,
@@ -1389,15 +1550,16 @@ const processTransactions = async (requestData) => {
               end_prdt_qlty_insp_id,
               null,
               detail.qty || detail.rcvpay_qy || 0,
-              detail.remark || detail.rm || ""
+              detail.remark || detail.rm || "",
             ];
-          } else if (doc.master.rcvpay_ty === 'S2' && doc.master.rsc_id) {
+          } else if (doc.master.rcvpay_ty === "S2" && doc.master.rsc_id) {
             // 자재 출고: 자재 불출 ID와 할당된 LOT_NO 저장
             // LOT 할당 함수로 LOT_NO를 받아옴 (예시)
-            let lotNo = '';
+            let lotNo = "";
             if (detail.rsc_id) {
               const lots = await getAvailableLotsByRscId(detail.rsc_id);
-              if (lots && lots.length > 0) lotNo = lots[0].lot_no || lots[0].LOT_NO || '';
+              if (lots && lots.length > 0)
+                lotNo = lots[0].lot_no || lots[0].LOT_NO || "";
             }
             wrhousDtlParams = [
               detailId,
@@ -1408,12 +1570,15 @@ const processTransactions = async (requestData) => {
               null,
               lotNo, // LOT_NO 저장
               detail.qty || detail.rcvpay_qy || 0,
-              detail.remark || detail.rm || ""
+              detail.remark || detail.rm || "",
             ];
-            console.log('[processTransactions] 자재 출고 디테일 파라미터:', wrhousDtlParams);
-          } else if (doc.master.rcvpay_ty === 'S2' && detail.deli_deta_id) {
+            console.log(
+              "[processTransactions] 자재 출고 디테일 파라미터:",
+              wrhousDtlParams
+            );
+          } else if (doc.master.rcvpay_ty === "S2" && detail.deli_deta_id) {
             // 납품 출고: 납품 상세 ID 매핑
-            let lotNo = '';
+            let lotNo = "";
             wrhousDtlParams = [
               detailId,
               masId,
@@ -1423,7 +1588,7 @@ const processTransactions = async (requestData) => {
               null,
               detail.deli_deta_id,
               detail.qty || detail.rcvpay_qy || 0,
-              detail.remark || detail.rm || ""
+              detail.remark || detail.rm || "",
             ];
           } else {
             // 기타: 자재 불출 ID만 저장
@@ -1436,25 +1601,27 @@ const processTransactions = async (requestData) => {
               end_prdt_qlty_insp_id,
               detail.deli_deta_id,
               detail.qty || detail.rcvpay_qy || 0,
-              detail.remark || detail.rm || ""
+              detail.remark || detail.rm || "",
             ];
           }
           await conn.query(sqlList["insertWrhousTransaction"], wrhousDtlParams);
 
           // 4. LOT 재고 현황 update
-          if (doc.master.rcvpay_ty === 'S2' && (detail.lot || detail.lot_no)) {
-            console.log('[updateLotStcPreconOnOut] params:', {
+          if (doc.master.rcvpay_ty === "S2" && (detail.lot || detail.lot_no)) {
+            console.log("[updateLotStcPreconOnOut] params:", {
               qty: detail.qty || detail.rcvpay_qy || 0,
               lot: detail.lot,
-              lot_no: detail.lot_no
+              lot_no: detail.lot_no,
             });
-            const masIdRows = await conn.query(sqlList["selectMasByLotNo"], [detail.lot_no || null]);
+            const masIdRows = await conn.query(sqlList["selectMasByLotNo"], [
+              detail.lot_no || null,
+            ]);
             if (Array.isArray(masIdRows)) {
               for (const row of masIdRows) {
                 if (row?.wrhsdlvr_mas_id) {
                   await conn.query(sqlList["updateLotStcPreconOnOut"], [
                     detail.qty || detail.rcvpay_qy || 0,
-                    row.wrhsdlvr_mas_id
+                    row.wrhsdlvr_mas_id,
                   ]);
                 }
               }
@@ -1464,7 +1631,7 @@ const processTransactions = async (requestData) => {
       }
     }
     await conn.commit();
-  return { success: true };
+    return { success: true };
   } catch (err) {
     await conn.rollback();
     console.error("[processTransactions] Error:", err);
@@ -1491,29 +1658,42 @@ const getWarehouseRscInspections = async (item_code = "", item_name = "") => {
       results.map(async (item) => {
         try {
           // 현재고 조회 (입고 - 출고) - 디버깅 추가
-          console.log(`[wrhousdlvr_service] 현재고 조회 시작 - 자재: ${item.code || item.item_code}, 옵션: ${item.opt_code || item.item_opt_code || ''}`);
-          
-          const availableQtyResult = await mariadb.query(`
+          console.log(
+            `[wrhousdlvr_service] 현재고 조회 시작 - 자재: ${
+              item.code || item.item_code
+            }, 옵션: ${item.opt_code || item.item_opt_code || ""}`
+          );
+
+          const availableQtyResult = await mariadb.query(
+            `
             SELECT 
               IFNULL(SUM(CASE WHEN wm.RCVPAY_TY = 'S1' THEN wm.ALL_RCVPAY_QY ELSE -wm.ALL_RCVPAY_QY END), 0) AS available_qty
             FROM WRHOUS_WRHSDLVR_MAS wm
             WHERE wm.RSC_ID = ?
-          `, [item.code || item.item_code]);
+          `,
+            [item.code || item.item_code]
+          );
 
-          console.log(`[wrhousdlvr_service] 현재고 조회 결과:`, availableQtyResult);
+          console.log(
+            `[wrhousdlvr_service] 현재고 조회 결과:`,
+            availableQtyResult
+          );
           const availableQty = availableQtyResult[0]?.available_qty || 0;
 
           return {
             ...item,
             available_qty: Number(availableQty),
-            available_qty_display: `${availableQty} ${item.unit || 'EA'}`
+            available_qty_display: `${availableQty} ${item.unit || "EA"}`,
           };
         } catch (err) {
-          console.warn(`[wrhousdlvr_service] 사용가능수량 조회 실패 (${item.code}):`, err.message);
+          console.warn(
+            `[wrhousdlvr_service] 사용가능수량 조회 실패 (${item.code}):`,
+            err.message
+          );
           return {
             ...item,
             available_qty: 0,
-            available_qty_display: `0 ${item.unit || 'EA'}`
+            available_qty_display: `0 ${item.unit || "EA"}`,
           };
         }
       })
@@ -1545,31 +1725,39 @@ const getWarehouseSemiInspections = async (item_code = "", item_name = "") => {
     (results || []).map(async (item) => {
       try {
         // 반제품은 옵션 조건 없이 PRDT_ID만 비교
-        const availableQtyResult = await mariadb.query(`
+        const availableQtyResult = await mariadb.query(
+          `
           SELECT IFNULL(SUM(CASE WHEN wm.RCVPAY_TY = 'S1' THEN wm.ALL_RCVPAY_QY ELSE -wm.ALL_RCVPAY_QY END), 0) AS available_qty
           FROM WRHOUS_WRHSDLVR_MAS wm
           WHERE wm.PRDT_ID = ? AND (wm.PRDT_OPT_ID IS NULL OR wm.PRDT_OPT_ID = '')
-        `, [item.item_code]);
+        `,
+          [item.item_code]
+        );
         const available = availableQtyResult[0]?.available_qty || 0;
         return {
           ...item,
           available_qty: available,
-          available_qty_display: (available == null ? "N/A" : String(available)),
+          available_qty_display: available == null ? "N/A" : String(available),
         };
       } catch (err) {
-        console.warn(`[wrhousdlvr_service] 사용가능수량 조회 실패 (${item.item_code}):`, err.message);
+        console.warn(
+          `[wrhousdlvr_service] 사용가능수량 조회 실패 (${item.item_code}):`,
+          err.message
+        );
         return {
           ...item,
           available_qty: 0,
-          available_qty_display: `0 ${item.unit || 'EA'}`,
+          available_qty_display: `0 ${item.unit || "EA"}`,
         };
       }
     })
   );
 
-  console.log(`[wrhousdlvr_service] 창고용 반제품 검사서 조회 결과: ${enriched.length}건`);
+  console.log(
+    `[wrhousdlvr_service] 창고용 반제품 검사서 조회 결과: ${enriched.length}건`
+  );
   return enriched;
-}
+};
 
 // 완제품 품질검사서 목록 조회 (창고 입출고용) - 사용 가능 수량 포함
 const getWarehouseEndPrdtInspections = async (
@@ -1595,22 +1783,27 @@ const getWarehouseEndPrdtInspections = async (
         return {
           ...item,
           available_qty: available,
-          available_qty_display: (available == null ? "N/A" : String(available)),
+          available_qty_display: available == null ? "N/A" : String(available),
         };
       } catch (err) {
-        console.warn(`[wrhousdlvr_service] 사용가능수량 조회 실패 (${item.item_code}):`, err.message);
+        console.warn(
+          `[wrhousdlvr_service] 사용가능수량 조회 실패 (${item.item_code}):`,
+          err.message
+        );
         return {
           ...item,
           available_qty: 0,
-          available_qty_display: `0 ${item.unit || 'EA'}`,
+          available_qty_display: `0 ${item.unit || "EA"}`,
         };
       }
     })
   );
 
-  console.log(`[wrhousdlvr_service] 창고용 완제품 검사서 조회 결과: ${enriched.length}건`);
+  console.log(
+    `[wrhousdlvr_service] 창고용 완제품 검사서 조회 결과: ${enriched.length}건`
+  );
   return enriched;
-}
+};
 
 // 납품서 기반 완제품 목록 조회
 const getWarehouseProducts = async (item_code = "", item_name = "") => {
@@ -1689,13 +1882,15 @@ const saveMasterDetailTransactions = async ({
 
       // ✅ LOT 생성 (입고에서만 신규 LOT 발급)
       let lotNumber = master.lot_no || null;
-      if (!lotNumber && (mode === "in")) {
-        const lotPrefix = resolveLotPrefix(master.item_type);    // E1/E2/E3
-        lotNumber = await generateLotNumberByPrefix(lotPrefix);  // <-- 중요
+      if (!lotNumber && mode === "in") {
+        const lotPrefix = resolveLotPrefix(master.item_type); // E1/E2/E3
+        lotNumber = await generateLotNumberByPrefix(lotPrefix); // <-- 중요
       }
 
       // ✅ 품목 유형에 따라 RSC/PRDT/PRDT_OPT 세팅
-      let rscId = null, prdtId = null, prdtOptId = null;
+      let rscId = null,
+        prdtId = null,
+        prdtOptId = null;
       if (master.item_type === "E1") {
         rscId = master.item_code;
       } else {
@@ -1711,19 +1906,19 @@ const saveMasterDetailTransactions = async ({
       await mariadb.query("insertWrhousTransactionMaster", [
         masterId,
         master.rcvpay_ty || (mode === "in" ? "S1" : "S2"),
-        master.emp_id || "EMP001",               // ✅ EMP_ID가 없으면 기본값 사용 (실제 존재하는 직원 ID)
+        master.emp_id || "EMP001", // ✅ EMP_ID가 없으면 기본값 사용 (실제 존재하는 직원 ID)
         rscId,
         prdtId,
         prdtOptId,
         master.warehouse_id,
         master.zone_id,
-        lotNumber,                                   // ✅ LOT_NO
+        lotNumber, // ✅ LOT_NO
         master.item_spec || "",
         master.item_unit || "EA",
         Number(master.total_qty) || 0,
         master.rcvpay_dt || new Date().toISOString().split("T")[0],
         master.remark || "",
-        master.rcvpay_nm || "",                      // ✅ RCVPAY_NM (수불 명) 추가
+        master.rcvpay_nm || "", // ✅ RCVPAY_NM (수불 명) 추가
       ]);
 
       masterInsertedIds.push(masterId);
@@ -1731,9 +1926,12 @@ const saveMasterDetailTransactions = async ({
       // ✅ 마스터-매칭키 구성
       // 입고(in): LOT가 방금 생성되므로, 같은 (item_code,warehouse,zone) 묶음 기준
       // 출고(out): 이미 존재하는 LOT별(warehouse,zone)로 묶는 게 자연스러움
-      const key = (mode === "in")
-        ? `IN|${master.item_type}|${master.item_code}|${master.warehouse_id}|${master.zone_id}`
-        : `OUT|${master.item_type}|${lotNumber || master.lot_no}|${master.warehouse_id}|${master.zone_id}`;
+      const key =
+        mode === "in"
+          ? `IN|${master.item_type}|${master.item_code}|${master.warehouse_id}|${master.zone_id}`
+          : `OUT|${master.item_type}|${lotNumber || master.lot_no}|${
+              master.warehouse_id
+            }|${master.zone_id}`;
 
       masterMap.set(key, { masterId, lotNumber });
     }
@@ -1745,9 +1943,10 @@ const saveMasterDetailTransactions = async ({
       const detailId = uuidv4();
 
       // ✅ 디테일-매칭키 구성: 마스터 생성 시의 기준과 동일하게 만듦
-      const key = (mode === "in")
-        ? `IN|${detail.item_type}|${detail.item_code}|${detail.warehouse_id}|${detail.zone_id}`
-        : `OUT|${detail.item_type}|${detail.lot_no}|${detail.warehouse_id}|${detail.zone_id}`;
+      const key =
+        mode === "in"
+          ? `IN|${detail.item_type}|${detail.item_code}|${detail.warehouse_id}|${detail.zone_id}`
+          : `OUT|${detail.item_type}|${detail.lot_no}|${detail.warehouse_id}|${detail.zone_id}`;
 
       const found = masterMap.get(key);
       if (!found) {
@@ -1756,9 +1955,13 @@ const saveMasterDetailTransactions = async ({
       const { masterId } = found;
 
       // ✅ 검사 유형 매핑
-      let rscQltyInspId = null, semiPrdtQltyInspId = null, endPrdtQltyInspId = null, deliDetaId = null;
+      let rscQltyInspId = null,
+        semiPrdtQltyInspId = null,
+        endPrdtQltyInspId = null,
+        deliDetaId = null;
       if (detail.item_type === "E1") rscQltyInspId = detail.inspect_id;
-      else if (detail.item_type === "E2") semiPrdtQltyInspId = detail.inspect_id;
+      else if (detail.item_type === "E2")
+        semiPrdtQltyInspId = detail.inspect_id;
       else if (detail.item_type === "E3") endPrdtQltyInspId = detail.inspect_id;
 
       console.log(
@@ -1767,20 +1970,20 @@ const saveMasterDetailTransactions = async ({
 
       // ✅ 디테일 INSERT (별칭은 기존과 동일)
       await mariadb.query("insertWrhousTransaction", [
-        detailId,            // WRHOUS_WRHSDLVR_ID
-        masterId,            // WRHSDLVR_MAS_ID  ✅ 고정 0번이 아니라 매칭된 masterId
-        null,                // RSC_RTUN_TRGET_ID (자재 반납 대상 ID - 현재 사용 안함)
+        detailId, // WRHOUS_WRHSDLVR_ID
+        masterId, // WRHSDLVR_MAS_ID  ✅ 고정 0번이 아니라 매칭된 masterId
+        null, // RSC_RTUN_TRGET_ID (자재 반납 대상 ID - 현재 사용 안함)
         rscQltyInspId,
         semiPrdtQltyInspId,
         endPrdtQltyInspId,
         deliDetaId,
         Number(detail.qty) || 0,
-        detail.remark || ""
+        detail.remark || "",
       ]);
 
       // ✅ 출고면 원본 수량 차감
       if (mode === "out") {
-        await updateOriginalQuantity(detail, conn);  // 기존 로직 그대로 사용
+        await updateOriginalQuantity(detail, conn); // 기존 로직 그대로 사용
       }
 
       detailCount++;
@@ -1822,8 +2025,6 @@ const saveMasterDetailTransactions = async ({
   }
 };
 
-
-
 // 새로운 마스터-디테일 거래 저장 (Vue 컴포넌트용)
 const saveWarehouseTransactions = async (info = {}) => {
   console.log("[wrhousdlvr_service] saveWarehouseTransactions 호출됨");
@@ -1857,7 +2058,10 @@ const saveWarehouseTransactions = async (info = {}) => {
     // 3. 마스터 거래 처리
     for (const masterTxn of masterTransactions) {
       console.log("[wrhousdlvr_service] 마스터 거래 처리:", masterTxn);
-      console.log("[wrhousdlvr_service] 마스터 거래 EMP_ID 확인:", masterTxn.emp_id);
+      console.log(
+        "[wrhousdlvr_service] 마스터 거래 EMP_ID 확인:",
+        masterTxn.emp_id
+      );
 
       if (mode === "out") {
         const availableLots = await getAvailableLotsForItem(masterTxn, conn);
@@ -1865,12 +2069,20 @@ const saveWarehouseTransactions = async (info = {}) => {
         if (!availableLots || availableLots.length === 0) {
           throw new Error(`재고가 부족합니다: ${masterTxn.item_name}`);
         }
-        const totalStock = availableLots.reduce((sum, lot) => sum + Number(lot.available_qty), 0);
+        const totalStock = availableLots.reduce(
+          (sum, lot) => sum + Number(lot.available_qty),
+          0
+        );
         if (totalStock < Number(masterTxn.total_qty)) {
-          throw new Error(`재고 부족: ${masterTxn.item_name} (요청: ${masterTxn.total_qty}, 재고: ${totalStock})`);
+          throw new Error(
+            `재고 부족: ${masterTxn.item_name} (요청: ${masterTxn.total_qty}, 재고: ${totalStock})`
+          );
         }
         // 선입선출로 LOT 분할 처리
-        const lotAllocations = allocateLotsForWithdrawal(availableLots, Number(masterTxn.total_qty));
+        const lotAllocations = allocateLotsForWithdrawal(
+          availableLots,
+          Number(masterTxn.total_qty)
+        );
         console.log("[wrhousdlvr_service] LOT 할당 결과:", lotAllocations);
         for (const allocation of lotAllocations) {
           console.log("[wrhousdlvr_service] 처리할 allocation:", allocation);
@@ -1893,7 +2105,7 @@ const saveWarehouseTransactions = async (info = {}) => {
           await mariadb.query("updateLotStcPreconOnOut", [
             allocation.qty,
             allocation.qty,
-            masterId
+            masterId,
           ]);
         }
       } else {
@@ -1905,7 +2117,10 @@ const saveWarehouseTransactions = async (info = {}) => {
           throw new Error("입고 마스터 LOT_NO 생성 실패: null 또는 빈 값");
         }
         // 2) LOT 재고 현황 PK: LOT_ID로 생성 (예: LOT_STC_...)
-        const lotIdRows = await mariadb.query("createLotId", ["LOT_STC_", "LOT_STC_"]);
+        const lotIdRows = await mariadb.query("createLotId", [
+          "LOT_STC_",
+          "LOT_STC_",
+        ]);
         const lotId = lotIdRows[0]?.txn_id;
         if (!lotId || typeof lotId !== "string" || lotId.trim() === "") {
           throw new Error("LOT 재고 현황 LOT_ID 생성 실패: null 또는 빈 값");
@@ -1926,33 +2141,36 @@ const saveWarehouseTransactions = async (info = {}) => {
           Number(masterTxn.total_qty), // IST_QY
           0, // OUST_QY
           Number(masterTxn.total_qty), // NOW_STC_QY
-          masterTxn.remark || '' // RM
+          masterTxn.remark || "", // RM
         ]);
       }
     }
 
     // 4. 디테일 거래 처리
     const rcvpayTy = mode === "in" ? "S1" : "S2"; // 입고: S1, 출고: S2
-    
+
     // 마스터-디테일 매칭을 위한 맵 생성
     const masterMap = new Map();
-    
+
     // 각 마스터에 대해 매칭 키 생성
     for (let i = 0; i < masterTransactions.length; i++) {
       const master = masterTransactions[i];
       const masterId = masterInsertedIds[i];
-      
+
       // 매칭 키: item_type + item_code + warehouse_id + zone_id 조합
       const key = `${master.item_type}|${master.item_code}|${master.warehouse_id}|${master.zone_id}`;
-      
+
       if (!masterMap.has(key)) {
         masterMap.set(key, []);
       }
       masterMap.get(key).push({ masterId, master });
     }
-    
-    console.log("[wrhousdlvr_service] 마스터 매칭 맵 생성:", Array.from(masterMap.keys()));
-    
+
+    console.log(
+      "[wrhousdlvr_service] 마스터 매칭 맵 생성:",
+      Array.from(masterMap.keys())
+    );
+
     for (const detailTxn of detailTransactions) {
       console.log("[wrhousdlvr_service] 디테일 거래 처리:", detailTxn);
       console.log(
@@ -1965,41 +2183,45 @@ const saveWarehouseTransactions = async (info = {}) => {
       // 디테일에 해당하는 마스터 ID 찾기
       const detailKey = `${detailTxn.item_type}|${detailTxn.item_code}|${detailTxn.warehouse_id}|${detailTxn.zone_id}`;
       const matchingMasters = masterMap.get(detailKey);
-      
+
       if (!matchingMasters || matchingMasters.length === 0) {
-        throw new Error(`디테일을 연결할 마스터를 찾을 수 없습니다: ${detailKey}`);
+        throw new Error(
+          `디테일을 연결할 마스터를 찾을 수 없습니다: ${detailKey}`
+        );
       }
-      
+
       // 첫 번째 매칭되는 마스터 사용 (같은 품목+창고+존의 경우)
       const selectedMasterId = matchingMasters[0].masterId;
-      
-      console.log(`[wrhousdlvr_service] 디테일 ${detailTxn.item_code}을(를) 마스터 ID ${selectedMasterId}에 연결`);
 
-        // 출고(out)일 때만 수량 검증 수행
-        if (mode === "out") {
-          // 수량 검증: 검사서/납품서의 사용 가능한 수량보다 많이 요청하는지 확인
-          await validateTransactionQuantity(detailTxn, mode, conn);
-        }
+      console.log(
+        `[wrhousdlvr_service] 디테일 ${detailTxn.item_code}을(를) 마스터 ID ${selectedMasterId}에 연결`
+      );
 
-        // 검사서별로 디테일 insert (중복 없이 모두 저장)
-        // detailTransactions 배열이 검사서별로 구성되어 있으므로, 각 detailTxn마다 insert
-        const detailId = await processDetailTransaction(
-          detailTxn,
-          selectedMasterId,
-          conn,
-          rcvpayTy
-        );
-        detailInsertedIds.push(detailId);
+      // 출고(out)일 때만 수량 검증 수행
+      if (mode === "out") {
+        // 수량 검증: 검사서/납품서의 사용 가능한 수량보다 많이 요청하는지 확인
+        await validateTransactionQuantity(detailTxn, mode, conn);
+      }
 
-        // 부분 입고/출고 처리: 원본 검사서/출고서 수량 업데이트
-        console.log("[wrhousdlvr_service] updateOriginalQuantity 호출 전");
-        if (mode === "out") {
-          // 출고 모드일 때만 원본 수량 차감
-          await updateOriginalQuantity(detailTxn, conn);
-        } else {
-          console.log("[wrhousdlvr_service] 입고 모드로 원본 수량 업데이트 스킵");
-        }
-        console.log("[wrhousdlvr_service] updateOriginalQuantity 호출 후");
+      // 검사서별로 디테일 insert (중복 없이 모두 저장)
+      // detailTransactions 배열이 검사서별로 구성되어 있으므로, 각 detailTxn마다 insert
+      const detailId = await processDetailTransaction(
+        detailTxn,
+        selectedMasterId,
+        conn,
+        rcvpayTy
+      );
+      detailInsertedIds.push(detailId);
+
+      // 부분 입고/출고 처리: 원본 검사서/출고서 수량 업데이트
+      console.log("[wrhousdlvr_service] updateOriginalQuantity 호출 전");
+      if (mode === "out") {
+        // 출고 모드일 때만 원본 수량 차감
+        await updateOriginalQuantity(detailTxn, conn);
+      } else {
+        console.log("[wrhousdlvr_service] 입고 모드로 원본 수량 업데이트 스킵");
+      }
+      console.log("[wrhousdlvr_service] updateOriginalQuantity 호출 후");
     }
 
     // 5. 트랜잭션 커밋
@@ -2053,13 +2275,17 @@ const getLotPrefix = (itemType) => {
     반제품: "LOT_SEMI_",
     완제품: "LOT_END_",
   };
-        // 검사서 ID가 배열일 경우 첫 번째 값 사용, 단일 값이면 그대로 사용
-        let masterLotNo = null;
-        if (Array.isArray(masterTxn.inspect_id)) {
-          masterLotNo = masterTxn.inspect_id[0];
-        } else {
-          masterLotNo = masterTxn.inspect_id || masterTxn.lot_no || masterTxn.default_lot_no || null;
-        }
+  // 검사서 ID가 배열일 경우 첫 번째 값 사용, 단일 값이면 그대로 사용
+  let masterLotNo = null;
+  if (Array.isArray(masterTxn.inspect_id)) {
+    masterLotNo = masterTxn.inspect_id[0];
+  } else {
+    masterLotNo =
+      masterTxn.inspect_id ||
+      masterTxn.lot_no ||
+      masterTxn.default_lot_no ||
+      null;
+  }
 };
 
 // 새 LOT 번호 생성 (호환성 유지)
@@ -2088,9 +2314,12 @@ const getAvailableLotsForItem = async (item) => {
       item.item_type, // E1
       item.item_type, // E2
       item.item_type, // E3
-      rscId, rscId,
-      prdtId, prdtId,
-      prdtOptId, prdtOptId
+      rscId,
+      rscId,
+      prdtId,
+      prdtId,
+      prdtOptId,
+      prdtOptId,
     ]);
     // LOT명 접두사 보정: 완제품은 LOT_END_, 반제품은 LOT_SEMI_, 자재는 LOT_RSC_
     const prefixMap = {
@@ -2100,9 +2329,9 @@ const getAvailableLotsForItem = async (item) => {
     };
     const prefix = prefixMap[item.item_type] || "";
     // prefix를 강제로 붙이지 않고, DB에 저장된 LOT 번호를 그대로 반환
-    return (result || []).map(lot => ({
+    return (result || []).map((lot) => ({
       ...lot,
-      lot_no: lot.lot_no || ''
+      lot_no: lot.lot_no || "",
     }));
   } catch (error) {
     console.error("[wrhousdlvr_service] 사용 가능한 LOT 조회 실패:", error);
@@ -2147,8 +2376,10 @@ const processMasterTransaction = async (masterTxn, mode) => {
 
     // EMP_ID 검증 - 존재하지 않으면 기본값 사용 (NOT NULL 제약조건 대응)
     let validEmpId = masterTxn.emp_id || "EMP001"; // 기본값 설정 (실제 존재하는 직원 ID)
-    console.log(`[wrhousdlvr_service] processMasterTransaction EMP_ID 검증 시작: ${masterTxn.emp_id}`);
-    
+    console.log(
+      `[wrhousdlvr_service] processMasterTransaction EMP_ID 검증 시작: ${masterTxn.emp_id}`
+    );
+
     if (masterTxn.emp_id && masterTxn.emp_id !== "EMP001") {
       try {
         const empCheck = await mariadb.query("validateEmployeeId", [
@@ -2171,7 +2402,9 @@ const processMasterTransaction = async (masterTxn, mode) => {
         validEmpId = "EMP001"; // 에러 발생 시 기본값 사용
       }
     } else {
-      console.log(`[wrhousdlvr_service] EMP_ID가 없거나 기본값, 기본값 사용: ${validEmpId}`);
+      console.log(
+        `[wrhousdlvr_service] EMP_ID가 없거나 기본값, 기본값 사용: ${validEmpId}`
+      );
     }
 
     // 마스터 거래 INSERT
@@ -2195,7 +2428,7 @@ const processMasterTransaction = async (masterTxn, mode) => {
       Number(masterTxn.total_qty),
       masterTxn.rcvpay_dt || new Date().toISOString().split("T")[0],
       masterTxn.remark || "",
-      masterTxn.rcvpay_nm || "",  // ✅ RCVPAY_NM (수불 명) 추가
+      masterTxn.rcvpay_nm || "", // ✅ RCVPAY_NM (수불 명) 추가
     ];
 
     console.log(`[wrhousdlvr_service] 마스터 INSERT 파라미터:`, {
@@ -2213,7 +2446,7 @@ const processMasterTransaction = async (masterTxn, mode) => {
       ALL_RCVPAY_QY: insertParams[11],
       RCVPAY_DT: insertParams[12],
       RM: insertParams[13],
-      RCVPAY_NM: insertParams[14],  // ✅ RCVPAY_NM 추가
+      RCVPAY_NM: insertParams[14], // ✅ RCVPAY_NM 추가
     });
 
     await mariadb.query("insertWrhousTransactionMaster", insertParams);
@@ -2327,14 +2560,15 @@ const processDetailTransaction = async (
     // 디테일 ID 생성 - 입고/출고에 따른 접두사 설정
     const prefix = rcvpayTy === "S1" ? "WRH_IN_" : "WRH_OUT_";
     const detailIdResult = await mariadb.query("createWrhousDetailId", [
-      prefix, prefix
+      prefix,
+      prefix,
     ]);
 
     const detailId = detailIdResult[0]?.detail_id || `${prefix}${Date.now()}`;
 
     console.log(
       `[wrhousdlvr_service] 디테일 ID 생성됨: ${detailId} (타입: ${
-       rcvpayTy === "S1" ? "입고" : "출고"
+        rcvpayTy === "S1" ? "입고" : "출고"
       })`
     );
 
@@ -2558,10 +2792,9 @@ const validateTransactionQuantity = async (detailTxn, mode, conn) => {
 
       if (itemTypeCode === "E1") {
         // 자재 품질검사서
-        const result = await mariadb.query(
-          "selectRscInspectionDetails",
-          [detailTxn.inspect_id]
-        );
+        const result = await mariadb.query("selectRscInspectionDetails", [
+          detailTxn.inspect_id,
+        ]);
 
         console.log("[wrhousdlvr_service] 자재 품질검사서 조회 결과:", result);
 
@@ -2575,10 +2808,9 @@ const validateTransactionQuantity = async (detailTxn, mode, conn) => {
         }
       } else if (itemTypeCode === "E2") {
         // 반제품 품질검사서
-        const result = await mariadb.query(
-          "selectSemiInspectionListById",
-          [detailTxn.inspect_id]
-        );
+        const result = await mariadb.query("selectSemiInspectionListById", [
+          detailTxn.inspect_id,
+        ]);
 
         console.log(
           "[wrhousdlvr_service] 반제품 품질검사서 조회 결과:",
@@ -2594,10 +2826,9 @@ const validateTransactionQuantity = async (detailTxn, mode, conn) => {
         }
       } else if (itemTypeCode === "E3") {
         // 완제품 품질검사서
-        const result = await mariadb.query(
-          "selectEndPrdtInspectionListById",
-          [detailTxn.inspect_id]
-        );
+        const result = await mariadb.query("selectEndPrdtInspectionListById", [
+          detailTxn.inspect_id,
+        ]);
 
         console.log(
           "[wrhousdlvr_service] 완제품 품질검사서 조회 결과:",
@@ -2733,43 +2964,58 @@ const getLotAllocations = async (info = {}) => {
 };
 
 // 모달용: 마스터+디테일 JOIN 검색
-async function searchWrhsdlvrMasterDetail({ rsc_ordr_nm, rcvpay_ty, emp_nm, reg_dt }) {
+async function searchWrhsdlvrMasterDetail({
+  rsc_ordr_nm,
+  rcvpay_ty,
+  emp_nm,
+  reg_dt,
+}) {
   const params = [
-    rsc_ordr_nm || '', rsc_ordr_nm || '',
-    rcvpay_ty || '', rcvpay_ty || '',
-    emp_nm || '', emp_nm || '',
-    reg_dt || '', reg_dt || ''
+    rsc_ordr_nm || "",
+    rsc_ordr_nm || "",
+    rcvpay_ty || "",
+    rcvpay_ty || "",
+    emp_nm || "",
+    emp_nm || "",
+    reg_dt || "",
+    reg_dt || "",
   ];
-  const rows = await mariadb.query('wrhsdlvrModalSearch', params);
+  const rows = await mariadb.query("wrhsdlvrModalSearch", params);
   return rows;
 }
 
 // 단건: 마스터+디테일
 async function getWrhsdlvrMasterDetailById(masId) {
-  const [master] = await mariadb.query('wrhsdlvrMasterById', [masId]);
-  const detailsRaw = await mariadb.query('wrhsdlvrDetailByMasId', [masId]);
+  const [master] = await mariadb.query("wrhsdlvrMasterById", [masId]);
+  const detailsRaw = await mariadb.query("wrhsdlvrDetailByMasId", [masId]);
   // 화면 변수명에 맞게 details 매핑
-  const details = detailsRaw.map(row => ({
-    id: row.wrhous_wrhsdlvr_id || row.wrhsdlvr_id || row.wrhsdlvr_mas_id || '',
-    code: row.prdt_id || row.rsc_id || row.code || '',
-    name: row.prdt_nm || row.rsc_nm || row.name || '',
-    opt_code: row.prdt_opt_id || row.opt_code || '',
-    opt_name: row.opt_nm || row.opt_name || '',
-    unit: row.unit || '',
-    spec: row.spec || '',
-    type: row.prdt_id ? '완제품' : row.rsc_id ? '자재' : '반제품',
-    emp_nm: row.emp_nm || '',
+  const details = detailsRaw.map((row) => ({
+    id: row.wrhous_wrhsdlvr_id || row.wrhsdlvr_id || row.wrhsdlvr_mas_id || "",
+    code: row.prdt_id || row.rsc_id || row.code || "",
+    name: row.prdt_nm || row.rsc_nm || row.name || "",
+    opt_code: row.prdt_opt_id || row.opt_code || "",
+    opt_name: row.opt_nm || row.opt_name || "",
+    unit: row.unit || "",
+    spec: row.spec || "",
+    type: row.prdt_id ? "완제품" : row.rsc_id ? "자재" : "반제품",
+    emp_nm: row.emp_nm || "",
     qty: row.rcvpay_qy || row.qty || row.qy || 0,
-    remark: row.rm || row.remark || '',
-    inspect_id: row.rsc_qlty_insp_id || row.semi_prdt_qlty_insp_id || row.end_prdt_qlty_insp_id || row.deli_deta_id || row.rsc_rtun_trget_id || '',
-    warehouse_id: row.warehous_id || row.wrhous_id || '',
-    warehouse_name: row.warehous_id || row.wrhous_id || '',
-    zone_id: row.zone_id || '',
-    location_id: row.zone_id || '',
-    location_name: row.zone_id || '',
-    lot: row.lot_no || '',
-    lot_no: row.lot_no || '',
-    ...row // 원본 row도 포함(디버깅/확장성)
+    remark: row.rm || row.remark || "",
+    inspect_id:
+      row.rsc_qlty_insp_id ||
+      row.semi_prdt_qlty_insp_id ||
+      row.end_prdt_qlty_insp_id ||
+      row.deli_deta_id ||
+      row.rsc_rtun_trget_id ||
+      "",
+    warehouse_id: row.warehous_id || row.wrhous_id || "",
+    warehouse_name: row.warehous_id || row.wrhous_id || "",
+    zone_id: row.zone_id || "",
+    location_id: row.zone_id || "",
+    location_name: row.zone_id || "",
+    lot: row.lot_no || "",
+    lot_no: row.lot_no || "",
+    ...row, // 원본 row도 포함(디버깅/확장성)
   }));
   return { master, details };
 }

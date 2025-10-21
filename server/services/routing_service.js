@@ -1,4 +1,5 @@
 const mariadb = require("../database/mapper.js");
+const sqlList = require("../database/sqlList.js");
 
 // 라우팅 상세 행 저장 (INSERT 또는 UPDATE)
 const saveRoutingDetaRows = async (prdt_id, prdt_opt_id, rows) => {

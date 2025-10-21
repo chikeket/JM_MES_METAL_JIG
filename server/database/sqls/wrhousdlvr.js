@@ -3,18 +3,15 @@ const updateWrhousdlvrMasQty = `
   UPDATE WRHOUS_WRHSDLVR_MAS SET ALL_RCVPAY_QY = ? WHERE WRHSDLVR_MAS_ID = ?
 `;
 
-
 // wrhous_wrhsdlvr 디테일 수량 update
 const updateWrhousdlvrDetailQty = `
   UPDATE WRHOUS_WRHSDLVR SET RCVPAY_QY = ? WHERE WRHSDLVR_MAS_ID = ?
 `;
 
-
 // lot_stc_precon 입고 IST_QY update
 const updateLotStcPreconIstQty = `
   UPDATE LOT_STC_PRECON SET IST_QY = ? WHERE WRHSDLVR_MAS_ID = ?
 `;
-
 
 // lot_stc_precon 출고 OUST_QY update
 const updateLotStcPreconOustQty = `
@@ -27,7 +24,30 @@ UPDATE rwmatr_rtun_trget
 SET PROD_EXPC_QY = ?
 WHERE RSC_RTUN_TRGET_ID = (
 select rsc_rtun_trget_id from wrhous_wrhsdlvr
-where WRHSDLVR_MAS_ID = ?);
+where WRHSDLVR_MAS_ID = ?)
+`;
+
+// 창고 입출고 디테일 삭제
+const deleteWrhousdlvrDetailsByMasId = `
+delete from wrhous_wrhsdlvr where wrhsdlvr_mas_id = ?
+`;
+
+// 창고 입출고 마스터 삭제
+const deleteWrhousdlvrMasById = `
+delete from lot_stc_precon where wrhsdlvr_mas_id = ?
+`;
+
+// lot 재고 현황 삭제
+const deleteLotStcPreconByMasId = `
+delete from lot_stc_precon where wrhsdlvr_mas_id = ?
+`;
+
+// 자재 불출 삭제
+const deleteMaterialWithdrawalByMasId = `
+delete from rwmatr_rtun_trget 
+where (select rsc_rtun_trget_id 
+      from wrhous_wrhsdlvr 
+      where wrhsdlvr_mas_id = ?)
 `;
 
 // 테이블: WRHOUS_WRHSDLVR <창고 입출고> 관련 SQL 쿼리들
@@ -958,8 +978,8 @@ module.exports = {
   selectMaterialWithdrawalCompletedQty,
   validateEmployeeId,
 
-    // FK 검증용 단건 쿼리
-    selectEndPrdtQltyInspById,
+  // FK 검증용 단건 쿼리
+  selectEndPrdtQltyInspById,
   deductRscInspPassQty,
   deductSemiPrdtInspPassQty,
   deductEndPrdtInspPassQty,
@@ -986,4 +1006,10 @@ module.exports = {
   updateLotStcPreconIstQty,
   updateLotStcPreconOustQty,
   updateMaterialWithdrawalQty,
+
+  // 삭제(사용)
+  deleteWrhousdlvrDetailsByMasId,
+  deleteWrhousdlvrMasById,
+  deleteLotStcPreconByMasId,
+  deleteMaterialWithdrawalByMasId,
 };

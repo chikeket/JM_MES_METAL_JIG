@@ -5,6 +5,13 @@ const session = require("express-session");
 const dotenv = require("dotenv");
 dotenv.config({ path: "./dbConfig.env" });
 
+let contextPath = "/";
+if (process.argv.length > 2 && process.argv[2] === "prod") {
+  // 운영 환경일 때
+  contextPath = "/api";
+} else {
+  console.log(process.argv);
+}
 // 미들웨어 등록 영역
 // 1. body parser
 // content-type : application/x-www-form-urlencoded
@@ -29,7 +36,6 @@ app.listen(3000, () => {
 });
 
 // 라우팅 등록 영역
-
 
 const co = require("./routers/co_router.js"); // 업체(테스트 완료 주익이 나중에 쓰면 됨)
 const companyManage = require("./routers/companyManage_router.js"); // 업체관리 추가!
@@ -60,13 +66,10 @@ const wrhousManage = require("./routers/wrhousManage_router.js"); // 창고 기�
 const wrhousZoneManage = require("./routers/wrhousZoneManage_router.js"); // 창고 로케이션 기준정보 관리
 
 const routingInfo = require("./routers/routing_router.js"); // 공정 라우팅
-const prcs_Router = require("./routers/prcs_router.js"); // 공정목록 조회
 const eqm = require("./routers/eqm_router.js"); // 설비
 const semiPrdtQltyInsp = require("./routers/semiPrdtQltyInsp_router.js"); // 반제품 품질검수
 const prodPlanManage = require("./routers/prodPlanManage_router.js"); // 생산계획관리 페이지 rud관련
-const bomRouter = require('./routers/bom_router');
-
-
+const bomRouter = require("./routers/bom_router");
 
 // 기본 라우팅
 app.get("/", (req, res) => {
@@ -74,36 +77,35 @@ app.get("/", (req, res) => {
 });
 
 // 라우터 모듈 등록
-app.use("/", instruction);
-app.use("/", prdt); // 제품
-app.use("/", prdtManage); // 제품관리
-app.use("/", rscOrdr); // 자재 발주
-app.use("/", rscOrdrSearch); // 자재 발주 조회
-app.use("/", co); // 업체
-app.use("/", rcvord); // 수주
-app.use("/", rcvordSearch); // 수주 조회
-app.use("/", deli); // 납품
-app.use("/", deliSearch); // 납품 조회
-app.use("/", prcsProgPrecon); // 공정 진행 현황
-app.use("/", procCtrl); // 공정 제어
-app.use("/", rsc); // 자재
-app.use("/", rscManage); // 자재관리
-app.use("/", prodPlan); // 생산계획
-app.use("/", prodDrct); // 생산지시
-app.use("/", auth); // 로그인
-app.use("/", rscQltyInsp); // 자재품질검수
-app.use("/", endPrdtQltyInsp); // 완제품 품질검수
-app.use("/", qltyItem); // 품질항목 기준정보
-app.use("/", qltyItemManage); // 품질항목관리
-app.use("/", companyManage); // 업체관리 추가!
-app.use("/", wrhousdlvr); // 창고 입출고
+app.use(contextPath, instruction);
+app.use(contextPath, prdt); // 제품
+app.use(contextPath, prdtManage); // 제품관리
+app.use(contextPath, rscOrdr); // 자재 발주
+app.use(contextPath, rscOrdrSearch); // 자재 발주 조회
+app.use(contextPath, co); // 업체
+app.use(contextPath, rcvord); // 수주
+app.use(contextPath, rcvordSearch); // 수주 조회
+app.use(contextPath, deli); // 납품
+app.use(contextPath, deliSearch); // 납품 조회
+app.use(contextPath, prcsProgPrecon); // 공정 진행 현황
+app.use(contextPath, procCtrl); // 공정 제어
+app.use(contextPath, rsc); // 자재
+app.use(contextPath, rscManage); // 자재관리
+app.use(contextPath, prodPlan); // 생산계획
+app.use(contextPath, prodDrct); // 생산지시
+app.use(contextPath, auth); // 로그인
+app.use(contextPath, rscQltyInsp); // 자재품질검수
+app.use(contextPath, endPrdtQltyInsp); // 완제품 품질검수
+app.use(contextPath, qltyItem); // 품질항목 기준정보
+app.use(contextPath, qltyItemManage); // 품질항목관리
+app.use(contextPath, companyManage); // 업체관리 추가!
+app.use(contextPath, wrhousdlvr); // 창고 입출고
 
-app.use("/", wrhousManage); // 창고 기준정보 관리
-app.use("/", wrhousZoneManage); // 창고 로케이션 기준정보 관리
+app.use(contextPath, wrhousManage); // 창고 기준정보 관리
+app.use(contextPath, wrhousZoneManage); // 창고 로케이션 기준정보 관리
 
-app.use("/", eqm); // 설비
-app.use("/", routingInfo); // 공정 라우팅
-app.use("/api", prcs_Router); // 공정목록 조회
-app.use("/", semiPrdtQltyInsp); // 반제품 품질검수
-app.use("/", prodPlanManage); // 생산계획관리 rud관련
-app.use('/', bomRouter); // BOM 관리
+app.use(contextPath, eqm); // 설비
+app.use(contextPath, routingInfo); // 공정 라우팅
+app.use(contextPath, semiPrdtQltyInsp); // 반제품 품질검수
+app.use(contextPath, prodPlanManage); // 생산계획관리 rud관련
+app.use(contextPath, bomRouter); // BOM 관리
