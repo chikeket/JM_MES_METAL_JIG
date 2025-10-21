@@ -32,7 +32,7 @@ router.get("/prodDrctDetaSearch", async (req, res) => {
 });
 
 router.get("/prodDrctBoardListSearch", async (req, res) => {
-  console.log("클라에서온값");
+  console.log("생산지시 조회페이지 다중검색쿼리");
   console.log(req.query);
   // req.query;
   let prdtList = await prodDrctService

@@ -630,35 +630,6 @@ router.post("/warehouse/transactions/legacy", async (req, res) => {
   }
 });
 
-// 창고 입출고 거래 삭제 (단일)
-router.delete("/warehouse/transactions/:id", async (req, res) => {
-  try {
-    const id = req.params.id;
-    console.log("[wrhousdlvr_router] DELETE /transactions id=", id);
-    const result = await wrhousdlvrService.deleteTransaction(id);
-    console.log("[wrhousdlvr_router] DELETE result=", result);
-    res.json(result);
-  } catch (err) {
-    console.error("[wrhousdlvr_router] DELETE error:", err);
-    res.status(500).json({ isSuccessed: false, error: err.message });
-  }
-});
-
-// 선택된 거래들 일괄 삭제 (body: { ids: [] })
-router.post("/warehouse/transactions/delete", async (req, res) => {
-  try {
-    const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
-    console.log("[wrhousdlvr_router] bulk delete ids:", ids);
-    const result = await wrhousdlvrService.deleteSelectedTransactions(ids);
-    res.json(result);
-  } catch (err) {
-    console.error("[wrhousdlvr_router] bulk delete error:", err);
-    res
-      .status(500)
-      .json({ isSuccessed: false, error: err?.message ?? "server error" });
-  }
-});
-
 // 창고 입출고 거래 처리 (LOT 번호 자동 생성 포함)
 router.post("/transactions", async (req, res) => {
   console.log("[wrhousdlvr_router] 창고 입출고 처리 요청:", req.body);
@@ -678,6 +649,20 @@ router.post("/transactions", async (req, res) => {
       error: "창고 입출고 처리 중 서버 오류가 발생했습니다.",
       details: error.message,
     });
+  }
+});
+
+router.delete("/warehouse/transaction-details", async (req, res) => {
+  try {
+    const ids = String(req.query.ids || "")
+      .split(",")
+      .map((v) => v.trim())
+      .filter(Boolean);
+    if (!ids.length) return res.status(400).json({ error: "ids 파라미터 필요" });
+    const result = await wrhousdlvrService.deleteSelectedTransactions(ids);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err?.message ?? "server error" });
   }
 });
 

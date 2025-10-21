@@ -47,7 +47,7 @@ async function deleteWrhousdlvr(wrhsdlvrMasId) {
     await conn.query(sqlList["deleteMaterialWithdrawalByMasId"], [
       wrhsdlvrMasId,
     ]);
-    await conn.query(sqlList["deleteWrhousdlvrDetailsByMasId,"], [
+    await conn.query(sqlList["deleteWrhousdlvrDetailsByMasId"], [
       wrhsdlvrMasId,
     ]);
     await conn.query(sqlList["deleteLotStcPreconByMasId"], [wrhsdlvrMasId]);
@@ -150,7 +150,7 @@ async function getLotStockByRscId(rscId) {
         [mas.WRHSDLVR_MAS_ID]
       );
       result.push({
-        lot_no: mas.LOT_NO || "",
+        lot_no: mas.lot_no || mas.LOT_NO || "",
         wrhsdlvr_mas_id: mas.WRHSDLVR_MAS_ID || "",
         now_stock: lotRows[0]?.NOW_STC_QY ?? 0,
       });
@@ -552,69 +552,6 @@ const saveTransaction = async ({ transactionList, emp_id = null } = {}) => {
       error: "거래 저장 중 오류가 발생했습니다.",
       details: error.message,
     };
-  }
-};
-
-// 창고 입출고 거래 삭제
-const deleteTransaction = async (txnId) => {
-  if (!txnId) {
-    throw new Error("삭제할 거래 ID가 필요합니다.");
-  }
-
-  let conn;
-  try {
-    conn = await mariadb.getConnection();
-    await conn.beginTransaction();
-
-    await mariadb.query("deleteWrhousTransaction", [txnId]);
-
-    await conn.commit();
-    return { success: true };
-  } catch (err) {
-    if (conn)
-      try {
-        await conn.rollback();
-      } catch (_) {}
-    console.error(
-      "[wrhousdlvr_service] delete error:",
-      err && err.stack ? err.stack : err
-    );
-    throw err;
-  } finally {
-    if (conn) conn.release();
-  }
-};
-
-// 선택된 거래들 일괄 삭제
-const deleteSelectedTransactions = async (ids = []) => {
-  const list = Array.isArray(ids) ? ids.filter(Boolean) : [];
-  if (!list.length) {
-    return { success: true, count: 0 };
-  }
-
-  let conn;
-  try {
-    conn = await mariadb.getConnection();
-    await conn.beginTransaction();
-
-    for (const id of list) {
-      await mariadb.query("deleteWrhousTransaction", [id]);
-    }
-
-    await conn.commit();
-    return { success: true, count: list.length };
-  } catch (err) {
-    if (conn)
-      try {
-        await conn.rollback();
-      } catch (_) {}
-    console.error(
-      "[wrhousdlvr_service] delete selected error:",
-      err && err.stack ? err.stack : err
-    );
-    throw err;
-  } finally {
-    if (conn) conn.release();
   }
 };
 
@@ -1368,7 +1305,7 @@ const processTransactions = async (requestData) => {
         prdt_opt_id: doc.master.prdt_opt_id,
         warehouse_id: doc.master.warehouse_id,
         zone_id: doc.master.zone_id,
-        lotNo,
+        lot_no: doc.master.lot_no,
         all_rcvpay_qy: doc.master.all_rcvpay_qy,
         qty: doc.master.qty,
       });
@@ -1387,10 +1324,10 @@ const processTransactions = async (requestData) => {
         doc.master.prdt_opt_id || null,
         doc.master.warehouse_id || null,
         doc.master.zone_id || null,
-        lotNo,
+        doc.master.lot_no,
         doc.master.item_spec || doc.master.spec || null,
         doc.master.item_unit || doc.master.unit || null,
-        doc.master.qty || doc.master.all_rcvpay_qy || 0,
+        doc.master.qty  || doc.master.all_rcvpay_qy || 0,
         doc.master.rcvpay_dt || new Date(),
         doc.master.remark || doc.master.rm || "",
         doc.master.rcvpay_nm || "자동입력",
@@ -1608,7 +1545,7 @@ const processTransactions = async (requestData) => {
 
           // 4. LOT 재고 현황 update
           if (doc.master.rcvpay_ty === "S2" && (detail.lot || detail.lot_no)) {
-            console.log("[updateLotStcPreconOnOut] params:", {
+            console.log("[updateLotStcPreconOustQty] params:", {
               qty: detail.qty || detail.rcvpay_qy || 0,
               lot: detail.lot,
               lot_no: detail.lot_no,
@@ -1619,7 +1556,7 @@ const processTransactions = async (requestData) => {
             if (Array.isArray(masIdRows)) {
               for (const row of masIdRows) {
                 if (row?.wrhsdlvr_mas_id) {
-                  await conn.query(sqlList["updateLotStcPreconOnOut"], [
+                  await conn.query(sqlList["updateLotStcPreconOustQty"], [
                     detail.qty || detail.rcvpay_qy || 0,
                     row.wrhsdlvr_mas_id,
                   ]);
@@ -1912,7 +1849,7 @@ const saveMasterDetailTransactions = async ({
         prdtOptId,
         master.warehouse_id,
         master.zone_id,
-        lotNumber, // ✅ LOT_NO
+        master.lot_no, // ✅ LOT_NO
         master.item_spec || "",
         master.item_unit || "EA",
         Number(master.total_qty) || 0,
@@ -2093,8 +2030,10 @@ const saveWarehouseTransactions = async (info = {}) => {
           const masterId = await processMasterTransaction(
             {
               ...masterTxn,
-              total_qty: allocation.qty,
+              total_qty: allocation.allocated_qty,
               lot_no: allocation.lot_no,
+              warehouse_id: allocation.warehouse_id,
+              zone_id: allocation.zone_id,
             },
             mode,
             conn
@@ -2102,9 +2041,9 @@ const saveWarehouseTransactions = async (info = {}) => {
           masterInsertedIds.push(masterId);
           // LOT_STC_PRECON 출고수량 누적 update
           // allocation.lot_no가 LOT_STC_PRECON의 PK(LOT_INVNTRY_PRECON_ID)
-          await mariadb.query("updateLotStcPreconOnOut", [
-            allocation.qty,
-            allocation.qty,
+          await mariadb.query("updateLotStcPreconOustQty", [
+            allocation.allocated_qty,
+            allocation.allocated_qty,
             masterId,
           ]);
         }
@@ -2128,7 +2067,7 @@ const saveWarehouseTransactions = async (info = {}) => {
         const masterId = await processMasterTransaction(
           {
             ...masterTxn,
-            lot_no: lotNo, // 마스터 LOT_NO는 LOT_END_... 등 prefix
+            lot_no: allocation.lot_no, // 마스터 LOT_NO는 LOT_END_... 등 prefix
           },
           mode,
           conn
@@ -2993,7 +2932,7 @@ async function getWrhsdlvrMasterDetailById(masId) {
     id: row.wrhous_wrhsdlvr_id || row.wrhsdlvr_id || row.wrhsdlvr_mas_id || "",
     code: row.prdt_id || row.rsc_id || row.code || "",
     name: row.prdt_nm || row.rsc_nm || row.name || "",
-    opt_code: row.prdt_opt_id || row.opt_code || "",
+    opt_code: row.prdt_opt_id || "",
     opt_name: row.opt_nm || row.opt_name || "",
     unit: row.unit || "",
     spec: row.spec || "",
@@ -3020,6 +2959,77 @@ async function getWrhsdlvrMasterDetailById(masId) {
   return { master, details };
 }
 
+const deleteSelectedTransactions = async (detailIds = []) => {
+  const ids = Array.isArray(detailIds) ? detailIds.filter(Boolean) : [];
+  if (!ids.length) return { success: true, count: 0 };
+
+  let conn;
+  try {
+    conn = await mariadb.getConnection();
+    await conn.beginTransaction();
+
+    // 1) 삭제 대상 패킷 조회 (디테일 ↔ 마스터, 모드 포함)
+    const ph = ids.map(() => "?").join(",");
+    const packSql = sqlList["selectWrhousdlvrDeletePackByDetailIds"].replace("%IDS%", ph);
+    const rows = await conn.query(packSql, ids); // ← rows로 받음
+    // rows 컬럼: detail_id, mas_id, detail_qty, rtun_id, rcvpay_ty, mas_total_qty
+    // (정의 확인) SELECT 패킷 스키마 참조. 
+    //  - rcvpay_ty: 'S1'=입고, 'S2'=출고
+    //  - rtun_id: 자재불출 연계 ID (있을 수도/없을 수도)
+    //  (정의 위치) wrhousdlvr.js
+    //  SELECT ... FROM WRHOUS_WRHSDLVR d JOIN WRHOUS_WRHSDLVR_MAS m ... IN (%IDS%)
+
+    // 2) 디테일 먼저 실제 삭제
+    for (const id of ids) {
+      await conn.query(sqlList["deleteWrhousTransaction"], [id]); // ← 존재하는 키로 교체
+    }
+
+    // 3) 마스터/LOT/자재불출 롤백 집계
+    const byMas = new Map();
+    for (const row of rows) {
+      const k = row.mas_id;
+      if (!byMas.has(k)) byMas.set(k, { qtySum: 0, rcvpay_ty: row.rcvpay_ty, rtunIds: [] });
+      byMas.get(k).qtySum += Number(row.detail_qty) || 0;
+      if (row.rtun_id) byMas.get(k).rtunIds.push(row.rtun_id);
+    }
+
+    // 4) 마스터별로 롤백 실행
+    for (const [masId, info] of byMas.entries()) {
+      const delta = info.qtySum;
+
+      // 4-1) 마스터 총수량 감소
+      await conn.query(sqlList["decreaseWrhousdlvrMasQty"], [delta, masId]);
+
+      // 4-2) LOT 롤백 (입고 vs 출고)
+      if (info.rcvpay_ty === "S1") {
+        // 입고 삭제: IST_QY, NOW_STC_QY 감소 → 0이면 LOT 삭제
+        await conn.query(sqlList["decreaseLotIstQtyByMasId"], [delta, delta, masId]);
+        await conn.query(sqlList["deleteLotIfZeroByMasId"], [masId]);
+      } else if (info.rcvpay_ty === "S2") {
+        // 출고 삭제: OUST_QY 감소 + NOW_STC_QY 증가 (되돌림)
+        await conn.query(sqlList["decreaseLotOustQtyByS2MasId"], [delta, delta, masId]);
+      }
+
+      // 4-3) 자재불출 연계 수량 롤백 & 0이면 삭제
+      for (const rtunId of info.rtunIds) {
+        await conn.query(sqlList["decreaseRwmatrRtunTrgetQty"], [delta, rtunId]);
+        await conn.query(sqlList["deleteRwmatrRtunTrgetIfZero"], [rtunId]);
+      }
+
+      // 4-4) 마스터 총수량이 0이면 마스터 삭제
+      await conn.query(sqlList["deleteWrhousdlvrMasIfZero"], [masId]);
+    }
+
+    await conn.commit();
+    return { success: true, count: ids.length };
+  } catch (err) {
+    if (conn) await conn.rollback();
+    return { success: false, error: err.message };
+  } finally {
+    if (conn) conn.release();
+  }
+};
+
 module.exports = {
   getInspectionRemainingQty,
   getTransactionList,
@@ -3027,8 +3037,6 @@ module.exports = {
   saveTransaction,
   saveMasterDetailTransactions, // 기존
   saveWarehouseTransactions, // 새로 추가
-  deleteTransaction,
-  deleteSelectedTransactions,
   getInventoryStatus,
   getItemTransactionHistory,
   getQualityInspectionList: getFinishedQualityInspectionList, // 기존 호환성
@@ -3068,4 +3076,6 @@ module.exports = {
   buildLotAllocationResponse,
   searchWrhsdlvrMasterDetail,
   getWrhsdlvrMasterDetailById,
+  searchWrhsdlvrMasterDetail,
+  deleteSelectedTransactions,
 };

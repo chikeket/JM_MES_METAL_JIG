@@ -189,6 +189,7 @@ export default [
     component: 'CNavItem',
     name: '설비 관리',
     to: '/Eqm',
+
   },
 
   // {

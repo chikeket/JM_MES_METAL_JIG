@@ -62,6 +62,7 @@ const routes = [
         path: '/deli_search',
         name: 'deli_search',
         component: () => import('@/views/minsu/deliSearch.vue'),
+
       },
       {
         path: '/prcsProgPrecon',
@@ -72,6 +73,7 @@ const routes = [
         path: '/procCtrl',
         name: 'procCtrl',
         component: () => import('@/views/minsu/procCtrl.vue'),
+
       },
       // ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
       // ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■ 재민 ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■

@@ -87,4 +87,16 @@ router.get("/prodPlanRealDetaSearch", async (req, res) => {
   // res.json(prdtList);
 });
 
+router.get("/prodPlanBoardListSearch", async (req, res) => {
+  console.log("생산계획 조회페이지 다중검색쿼리");
+  console.log(req.query);
+  // req.query;
+  let prdtList = await prodPlanService
+    .prodPlanBoardListSearch(req.query)
+    .catch((err) => console.log(err));
+  // console.log("클라로갈값");
+  // console.log(prdtList);
+  res.send(prdtList);
+  // res.json(prdtList);
+});
 module.exports = router;

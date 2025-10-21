@@ -22,11 +22,7 @@
           <input v-model="filters.lot_no" type="text" class="form-control" />
         </div>
         <div class="col-12 col-md-3">
-          <label class="form-label">자재명</label>
-          <input v-model="filters.rsc_nm" type="text" class="form-control" />
-        </div>
-        <div class="col-12 col-md-3">
-          <label class="form-label">입출고일자</label>
+          <label class="form-label">입출고 일</label>
           <div class="d-flex align-items-center gap-1">
             <input v-model="filters.io_dt_from" type="date" class="form-control" />
             <span class="mx-1">~</span>
@@ -58,22 +54,25 @@
                 LOT번호<span class="col-resizer" @mousedown="onResizerDown(3, $event)"></span>
               </th>
               <th class="th-resizable">
-                자재ID<span class="col-resizer" @mousedown="onResizerDown(4, $event)"></span>
+                품목 ID<span class="col-resizer" @mousedown="onResizerDown(4, $event)"></span>
               </th>
               <th class="th-resizable">
-                자재명<span class="col-resizer" @mousedown="onResizerDown(5, $event)"></span>
+                품목 명<span class="col-resizer" @mousedown="onResizerDown(5, $event)"></span>
               </th>
               <th class="th-resizable">
-                창고명<span class="col-resizer" @mousedown="onResizerDown(6, $event)"></span>
+                옵션 ID<span class="col-resizer" @mousedown="onResizerDown(4, $event)"></span>
               </th>
               <th class="th-resizable">
-                존명<span class="col-resizer" @mousedown="onResizerDown(7, $event)"></span>
+                옵션 명<span class="col-resizer" @mousedown="onResizerDown(5, $event)"></span>
+              </th>
+              <th class="th-resizable">
+                창고 명<span class="col-resizer" @mousedown="onResizerDown(6, $event)"></span>
+              </th>
+              <th class="th-resizable">
+                로케이션 명<span class="col-resizer" @mousedown="onResizerDown(7, $event)"></span>
               </th>
               <th class="th-resizable">
                 수량<span class="col-resizer" @mousedown="onResizerDown(8, $event)"></span>
-              </th>
-              <th class="th-resizable">
-                단위<span class="col-resizer" @mousedown="onResizerDown(9, $event)"></span>
               </th>
               <th class="th-resizable">
                 담당자<span class="col-resizer" @mousedown="onResizerDown(10, $event)"></span>
@@ -89,8 +88,10 @@
               <td class="text-start" :title="r.io_type">{{ r.io_type }}</td>
               <td class="text-start" :title="formatDate(r.io_dt)">{{ formatDate(r.io_dt) }}</td>
               <td class="text-start" :title="r.lot_no">{{ r.lot_no }}</td>
-              <td class="text-start" :title="r.rsc_id">{{ r.rsc_id }}</td>
-              <td class="text-start" :title="r.rsc_nm">{{ r.rsc_nm }}</td>
+              <td class="text-start" :title="r.prdt_id">{{ r.prdt_id }}</td>
+              <td class="text-start" :title="r.prdt_nm">{{ r.prdt_nm }}</td>
+              <td class="text-start" :title="r.opt_id">{{ r.opt_id }}</td>
+              <td class="text-start" :title="r.opt_nm">{{ r.opt_nm }}</td>
               <td class="text-start" :title="r.wrhous_nm">{{ r.wrhous_nm }}</td>
               <td class="text-start" :title="r.zone_nm">{{ r.zone_nm }}</td>
               <td class="text-end" :title="formatNumber(r.qty)">{{ formatNumber(r.qty) }}</td>
@@ -209,17 +210,54 @@ function onReset() {
   rows.value = []
 }
 
+
+// 검색 파라미터 변환 및 LOT 기준 창고 입출고 내역 API 연동
 async function onSearch() {
   try {
-    const params = { ...filters }
-    // 실제 창고 입출고 내역 조회 API로 호출
-    const { data } = await axios.get('/api/inventory-io', { params })
-    rows.value = Array.isArray(data?.data) ? data.data : []
+    // 프론트 필터 → 백엔드 파라미터 매핑
+    const params = {
+      rcvpay_ty: filters.io_type,
+      lot_no: filters.lot_no,
+      from_dt: filters.io_dt_from,
+      to_dt: filters.io_dt_to,
+      keyword: filters.rsc_nm,
+      page: 1,
+      pageSize: 100,
+      orderBy: 'm.RCVPAY_DT DESC, d.WRHOUS_WRHSDLVR_ID DESC'
+    }
+    // 조회 조건이 모두 비어있으면 전체 조회
+    const isAllEmpty = !params.rcvpay_ty && !params.lot_no && !params.from_dt && !params.to_dt && !params.keyword
+    if (isAllEmpty) {
+      delete params.rcvpay_ty
+      delete params.lot_no
+      delete params.from_dt
+      delete params.to_dt
+      delete params.keyword
+    }
+    // LOT 기준 창고 입출고 내역 API 호출
+    const { data } = await axios.get('/api/invntry/wh-transactions', { params })
+    // 응답 데이터 매핑(컬럼명 맞추기, 품목명은 rsc/prdt/prdt_opt 모두 참고)
+    rows.value = Array.isArray(data?.list)
+      ? data.list.map(item => ({
+          io_type: item.RCVPAY_TY === 'S1' ? '입고' : item.RCVPAY_TY === 'S2' ? '출고' : item.RCVPAY_TY,
+          io_dt: item.RCVPAY_DT,
+          lot_no: item.LOT_NO,
+          rsc_id: item.RSC_ID,
+          rsc_nm: [item.RSC_NM, item.PRDT_NM, item.PRDT_OPT_NM].filter(Boolean).join(' / '),
+          wrhous_nm: item.WHOUS_NM,
+          zone_nm: item.ZONE_NM,
+          qty: item.DETAIL_QY,
+          unit: item.UNIT || '',
+          emp_nm: item.EMP_NM || '', // 담당자 정보가 있으면 출력
+          rm: item.RM || ''
+        }))
+      : []
   } catch (err) {
     console.error('검색 오류', err)
     alert('검색 중 오류가 발생했습니다.')
   }
 }
+
 </script>
 
 <style scoped>
