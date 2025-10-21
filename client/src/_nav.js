@@ -190,11 +190,6 @@ export default [
       },
       {
         component: 'CNavItem',
-        name: '품질 항목 관리',
-        to: '/zooE/qlty-item-manage',
-      },
-      {
-        component: 'CNavItem',
         name: '제품 관리',
         to: '/zooE/prdt-manage',
       },

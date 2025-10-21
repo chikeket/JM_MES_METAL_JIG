@@ -238,11 +238,6 @@ const routes = [
             component: () => import('@/views/zooE/CompanyManage.vue'),
           },
           {
-            path: '/zooE/qlty-item-manage',
-            name: 'qltyItemManage',
-            component: () => import('@/views/zooE/qltyItemManage.vue'),
-          },
-          {
             path: '/zooE/prdt-manage',
             name: 'prdtManage',
             component: () => import('@/views/zooE/prdtManage.vue'),
