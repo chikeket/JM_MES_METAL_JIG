@@ -106,13 +106,42 @@ module.exports = {
         [rcvordId]
       );
       const existById = new Map(existLines.map((r) => [r.rcvord_deta_id, r]));
+      // 추가: prdt_id+prdt_opt_id 로 기존 라인을 찾아 업데이트 가능하도록 맵 생성
+      const existByPrdtKey = new Map();
+      for (const r of existLines) {
+        const key = `${r.prdt_id}||${r.prdt_opt_id}`;
+        if (!existByPrdtKey.has(key)) {
+          existByPrdtKey.set(key, r.rcvord_deta_id);
+        }
+      }
 
       // upsert
       for (const ln of lines) {
         if (!ln.prdt_id || !ln.prdt_opt_id) {
           throw new Error("라인 필수값 누락(prdt_id/prdt_opt_id)");
         }
-        const detId = ln.rcvord_deta_id && String(ln.rcvord_deta_id).trim();
+        let detId = ln.rcvord_deta_id && String(ln.rcvord_deta_id).trim();
+        // 만약 detId가 없지만 동일 prdt/prdt_opt 조합이 기존에 있으면 해당 detId로 업데이트 처리
+        if (!detId) {
+          const key = `${ln.prdt_id}||${ln.prdt_opt_id}`;
+          if (existByPrdtKey.has(key)) {
+            detId = existByPrdtKey.get(key);
+          }
+        }
+
+        // detId가 존재하지만 맵에 없을 수 있음(타입/포맷 이슈). 실제 DB에서 존재하는지 확인하여
+        // 존재하면 UPDATE 경로로, 존재하지 않으면 새로 생성하도록 detId를 제거
+        if (detId && !existById.has(detId)) {
+          const existsCheck = await conn.query(
+            "SELECT 1 FROM rcvord_deta WHERE rcvord_deta_id = ? LIMIT 1",
+            [detId]
+          );
+          if (existsCheck.length === 0) {
+            // DB에 실제로 없는 ID였다면 신규로 처리하도록 detId 무시
+            detId = null;
+          }
+        }
+
         if (detId && existById.has(detId)) {
           // update path
           await conn.query(require("../database/sqlList.js").rcvordUpdateLine, [
@@ -124,15 +153,47 @@ module.exports = {
             detId,
           ]);
           existById.delete(detId);
+          // prdtKey 맵에서도 제거
+          const delKey = `${ln.prdt_id}||${ln.prdt_opt_id}`;
+          if (
+            existByPrdtKey.has(delKey) &&
+            existByPrdtKey.get(delKey) === detId
+          ) {
+            existByPrdtKey.delete(delKey);
+          }
         } else {
           // insert path
-          let newId = detId;
-          if (!newId) {
-            const lineRows = await conn.query(
-              require("../database/sqlList.js").rcvordDetaNewId
+          // 안전한 신규 ID 생성: detId가 남아있다면(드물게) DB에 존재하는지 재확인, 그렇다면 새 ID로 변경
+          let newId = detId || null;
+          if (newId) {
+            const existsCheck = await conn.query(
+              "SELECT 1 FROM rcvord_deta WHERE rcvord_deta_id = ? LIMIT 1",
+              [newId]
             );
-            newId = lineRows[0]?.new_id;
+            if (existsCheck.length > 0) {
+              // 이미 존재하므로 새 ID를 발급받도록 초기화
+              newId = null;
+            }
           }
+          // 발급 루프(충돌 가능성 대비, 다중 동시 삽입차 대비 최대 5번 시도)
+          if (!newId) {
+            for (let attempt = 0; attempt < 5; attempt++) {
+              const lineRows = await conn.query(
+                require("../database/sqlList.js").rcvordDetaNewId
+              );
+              newId = lineRows[0]?.new_id;
+              if (!newId) continue;
+              const dup = await conn.query(
+                "SELECT 1 FROM rcvord_deta WHERE rcvord_deta_id = ? LIMIT 1",
+                [newId]
+              );
+              if (dup.length === 0) break; // 유일한 ID 확보
+              newId = null; // 중복이면 재시도
+            }
+            if (!newId)
+              throw new Error("rcvord_deta 신규 ID 생성 실패(충돌 반복)");
+          }
+
           await conn.query(require("../database/sqlList.js").rcvordInsertLine, [
             newId,
             rcvordId,

@@ -1,8 +1,8 @@
 <script setup>
 import { RouterLink } from 'vue-router'
 
-import { logo } from '@/assets/brand/logo'
-import { sygnet } from '@/assets/brand/sygnet'
+// logo image replaced by assets/images/JMcompany.png
+import JMCLogo from '@/assets/images/JMcompany.png'
 import { AppSidebarNav } from '@/components/AppSidebarNav.js'
 import { useSidebarStore } from '@/stores/sidebar.js'
 
@@ -21,8 +21,7 @@ const sidebar = useSidebarStore()
     <CSidebarHeader class="border-bottom">
       <RouterLink custom to="/" v-slot="{ href, navigate }">
         <CSidebarBrand v-bind="$attrs" as="a" :href="href" @click="navigate">
-          <CIcon custom-class-name="sidebar-brand-full" :icon="logo" :height="32" />
-          <CIcon custom-class-name="sidebar-brand-narrow" :icon="sygnet" :height="32" />
+          <img class="sidebar-brand-full" :src="JMCLogo" alt="JMC" style="height: 50px" />
         </CSidebarBrand>
       </RouterLink>
       <CCloseButton class="d-lg-none" dark @click="sidebar.toggleVisible()" />
@@ -33,3 +32,10 @@ const sidebar = useSidebarStore()
     </CSidebarFooter>
   </CSidebar>
 </template>
+
+<style scoped>
+/* 사이드바 헤더 padding을 5px로 조정 */
+.sidebar-header {
+  padding: 5px !important;
+}
+</style>

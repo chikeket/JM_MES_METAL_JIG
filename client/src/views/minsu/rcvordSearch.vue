@@ -234,245 +234,139 @@ async function onSearch() {
 
 <style scoped>
 /* ============================================
-   기본 설정 및 컨테이너
-   ============================================ */
+	 컨테이너 / 박스 - CompanyManage 스타일 준용
+	 ============================================ */
 :deep(*) {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
-  line-height: 1.6;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
+    sans-serif;
+  line-height: 1.5;
   box-sizing: border-box;
 }
-
 :deep(.container-fluid) {
-  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
-  padding: 1.5rem !important;
+  background: #ffffff;
+  padding: 1rem !important;
   height: 100vh;
   overflow: hidden;
 }
-
-/* ============================================
-   검색 필터 박스
-   ============================================ */
 .search-filter-box {
+  border: 1px solid #dee2e6; /* 얇은 회색 테두리 */
+  border-radius: 8px;
+  padding: 1rem;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  margin-bottom: 1.25rem;
 }
-
-/* ============================================
-   그리드 박스 - 15개 행 표시
-   ============================================ */
 .grid-box {
+  border: 1px solid #dee2e6; /* 얇은 회색 테두리 */
+  border-radius: 8px;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   overflow: hidden;
-  height: calc(46px + 15 * 46px + 2px); /* 헤더 + 15개 행 + 테두리 */
 }
 
 /* ============================================
-   버튼 스타일
-   ============================================ */
-:deep(.btn) {
+	 버튼 - CompanyManage 스타일 준용
+	 ============================================ */
+.btn {
+  /* CoreUI 버튼 톤에 맞춰 커스텀 */
   font-size: 13px;
   font-weight: 600;
-  padding: 0.55rem 1.2rem;
+  padding: 0.5rem 1.2rem;
   border: none;
   border-radius: 8px;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   letter-spacing: -0.3px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  min-width: 80px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
-
-:deep(.btn-secondary) {
-  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+.btn-secondary {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
   color: #fff !important;
 }
-
-:deep(.btn-secondary:hover) {
-  background: linear-gradient(135deg, #475569 0%, #334155 100%);
-  box-shadow: 0 4px 8px rgba(71, 85, 105, 0.3);
-  transform: translateY(-1px);
+.btn-secondary:hover {
+  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
 }
-
-:deep(.btn:active) {
-  transform: scale(0.98);
-}
-
-.gap-2 {
-  gap: 0.5rem;
+.btn:active {
+  transform: translateY(0);
 }
 
 /* ============================================
-   폼 요소
-   ============================================ */
-:deep(.form-label) {
-  font-size: 13px;
+	 폼 요소 - CompanyManage 스타일 준용
+	 ============================================ */
+.form-label {
+  font-size: 12px;
   font-weight: 600;
-  color: #334155;
-  margin-bottom: 0.5rem;
-  letter-spacing: -0.2px;
+  color: #2c3e50;
+  margin-bottom: 0.25rem;
 }
-
-:deep(.form-control) {
-  font-size: 13px;
+.form-control {
+  font-size: 12px;
   font-weight: 400;
-  padding: 0.65rem 0.85rem;
-  border: 1.5px solid #e2e8f0;
+  padding: 0.4rem 0.75rem;
+  border: 2px solid #e9ecef;
   border-radius: 8px;
-  transition: all 0.2s ease;
-  background-color: #ffffff;
-  height: 42px;
-}
-
-:deep(.form-control:focus) {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
-  background-color: #ffffff;
-  outline: none;
-}
-
-input[type='date'].form-control {
-  font-size: 13px;
-}
-
-:deep(.g-3) {
-  --bs-gutter-y: 0.75rem;
-  --bs-gutter-x: 1rem;
-}
-
-/* ============================================
-   테이블 래퍼 - 15개 행 표시
-   ============================================ */
-.table-wrapper {
-  overflow-y: auto;
-  overflow-x: hidden;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  background: #ffffff;
-}
-
-/* 모던 스크롤바 */
-.table-wrapper::-webkit-scrollbar {
-  width: 14px;
-  background: #ffffff;
-}
-
-.table-wrapper::-webkit-scrollbar-track {
-  background: #ffffff;
-}
-
-.table-wrapper::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #9ca3af 0%, #6b7280 100%);
-  border-radius: 10px;
-  border: 3px solid #ffffff;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  background-color: #f8f9fa;
+  height: 34px;
 }
-
-.table-wrapper::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #6b7280 0%, #4b5563 100%);
-  border-color: #ffffff;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
-}
-
-.table-wrapper::-webkit-scrollbar-button:single-button {
-  display: block;
-  height: 20px;
+.form-control:focus {
+  border-color: #6c757d;
+  box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.15);
   background-color: #ffffff;
-  background-repeat: no-repeat;
-  background-position: center;
-  border: none;
+}
+input[type='date'].form-control {
+  font-size: 12px;
 }
 
-.table-wrapper::-webkit-scrollbar-button:single-button:vertical:decrement {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 4L2 8h8z'/%3E%3C/svg%3E");
-  margin-top: 46px;
-}
-
-.table-wrapper::-webkit-scrollbar-button:single-button:vertical:increment {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
-  margin-bottom: 46px;
-}
-
-.table-wrapper::-webkit-scrollbar-button:single-button:hover {
-  background-color: #f3f4f6;
+/* 검색 필터 영역 압축 - CompanyManage와 동일 */
+:deep(.g-3) {
+  --bs-gutter-y: 0.5rem;
+  --bs-gutter-x: 0.75rem;
 }
 
 /* ============================================
-   데이터 테이블
-   ============================================ */
-:deep(.data-table) {
+	 테이블 - CompanyManage 스타일 준용
+	 ============================================ */
+.table-wrapper {
+  --row-h: 35px; /* td 높이와 동일하게 유지 */
+  --head-h: 44px; /* thead 높이 근사값 */
+  flex: 1 1 auto;
+  border-radius: 10px;
+  /* 정확히 15행이 보이도록 높이 고정 (헤더 + 15 * 행 높이) */
+  height: calc(var(--head-h) + (15 * var(--row-h)));
+  max-height: calc(var(--head-h) + (15 * var(--row-h)));
+  overflow-y: auto; /* 세로 스크롤만 허용 */
+  overflow-x: hidden; /* 가로 스크롤 제거 */
+}
+.data-table {
   margin-bottom: 0;
-  border-collapse: separate;
+  border-collapse: separate; /* prdtManage와 동일 */
   border-spacing: 0;
   user-select: none;
   cursor: default;
-  font-size: 13px;
+  table-layout: fixed; /* 가로 스크롤 없이 셀 폭 고정 */
   width: 100%;
-  display: table;
-  table-layout: fixed;
 }
-
-/* 컬럼별 너비 설정 */
-:deep(.data-table col:nth-child(1)) { width: 70px; }   /* No */
-:deep(.data-table col:nth-child(2)) { width: 100px; }  /* 수주ID */
-:deep(.data-table col:nth-child(3)) { width: 100px; }  /* 수주담당자 */
-:deep(.data-table col:nth-child(4)) { width: 140px; }  /* 납품업체명 */
-:deep(.data-table col:nth-child(5)) { width: 150px; }  /* 제품명 */
-:deep(.data-table col:nth-child(6)) { width: 130px; }  /* 제품옵션명 */
-:deep(.data-table col:nth-child(7)) { width: 100px; }  /* 규격 */
-:deep(.data-table col:nth-child(8)) { width: 60px; }   /* 단위 */
-:deep(.data-table col:nth-child(9)) { width: 90px; }   /* 요청수량 */
-:deep(.data-table col:nth-child(10)) { width: 110px; } /* 수주등록일자 */
-:deep(.data-table col:nth-child(11)) { width: 110px; } /* 납품예정일자 */
-:deep(.data-table col:nth-child(12)) { width: 90px; }  /* 출고상태 */
-:deep(.data-table col:nth-child(13)) { width: auto; }  /* 비고 */
-
-:deep(.data-table thead) {
+.data-table thead {
   position: sticky;
   top: 0;
   z-index: 10;
-  display: table-header-group;
 }
-
-:deep(.data-table tbody) {
-  display: table-row-group;
-}
-
-:deep(.data-table th) {
-  font-size: 13px;
+.data-table th {
+  font-size: 12px;
   font-weight: 700;
-  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  background: linear-gradient(135deg, #495057 0%, #343a40 100%);
   color: #ffffff;
   text-align: center;
-  padding: 0.85rem 0.75rem;
+  padding: 0.65rem 0.5rem;
   border: none;
   letter-spacing: -0.2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: nowrap; /* 줄바꿈 방지 */
+  overflow: hidden; /* 넘치는 텍스트 숨김 */
+  text-overflow: ellipsis; /* 말줄임 */
 }
-
-:deep(.data-table th:first-child) {
-  border-top-left-radius: 12px;
-}
-
-:deep(.data-table th:last-child) {
-  border-top-right-radius: 12px;
-}
-
-/* 컬럼 리사이즈 기능 */
 .th-resizable {
   position: relative;
   padding-right: 8px;
 }
-
 .col-resizer {
   position: absolute;
   right: -2px;
@@ -482,80 +376,109 @@ input[type='date'].form-control {
   cursor: col-resize;
   z-index: 2;
 }
-
 body.resizing {
   user-select: none;
   cursor: col-resize !important;
 }
 
-:deep(.data-table td) {
-  font-size: 13px;
+.data-table th:first-child {
+  border-top-left-radius: 10px;
+}
+.data-table th:last-child {
+  border-top-right-radius: 10px;
+}
+.data-table td {
+  font-size: 12px;
   font-weight: 400;
   vertical-align: middle;
-  padding: 0.75rem 0.75rem;
-  border-bottom: 1px solid #e2e8f0;
-  border-right: 1px solid #f1f5f9;
-  color: #334155;
-  height: 46px;
+  padding: 0.55rem 0.5rem;
+  border-bottom: 1px solid #e9ecef; /* 바디는 하단 보더만 */
+  border-right: 2px solid #e9ecef; /* 열과 열 사이 세로 구분선 */
+  color: #2c3e50;
+  height: var(--row-h);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  background-color: #ffffff; /* 기본 흰색으로 hover 대비 */
 }
-
-:deep(.data-table td:last-child) {
-  border-right: none;
+.data-table td:last-child {
+  border-right: none; /* 마지막 컬럼은 우측 선 제거 */
 }
-
-:deep(.data-table tbody tr) {
-  transition: all 0.15s ease;
+.data-table tbody tr {
+  transition: all 0.2s ease;
   background-color: #ffffff;
 }
-
-:deep(.data-table tbody tr:hover:not(.empty-row)) {
-  background-color: #f8fafc;
-  box-shadow: inset 0 0 0 1px #e2e8f0;
+/* 파일1과 동일한 계산식으로 hover 배경을 칠함 */
+.data-table {
+  /* 파일1에서 쓰는 변수 → 없으면 Bootstrap 기본 계산식으로 폴백 */
+  --row-hover-bg: var(
+    --cui-table-hover-bg,
+    var(
+      --bs-table-hover-bg,
+      rgba(var(--cui-emphasis-color-rgb, var(--bs-emphasis-color-rgb, 33, 37, 41)), 0.075)
+    )
+  );
 }
 
-:deep(.data-table tbody tr:hover:not(.empty-row) td) {
-  background-color: #f8fafc;
+/* tr/td 둘 다 같은 톤으로 */
+.data-table tbody tr:hover:not(.empty-row) {
+  background-color: var(--row-hover-bg) !important;
 }
-
+.data-table tbody tr:hover:not(.empty-row) td {
+  background-color: var(--row-hover-bg) !important;
+}
 .empty-row td {
-  height: 46px;
+  height: var(--row-h);
   background-color: #ffffff;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #e9ecef; /* 빈행도 구분선을 유지하여 가시성 확보 */
 }
 
 /* ============================================
-   반응형 디자인
-   ============================================ */
+	 모던 스크롤바 - CompanyManage 스타일 준용
+	 ============================================ */
+.table-wrapper {
+  /* overflow는 위 블록에서 제어(세로만) */
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+.table-wrapper::-webkit-scrollbar {
+  width: 6px; /* prdtManage와 동일한 슬림 스크롤 */
+}
+.table-wrapper::-webkit-scrollbar-track {
+  background: rgba(240, 240, 240, 0.6);
+  border-radius: 10px;
+}
+.table-wrapper::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #bfc2c7, #9ea2a8);
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(2px);
+  transition: all 0.2s ease;
+}
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #a4a8ae, #7e838a);
+}
+.table-wrapper {
+  scrollbar-width: thin;
+  scrollbar-color: #9ea2a8 rgba(240, 240, 240, 0.6);
+}
+
+/* 버튼 간격 */
+.gap-2 {
+  gap: 0.5rem;
+}
+
+/* 반응형 축소 시 폰트 크기 조정 */
 @media (max-width: 1600px) {
-  :deep(.form-label) {
-    font-size: 12px !important;
+  .form-label,
+  .form-control,
+  .btn,
+  th,
+  td {
+    font-size: 11px !important;
   }
-  
-  :deep(.form-control) {
-    font-size: 12px !important;
-    height: 38px !important;
-    padding: 0.55rem 0.75rem !important;
-  }
-  
-  :deep(.btn) {
-    font-size: 12px !important;
-    padding: 0.5rem 1.1rem !important;
-  }
-  
-  :deep(.data-table th),
-  :deep(.data-table td) {
-    font-size: 12px !important;
-  }
-  
-  :deep(.data-table td) {
-    height: 42px !important;
-  }
-  
-  .empty-row td {
-    height: 42px !important;
+  .btn {
+    padding: 0.4rem 1rem;
   }
 }
 </style>
