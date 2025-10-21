@@ -61,7 +61,7 @@ async function onLogin() {
       auth.setUser(data.user)
       console.log('로그인 성공:', data.user)
       alert(`${data.user.emp_nm}님 환영합니다.`)
-      router.push('/dashboard')
+      router.push('/rcvord')
     } else {
       alert('로그인 실패')
     }

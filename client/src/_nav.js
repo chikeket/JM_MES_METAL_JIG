@@ -25,185 +25,171 @@ export default [
   //   to: '/theme/typography',
   //   icon: 'cil-pencil',
   // },
+  // ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  // ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■ 영업 파트 ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  // ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
   {
     component: 'CNavTitle',
-    name: 'Menu',
+    name: '영업',
   },
   {
-    component: 'CNavGroup',
-    name: 'jamin',
-    to: '/jamin',
-    icon: 'cil-cursor',
-    items: [
-      {
-        component: 'CNavItem',
-        name: '자재 발주',
-        to: '/jamin/rsc-ordr',
-      },
-      {
-        component: 'CNavItem',
-        name: '창고 입출고 관리',
-        to: '/jamin/wrhousdlvr',
-      },
-      {
-        component: 'CNavItem',
-        name: '창고 관리',
-        to: '/jamin/wrhousManage',
-      },
-      {
-        component: 'CNavItem',
-        name: '창고 로케이션 관리',
-        to: '/jamin/wrhousZoneManage',
-      },
-      {
-        component: 'CNavItem',
-        name: '자재 발주 조회',
-        to: '/jamin/rscOrdrSearch',
-      },
-      {
-        component: 'CNavItem',
-        name: 'BOM 관리',
-        to: '/jamin/bomManage',
-      },
-      {
-        component: 'CNavItem',
-        name: 'LOT 조회',
-        to: '/jamin/lotSearch',
-      },
-      {
-        component: 'CNavItem',
-        name: '창고 입출고 내역 조회',
-        to: '/jamin/wrhousDlvrSearch',
-      },
+    component: 'CNavItem',
+    name: '수주 관리',
+    to: '/rcvord',
+  },
+  {
+    component: 'CNavItem',
+    name: '수주 조회',
+    to: '/rcvord_search',
+  },
+  {
+    component: 'CNavItem',
+    name: '납품 관리',
+    to: '/deli',
+  },
+  {
+    component: 'CNavItem',
+    name: '납품 조회',
+    to: '/deli_search',
+  },
+  {
+    component: 'CNavItem',
+    name: '업체 관리',
+    to: '/company-manage',
+  },
+  // ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  // ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■ 생산 파트 ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  // ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  {
+    component: 'CNavTitle',
+    name: '생산',
+  },
+  {
+    component: 'CNavItem',
+    name: '생산 계획 관리',
+    to: '/prodPlanManage',
+  },
+  {
+    component: 'CNavItem',
+    name: '생산 계획 조회',
+    to: '/prodPlanBoardList',
+  },
+  {
+    component: 'CNavItem',
+    name: '생산 지시 관리',
+    to: '/product-instructions',
+  },
+  {
+    component: 'CNavItem',
+    name: '공정 진행 현황',
+    to: '/prcsProgPrecon',
+  },
+  {
+    component: 'CNavItem',
+    name: '공정 제어',
+    to: '/procCtrl',
+  },
+  {
+    component: 'CNavItem',
+    name: '라우팅 관리',
+    to: '/Routing',
+  },
+  {
+    component: 'CNavItem',
+    name: '제품 관리',
+    to: '/prdt-manage',
+  },
+  {
+    component: 'CNavItem',
+    name: 'BOM 관리',
+    to: '/bomManage',
+  },
+  // ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  // ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■ 자재 파트 ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  // ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  {
+    component: 'CNavTitle',
+    name: '자재',
+  },
+  {
+    component: 'CNavItem',
+    name: '자재 관리',
+    to: '/rsc-manage',
+  },
+  {
+    component: 'CNavItem',
+    name: '자재 발주 관리',
+    to: '/rsc-ordr',
+  },
+  {
+    component: 'CNavItem',
+    name: '자재 발주 조회',
+    to: '/rscOrdrSearch',
+  },
+  {
+    component: 'CNavItem',
+    name: '창고 관리',
+    to: '/wrhousManage',
+  },
+  {
+    component: 'CNavItem',
+    name: '창고 로케이션 관리',
+    to: '/wrhousZoneManage',
+  },
+  {
+    component: 'CNavItem',
+    name: '창고 입출고 관리',
+    to: '/wrhousdlvr',
+  },
+  {
+    component: 'CNavItem',
+    name: '창고 입출고 내역 조회',
+    to: '/wrhousDlvrSearch',
+  },
+  {
+    component: 'CNavItem',
+    name: 'LOT 조회',
+    to: '/lotSearch',
+  },
+  // ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  // ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■ 품질 파트 ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  // ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  {
+    component: 'CNavTitle',
+    name: '품질',
+  },
+  {
+    component: 'CNavItem',
+    name: '자재 품질 관리',
+    to: '/rscQltyInsp',
+  },
+  {
+    component: 'CNavItem',
+    name: '반제품 품질 관리',
+    to: '/semiPrdtQltyInsp',
+  },
+  {
+    component: 'CNavItem',
+    name: '완제품 품질 관리',
+    to: '/endPrdtQltyInsp',
+  },
+  {
+    component: 'CNavItem',
+    name: '품질 조회',
+    to: '/qltyBoardList',
+  },
+  // ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  // ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■ 설비 파트 ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  // ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
+  {
+    component: 'CNavTitle',
+    name: '설비',
+  },
+  {
+    component: 'CNavItem',
+    name: '설비 관리',
+    to: '/Eqm',
 
-    ],
-  },
-  {
-    component: 'CNavGroup',
-    name: '상쥬니♥',
-    to: '/zzun',
-    icon: 'cil-cursor',
-    items: [
-      {
-        component: 'CNavItem',
-        name: '공정 라우팅',
-        to: '/zzun/Routing',
-      },
-      {
-        component: 'CNavItem',
-        name: '설비관리',
-        to: '/zzun/Eqm',
-      },
-    ],
-  },
-  {
-    component: 'CNavGroup',
-    name: '민윤기',
-    to: '/product',
-    icon: 'cil-cursor',
-    items: [
-      {
-        component: 'CNavItem',
-        name: '생산지시조회',
-        to: '/product/prodDrctBoardList',
-      },
-      {
-        component: 'CNavItem',
-        name: '생산지시',
-        to: '/product/product-instructions',
-      },
-      {
-        component: 'CNavItem',
-        name: '자재품질',
-        to: '/qlty/rscQltyInsp',
-      },
-      {
-        component: 'CNavItem',
-        name: '완제품품질',
-        to: '/qlty/endPrdtQltyInsp',
-      },
-      {
-        component: 'CNavItem',
-        name: '생산계획조회',
-        to: '/product/prodPlanBoardList',
-      },
-      {
-        component: 'CNavItem',
-        name: '반제품품질',
-        to: '/qlty/semiPrdtQltyInsp',
-      },
-      {
-        component: 'CNavItem',
-        name: '생산계획',
-        to: '/product/prodPlanManage',
-      },
-      {
-        component: 'CNavItem',
-        name: '품질조회페이지',
-        to: '/qlty/qltyBoardList',
-      },
-    ],
-  },
-  {
-    component: 'CNavGroup',
-    name: '오민수',
-    to: '/Minsu',
-    icon: 'cil-user',
-    items: [
-      {
-        component: 'CNavItem',
-        name: '수주 관리',
-        to: '/Minsu/rcvord',
-      },
-      {
-        component: 'CNavItem',
-        name: '수주 조회',
-        to: '/Minsu/rcvord_search',
-      },
-      {
-        component: 'CNavItem',
-        name: '납품 관리',
-        to: '/Minsu/deli',
-      },
-      {
-        component: 'CNavItem',
-        name: '납품 조회',
-        to: '/Minsu/deli_search',
-      },
-      {
-        component: 'CNavItem',
-        name: '공정 진행 현황',
-        to: '/Minsu/prcsProgPrecon',
-      },
-      {
-        component: 'CNavItem',
-        name: '공정 제어',
-        to: '/Minsu/procCtrl',
-      },
-    ],
-  },
-  {
-    component: 'CNavGroup',
-    name: 'zooE',
-    to: '/zooE',
-    icon: 'cil-cursor',
-    items: [
-      {
-        component: 'CNavItem',
-        name: '업체 관리',
-        to: '/zooE/company-manage',
-      },
-      {
-        component: 'CNavItem',
-        name: '제품 관리',
-        to: '/zooE/prdt-manage',
-      },
-      {
-        component: 'CNavItem',
-        name: '자재 관리',
-        to: '/zooE/rsc-manage',
-      },
-    ],
   },
 
   // {

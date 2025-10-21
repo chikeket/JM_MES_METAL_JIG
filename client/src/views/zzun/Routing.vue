@@ -593,6 +593,27 @@ const deleteSelectedRows = async () => {
   color: #9ca3af;
 }
 
+/* 강제: 모든 버튼 내부 텍스트를 흰색으로 고정 */
+:deep(button),
+:deep(.btn),
+:deep(.btn *),
+:deep(.btn-sm),
+:deep(.btn-xs),
+:deep(.btn-outline-secondary),
+:deep(.btn-outline-danger),
+:deep(.btn-danger),
+:deep(.c-button),
+:deep(.CButton) {
+  color: #fff !important;
+}
+
+/* 버튼 내부 아이콘도 글자색을 따르도록 설정 */
+:deep(.btn) svg,
+:deep(.btn) i {
+  fill: currentColor;
+  color: currentColor;
+}
+
 @media (max-width: 1600px) {
   .btn {
     font-size: 11px !important;
