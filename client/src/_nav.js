@@ -75,7 +75,7 @@ export default [
         name: '창고 입출고 내역 조회',
         to: '/jamin/wrhousDlvrSearch',
       },
-      
+
     ],
   },
   {
@@ -102,6 +102,11 @@ export default [
     to: '/product',
     icon: 'cil-cursor',
     items: [
+      {
+        component: 'CNavItem',
+        name: '생산지시조회',
+        to: '/product/prodDrctBoardList',
+      },
       {
         component: 'CNavItem',
         name: '생산지시',

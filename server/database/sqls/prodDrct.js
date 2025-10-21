@@ -84,9 +84,64 @@ JOIN prdt_opt c
 ON a.prdt_opt_id = c.prdt_opt_id
 where prod_drct_id = ?`;
 
+const prodDrctBoardListSearch =
+  //생산 지시 조회페이지 다중조회검색 쿼리
+  `
+select
+ a.prod_drct_id
+ ,a.prod_drct_nm
+ ,b.prod_plan_deta_id
+ ,e.emp_nm
+ ,a.rm "master_rm"
+ ,f.prdt_nm
+ ,g.opt_nm
+ ,COALESCE(c.plan_qy,0) "plan_qy"
+ ,b.drct_qy
+ ,d.base_quantity
+ ,b.priort
+ ,a.reg_dt
+ ,a.prod_drct_fr_dt
+ ,a.prod_drct_to_dt
+ ,a.rm
+from prod_drct a
+join prod_drct_deta b
+on a.prod_drct_id = b.prod_drct_id
+left join prod_plan_deta c
+on b.prod_plan_deta_id = c.prod_plan_deta_id
+and b.prdt_id = c.prdt_id
+and b.prdt_opt_id = c.prdt_opt_id
+left join (
+	select
+	  prod_plan_deta_id
+	  ,prdt_id
+	  ,prdt_opt_id
+	  ,SUM(drct_qy) "base_quantity"
+	from prod_drct_deta
+    group by prod_plan_deta_id, prdt_id,prdt_opt_id) d
+on b.prod_plan_deta_id = d.prod_plan_deta_id
+and b.prdt_id = d.prdt_id
+and b.prdt_opt_id = d.prdt_opt_id
+join emp e
+on a.emp_id = e.emp_id
+join prdt f
+on b.prdt_id = f.prdt_id
+join prdt_opt g
+on b.prdt_opt_id = g.prdt_opt_id
+where a.prod_drct_nm LIKE CONCAT('%', ?, '%')
+and a.prod_drct_id LIKE CONCAT('%', ?, '%')
+and a.prod_drct_fr_dt >= ?
+and a.prod_drct_to_dt <= ?
+and f.prdt_nm LIKE CONCAT('%', ?, '%')
+and g.opt_nm LIKE CONCAT('%', ?, '%')
+and e.emp_nm LIKE CONCAT('%', ?, '%')
+and a.reg_dt >= ?
+order by a.prod_drct_to_dt
+`
+
 module.exports = {
   prodDrctMasterSearch,
   prodDrctDetailSearch,
   prodDrctPlanDetaIdChk,
   prodDrctNonePlanDetailSearch,
+  prodDrctBoardListSearch,
 };
