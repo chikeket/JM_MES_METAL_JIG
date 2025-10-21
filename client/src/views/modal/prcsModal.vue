@@ -135,7 +135,7 @@ const prcsSearch = async () => {
       params.prcs_nm = searchTerm.prcs_nm
     }
 
-    const result = await axios.get('/api/prcs', { params })
+    const result = await axios.get('/api/prcs/modal', { params })
     prcsList.value = result.data
   } catch (err) {
     console.error('공정 검색 오류:', err)
