@@ -258,38 +258,31 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
       <CButton color="secondary" @click="updateRowsToDB">수정</CButton>
       <CButton color="danger" @click="deleteRowsToDB()">삭제</CButton>
     </div>
-
+<div class="search-filter-box mb-2">
     <CContainer fluid>
       <CRow class="g-3 mb-3">
         <CCol md="3">
-          <CInputGroup>
-            <CInputGroupText id="addon-ordr-name-1">생산계획서 명</CInputGroupText>
-            <CFormInput v-model="Info.ordrName1" placeholder="생산지시서 명" />
-          </CInputGroup>
+          <c-form-label>생산계획서 명</c-form-label>
+            <c-form-input v-model="Info.ordrName1" placeholder="생산지시서 명"/>
         </CCol>
 
         <CCol md="3">
-          <CInputGroup>
-            <CInputGroupText id="addon-ordr-name-2">등록 일자</CInputGroupText>
-            <CFormInput type="date" v-model="Info.regDate" />
-          </CInputGroup>
+          <c-form-label>등록 일자</c-form-label>
+            <c-form-input type="date" v-model="Info.startDate" />
+
         </CCol>
         <CCol md="3">
-          <CInputGroup>
-            <CInputGroupText id="addon-ordr-name-2">시작 일자</CInputGroupText>
-            <CFormInput type="date" v-model="Info.startDate" />
-          </CInputGroup>
+          <c-form-label>시작 일자</c-form-label>
+            <c-form-input type="date" v-model="Info.startDate" />
         </CCol>
         <CCol md="3">
-          <CInputGroup>
-            <CInputGroupText id="addon-ordr-name-2">종료 일자</CInputGroupText>
-            <CFormInput type="date" v-model="Info.endDate" />
-          </CInputGroup>
+          <c-form-label>종료 일자</c-form-label>
+            <c-form-input type="date" v-model="Info.endDate" />
         </CCol>
       </CRow>
     </CContainer>
     <CFormTextarea v-model="Info.remark" label="비고" rows="3" text="필요 시 기재"></CFormTextarea>
-
+</div>
     <div class="d-flex justify-content-end gap-2 mb-3">
       <CButton color="secondary" @click="goToDrctPlan()">수주서 조회</CButton>
       <ProdDrctModal
@@ -403,3 +396,295 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
     </CTable>
   </CContainer>
 </template>
+<style scoped>
+:deep(*) {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  line-height: 1.6;
+  box-sizing: border-box;
+}
+
+.search-filter-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  margin-bottom: 1.25rem;
+}
+
+.grid-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+:deep(.btn) {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0.55rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  letter-spacing: -0.3px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-width: 80px;
+}
+
+:deep(.btn-secondary) {
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+  color: #fff !important;
+}
+
+:deep(.btn-secondary:hover) {
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
+  box-shadow: 0 4px 8px rgba(71, 85, 105, 0.3);
+  transform: translateY(-1px);
+}
+
+:deep(.btn-danger) {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #fff !important;
+}
+
+:deep(.btn-danger:hover) {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+  transform: translateY(-1px);
+}
+
+:deep(.btn:active) {
+  transform: scale(0.98);
+}
+
+:deep(.form-label) {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.2px;
+}
+
+:deep(.form-control),
+:deep(.form-select) {
+  font-size: 13px;
+  font-weight: 400;
+  padding: 0.65rem 0.85rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+  height: 42px;
+}
+
+:deep(.form-control:focus),
+:deep(.form-select:focus) {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+  background-color: #ffffff;
+  outline: none;
+}
+
+:deep(.g-2) {
+  --bs-gutter-y: 0.5rem;
+  --bs-gutter-x: 0.5rem;
+}
+
+.table-wrapper {
+  overflow-y: scroll;
+  overflow-x: hidden;
+  max-height: calc(100vh - 300px);
+  background: #ffffff;
+}
+
+.table-wrapper::-webkit-scrollbar {
+  width: 14px;
+  background: #ffffff;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+  background: #ffffff;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #9ca3af 0%, #6b7280 100%);
+  border-radius: 10px;
+  border: 3px solid #ffffff;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #6b7280 0%, #4b5563 100%);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+
+.table-wrapper::-webkit-scrollbar-button:single-button {
+  display: block;
+  height: 20px;
+  background-color: #ffffff;
+  background-repeat: no-repeat;
+  background-position: center;
+  border: none;
+}
+
+.table-wrapper::-webkit-scrollbar-button:single-button:vertical:decrement {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 4L2 8h8z'/%3E%3C/svg%3E");
+  margin-top: 46px;
+}
+
+.table-wrapper::-webkit-scrollbar-button:single-button:vertical:increment {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
+}
+
+.table-wrapper::-webkit-scrollbar-button:single-button:hover {
+  background-color: #f3f4f6;
+}
+
+:deep(.data-table) {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  width: 100%;
+  font-size: 13px;
+}
+
+:deep(.data-table thead) {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+:deep(.data-table th) {
+  font-size: 13px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  color: #ffffff;
+  text-align: center;
+  padding: 0.85rem 0.75rem;
+  border: none;
+  letter-spacing: -0.2px;
+}
+
+:deep(.data-table th:first-child) {
+  border-top-left-radius: 12px;
+}
+
+:deep(.data-table th:last-child) {
+  border-top-right-radius: 12px;
+}
+
+:deep(.data-table td) {
+  font-size: 13px;
+  font-weight: 400;
+  vertical-align: middle;
+  padding: 0.75rem 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  color: #334155;
+  height: 46px;
+}
+
+:deep(.data-table tbody tr) {
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background-color: #ffffff;
+}
+
+:deep(.data-table tbody tr:hover:not(.empty-row)) {
+  background-color: #f8fafc;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+
+.cell-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  padding: 4px 6px;
+  outline: none;
+  font-family: inherit;
+  color: #334155;
+}
+
+.cell-input:focus {
+  background: #fef3c7;
+  border: 1.5px solid #fbbf24;
+  border-radius: 6px;
+}
+
+select.cell-input {
+  cursor: pointer;
+}
+
+:deep(.selected-row) {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%) !important;
+  font-weight: 600;
+  box-shadow: inset 0 0 0 2px #3b82f6;
+}
+
+:deep(.selected-row td) {
+  border-bottom: 1px solid #93c5fd;
+  color: #1e40af;
+}
+
+.empty-row td {
+  height: 46px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+:deep(.text-end) {
+  text-align: right;
+}
+
+:deep(.text-start) {
+  text-align: left;
+}
+
+:deep(.text-center) {
+  text-align: center;
+}
+
+:deep(.text-primary) {
+  color: #3b82f6 !important;
+}
+
+@media (max-width: 1600px) {
+  :deep(.form-label) {
+    font-size: 12px !important;
+  }
+  
+  :deep(.form-control),
+  :deep(.form-select) {
+    font-size: 12px !important;
+    height: 38px !important;
+    padding: 0.55rem 0.75rem !important;
+  }
+  
+  :deep(.btn) {
+    font-size: 12px !important;
+    padding: 0.5rem 1.1rem !important;
+  }
+  
+  :deep(th),
+  :deep(td) {
+    font-size: 12px !important;
+  }
+  
+  :deep(.data-table td) {
+    height: 42px !important;
+  }
+  
+  .empty-row td {
+    height: 42px !important;
+  }
+  
+  .cell-input {
+    font-size: 12px !important;
+  }
+}
+
+
+</style>

@@ -184,6 +184,11 @@ const routes = [
             name: 'prodPlanManage',
             component: () => import('@/views/Product/prodPlanManage.vue'),
           },
+          {
+            path: '/product/prodDrctBoardList',
+            name: 'prodDrctBoardList',
+            component: () => import('@/views/Product/prodDrctBoardList.vue'),
+          },
         ],
       },
 
