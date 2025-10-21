@@ -92,9 +92,9 @@ router.get('/bom/detail', async (req, res) => {
 });
 
 // BOM 디테일 단건 조회 (필요시)
-router.get('/bom/detail/:bom_deta_id', async (req, res) => {
+router.get('/bom/detail/:bom_comp_id', async (req, res) => {
   try {
-    const row = await bomService.getBomDetailById(req.params.bom_deta_id);
+    const row = await bomService.getBomDetailById(req.params.bom_comp_id);
     res.json({ data: row });
   } catch (err) {
     res.status(500).json({ message: 'BOM 디테일 단건 조회 오류', error: err.message });
@@ -104,28 +104,28 @@ router.get('/bom/detail/:bom_deta_id', async (req, res) => {
 // BOM 디테일 신규
 router.post('/bom/detail', async (req, res) => {
   try {
-    const bom_deta_id = await bomService.insertBomDetail(req.body);
-    res.json({ bom_deta_id });
+    const bom_comp_id = await bomService.insertBomDetail(req.body);
+    res.json({ bom_comp_id });
   } catch (err) {
     res.status(500).json({ message: 'BOM 디테일 등록 오류', error: err.message });
   }
 });
 
 // BOM 디테일 수정
-router.put('/bom/detail/:bom_deta_id', async (req, res) => {
+router.put('/bom/detail/:bom_comp_id', async (req, res) => {
   try {
-    await bomService.updateBomDetail(req.params.bom_deta_id, req.body);
-    res.json({ bom_deta_id: req.params.bom_deta_id });
+    await bomService.updateBomDetail(req.params.bom_comp_id, req.body);
+    res.json({ bom_comp_id: req.params.bom_comp_id });
   } catch (err) {
     res.status(500).json({ message: 'BOM 디테일 수정 오류', error: err.message });
   }
 });
 
 // BOM 디테일 삭제
-router.delete('/bom/detail/:bom_deta_id', async (req, res) => {
+router.delete('/bom/detail/:bom_comp_id', async (req, res) => {
   try {
-    await bomService.deleteBomDetail(req.params.bom_deta_id);
-    res.json({ bom_deta_id: req.params.bom_deta_id });
+    await bomService.deleteBomDetail(req.params.bom_comp_id);
+    res.json({ bom_comp_id: req.params.bom_comp_id });
   } catch (err) {
     res.status(500).json({ message: 'BOM 디테일 삭제 오류', error: err.message });
   }

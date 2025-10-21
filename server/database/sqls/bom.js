@@ -6,10 +6,22 @@ const bomMasterNewId = `
   WHERE SUBSTR(bom_id, 5, 4) = DATE_FORMAT(NOW(), '%y%m')
 `;
 
+// 제품ID, 옵션ID 조합으로 다음 BOM 버전 생성 (ver_001, ver_002 ...)
+const bomNextVersionByPrdtOptId = `
+  SELECT IFNULL(
+    CONCAT('ver_', LPAD(MAX(CAST(SUBSTRING(bom_ver, 5) AS UNSIGNED)) + 1, 3, '0')),
+    'ver_001'
+  ) AS next_bom_ver
+  FROM BOM
+  WHERE prdt_id = ? AND prdt_opt_id = ?
+`;
+
 // BOM 마스터 전체/조건 조회 (제품명/옵션명 JOIN)
 const bomMasterSelect = `
   SELECT 
     bm.bom_id,
+    bm.prdt_id,
+    bm.prdt_opt_id,
     p.prdt_nm,
     o.opt_nm,
     bm.bom_ver,
@@ -61,21 +73,22 @@ const bomMasterDelete = `
 // BOM 디테일 ID 자동생성
 const bomDetailNewId = `
   SELECT CONCAT('BOM_DETA_', DATE_FORMAT(NOW(), '%y%m'),
-    LPAD(IFNULL(MAX(CAST(SUBSTR(bom_deta_id, -3) AS UNSIGNED)), 0) + 1, 3, '0')) AS bom_deta_id
-  FROM BOM
-  WHERE SUBSTR(bom_deta_id, 10, 4) = DATE_FORMAT(NOW(), '%y%m')
+    LPAD(IFNULL(MAX(CAST(SUBSTR(bom_comp_id, -3) AS UNSIGNED)), 0) + 1, 3, '0')) AS bom_comp_id
+  FROM BOM_DETA
+  WHERE SUBSTR(bom_comp_id, 10, 4) = DATE_FORMAT(NOW(), '%y%m')
 `;
 
 // BOM 디테일 전체/조건 조회 (BOM_DETA 테이블에서 bom_id로 조회)
 const bomDetailSelect = `
   SELECT 
-    bd.bom_comp_id, 
-    bd.bom_id, 
-    bd.rsc_id, 
-    r.rsc_nm, 
-    bd.unit_id, 
-    bd.rec_qy, 
-    bd.rm
+  bd.bom_comp_id, 
+  bd.bom_id, 
+  bd.rsc_id, 
+  r.rsc_nm,
+  r.spec,
+  r.unit,
+  bd.rec_qy, 
+  bd.rm
   FROM BOM_DETA bd
   LEFT JOIN rsc r ON bd.rsc_id = r.rsc_id
   WHERE (? = '' OR bd.bom_id = ?)
@@ -90,9 +103,9 @@ const bomDetailFindById = `
 // BOM 디테일 신규
 const bomDetailInsert = `
   INSERT INTO BOM_DETA (
-    bom_comp_id, bom_id, rsc_id, rsc_nm, unit_id, rec_qty, rm
+    bom_comp_id, bom_id, rsc_id, rec_qy, rm
   ) VALUES (
-    ?, ?, ?, ?, ?, ?, ?
+    ?, ?, ?, ?, ?
   )
 `;
 
@@ -100,10 +113,8 @@ const bomDetailInsert = `
 const bomDetailUpdate = `
   UPDATE BOM_DETA SET
     rsc_id = ?,
-    rsc_nm = ?,
-    unit = ?,
-    bom_qty = ?,
-    rmrk = ?
+    rec_qy = ?,
+    rm = ?
   WHERE bom_comp_id = ?
 `;
 
@@ -126,4 +137,5 @@ module.exports = {
   bomDetailInsert,
   bomDetailUpdate,
   bomDetailDelete
+  ,bomNextVersionByPrdtOptId
 }

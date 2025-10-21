@@ -31,11 +31,17 @@ async function insertBomMaster(data) {
   // 신규 ID 생성
   const idRow = await mariadb.query('bomMasterNewId');
   const bom_id = idRow[0].bom_id;
+  // 버전 자동생성: bom_ver 없으면 prdt_id, prdt_opt_id로 쿼리
+  let bom_ver = data.bom_ver;
+  if (!bom_ver) {
+    const verRow = await mariadb.query('bomNextVersionByPrdtOptId', [data.prdt_id, data.prdt_opt_id]);
+    bom_ver = verRow[0]?.next_bom_ver || 'ver_001';
+  }
   const params = [
     bom_id,
     data.prdt_id,
     data.prdt_opt_id || '',
-    data.bom_ver || '',
+    bom_ver,
     data.valid_fr_dt || '',
     data.valid_to_dt || '',
     data.st || '',
@@ -73,45 +79,40 @@ async function getBomDetailList({ bom_id = '' } = {}) {
 }
 
 // BOM 디테일 단건 조회 (필요시)
-async function getBomDetailById(bom_deta_id) {
-  const rows = await mariadb.query('bomDetailFindById', [bom_deta_id]);
+async function getBomDetailById(bom_comp_id) {
+  const rows = await mariadb.query('bomDetailFindById', [bom_comp_id]);
   return rows[0] || null;
 }
 
 // BOM 디테일 신규
 async function insertBomDetail(data) {
   const idRow = await mariadb.query('bomDetailNewId');
-  const bom_deta_id = idRow[0].bom_deta_id;
+  const bom_comp_id = idRow[0].bom_comp_id;
   const params = [
-    bom_deta_id,
+    bom_comp_id,
     data.bom_id,
     data.rsc_id || '',
-    data.rsc_nm || '',
-    data.unit || '',
-    data.bom_qty || '',
-    data.rmrk || ''
+    data.rec_qy || '',
+    data.rm || ''
   ];
   await mariadb.query('bomDetailInsert', params);
-  return bom_deta_id;
+  return bom_comp_id;
 }
 
 // BOM 디테일 수정
-async function updateBomDetail(bom_deta_id, data) {
+async function updateBomDetail(bom_comp_id, data) {
   const params = [
-    data.bom_id,
     data.rsc_id || '',
-    data.rsc_nm || '',
-    data.unit || '',
-    data.bom_qty || '',
-    data.rmrk || '',
-    bom_deta_id
+    data.rec_qy || '',
+    data.rm || '',
+    bom_comp_id
   ];
   return await mariadb.query('bomDetailUpdate', params);
 }
 
 // BOM 디테일 삭제
-async function deleteBomDetail(bom_deta_id) {
-  return await mariadb.query('bomDetailDelete', [bom_deta_id]);
+async function deleteBomDetail(bom_comp_id) {
+  return await mariadb.query('bomDetailDelete', [bom_comp_id]);
 }
 
 module.exports = {

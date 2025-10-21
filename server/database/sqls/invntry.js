@@ -1,0 +1,89 @@
+const LOT_STATUS_BASE_SELECT_COUNT = `
+    SELECT COUNT(*) AS total
+    FROM LOT_STC_PRECON l
+    LEFT JOIN (
+      SELECT x.LOT_NO,
+             SUBSTRING_INDEX(GROUP_CONCAT(x.WHOUS_ID ORDER BY x.RCVPAY_DT DESC), ',', 1) AS WHOUS_ID,
+             SUBSTRING_INDEX(GROUP_CONCAT(x.ZONE_ID  ORDER BY x.RCVPAY_DT DESC), ',', 1) AS ZONE_ID,
+             MAX(x.RCVPAY_DT) AS last_tr_dt
+      FROM WRHOUS_WRHSDLVR_MAS x
+      GROUP BY x.LOT_NO
+    ) lat ON lat.LOT_NO = l.LOT_NO
+    LEFT JOIN RSC  r ON r.RSC_ID  = l.RSC_ID
+    LEFT JOIN PRDT p ON p.PRDT_ID = l.PRDT_ID
+    LEFT JOIN PRDT_OPT po ON po.PRDT_OPT_ID = l.PRDT_OPT_ID
+    LEFT JOIN WHOUS w ON w.WHOUS_ID = COALESCE(lat.WHOUS_ID, l.WHOUS_ID)
+    LEFT JOIN WHOUS_ZONE z ON z.ZONE_ID = COALESCE(lat.ZONE_ID, l.ZONE_ID)
+  `;
+  const LOT_STATUS_BASE_SELECT_LIST = `
+    SELECT
+      l.LOT_NO,
+      l.RSC_ID, r.RSC_NM,
+      l.PRDT_ID, p.PRDT_NM,
+      l.PRDT_OPT_ID, po.PRDT_OPT_NM,
+      COALESCE(lat.WHOUS_ID, l.WHOUS_ID) AS WHOUS_ID,
+      w.WHOUS_NM,
+      COALESCE(lat.ZONE_ID, l.ZONE_ID)   AS ZONE_ID,
+      z.ZONE_NM,
+      l.UNIT, l.SPEC,
+      l.IST_QY, l.OUST_QY, l.NOW_STC_QY,
+      COALESCE(lat.last_tr_dt, NULL) AS last_tr_dt
+    FROM LOT_STC_PRECON l
+    LEFT JOIN (
+      SELECT x.LOT_NO,
+             SUBSTRING_INDEX(GROUP_CONCAT(x.WHOUS_ID ORDER BY x.RCVPAY_DT DESC), ',', 1) AS WHOUS_ID,
+             SUBSTRING_INDEX(GROUP_CONCAT(x.ZONE_ID  ORDER BY x.RCVPAY_DT DESC), ',', 1) AS ZONE_ID,
+             MAX(x.RCVPAY_DT) AS last_tr_dt
+      FROM WRHOUS_WRHSDLVR_MAS x
+      GROUP BY x.LOT_NO
+    ) lat ON lat.LOT_NO = l.LOT_NO
+    LEFT JOIN RSC  r ON r.RSC_ID  = l.RSC_ID
+    LEFT JOIN PRDT p ON p.PRDT_ID = l.PRDT_ID
+    LEFT JOIN PRDT_OPT po ON po.PRDT_OPT_ID = l.PRDT_OPT_ID
+    LEFT JOIN WHOUS w ON w.WHOUS_ID = COALESCE(lat.WHOUS_ID, l.WHOUS_ID)
+    LEFT JOIN WHOUS_ZONE z ON z.ZONE_ID = COALESCE(lat.ZONE_ID, l.ZONE_ID)
+  `;
+
+  // [B] 창고 입출고 내역
+  // 마스터/디테일 조인 + 품목명 보강 + 창고/로케이션명 보강
+  const WH_TXN_BASE_SELECT_COUNT = `
+    SELECT COUNT(*) AS total
+    FROM WRHOUS_WRHSDLVR d
+    JOIN WRHOUS_WRHSDLVR_MAS m ON m.WRHSDLVR_MAS_ID = d.WRHSDLVR_MAS_ID
+    LEFT JOIN RSC  r ON r.RSC_ID  = m.RSC_ID
+    LEFT JOIN PRDT p ON p.PRDT_ID = m.PRDT_ID
+    LEFT JOIN PRDT_OPT po ON po.PRDT_OPT_ID = m.PRDT_OPT_ID
+    LEFT JOIN WHOUS w ON w.WHOUS_ID = m.WHOUS_ID
+    LEFT JOIN WHOUS_ZONE z ON z.ZONE_ID = m.ZONE_ID
+  `;
+
+  const WH_TXN_BASE_SELECT_LIST = `
+    SELECT
+      d.WRHOUS_WRHSDLVR_ID        AS detail_id,
+      m.WRHSDLVR_MAS_ID           AS mas_id,
+      m.RCVPAY_TY,                -- 'S1':입고, 'S2':출고
+      m.RCVPAY_DT,
+      m.WHOUS_ID, w.WHOUS_NM,
+      m.ZONE_ID,  z.ZONE_NM,
+      m.LOT_NO,
+      m.RSC_ID,   r.RSC_NM,
+      m.PRDT_ID,  p.PRDT_NM,
+      m.PRDT_OPT_ID, po.PRDT_OPT_NM,
+      d.RCVPAY_QY AS detail_qy,
+      m.ALL_RCVPAY_QY AS mas_total_qy,
+      COALESCE(d.RM, m.RM) AS RM
+    FROM WRHOUS_WRHSDLVR d
+    JOIN WRHOUS_WRHSDLVR_MAS m ON m.WRHSDLVR_MAS_ID = d.WRHSDLVR_MAS_ID
+    LEFT JOIN RSC  r ON r.RSC_ID  = m.RSC_ID
+    LEFT JOIN PRDT p ON p.PRDT_ID = m.PRDT_ID
+    LEFT JOIN PRDT_OPT po ON po.PRDT_OPT_ID = m.PRDT_OPT_ID
+    LEFT JOIN WHOUS w ON w.WHOUS_ID = m.WHOUS_ID
+    LEFT JOIN WHOUS_ZONE z ON z.ZONE_ID = m.ZONE_ID
+  `;
+
+module.exports = {
+  LOT_STATUS_BASE_SELECT_COUNT,
+  LOT_STATUS_BASE_SELECT_LIST,
+  WH_TXN_BASE_SELECT_COUNT,
+  WH_TXN_BASE_SELECT_LIST
+};

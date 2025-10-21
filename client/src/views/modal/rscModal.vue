@@ -27,27 +27,34 @@
 
         <table class="table table-bordered table-hover">
           <thead class="table-light">
-            <tr><th>자재 코드</th><th>분류</th><th>명</th><th>규격</th><th>단위</th></tr>
+            <tr>
+              <th style="width:40px"><input type="checkbox" :checked="allSelected" @change="toggleAll($event)" /></th>
+              <th>자재 코드</th><th>분류</th><th>명</th><th>규격</th><th>단위</th>
+            </tr>
           </thead>
           <tbody>
-            <tr v-for="(r, i) in rscList" :key="r.rsc_id || i" @dblclick="selectRsc(r)">
+            <tr v-for="(r, i) in rscList" :key="r.rsc_id || i" @click="toggleSelection(r)">
+              <td @click.stop><input type="checkbox" :checked="isSelected(r)" @change="toggleSelection(r)" /></td>
               <td>{{ r.rsc_id }}</td>
               <td>{{ r.rsc_clsf_id || r.rsc_ty }}</td>
               <td>{{ r.rsc_nm }}</td>
               <td>{{ r.spec }}</td>
               <td>{{ r.rsc_unit || r.unit }}</td>
             </tr>
-            <tr v-if="rscList.length === 0"><td colspan="5" class="text-center text-muted">검색결과가 없습니다.</td></tr>
+            <tr v-if="rscList.length === 0"><td colspan="6" class="text-center text-muted">검색결과가 없습니다.</td></tr>
           </tbody>
         </table>
       </div>
     </CModalBody>
-    <CModalFooter><CButton color="secondary" @click="close">닫기</CButton></CModalFooter>
+    <CModalFooter>
+      <CButton color="secondary" @click="emitSelected">선택 ({{ selectedItems.length }}건)</CButton>
+      <CButton color="secondary" @click="close">닫기</CButton>
+    </CModalFooter>
   </CModal>
 </template>
 
 <script setup>
-import { ref, defineProps, defineEmits, shallowRef } from 'vue'
+import { ref, defineProps, defineEmits, shallowRef, computed } from 'vue'
 import axios from 'axios'
 
 const props = defineProps({ visible: Boolean })
@@ -57,57 +64,79 @@ const pickValue = ref('rsc_nm')
 const searchKeyword = ref('')
 const rscList = shallowRef([])
 
+// 선택 관련 상태
+const selectedItems = ref([])
+const allSelected = computed(() => rscList.value.length > 0 && rscList.value.every(isSelected))
+
+function isSelected(item) {
+  return selectedItems.value.some(s => s.rsc_id === (item.rsc_id || item.RSC_ID || item.rscId))
+}
+
+function toggleSelection(item) {
+  const id = item.rsc_id || item.RSC_ID || item.rscId
+  const idx = selectedItems.value.findIndex(s => s.rsc_id === id)
+  if (idx > -1) selectedItems.value.splice(idx, 1)
+  else selectedItems.value.push({ ...item })
+}
+
+function toggleAll(event) {
+  if (event.target.checked) {
+    selectedItems.value = rscList.value.map(r => ({ ...r }))
+  } else {
+    selectedItems.value = []
+  }
+}
+
 const close = () => {
   resetSearch()
   emit('close')
 }
 
 const resetSearch = () => {
-  console.log('[rscModal] 검색 조건 초기화')
   pickValue.value = 'rsc_nm'
   searchKeyword.value = ''
   rscList.value = []
+  selectedItems.value = []
 }
 
 const rscSearch = async () => {
   try {
     const params = { rsc_id:'', rsc_clsf_id:'', rsc_nm:'', spec:'', unit:'' }
-    
-    // 선택된 검색 조건에 따라 파라미터 설정
     if (pickValue.value === 'rsc_id') params.rsc_id = searchKeyword.value || ''
     else if (pickValue.value === 'rsc_clsf_id') params.rsc_clsf_id = searchKeyword.value || ''
     else if (pickValue.value === 'rsc_nm') params.rsc_nm = searchKeyword.value || ''
     else if (pickValue.value === 'spec') params.spec = searchKeyword.value || ''
     else if (pickValue.value === 'unit') params.unit = searchKeyword.value || ''
-    
-    console.log('[rscModal] request params:', params)
     const res = await axios.get('/api/rscs', { params }).catch(err => { throw err })
     const data = res?.data
-    console.log('[rscModal] raw response:', data)
     if (Array.isArray(data)) {
       rscList.value = data
     } else {
-      console.warn('[rscModal] unexpected response, expected array. set empty list.')
       rscList.value = []
     }
+    selectedItems.value = []
   } catch (err) {
-    console.error('[rscModal] rscSearch error', err)
     rscList.value = []
+    selectedItems.value = []
   }
 }
 
-const selectRsc = (r) => {
+// 선택된 자재 emit (여러개)
+function emitSelected() {
+  if (selectedItems.value.length === 0) {
+    alert('자재를 선택해주세요.')
+    return
+  }
   // 정규화된 페이로드로 emit
-  const item = {
+  const items = selectedItems.value.map(r => ({
     rsc_id: r?.rsc_id ?? r?.RSC_ID ?? r?.rscId ?? '',
     rsc_clsf_id: r?.rsc_clsf_id ?? r?.rsc_ty ?? '',
     rsc_nm: r?.rsc_nm ?? r?.RSC_NM ?? r?.rscNm ?? '',
     spec: r?.spec ?? r?.SPEC ?? '',
     unit: r?.unit ?? r?.rsc_unit ?? '',
     rsc_ordr_deta_id: r?.rsc_ordr_deta_id ?? null
-  }
-  console.log('[rscModal] emit select payload:', item)
-  emit('select', item)
+  }))
+  emit('select', items)
   close()
 }
 </script>

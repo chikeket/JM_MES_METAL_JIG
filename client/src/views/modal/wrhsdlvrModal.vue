@@ -48,7 +48,7 @@
               <td>{{ p.rcvpay_ty }}</td>
               <td>{{ p.emp_nm }}</td>
               <td>{{ p.rcvpay_dt }}</td>
-              <td>{{ p.prdt_nm || '-' }}</td>
+              <td>{{ p.prdt_nm || p.rsc_nm || '-' }}</td>
               <td>{{ p.opt_nm || '-' }}</td>
               <td>{{ p.all_rcvpay_qy ?? '-' }}</td>
             </tr>
