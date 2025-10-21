@@ -30,7 +30,7 @@ jobs:
     - name: Build Vue app
       working-directory: client
       run: |
-        npm ci --no-audit --no-fund
+        npm i --no-audit --no-fund
         npm run build
         
     # github actions 에 저장된 private key를 ubuntu에 복사
