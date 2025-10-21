@@ -27,7 +27,13 @@
           출고서 조회
         </CButton>
         <CButton color="secondary" size="sm" @click="onSave">저장</CButton>
-        <CButton color="danger" size="sm">삭제</CButton>
+        <CButton
+          color="danger"
+          size="sm"
+          :disabled="!selectedSummaryIds.length || deleting"
+          @click="onDeleteSelected"
+          >{{ deleting ? '삭제 중…' : `삭제 (${selectedSummaryIds.length})` }}
+        </CButton>
       </div>
     </div>
 
@@ -91,11 +97,11 @@
             </CTableRow>
           </CTableHead>
           <CTableBody>
-            <CTableRow v-for="(r, i) in summaryRows" :key="r.id || i">
+            <CTableRow v-for="(r, i) in summaryRows" :key="r.id ?? r._selkey ?? i">
               <CTableDataCell class="text-center">
                 <CFormCheck
-                  :checked="isSummarySelected(r.id)"
-                  @change="toggleSummaryRow(r.id, $event)"
+                  :checked="isSummarySelected(getSelectKey(r, i))"
+                  @change="toggleSummaryRow(getSelectKey(r, i), $event)"
                 />
               </CTableDataCell>
               <CTableDataCell class="text-center">{{ r.emp_nm ?? '' }}</CTableDataCell>
@@ -612,31 +618,30 @@ const getLotDisplay = (row) => {
 }
 
 // 상단 그리드 선택 관리 함수들
-const isSummarySelected = (id) => {
-  return selectedSummaryIds.value.includes(id)
+const isSummarySelected = (key) => {
+  return selectedSummaryIds.value.includes(key)
 }
 
-const toggleSummaryRow = (id, ev) => {
-  const checked = ev && ev.target ? !!ev.target.checked : !selectedSummaryIds.value.includes(id)
+const toggleSummaryRow = (key, ev) => {
+  const checked = ev && ev.target ? !!ev.target.checked : !selectedSummaryIds.value.includes(key)
   if (checked) {
-    if (!selectedSummaryIds.value.includes(id)) selectedSummaryIds.value.push(id)
+    if (!selectedSummaryIds.value.includes(key)) selectedSummaryIds.value.push(key)
   } else {
-    selectedSummaryIds.value = selectedSummaryIds.value.filter((x) => x !== id)
+    selectedSummaryIds.value = selectedSummaryIds.value.filter((x) => x !== key)
   }
 }
 
 const allSummarySelected = computed(() => {
-  if (summaryRows.value.length === 0) return false
-  return summaryRows.value.every((row) => selectedSummaryIds.value.includes(row.id))
+  if (!summaryRows.value.length) return false
+  const keys = summaryRows.value.map((r,i) => getSelectKey(r,i))
+  return keys.every(k => selectedSummaryIds.value.includes(k))
 })
 
 const toggleAllSummary = (ev) => {
-  const checked = ev && ev.target ? !!ev.target.checked : !allSummarySelected.value
-  if (checked) {
-    selectedSummaryIds.value = summaryRows.value.map((row) => row.id)
-  } else {
-    selectedSummaryIds.value = []
-  }
+  const checked = ev?.target ? !!ev.target.checked : !allSummarySelected.value
+  selectedSummaryIds.value = checked
+    ? summaryRows.value.map((r,i) => getSelectKey(r,i))
+    : []
 }
 
 // 모드 변경 시 데이터 초기화
@@ -956,9 +961,17 @@ const closeWrhousdlvrModal = () => {
 const onSelectWrhousdlvr = ({ master, details }) => {
   // details의 각 row에 wrhsdlvr_mas_id, prdt_nm이 없으면 master에서 복사
   if (Array.isArray(details) && master) {
-    details.forEach(d => {
+    details.forEach((d) => {
       if (!d.wrhsdlvr_mas_id && master.wrhsdlvr_mas_id) d.wrhsdlvr_mas_id = master.wrhsdlvr_mas_id
       if (!d.prdt_nm && master.prdt_nm) d.prdt_nm = master.prdt_nm
+      // 자재라면 code/name에 rsc_id/rsc_nm 매핑, 완제품이면 prdt_id/prdt_nm 매핑
+      if (d.rsc_id) {
+        d.code = d.rsc_id
+        d.name = d.rsc_nm
+      } else if (d.prdt_id) {
+        d.code = d.prdt_id
+        d.name = d.prdt_nm
+      }
     })
   }
   // 상단 그리드: 디테일 반복
@@ -1530,8 +1543,8 @@ const onSave = async () => {
     }
 
     // wrhsdlvr_mas_id로 insert/update 분기
-    const insertRows = selectedRows.filter(row => !row.wrhsdlvr_mas_id)
-    const updateRows = selectedRows.filter(row => row.wrhsdlvr_mas_id)
+    const insertRows = selectedRows.filter((row) => !row.wrhsdlvr_mas_id)
+    const updateRows = selectedRows.filter((row) => row.wrhsdlvr_mas_id)
 
     // 신규 insert: 기존 grouped 방식
     if (insertRows.length > 0) {
@@ -1543,7 +1556,9 @@ const onSave = async () => {
         if (row.type === '자재') itemTypeCode = 'E1'
         else if (row.type === '반제품') itemTypeCode = 'E2'
         else if (row.type === '완제품') itemTypeCode = 'E3'
-        const key = `${row.code}|${row.opt_code || 'NO_OPT'}|${row.warehouse_id}|${row.location_id || ''}`
+        const key = `${row.code}|${row.opt_code || 'NO_OPT'}|${row.warehouse_id}|${
+          row.location_id || ''
+        }`
         if (!grouped[key]) {
           let masterObj = {
             item_type: itemTypeCode,
@@ -1581,11 +1596,17 @@ const onSave = async () => {
           lot_no: row.lot_no || row.lot || '',
         }
         if (mode.value === 'in') {
-          if (row.type === '자재') detailObj.rsc_qlty_insp_id = row.rsc_qlty_insp_id || row.inspect_id
-          else if (row.type === '반제품') detailObj.semi_prdt_qlty_insp_id = row.semi_prdt_qlty_insp_id || row.inspect_id
-          else if (row.type === '완제품') detailObj.end_prdt_qlty_insp_id = row.end_prdt_qlty_insp_id || row.inspect_id
+          if (row.type === '자재')
+            detailObj.rsc_qlty_insp_id = row.rsc_qlty_insp_id || row.inspect_id
+          else if (row.type === '반제품')
+            detailObj.semi_prdt_qlty_insp_id = row.semi_prdt_qlty_insp_id || row.inspect_id
+          else if (row.type === '완제품')
+            detailObj.end_prdt_qlty_insp_id = row.end_prdt_qlty_insp_id || row.inspect_id
         } else if (mode.value === 'out') {
-          if (row.type === '완제품' && (row.inspect_id.startsWith('DL') || row.inspect_id.startsWith('DD')))
+          if (
+            row.type === '완제품' &&
+            (row.inspect_id.startsWith('DL') || row.inspect_id.startsWith('DD'))
+          )
             detailObj.deli_deta_id = row.deli_deta_id || row.inspect_id || null
           else detailObj.prod_drct_deta_id = row.prod_drct_deta_id || row.inspect_id || null
         }
@@ -1614,10 +1635,10 @@ const onSave = async () => {
     // update: qty만 변경
     if (updateRows.length > 0) {
       // wrhsdlvr_mas_id, id, qty만 전송
-      const updatePayload = updateRows.map(row => ({
+      const updatePayload = updateRows.map((row) => ({
         wrhsdlvr_mas_id: row.wrhsdlvr_mas_id,
         id: row.id,
-        qty: Number(row.qty)
+        qty: Number(row.qty),
       }))
       console.log('[wrhousdlvr] 저장 요청 데이터(UPDATE):', updatePayload)
       const response = await axios.post('/api/warehouse/update-qty', updatePayload)
@@ -1659,5 +1680,71 @@ const getQuantityInputStyle = (row) => {
     }
   }
   return {}
+}
+
+const deleting = ref(false)
+
+// ✅ 디테일 PK 추출(저장된 행인지 판별). 프로젝트에 맞게 가능한 모든 키를 커버
+const getDetailPk = (row) => {
+  return (
+    row.id || row.WRHOUS_WRHSDLVR_ID || row.wrhous_wrhsdlvr_id || row.wrhsdlvr_id || row.detail_id || null
+  )
+}
+
+// 선택 행을 실제 삭제 처리
+const onDeleteSelected = async () => {
+  if (!selectedSummaryIds.value.length) return
+
+  // 선택된 행 풀오브젝트
+  const selectedRows = summaryRows.value.filter((r, i) => selectedSummaryIds.value.includes(getSelectKey(r, i)))
+
+  // DB에 저장된 디테일의 PK들(백엔드로 보낼 것) vs 아직 저장 전(화면에서만 제거)
+  const persistedIds = []
+  const tempIds = [] // 저장 전(로컬-only) 행의 화면상 id
+  console.log('[선택 행]', selectedRows)
+  for (const row of selectedRows) {
+    const pk = getDetailPk(row)
+    if (pk) persistedIds.push(pk)
+    else tempIds.push(getSelectKey(row))
+  }
+
+  // 사용자 확인
+  const total = selectedRows.length
+  const msg =
+    `선택한 ${total}건 중 DB 저장된 ${persistedIds.length}건은 서버에서 삭제하고,\n` +
+    `${tempIds.length}건은 화면에서만 제거합니다. 계속할까요?`
+  if (!confirm(msg)) return
+
+  deleting.value = true
+  try {
+    // 1) 서버 삭제 (저장된 디테일이 있을 때만)
+    if (persistedIds.length) {
+      await axios.delete('/api/warehouse/transaction-details', {
+        params: { ids: persistedIds.join(',') },
+      })
+    }
+
+    // 2) 화면에서 선택된 행 제거 (서버삭제 성공/로컬삭제 모두 공통)
+    const toRemove = new Set(selectedSummaryIds.value)
+    summaryRows.value = summaryRows.value.filter((r,i) => !toRemove.has(getSelectKey(r,i)))
+    selectedSummaryIds.value = []
+
+    // 하단 통합그리드도 재계산 트리거 (이미 watch(consolidatedRows) 존재)
+    // 필요 시 강제 리셋:
+    // finalConsolidatedRows.value = []
+
+    alert('삭제가 완료되었습니다.')
+  } catch (err) {
+    console.error('[wrhousdlvr] 삭제 오류:', err)
+    alert(err?.response?.data?.error || '삭제 중 오류가 발생했습니다.')
+  } finally {
+    deleting.value = false
+  }
+}
+
+const getSelectKey = (row, idx) => {
+  if (row.id != null) return row.id        // 이미 id가 있으면 그대로 사용
+  if (!row._selkey) row._selkey = `tmp_${Date.now()}_${idx}_${Math.random()}`
+  return row._selkey
 }
 </script>

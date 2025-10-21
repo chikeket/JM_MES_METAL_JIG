@@ -10,7 +10,9 @@ const updateWrhousdlvrDetailQty = `
 
 // lot_stc_precon 입고 IST_QY update
 const updateLotStcPreconIstQty = `
-  UPDATE LOT_STC_PRECON SET IST_QY = ? WHERE WRHSDLVR_MAS_ID = ?
+  UPDATE LOT_STC_PRECON 
+  SET IST_QY = ? , NOW_STC_QY = IST_QY
+  WHERE WRHSDLVR_MAS_ID = ?
 `;
 
 // lot_stc_precon 출고 OUST_QY update
@@ -25,29 +27,6 @@ SET PROD_EXPC_QY = ?
 WHERE RSC_RTUN_TRGET_ID = (
 select rsc_rtun_trget_id from wrhous_wrhsdlvr
 where WRHSDLVR_MAS_ID = ?)
-`;
-
-// 창고 입출고 디테일 삭제
-const deleteWrhousdlvrDetailsByMasId = `
-delete from wrhous_wrhsdlvr where wrhsdlvr_mas_id = ?
-`;
-
-// 창고 입출고 마스터 삭제
-const deleteWrhousdlvrMasById = `
-delete from lot_stc_precon where wrhsdlvr_mas_id = ?
-`;
-
-// lot 재고 현황 삭제
-const deleteLotStcPreconByMasId = `
-delete from lot_stc_precon where wrhsdlvr_mas_id = ?
-`;
-
-// 자재 불출 삭제
-const deleteMaterialWithdrawalByMasId = `
-delete from rwmatr_rtun_trget 
-where (select rsc_rtun_trget_id 
-      from wrhous_wrhsdlvr 
-      where wrhsdlvr_mas_id = ?)
 `;
 
 // 테이블: WRHOUS_WRHSDLVR <창고 입출고> 관련 SQL 쿼리들
@@ -458,16 +437,6 @@ const deductEndPrdtInspPassQty = `
 UPDATE END_PRDT_QLTY_INSP SET PASS_QY = GREATEST(PASS_QY - ?, 0) WHERE END_PRDT_QLTY_INSP_ID = ?
 `;
 
-// 창고 입출고 거래 삭제
-const deleteWrhousTransaction = `
-DELETE FROM WRHOUS_WRHSDLVR WHERE WRHSDLVR_ID = ?
-`;
-
-// 선택된 거래들 일괄 삭제
-const deleteWrhousTransactionsByIds = `
-DELETE FROM WRHOUS_WRHSDLVR WHERE WRHSDLVR_ID IN (?)
-`;
-
 // 창고 입출고 거래 존재 여부 확인
 const existsWrhousTransaction = `
 SELECT 1 FROM WRHOUS_WRHSDLVR WHERE WRHSDLVR_ID = ? LIMIT 1
@@ -495,6 +464,13 @@ SELECT CONCAT(?, DATE_FORMAT(NOW(), '%y%m'),
   LPAD(IFNULL(MAX(SUBSTR(LOT_NO, -3)), 0) + 1, 3, '0')) "lot_no"
 FROM WRHOUS_WRHSDLVR_MAS
 WHERE LOT_NO LIKE CONCAT(?, DATE_FORMAT(NOW(), '%y%m'), '%')
+`;
+
+const createLotId = `
+SELECT CONCAT('?', DATE_FORMAT(NOW(), '%y%m'),
+  LPAD(IFNULL(MAX(SUBSTR(LOT_ID, -3)), 0) + 1, 3, '0')) "lot_id"
+FROM LOT_STC_PRECON 
+WHERE LOT_INVNTRY_PRECON_ID LIKE CONCAT('?', DATE_FORMAT(NOW(), '%y%m'), '%')
 `;
 
 // 현재 재고 현황 조회 (마스터-디테일 구조)
@@ -940,6 +916,128 @@ WHERE b.PRDT_ID     = ?
 GROUP BY b.PRDT_ID, b.PRDT_OPT_ID
 `;
 
+// 창고 입출고 마스터 삭제
+const deleteWrhousdlvrMasById = `
+DELETE FROM WRHOUS_WRHSDLVR_MAS
+  WHERE wrhsdlvr_mas_id = ?
+`;
+
+// lot 재고 현황 삭제
+const deleteLotStcPreconByMasId = `
+DELETE FROM LOT_STC_PRECON
+  WHERE wrhsdlvr_mas_id = ?
+`;
+
+// 자재 불출 삭제
+const deleteMaterialWithdrawalByMasId = `
+DELETE FROM RWMATR_RTUN_TRGET
+  WHERE rsc_rtun_trget_id IN (
+    SELECT rsc_rtun_trget_id
+    FROM WRHOUS_WRHSDLVR
+    WHERE wrhsdlvr_mas_id = ?
+  )
+`;
+
+const deleteWrhousdlvrDetailsByMasId = `
+    DELETE FROM WRHOUS_WRHSDLVR WHERE WRHSDLVR_MAS_ID = ?
+  `;
+
+  // [NEW] 마스터 총수량 차감
+  const decreaseWrhousdlvrMasQty = `
+    UPDATE WRHOUS_WRHSDLVR_MAS
+       SET ALL_RCVPAY_QY = GREATEST(ALL_RCVPAY_QY - ?, 0)
+     WHERE WRHSDLVR_MAS_ID = ?
+  `;
+
+  // [NEW] LOT 롤백(입고)
+  const decreaseLotIstQtyByMasId = `
+    UPDATE LOT_STC_PRECON
+       SET IST_QY = GREATEST(IST_QY - ?, 0),
+           NOW_STC_QY = GREATEST(NOW_STC_QY - ?, 0)
+     WHERE WRHSDLVR_MAS_ID = ?
+  `;
+
+  // [NEW] LOT 롤백(출고)
+  const decreaseLotOustQtyByMasId = `
+    UPDATE LOT_STC_PRECON
+       SET OUST_QY = GREATEST(OUST_QY - ?, 0),
+           NOW_STC_QY = NOW_STC_QY + ?
+     WHERE WRHSDLVR_MAS_ID = ?
+  `;
+
+  // [NEW] LOT 0이면 삭제
+ const deleteLotIfZeroByMasId = `
+  DELETE FROM LOT_STC_PRECON
+   WHERE WRHSDLVR_MAS_ID = ?
+     AND (COALESCE(IST_QY, 0) <= 0)
+     AND (COALESCE(NOW_STC_QY, 0) <= 0)
+`;
+
+  // [NEW] 마스터 0이면 삭제
+  const deleteWrhousdlvrMasIfZero = `
+    DELETE FROM WRHOUS_WRHSDLVR_MAS
+     WHERE WRHSDLVR_MAS_ID = ?
+       AND (ALL_RCVPAY_QY IS NULL OR ALL_RCVPAY_QY <= 0)
+  `;
+
+  const selectWrhousdlvrDeletePackByDetailIds = `
+  SELECT
+  d.WRHOUS_WRHSDLVR_ID  AS detail_id,
+  d.WRHSDLVR_MAS_ID     AS mas_id,
+  d.RCVPAY_QY           AS detail_qty,
+  d.RSC_RTUN_TRGET_ID   AS rtun_id,
+  m.RCVPAY_TY           AS rcvpay_ty,     
+  m.ALL_RCVPAY_QY       AS mas_total_qty
+FROM WRHOUS_WRHSDLVR d
+JOIN WRHOUS_WRHSDLVR_MAS m ON m.WRHSDLVR_MAS_ID = d.WRHSDLVR_MAS_ID
+WHERE d.WRHOUS_WRHSDLVR_ID IN (%IDS%)
+`;
+
+// 자재불출 수량 감소
+const decreaseRwmatrRtunTrgetQty = `
+  UPDATE RWMATR_RTUN_TRGET
+     SET RTUN_QY = GREATEST(RTUN_QY - ?, 0)
+   WHERE RSC_RTUN_TRGET_ID = ?
+`;
+
+// 자재불출 수량 0이면 삭제
+const deleteRwmatrRtunTrgetIfZero = `
+  DELETE FROM RWMATR_RTUN_TRGET
+   WHERE RSC_RTUN_TRGET_ID = ?
+     AND (RTUN_QY IS NULL OR RTUN_QY <= 0)
+`;
+
+const deleteWrhousTransaction = `
+  DELETE FROM WRHOUS_WRHSDLVR
+  WHERE WRHOUS_WRHSDLVR_ID = ?
+`;
+
+const decreaseLotOustQtyByS2MasId = `
+  UPDATE LOT_STC_PRECON l
+  JOIN WRHOUS_WRHSDLVR_MAS m_in   ON m_in.WRHSDLVR_MAS_ID = l.WRHSDLVR_MAS_ID  
+  JOIN WRHOUS_WRHSDLVR_MAS m_out  ON m_out.LOT_NO = m_in.LOT_NO                
+     SET l.OUST_QY    = GREATEST(l.OUST_QY - ?, 0),
+         l.NOW_STC_QY = l.NOW_STC_QY + ?
+   WHERE m_out.WRHSDLVR_MAS_ID = ?
+`;
+
+const deleteLotIfZeroByS2MasId = `
+  DELETE FROM LOT_STC_PRECON
+   WHERE WRHSDLVR_MAS_ID = ?
+     AND COALESCE(IST_QY, 0)     <= 0
+     AND COALESCE(NOW_STC_QY, 0) <= 0
+`;
+
+const insertLotStcPrecon = `
+INSERT INTO LOT_STC_PRECON (
+  LOT_INVNTRY_PRECON_ID,
+  WRHSDLVR_MAS_ID,
+  IST_QY,
+  OUST_QY,
+  NOW_STC_QY,
+  RM
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+
 module.exports = {
   selectWrhousTransactionList,
   selectInspectionList,
@@ -949,8 +1047,6 @@ module.exports = {
   insertWrhousTransaction,
   insertWrhousTransactionMaster, // 새로 추가
   updateWrhousTransaction,
-  deleteWrhousTransaction,
-  deleteWrhousTransactionsByIds,
   existsWrhousTransaction,
   createWrhousTransactionId,
   createWrhousDetailId,
@@ -1012,4 +1108,17 @@ module.exports = {
   deleteWrhousdlvrMasById,
   deleteLotStcPreconByMasId,
   deleteMaterialWithdrawalByMasId,
+  decreaseWrhousdlvrMasQty,
+  decreaseLotIstQtyByMasId,
+  decreaseLotOustQtyByMasId,
+  deleteLotIfZeroByMasId,
+  deleteWrhousdlvrMasIfZero,
+  selectWrhousdlvrDeletePackByDetailIds,
+  decreaseRwmatrRtunTrgetQty,
+  deleteRwmatrRtunTrgetIfZero,
+  deleteWrhousTransaction,
+  decreaseLotOustQtyByS2MasId,
+  deleteLotIfZeroByS2MasId,
+  createLotId,
+  insertLotStcPrecon,
 };

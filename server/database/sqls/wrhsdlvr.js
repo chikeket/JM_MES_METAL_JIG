@@ -1,13 +1,16 @@
 // 모달용: 마스터+디테일 JOIN 검색
 const wrhsdlvrModalSearch = `
-SELECT mas.wrhsdlvr_mas_id, mas.rcvpay_ty, e.emp_nm, mas.wrhous_id, mas.zone_id, mas.lot_no, mas.spec, mas.unit, mas.all_rcvpay_qy, mas.rcvpay_dt, mas.rcvpay_nm,
+SELECT mas.wrhsdlvr_mas_id, mas.rcvpay_ty, e.emp_nm, mas.wrhous_id, mas.zone_id,
+       mas.lot_no, mas.spec, mas.unit, mas.all_rcvpay_qy, mas.rcvpay_dt, mas.rcvpay_nm,
        mas.prdt_id, p.prdt_nm, mas.prdt_opt_id, o.opt_nm,
        mas.rsc_id, mas.rm,
-       det.wrhous_wrhsdlvr_id, det.rcvpay_qy, det.rm as dtl_rm
+       det.wrhous_wrhsdlvr_id, det.rcvpay_qy, det.rm as dtl_rm,
+       r.rsc_nm
 FROM wrhous_wrhsdlvr_mas mas
 LEFT JOIN wrhous_wrhsdlvr det ON mas.wrhsdlvr_mas_id = det.wrhsdlvr_mas_id
 LEFT JOIN prdt p ON mas.prdt_id = p.prdt_id
 LEFT JOIN prdt_opt o ON mas.prdt_opt_id = o.prdt_opt_id
+LEFT JOIN rsc r ON mas.rsc_id = r.rsc_id
 LEFT JOIN emp e ON mas.emp_id = e.emp_id
 WHERE (? = '' OR mas.rcvpay_nm LIKE CONCAT('%', ?, '%'))
   AND (? = '' OR mas.rcvpay_ty = ?)
@@ -60,11 +63,13 @@ SELECT  d.wrhous_wrhsdlvr_id AS id,
         e.emp_nm,
         m.wrhous_id,
         m.zone_id,
-        m.lot_no
+        m.lot_no,
+        r.rsc_nm
 FROM wrhous_wrhsdlvr d
 LEFT JOIN wrhous_wrhsdlvr_mas m ON d.wrhsdlvr_mas_id = m.wrhsdlvr_mas_id
 LEFT JOIN prdt p ON m.prdt_id = p.prdt_id
 LEFT JOIN prdt_opt o ON m.prdt_opt_id = o.prdt_opt_id
+LEFT JOIN rsc r ON m.rsc_id = r.rsc_id
 LEFT JOIN emp e ON m.emp_id = e.emp_id
 WHERE d.wrhsdlvr_mas_id = ?
 `;

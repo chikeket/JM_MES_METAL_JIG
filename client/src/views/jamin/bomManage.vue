@@ -31,7 +31,7 @@
     <!-- 하단 좌우 그리드 -->
     <CRow class="flex-grow-1 overflow-hidden g-2">
       <!-- 좌측 그리드 -->
-      <CCol :md="6" class="d-flex flex-column overflow-hidden gap-2">
+      <CCol :md="7" class="d-flex flex-column overflow-hidden gap-2">
         <!-- 좌측 그리드 버튼들 -->
         <div class="d-flex justify-content-end gap-2">
           <!-- <CButton color="secondary" size="sm" @click="handleLeftNew">신규</CButton> -->
@@ -49,6 +49,8 @@
                     ><CFormCheck :checked="allLeftChecked" @change="toggleAllLeftCheck"
                   /></CTableHeaderCell>
                   <CTableHeaderCell style="width: 40px">No</CTableHeaderCell>
+                  <CTableHeaderCell style="display: none">prdt_id</CTableHeaderCell>
+                  <CTableHeaderCell style="display: none">prdt_opt_id</CTableHeaderCell>
                   <CTableHeaderCell style="width: 120px">BOM ID</CTableHeaderCell>
                   <CTableHeaderCell style="width: 120px">제품명</CTableHeaderCell>
                   <CTableHeaderCell style="width: 120px">옵션명</CTableHeaderCell>
@@ -72,6 +74,12 @@
                   <CTableDataCell class="text-end" style="width: 40px">{{
                     index + 1
                   }}</CTableDataCell>
+                  <CTableDataCell style="display: none">
+                    <input v-model="item.prdt_id" class="cell-input" readonly />
+                  </CTableDataCell>
+                  <CTableDataCell style="display: none">
+                    <input v-model="item.prdt_opt_id" class="cell-input" readonly />
+                  </CTableDataCell>
                   <CTableDataCell class="text-end text-primary" style="width: 120px">
                     <input v-model="item.bom_id" class="cell-input" readonly @click.stop />
                   </CTableDataCell>
@@ -82,7 +90,7 @@
                     <input v-model="item.opt_nm" class="cell-input" readonly @click.stop />
                   </CTableDataCell>
                   <CTableDataCell class="text-start" style="width: 100px">
-                    <input v-model="item.bom_ver" class="cell-input" @click.stop />
+                    <input v-model="item.bom_ver" class="cell-input" readonly @click.stop />
                   </CTableDataCell>
                   <CTableDataCell class="text-start" style="width: 120px">
                     <input type="Date" v-model="item.valid_fr_dt" class="cell-input" @click.stop />
@@ -91,14 +99,21 @@
                     <input type="Date" v-model="item.valid_to_dt" class="cell-input" @click.stop />
                   </CTableDataCell>
                   <CTableDataCell class="text-start" style="width: 80px">
-                    <input v-model="item.st" class="cell-input" @click.stop />
+                    <select
+                      v-model="item.st"
+                      class="form-select form-select-sm"
+                      @change="item._stChanged = true"
+                    >
+                      <option value="P1">사용</option>
+                      <option value="P2">미사용</option>
+                    </select>
                   </CTableDataCell>
                   <CTableDataCell class="text-start">
                     <input v-model="item.rm" class="cell-input" @click.stop />
                   </CTableDataCell>
                 </CTableRow>
                 <CTableRow v-for="i in leftEmptyRows" :key="'empty-' + i" class="empty-row">
-                  <CTableDataCell colspan="8">&nbsp;</CTableDataCell>
+                  <CTableDataCell colspan="10">&nbsp;</CTableDataCell>
                 </CTableRow>
               </CTableBody>
             </CTable>
@@ -107,22 +122,24 @@
       </CCol>
 
       <!-- 우측 그리드 -->
-      <CCol :md="6" class="d-flex flex-column overflow-hidden gap-2">
+      <CCol :md="5" class="d-flex flex-column overflow-hidden gap-2">
         <!-- 우측 그리드 버튼들 -->
         <div class="d-flex justify-content-end gap-2">
           <!-- <CButton color="secondary" size="sm" @click="handleRightNew">신규</CButton> -->
-          <CButton color="secondary" size="sm" @click="handleRightMaterialSearch">자재 조회</CButton>
-    <!-- 제품/자재 조회 모달 (rcvord.vue 스타일) -->
-    <rcvordModalTwo
-      :visible="isProductModalVisible"
-      @close="isProductModalVisible = false"
-      @select="onProductSelect"
-    />
-    <rscModal
-      :visible="isMaterialModalVisible"
-      @close="isMaterialModalVisible = false"
-      @select="onMaterialSelect"
-    />
+          <CButton color="secondary" size="sm" @click="handleRightMaterialSearch"
+            >자재 조회</CButton
+          >
+          <!-- 제품/자재 조회 모달 (rcvord.vue 스타일) -->
+          <rcvordModalTwo
+            :visible="isProductModalVisible"
+            @close="isProductModalVisible = false"
+            @select="onProductSelect"
+          />
+          <rscModal
+            :visible="isMaterialModalVisible"
+            @close="isMaterialModalVisible = false"
+            @select="onMaterialSelect"
+          />
           <CButton color="secondary" size="sm" @click="handleRightSave">저장</CButton>
           <CButton color="danger" size="sm" @click="handleRightDelete">선택삭제</CButton>
         </div>
@@ -136,6 +153,8 @@
                     ><CFormCheck :checked="allRightChecked" @change="toggleAllRightCheck"
                   /></CTableHeaderCell>
                   <CTableHeaderCell style="width: 40px">No</CTableHeaderCell>
+                  <CTableHeaderCell style="display: none">BOM_COMP_ID</CTableHeaderCell>
+                  <CTableHeaderCell style="display: none">자재ID</CTableHeaderCell>
                   <CTableHeaderCell style="width: 120px">자재명</CTableHeaderCell>
                   <CTableHeaderCell style="width: 100px">규격</CTableHeaderCell>
                   <CTableHeaderCell style="width: 80px">단위</CTableHeaderCell>
@@ -144,8 +163,8 @@
                 </CTableRow>
               </CTableHead>
               <CTableBody>
-                <CTableRow 
-                  v-for="(item, index) in rightDisplayData" 
+                <CTableRow
+                  v-for="(item, index) in rightDisplayData"
                   :key="index"
                   :class="{ 'selected-row': selectedRightIndex === index }"
                   @click="selectRightOption(item, index)"
@@ -156,24 +175,37 @@
                   <CTableDataCell class="text-end" style="width: 40px">{{
                     index + 1
                   }}</CTableDataCell>
+                  <CTableDataCell style="display: none">
+                    <input v-model="item.bom_comp_id" class="cell-input" readonly />
+                  </CTableDataCell>
+                  <CTableDataCell style="display: none">
+                    <input v-model="item.rsc_id" class="cell-input" readonly />
+                  </CTableDataCell>
                   <CTableDataCell class="text-start" style="width: 120px">
                     <input v-model="item.rsc_nm" class="cell-input" @click.stop />
                   </CTableDataCell>
                   <CTableDataCell class="text-start" style="width: 100px">
-                    <input v-model="item.spec_id" class="cell-input" @click.stop />
+                    <input v-model="item.spec" class="cell-input" @click.stop />
                   </CTableDataCell>
                   <CTableDataCell class="text-start" style="width: 80px">
-                    <input v-model="item.unit_id" class="cell-input" @click.stop />
+                    <input v-model="item.unit" class="cell-input" @click.stop />
                   </CTableDataCell>
                   <CTableDataCell class="text-end" style="width: 100px">
-                    <input v-model="item.rec_qy" class="cell-input" @click.stop />
+                    <input
+                      v-model="item.rec_qy"
+                      class="cell-input"
+                      @click.stop
+                      type="number"
+                      step="0.01"
+                      @blur="item.rec_qy = formatNumber(item.rec_qy)"
+                    />
                   </CTableDataCell>
                   <CTableDataCell class="text-start" style="width: 100px">
                     <input v-model="item.rm" class="cell-input" @click.stop />
                   </CTableDataCell>
                 </CTableRow>
                 <CTableRow v-for="i in rightEmptyRows" :key="'empty-right-' + i" class="empty-row">
-                  <CTableDataCell colspan="5">&nbsp;</CTableDataCell>
+                  <CTableDataCell colspan="7">&nbsp;</CTableDataCell>
                 </CTableRow>
               </CTableBody>
             </CTable>
@@ -185,7 +217,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import axios from 'axios'
 import useDates from '@/utils/useDates.js'
 import rcvordModalTwo from '@/views/modal/rcvordModalTwo.vue'
@@ -196,6 +228,19 @@ const isMaterialModalVisible = ref(false)
 // 제품 조회 버튼 클릭 시 모달 오픈
 const handleLeftProductSearch = () => {
   isProductModalVisible.value = true
+}
+
+// 소수점 이하 불필요한 0 없이 표시
+function formatNumber(val) {
+  if (val === null || val === undefined || val === '') return ''
+  const num = Number(val)
+  if (isNaN(num)) return val
+  return num % 1 === 0
+    ? num.toString()
+    : num
+        .toString()
+        .replace(/(?:\.\d*?[1-9])0+$/, '')
+        .replace(/\.$/, '')
 }
 
 // 자재 조회 버튼 클릭 시 모달 오픈
@@ -210,38 +255,46 @@ function onProductSelect(row) {
     // bom_id는 DB에서 생성
     prdt_id: row.prdt_id || '',
     prdt_nm: row.prdt_nm || '',
-    prdt_opt_id: row.opt_id || '',
+    prdt_opt_id: row.prdt_opt_id || row.opt_id || '',
     opt_nm: row.opt_nm || '',
-    bom_ver: 'v1',
+    bom_ver: '', // 항상 빈값으로 세팅하여 버전 자동생성
     valid_fr_dt: today,
     valid_to_dt: '',
-    st: '',
+    st: 'P1', // 신규 저장 시 기본값 '사용'
     rm: '',
-    selected: false,
-    isNew: true
+    selected: true, // 기본 체크
+    isNew: true,
   }
+  console.log('[제품 모달 선택] prdt_id:', newBom.prdt_id, 'prdt_opt_id:', newBom.prdt_opt_id)
   leftGridData.value.unshift(newBom)
   selectedLeftIndex.value = 0
   selectedLeftBomId.value = null
   isProductModalVisible.value = false
 }
 
-// 자재 모달에서 더블클릭(선택) 시 우측 그리드에 신규행 추가 및 값 입력
+// 자재 모달에서 여러 행 선택 시 우측 그리드에 모두 추가 (row: array or object)
 function onMaterialSelect(row) {
   if (!row || !selectedLeftBomId.value) return
-  const newDetail = {
+  const rows = Array.isArray(row) ? row : [row]
+  const newDetails = rows.map((item) => ({
     bom_deta_id: '',
     bom_id: selectedLeftBomId.value,
-    rsc_id: row.rsc_id || '',
-    rsc_nm: row.rsc_nm || '',
-    spec_id: row.spec_id || '',
-    unit_id: row.unit_id || '',
-    rec_qy: row.rec_qy || '',
-    rm: '',
+    rsc_id: item.rsc_id || '',
+    rsc_nm: item.rsc_nm || '',
+    spec: item.spec || '',
+    unit: item.unit || '',
+    rec_qy: '',
+    rm: item.rm || '',
     selected: false,
-    isNew: true
-  }
-  rightGridData.value.unshift(newDetail)
+    isNew: true,
+  }))
+  // 중복 자재ID는 추가하지 않음
+  const existIds = rightGridData.value.map((d) => d.rsc_id)
+  newDetails.forEach((detail) => {
+    if (!existIds.includes(detail.rsc_id)) {
+      rightGridData.value.unshift(detail)
+    }
+  })
   selectedRightIndex.value = 0
   selectedRightBomDetaId.value = null
   isMaterialModalVisible.value = false
@@ -252,7 +305,6 @@ const searchFilters = reactive({
   optionName: '',
   status: '',
 })
-
 
 // 좌측 그리드 관련
 const leftGridData = ref([])
@@ -271,14 +323,18 @@ const rightDisplayData = computed(() => rightGridData.value.slice(0, 10))
 const rightEmptyRows = computed(() => Math.max(0, 10 - rightDisplayData.value.length))
 
 // 날짜값이 들어올 때 자동 변환 (yyyy-MM-dd)
-watch(leftGridData, (arr) => {
-  arr.forEach(item => {
-    if (item && item.valid_fr_dt)
-      item.valid_fr_dt = useDates.dateFormat(item.valid_fr_dt, 'yyyy-MM-dd')
-    if (item && item.valid_to_dt)
-      item.valid_to_dt = useDates.dateFormat(item.valid_to_dt, 'yyyy-MM-dd')
-  })
-}, { deep: true })
+watch(
+  leftGridData,
+  (arr) => {
+    arr.forEach((item) => {
+      if (item && item.valid_fr_dt)
+        item.valid_fr_dt = useDates.dateFormat(item.valid_fr_dt, 'yyyy-MM-dd')
+      if (item && item.valid_to_dt)
+        item.valid_to_dt = useDates.dateFormat(item.valid_to_dt, 'yyyy-MM-dd')
+    })
+  },
+  { deep: true },
+)
 
 const allLeftChecked = computed(() => {
   return leftDisplayData.value.length > 0 && leftDisplayData.value.every((item) => item.selected)
@@ -302,10 +358,6 @@ const toggleAllRightCheck = () => {
   })
 }
 
-onMounted(() => {
-  handleSearch()
-})
-
 const selectLeftProduct = (item, index) => {
   selectedLeftIndex.value = index
   selectedLeftBomId.value = item.bom_id
@@ -328,7 +380,11 @@ const loadRightDetails = async (bomId) => {
     console.log('📋 우측 BOM 디테일 조회:', bomId)
     const response = await axios.get('/api/bom/detail', { params: { bom_id: bomId } })
     const list = Array.isArray(response.data) ? response.data : response.data.data || []
-    rightGridData.value = list.map((item) => ({ ...item, selected: false }))
+    rightGridData.value = list.map((item) => ({
+      ...item,
+      rec_qy: formatNumber(item.rec_qy),
+      selected: true,
+    }))
     console.log('✅ 우측 BOM 디테일 조회 완료:', rightGridData.value.length, '건')
     selectedRightIndex.value = null
     selectedRightBomDetaId.value = null
@@ -350,6 +406,10 @@ const handleSearch = async () => {
     const response = await axios.get('/api/bom/master', { params })
     const list = Array.isArray(response.data) ? response.data : response.data.data || []
     leftGridData.value = list.map((item) => ({ ...item, selected: false }))
+    // prdt_id, prdt_opt_id 값 콘솔 출력
+    leftGridData.value.forEach((row, idx) => {
+      console.log(`[조회결과] row${idx} prdt_id:`, row.prdt_id, 'prdt_opt_id:', row.prdt_opt_id)
+    })
     console.log('✅ 좌측 BOM 마스터 조회 완료:', leftGridData.value.length, '건')
     selectedLeftIndex.value = null
     selectedLeftBomId.value = null
@@ -391,7 +451,7 @@ const handleLeftNew = async () => {
     st: '',
     rm: '',
     selected: false,
-    isNew: true
+    isNew: true,
   }
   leftGridData.value.unshift(newBom)
   selectedLeftIndex.value = 0
@@ -401,45 +461,43 @@ const handleLeftNew = async () => {
 
 // 좌측 - 저장
 const handleLeftSave = async () => {
-  // bom_ver이 v2 등 새 버전이면 무조건 insert
-  const itemsToSave = leftGridData.value.filter(item => item.isNew || item.selected || (item.bom_ver && item.bom_ver !== 'v1'))
+  // bom_id가 있으면 update, 없으면 insert
+  const itemsToSave = leftGridData.value.filter((item) => item.selected)
   if (itemsToSave.length === 0) {
     alert('저장할 BOM 항목이 없습니다.')
     return
   }
   try {
     for (const item of itemsToSave) {
-      if (!item.prdt_nm) {
-        alert('제품명을 입력해주세요.')
+      if (!item.prdt_id || !item.prdt_opt_id) {
+        alert('제품/옵션 ID가 없습니다. 제품/옵션을 먼저 선택해주세요.')
         continue
       }
-      // 제품명 → 제품ID 변환
-      let prdt_id = item.prdt_id
-      if (!prdt_id && item.prdt_nm) {
-        const prdtRes = await axios.get('/api/product_id_by_name', { params: { prdt_nm: item.prdt_nm } })
-        prdt_id = prdtRes.data?.prdt_id || ''
-      }
-      // 옵션명 → 옵션ID 변환
-      let opt_id = item.opt_id
-      if (!opt_id && item.opt_nm) {
-        const optRes = await axios.get('/api/option_id_by_name', { params: { opt_nm: item.opt_nm } })
-        opt_id = optRes.data?.opt_id || ''
+      if (!item.valid_to_dt) {
+        alert('유효 종료 일자를 선택해주세요.')
+        return
       }
       // 오늘 날짜 (yyyy-MM-dd)
       const today = new Date().toISOString().slice(0, 10)
       const payload = {
-        prdt_id,
-        prdt_opt_id: opt_id,
-        bom_ver: item.bom_ver || 'v1',
+        prdt_id: item.prdt_id,
+        prdt_opt_id: item.prdt_opt_id,
+        bom_ver: item.bom_ver || '',
         valid_fr_dt: today,
         valid_to_dt: item.valid_to_dt || '',
         st: item.st || '',
         rm: item.rmrk || '',
       }
-      // 무조건 insert만 수행 (update 제거)
-      item.bom_id = ''
-  console.log('➕ BOM 마스터 신규 등록 payload:', JSON.stringify(payload, null, 2))
-  await axios.post('/api/bom/master', payload)
+      if (item.bom_id) {
+        // update
+        console.log('✏️ BOM 마스터 수정 payload:', JSON.stringify(payload, null, 2))
+        await axios.put(`/api/bom/master/${item.bom_id}`, payload)
+        item._stChanged = false
+      } else {
+        // insert
+        console.log('➕ BOM 마스터 신규 등록 payload:', JSON.stringify(payload, null, 2))
+        await axios.post('/api/bom/master', payload)
+      }
     }
     alert('저장 완료')
     await handleSearch()
@@ -460,10 +518,17 @@ const handleLeftDelete = async () => {
   try {
     for (const item of selected) {
       if (!item.isNew && item.bom_id) {
+        // BOM_DETA에 값이 있는지 확인
+        const detailRes = await axios.get('/api/bom/detail', { params: { bom_id: item.bom_id } })
+        const detailList = Array.isArray(detailRes.data) ? detailRes.data : detailRes.data.data || []
+        if (detailList.length > 0) {
+          alert('BOM 상세 정보를 먼저 삭제해 주세요.')
+          return
+        }
         await axios.delete(`/api/bom/master/${item.bom_id}`)
       }
     }
-    leftGridData.value = leftGridData.value.filter(item => !item.selected)
+    leftGridData.value = leftGridData.value.filter((item) => !item.selected)
     alert('삭제되었습니다.')
     selectedLeftIndex.value = null
     selectedLeftBomId.value = null
@@ -491,7 +556,7 @@ const handleRightNew = () => {
     bom_qty: '',
     rmrk: '',
     selected: false,
-    isNew: true
+    isNew: true,
   }
   rightGridData.value.unshift(newDetail)
   selectedRightIndex.value = 0
@@ -505,7 +570,7 @@ const handleRightSave = async () => {
     alert('좌측에서 BOM을 먼저 선택해주세요.')
     return
   }
-  const itemsToSave = rightGridData.value.filter(item => item.isNew || item.selected)
+  const itemsToSave = rightGridData.value.filter((item) => item.isNew || item.selected)
   if (itemsToSave.length === 0) {
     alert('저장할 BOM 디테일 항목이 없습니다.')
     return
@@ -516,19 +581,20 @@ const handleRightSave = async () => {
         alert('자재명을 입력해주세요.')
         continue
       }
+      // rec_qy(수량) 값이 비어있으면 null 또는 0으로 변환
+      let rec_qy = item.rec_qy
+      if (rec_qy === '' || rec_qy === undefined || rec_qy === null) rec_qy = 0
       const payload = {
         bom_id: selectedLeftBomId.value,
-        rsc_nm: item.rsc_nm,
-        spec: item.spec || '',
-        unit: item.unit || '',
-        bom_qty: item.bom_qty || '',
-        rmrk: item.rmrk || ''
+        rsc_id: item.rsc_id,
+        rec_qy: rec_qy,
+        rm: item.rm || '',
       }
       if (item.isNew) {
         await axios.post('/api/bom/detail', payload)
       } else {
-        payload.bom_deta_id = item.bom_deta_id
-        await axios.put(`/api/bom/detail/${item.bom_deta_id}`, payload)
+        payload.bom_comp_id = item.bom_comp_id
+        await axios.put(`/api/bom/detail/${item.bom_comp_id}`, payload)
       }
     }
     alert('저장 완료')
@@ -550,11 +616,11 @@ const handleRightDelete = async () => {
   if (!confirm(`${selected.length}개 BOM 디테일 항목을 삭제하시겠습니까?`)) return
   try {
     for (const item of selected) {
-      if (!item.isNew && item.bom_deta_id) {
-        await axios.delete(`/api/bom/detail/${item.bom_deta_id}`)
+      if (!item.isNew && item.bom_comp_id) {
+        await axios.delete(`/api/bom/detail/${item.bom_comp_id}`)
       }
     }
-    rightGridData.value = rightGridData.value.filter(item => !item.selected)
+    rightGridData.value = rightGridData.value.filter((item) => !item.selected)
     alert('삭제되었습니다.')
     selectedRightIndex.value = null
     selectedRightBomDetaId.value = null
@@ -566,7 +632,8 @@ const handleRightDelete = async () => {
 
 <style scoped>
 :deep(*) {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
+    sans-serif;
   line-height: 1.6;
   box-sizing: border-box;
 }
@@ -830,32 +897,32 @@ select.cell-input {
   :deep(.form-label) {
     font-size: 12px !important;
   }
-  
+
   :deep(.form-control),
   :deep(.form-select) {
     font-size: 12px !important;
     height: 38px !important;
     padding: 0.55rem 0.75rem !important;
   }
-  
+
   :deep(.btn) {
     font-size: 12px !important;
     padding: 0.5rem 1.1rem !important;
   }
-  
+
   :deep(th),
   :deep(td) {
     font-size: 12px !important;
   }
-  
+
   :deep(.data-table td) {
     height: 42px !important;
   }
-  
+
   .empty-row td {
     height: 42px !important;
   }
-  
+
   .cell-input {
     font-size: 12px !important;
   }

@@ -257,35 +257,32 @@ const toggleAll = (ev) => {
   allSelected.value = checked
 }
 
-// 자재 모달 선택 시 상세 행 추가
+// 자재 모달 선택 시 상세 행 추가 (여러 개도 지원)
 const selectedRsc = (r) => {
   if (!r) return
-  const code = r.rsc_id ?? r.code ?? r.RSC_ID ?? r.rscId ?? ''
-  const name = r.rsc_nm ?? r.name ?? r.RSC_NM ?? r.rscNm ?? ''
-  const spec = r.spec ?? r.SPEC ?? ''
-  const unit = r.rsc_unit ?? r.unit ?? r.RSC_UNIT ?? ''
-  if (!code) return
-
-
+  const arr = Array.isArray(r) ? r : [r]
   // 기본 납품 예정일을 7일 후로 설정
   const defaultDeliDt = new Date()
   defaultDeliDt.setDate(defaultDeliDt.getDate() + 7)
   const deliDtStr = defaultDeliDt.toISOString().slice(0, 10)
-
-
-  const newId = rows.value.length > 0 ? Math.max(...rows.value.map((x) => x.id || 0)) + 1 : 1
-  rows.value.push({
-    id: newId,
-    rsc_ordr_deta_id: r.rsc_ordr_deta_id ?? null,
-    code: String(code),
-    name,
-    spec,
-    unit,
-    qty: 0,
-
-    deli_dt: deliDtStr,
-
-    note: '',
+  arr.forEach((item) => {
+    const code = item.rsc_id ?? item.code ?? item.RSC_ID ?? item.rscId ?? ''
+    const name = item.rsc_nm ?? item.name ?? item.RSC_NM ?? item.rscNm ?? ''
+    const spec = item.spec ?? item.SPEC ?? ''
+    const unit = item.rsc_unit ?? item.unit ?? item.RSC_UNIT ?? ''
+    if (!code) return
+    const newId = rows.value.length > 0 ? Math.max(...rows.value.map((x) => x.id || 0)) + 1 : 1
+    rows.value.push({
+      id: newId,
+      rsc_ordr_deta_id: item.rsc_ordr_deta_id ?? null,
+      code: String(code),
+      name,
+      spec,
+      unit,
+      qty: 0,
+      deli_dt: deliDtStr,
+      note: '',
+    })
   })
 }
 
