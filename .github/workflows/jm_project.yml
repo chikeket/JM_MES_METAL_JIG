@@ -49,7 +49,7 @@ jobs:
             git pull origin main
             cd server
             npm ci --no-audit --no-fund
-            pm2 restart app || pm2 start app.js --name "app"
+            pm2 restart app --node-args="--expose-gc" -- prod || pm2 start app.js --name "app" --node-args="--expose-gc" -- prod
             pm2 save
           EOF
 
