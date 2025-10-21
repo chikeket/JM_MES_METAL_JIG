@@ -30,7 +30,7 @@ jobs:
     - name: Build Vue app
       working-directory: client
       run: |
-        npm ci --no-audit --no-fund
+        npm i --no-audit --no-fund
         npm run build
         
     # github actions 에 저장된 private key를 ubuntu에 복사
@@ -43,13 +43,13 @@ jobs:
     # 서버에 접속하여 배포 실행          
     - name: SSH into server and deploy
       run: |
-        scp   -r -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -P ${{ secrets.SSH_PORT }} client/dist/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/${{ secrets.SSH_USER }}/deploy_project/server/public/
+        scp   -r -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -P ${{ secrets.SSH_PORT }} client/dist/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/${{ secrets.SSH_USER }}/JM_MES_METAL_JIG/server/public/
         ssh -vvv -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }}  ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            cd ~/deploy_project
+            cd ~/JM_MES_METAL_JIG
             git pull origin main
             cd server
             npm ci --no-audit --no-fund
-            pm2 restart app || pm2 start app.js --name "app"
+            pm2 restart app --node-args="--expose-gc" -- prod || pm2 start app.js --name "app" --node-args="--expose-gc" -- prod
             pm2 save
           EOF
 
