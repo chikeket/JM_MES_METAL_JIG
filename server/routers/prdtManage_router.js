@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const prdtManageService = require("../services/prdtManage_service.js");
 
+// ⭐ /api 제거!
 router.get("/prdt_list_view", async (req, res) => {
   console.log("===== 제품 라우터 도착! =====");
   console.log(req.query);
@@ -13,18 +14,6 @@ router.get("/prdt_list_view", async (req, res) => {
   } catch (err) {
     console.error("제품 조회 오류:", err);
     res.status(500).json({ error: "조회 실패" });
-  }
-});
-
-router.get("/prdt_option_list", async (req, res) => {
-  try {
-    const { prdt_id } = req.query;
-    console.log("옵션 조회:", prdt_id);
-    let options = await prdtManageService.getPrdtOptions(prdt_id);
-    res.json(options);
-  } catch (err) {
-    console.error("옵션 조회 오류:", err);
-    res.status(500).json({ error: "옵션 조회 실패" });
   }
 });
 
@@ -50,6 +39,54 @@ router.post("/prdtDelete", async (req, res) => {
     .deletePrdt(Info.prdt_id)
     .catch((err) => console.log(err));
   res.send(result);
+});
+
+router.get("/prdt_option_list", async (req, res) => {
+  try {
+    const { prdt_id } = req.query;
+    console.log("옵션 조회:", prdt_id);
+    let options = await prdtManageService.getPrdtOptions(prdt_id);
+    res.json(options);
+  } catch (err) {
+    console.error("옵션 조회 오류:", err);
+    res.status(500).json({ error: "옵션 조회 실패" });
+  }
+});
+
+router.post("/optionInsert", async (req, res) => {
+  try {
+    let Info = req.body;
+    console.log("옵션 등록:", Info);
+    let result = await prdtManageService.insertOption(Info);
+    res.json({ message: "옵션 등록 성공" });
+  } catch (err) {
+    console.error("옵션 등록 오류:", err);
+    res.status(500).json({ error: "옵션 등록 실패" });
+  }
+});
+
+router.post("/optionUpdate", async (req, res) => {
+  try {
+    let Info = req.body;
+    console.log("옵션 수정:", Info);
+    let result = await prdtManageService.updateOption(Info);
+    res.json({ message: "옵션 수정 성공" });
+  } catch (err) {
+    console.error("옵션 수정 오류:", err);
+    res.status(500).json({ error: "옵션 수정 실패" });
+  }
+});
+
+router.post("/optionDelete", async (req, res) => {
+  try {
+    let Info = req.body;
+    console.log("옵션 삭제:", Info);
+    let result = await prdtManageService.deleteOption(Info.opt_id, Info.prdt_id);
+    res.json({ message: "옵션 삭제 성공" });
+  } catch (err) {
+    console.error("옵션 삭제 오류:", err);
+    res.status(500).json({ error: "옵션 삭제 실패" });
+  }
 });
 
 module.exports = router;

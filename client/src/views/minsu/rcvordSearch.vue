@@ -1,241 +1,575 @@
 <template>
-  <div class="container-fluid h-100 d-flex flex-column p-3">
-    <!-- 상단 툴바: 초기화 / 조회 (CompanyManage와 동일한 배치/스타일) -->
-    <div class="d-flex justify-content-end mb-2 gap-2">
-      <button class="btn btn-secondary btn-sm" @click="onSearch">조회</button>
-      <button class="btn btn-secondary btn-sm" @click="onReset">초기화</button>
+  <CContainer fluid class="h-100 d-flex flex-column p-3 page-container">
+    <!-- 상단 조회/초기화 버튼 -->
+    <div class="d-flex justify-content-end mb-2 gap-2 button-group">
+      <CButton color="secondary" size="sm" @click="onSearch" class="btn-search">조회</CButton>
+      <CButton color="secondary" size="sm" @click="onReset" class="btn-reset">초기화</CButton>
     </div>
 
-    <!-- 검색 필터 -->
-    <div class="search-filter-box mb-2">
-      <div class="row g-3 align-items-end">
-        <div class="col-12 col-md-3">
-          <label class="form-label">수주 ID</label>
-          <input v-model="filters.rcvord_id" type="text" class="form-control" />
-        </div>
-        <div class="col-12 col-md-3">
-          <label class="form-label">납품 업체 명</label>
-          <input v-model="filters.co_nm" type="text" class="form-control" />
-        </div>
-        <div class="col-12 col-md-3">
-          <label class="form-label">수주 담당자</label>
-          <input v-model="filters.emp_nm" type="text" class="form-control" />
-        </div>
-        <div class="col-12 col-md-3">
-          <label class="form-label">수주 등록 일자</label>
-          <div class="d-flex align-items-center gap-1">
-            <input v-model="filters.reg_dt_from" type="date" class="form-control" />
-            <span class="mx-1">~</span>
-            <input v-model="filters.reg_dt_to" type="date" class="form-control" />
+    <!-- 검색 필터 영역 -->
+    <div class="search-filter-box mb-4 fade-in-up" style="animation-delay: 0.1s">
+      <CRow class="g-3 align-items-center">
+        <CCol :md="2">
+          <div class="search-row-container">
+            <CFormLabel class="search-label-fixed">수주 ID</CFormLabel>
+            <CFormInput v-model="filters.rcvord_id" size="sm" class="form-input-search" />
           </div>
-        </div>
-      </div>
+        </CCol>
+        <CCol :md="2">
+          <div class="search-row-container">
+            <CFormLabel class="search-label-fixed">납품 업체 명</CFormLabel>
+            <CFormInput v-model="filters.co_nm" size="sm" class="form-input-search" />
+          </div>
+        </CCol>
+        <CCol :md="2">
+          <div class="search-row-container">
+            <CFormLabel class="search-label-fixed">수주 담당자</CFormLabel>
+            <CFormInput v-model="filters.emp_nm" size="sm" class="form-input-search" />
+          </div>
+        </CCol>
+        <CCol :md="6">
+          <div class="search-row-container">
+            <CFormLabel class="search-label-fixed">수주 등록 일자</CFormLabel>
+            <div class="date-range-wrapper-custom">
+              <!-- 시작일 -->
+              <div class="date-input-wrapper">
+                <CFormInput
+                  v-model="filters.reg_dt_from"
+                  type="text"
+                  size="sm"
+                  class="form-input-search"
+                  readonly
+                  @click="toggleCalendar('from')"
+                  placeholder="YYYY-MM-DD"
+                />
+                <div class="calendar-icon" @click="toggleCalendar('from')">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                </div>
+                <!-- 커스텀 달력 팝업 (시작일) -->
+                <div v-if="showCalendarFrom" class="custom-calendar" ref="calendarRefFrom">
+                  <div class="calendar-header">
+                    <button type="button" @click="prevMonth('from')" class="calendar-nav-btn">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                      </svg>
+                    </button>
+                    <div class="calendar-title">{{ calendarTitleFrom }}</div>
+                    <button type="button" @click="nextMonth('from')" class="calendar-nav-btn">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="calendar-weekdays">
+                    <div class="weekday">일</div>
+                    <div class="weekday">월</div>
+                    <div class="weekday">화</div>
+                    <div class="weekday">수</div>
+                    <div class="weekday">목</div>
+                    <div class="weekday">금</div>
+                    <div class="weekday">토</div>
+                  </div>
+                  <div class="calendar-days">
+                    <div
+                      v-for="day in calendarDaysFrom"
+                      :key="day.key"
+                      :class="['calendar-day', {
+                        'other-month': !day.isCurrentMonth,
+                        'today': day.isToday,
+                        'selected': day.isSelected
+                      }]"
+                      @click="selectDate('from', day)"
+                    >
+                      {{ day.date }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <span class="date-separator">~</span>
+
+              <!-- 종료일 -->
+              <div class="date-input-wrapper">
+                <CFormInput
+                  v-model="filters.reg_dt_to"
+                  type="text"
+                  size="sm"
+                  class="form-input-search"
+                  readonly
+                  @click="toggleCalendar('to')"
+                  placeholder="YYYY-MM-DD"
+                />
+                <div class="calendar-icon" @click="toggleCalendar('to')">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                </div>
+                <!-- 커스텀 달력 팝업 (종료일) -->
+                <div v-if="showCalendarTo" class="custom-calendar" ref="calendarRefTo">
+                  <div class="calendar-header">
+                    <button type="button" @click="prevMonth('to')" class="calendar-nav-btn">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                      </svg>
+                    </button>
+                    <div class="calendar-title">{{ calendarTitleTo }}</div>
+                    <button type="button" @click="nextMonth('to')" class="calendar-nav-btn">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="calendar-weekdays">
+                    <div class="weekday">일</div>
+                    <div class="weekday">월</div>
+                    <div class="weekday">화</div>
+                    <div class="weekday">수</div>
+                    <div class="weekday">목</div>
+                    <div class="weekday">금</div>
+                    <div class="weekday">토</div>
+                  </div>
+                  <div class="calendar-days">
+                    <div
+                      v-for="day in calendarDaysTo"
+                      :key="day.key"
+                      :class="['calendar-day', {
+                        'other-month': !day.isCurrentMonth,
+                        'today': day.isToday,
+                        'selected': day.isSelected
+                      }]"
+                      @click="selectDate('to', day)"
+                    >
+                      {{ day.date }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CCol>
+      </CRow>
     </div>
 
     <!-- 결과 그리드 -->
-    <div class="grid-box flex-grow-1 d-flex flex-column overflow-hidden">
-      <div class="table-wrapper flex-grow-1">
-        <table class="data-table w-100">
-          <colgroup>
-            <col v-for="(w, i) in colWidths" :key="i" :style="{ width: w }" />
-          </colgroup>
-          <thead>
-            <tr>
-              <th class="text-center th-resizable">
-                No<span class="col-resizer" @mousedown="onResizerDown(0, $event)"></span>
-              </th>
-              <th class="th-resizable">
-                수주 ID<span class="col-resizer" @mousedown="onResizerDown(1, $event)"></span>
-              </th>
-              <th class="th-resizable">
-                수주 담당자<span class="col-resizer" @mousedown="onResizerDown(2, $event)"></span>
-              </th>
-              <th class="th-resizable">
-                납품 업체 명<span class="col-resizer" @mousedown="onResizerDown(3, $event)"></span>
-              </th>
-              <th class="th-resizable">
-                제품 명<span class="col-resizer" @mousedown="onResizerDown(4, $event)"></span>
-              </th>
-              <th class="th-resizable">
-                제품 옵션 명<span class="col-resizer" @mousedown="onResizerDown(5, $event)"></span>
-              </th>
-              <th class="th-resizable">
-                규격<span class="col-resizer" @mousedown="onResizerDown(6, $event)"></span>
-              </th>
-              <th class="th-resizable">
-                단위<span class="col-resizer" @mousedown="onResizerDown(7, $event)"></span>
-              </th>
-              <th class="th-resizable">
-                요청 수량<span class="col-resizer" @mousedown="onResizerDown(8, $event)"></span>
-              </th>
-              <th class="th-resizable">
-                수주 등록 일자<span
-                  class="col-resizer"
-                  @mousedown="onResizerDown(9, $event)"
-                ></span>
-              </th>
-              <th class="th-resizable">
-                납품 예정 일자<span
-                  class="col-resizer"
-                  @mousedown="onResizerDown(10, $event)"
-                ></span>
-              </th>
-              <th class="th-resizable">
-                출고 상태<span class="col-resizer" @mousedown="onResizerDown(11, $event)"></span>
-              </th>
-              <th class="th-resizable">
-                비고<span class="col-resizer" @mousedown="onResizerDown(12, $event)"></span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(r, idx) in displayedRows" :key="idx">
-              <td class="text-center">{{ idx + 1 }}</td>
-              <td class="text-start" :title="r.rcvord_id">{{ r.rcvord_id }}</td>
-              <td class="text-start" :title="r.emp_nm">{{ r.emp_nm }}</td>
-              <td class="text-start" :title="r.co_nm">{{ r.co_nm }}</td>
-              <td class="text-start" :title="r.prdt_nm">{{ r.prdt_nm || '' }}</td>
-              <td class="text-start" :title="r.opt_nm">{{ r.opt_nm || '' }}</td>
-              <td class="text-start" :title="r.spec">{{ r.spec || '' }}</td>
-              <td class="text-start" :title="r.unit">{{ r.unit || '' }}</td>
-              <td class="text-end" :title="formatNumber(r.rcvord_qy)">
-                {{ formatNumber(r.rcvord_qy) }}
-              </td>
-              <td class="text-start" :title="formatDate(r.reg_dt)">{{ formatDate(r.reg_dt) }}</td>
-              <td class="text-start" :title="formatDate(r.paprd_dt)">
-                {{ formatDate(r.paprd_dt) }}
-              </td>
-              <td class="text-start" :title="r.st_nm">{{ r.st_nm || '' }}</td>
-              <td class="text-start" :title="r.rm">{{ r.rm || '' }}</td>
-            </tr>
-            <!-- 빈행 유지로 표준 높이 확보 -->
-            <tr v-for="n in emptyRowCount" :key="'empty-' + n" class="empty-row">
-              <td colspan="13">&nbsp;</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
+    <CRow class="flex-grow-1 overflow-hidden g-2 fade-in-up" style="animation-delay: 0.2s">
+      <CCol :md="12" class="d-flex flex-column overflow-hidden">
+        <div class="d-flex gap-2 mb-2">
+          <CButton color="secondary" size="sm" class="btn-hidden" style="visibility: hidden">숨김</CButton>
+        </div>
+
+        <div class="grid-box flex-grow-1 overflow-hidden d-flex flex-column">
+          <div class="table-wrapper">
+            <CTable bordered hover class="data-table">
+              <colgroup>
+                <col v-for="(w, i) in colWidths" :key="i" :style="{ width: w }" />
+              </colgroup>
+              <CTableHead>
+                <CTableRow>
+                  <CTableHeaderCell class="th-resizable">
+                    No<span class="col-resizer" @mousedown="onResizerDown(0, $event)"></span>
+                  </CTableHeaderCell>
+                  <CTableHeaderCell class="th-resizable">
+                    수주 ID<span class="col-resizer" @mousedown="onResizerDown(1, $event)"></span>
+                  </CTableHeaderCell>
+                  <CTableHeaderCell class="th-resizable">
+                    수주 담당자<span class="col-resizer" @mousedown="onResizerDown(2, $event)"></span>
+                  </CTableHeaderCell>
+                  <CTableHeaderCell class="th-resizable">
+                    납품 업체 명<span class="col-resizer" @mousedown="onResizerDown(3, $event)"></span>
+                  </CTableHeaderCell>
+                  <CTableHeaderCell class="th-resizable">
+                    제품 명<span class="col-resizer" @mousedown="onResizerDown(4, $event)"></span>
+                  </CTableHeaderCell>
+                  <CTableHeaderCell class="th-resizable">
+                    제품 옵션 명<span class="col-resizer" @mousedown="onResizerDown(5, $event)"></span>
+                  </CTableHeaderCell>
+                  <CTableHeaderCell class="th-resizable">
+                    규격<span class="col-resizer" @mousedown="onResizerDown(6, $event)"></span>
+                  </CTableHeaderCell>
+                  <CTableHeaderCell class="th-resizable">
+                    단위<span class="col-resizer" @mousedown="onResizerDown(7, $event)"></span>
+                  </CTableHeaderCell>
+                  <CTableHeaderCell class="th-resizable">
+                    요청 수량<span class="col-resizer" @mousedown="onResizerDown(8, $event)"></span>
+                  </CTableHeaderCell>
+                  <CTableHeaderCell class="th-resizable">
+                    수주 등록 일자<span class="col-resizer" @mousedown="onResizerDown(9, $event)"></span>
+                  </CTableHeaderCell>
+                  <CTableHeaderCell class="th-resizable">
+                    납품 예정 일자<span class="col-resizer" @mousedown="onResizerDown(10, $event)"></span>
+                  </CTableHeaderCell>
+                  <CTableHeaderCell class="th-resizable">
+                    출고 상태<span class="col-resizer" @mousedown="onResizerDown(11, $event)"></span>
+                  </CTableHeaderCell>
+                  <CTableHeaderCell class="th-resizable">
+                    비고<span class="col-resizer" @mousedown="onResizerDown(12, $event)"></span>
+                  </CTableHeaderCell>
+                </CTableRow>
+              </CTableHead>
+              <CTableBody>
+                <CTableRow v-for="(r, idx) in displayedRows" :key="idx" class="data-row">
+                  <CTableDataCell class="text-center">{{ idx + 1 }}</CTableDataCell>
+                  <CTableDataCell>{{ r.rcvord_id }}</CTableDataCell>
+                  <CTableDataCell>{{ r.emp_nm }}</CTableDataCell>
+                  <CTableDataCell>{{ r.co_nm }}</CTableDataCell>
+                  <CTableDataCell>{{ r.prdt_nm || "" }}</CTableDataCell>
+                  <CTableDataCell>{{ r.opt_nm || "" }}</CTableDataCell>
+                  <CTableDataCell>{{ r.spec || "" }}</CTableDataCell>
+                  <CTableDataCell>{{ r.unit || "" }}</CTableDataCell>
+                  <CTableDataCell class="text-end">{{ formatNumber(r.rcvord_qy) }}</CTableDataCell>
+                  <CTableDataCell>{{ formatDate(r.reg_dt) }}</CTableDataCell>
+                  <CTableDataCell>{{ formatDate(r.paprd_dt) }}</CTableDataCell>
+                  <CTableDataCell>{{ r.st_nm || "" }}</CTableDataCell>
+                  <CTableDataCell>{{ r.rm || "" }}</CTableDataCell>
+                </CTableRow>
+                <CTableRow v-for="n in emptyRowCount" :key="'empty-' + n" class="empty-row">
+                  <CTableDataCell colspan="13">&nbsp;</CTableDataCell>
+                </CTableRow>
+              </CTableBody>
+            </CTable>
+          </div>
+        </div>
+      </CCol>
+    </CRow>
+  </CContainer>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onBeforeUnmount } from 'vue'
-import axios from 'axios'
+import { ref, reactive, computed, onBeforeUnmount, onMounted } from "vue";
+import axios from "axios";
 
 // 검색 필터
 const filters = reactive({
-  rcvord_id: '',
-  co_nm: '',
-  emp_nm: '',
-  reg_dt_from: '',
-  reg_dt_to: '',
-})
+  rcvord_id: "",
+  co_nm: "",
+  emp_nm: "",
+  reg_dt_from: "",
+  reg_dt_to: "",
+});
 
-// 결과 데이터
-const rows = ref([])
+// 달력 관련 상태 (시작일)
+const showCalendarFrom = ref(false);
+const calendarRefFrom = ref(null);
+const currentYearFrom = ref(new Date().getFullYear());
+const currentMonthFrom = ref(new Date().getMonth());
 
-// 초기 컬럼 폭 (px) - 필요시 자유롭게 조절 가능
-const colWidths = ref([
-  '35px', // No
-  '120px', // 수주 ID
-  '100px', // 수주 담당자
-  '140px', // 납품 업체 명
-  '100px', // 제품 명
-  '100px', // 제품 옵션 명
-  '60px', // 규격
-  '60px', // 단위
-  '110px', // 요청 수량
-  '100px', // 수주 등록 일자
-  '100px', // 납품 예정 일자
-  '110px', // 출고 상태
-  '300px', // 비고
-])
+// 달력 관련 상태 (종료일)
+const showCalendarTo = ref(false);
+const calendarRefTo = ref(null);
+const currentYearTo = ref(new Date().getFullYear());
+const currentMonthTo = ref(new Date().getMonth());
 
-// 컬럼 리사이즈 상태 및 핸들러
-const resizing = reactive({ idx: -1, startX: 0, startW: 0 })
-function onResizerDown(idx, e) {
-  e.preventDefault()
-  const w = parseInt(String(colWidths.value[idx] || '').replace(/px$/, '')) || 0
-  resizing.idx = idx
-  resizing.startX = e.clientX
-  resizing.startW = w
-  document.body.classList.add('resizing')
-  document.addEventListener('mousemove', onResizerMove)
-  document.addEventListener('mouseup', onResizerUp)
+// 달력 계산 (시작일)
+const calendarTitleFrom = computed(() => {
+  return `${currentYearFrom.value}년 ${currentMonthFrom.value + 1}월`;
+});
+
+const calendarDaysFrom = computed(() => {
+  return generateCalendarDays(currentYearFrom.value, currentMonthFrom.value, filters.reg_dt_from);
+});
+
+// 달력 계산 (종료일)
+const calendarTitleTo = computed(() => {
+  return `${currentYearTo.value}년 ${currentMonthTo.value + 1}월`;
+});
+
+const calendarDaysTo = computed(() => {
+  return generateCalendarDays(currentYearTo.value, currentMonthTo.value, filters.reg_dt_to);
+});
+
+// 달력 생성 공통 함수
+function generateCalendarDays(year, month, selectedDate) {
+  const days = [];
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const prevLastDay = new Date(year, month, 0);
+
+  const firstDayOfWeek = firstDay.getDay();
+  const lastDate = lastDay.getDate();
+  const prevLastDate = prevLastDay.getDate();
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+  // 이전 달 날짜
+  for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+    days.push({
+      date: prevLastDate - i,
+      isCurrentMonth: false,
+      isToday: false,
+      isSelected: false,
+      key: `prev-${prevLastDate - i}`,
+    });
+  }
+
+  // 현재 달 날짜
+  for (let i = 1; i <= lastDate; i++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+    days.push({
+      date: i,
+      isCurrentMonth: true,
+      isToday: dateStr === todayStr,
+      isSelected: selectedDate === dateStr,
+      key: `current-${i}`,
+      fullDate: dateStr,
+    });
+  }
+
+  // 다음 달 날짜
+  const remainingDays = 42 - days.length;
+  for (let i = 1; i <= remainingDays; i++) {
+    days.push({
+      date: i,
+      isCurrentMonth: false,
+      isToday: false,
+      isSelected: false,
+      key: `next-${i}`,
+    });
+  }
+
+  return days;
 }
-function onResizerMove(e) {
-  if (resizing.idx < 0) return
-  const dx = e.clientX - resizing.startX
-  const min = 56 // 최소 폭
-  const max = 600 // 최대 폭
-  const next = Math.min(max, Math.max(min, resizing.startW + dx))
-  colWidths.value[resizing.idx] = `${next}px`
-}
-function onResizerUp() {
-  resizing.idx = -1
-  document.body.classList.remove('resizing')
-  document.removeEventListener('mousemove', onResizerMove)
-  document.removeEventListener('mouseup', onResizerUp)
-}
-onBeforeUnmount(() => {
-  document.removeEventListener('mousemove', onResizerMove)
-  document.removeEventListener('mouseup', onResizerUp)
-})
 
-// 화면에 보이는 표준 행 수
-const PAGE_ROWS = 15
-// 모든 결과를 렌더링하여 스크롤 동작 (컨테이너 높이를 15행으로 제한)
-const displayedRows = computed(() => rows.value)
-// 표준 높이를 위한 최소 빈행 (행 수가 적을 때만 채움)
-const emptyRowCount = computed(() => Math.max(0, PAGE_ROWS - rows.value.length))
-
-function formatNumber(val) {
-  if (val == null || val === '') return ''
-  const num = Number(val)
-  return Number.isFinite(num) ? num.toLocaleString() : String(val)
-}
-function toDateStr(d) {
-  if (!d) return ''
-  try {
-    if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d
-    const dt = new Date(d)
-    if (isNaN(dt.getTime())) return ''
-    const y = dt.getFullYear()
-    const m = String(dt.getMonth() + 1).padStart(2, '0')
-    const day = String(dt.getDate()).padStart(2, '0')
-    return `${y}-${m}-${day}`
-  } catch {
-    return ''
+function toggleCalendar(type) {
+  if (type === 'from') {
+    showCalendarFrom.value = !showCalendarFrom.value;
+    showCalendarTo.value = false;
+    if (showCalendarFrom.value && filters.reg_dt_from) {
+      const [year, month] = filters.reg_dt_from.split('-');
+      currentYearFrom.value = parseInt(year);
+      currentMonthFrom.value = parseInt(month) - 1;
+    }
+  } else {
+    showCalendarTo.value = !showCalendarTo.value;
+    showCalendarFrom.value = false;
+    if (showCalendarTo.value && filters.reg_dt_to) {
+      const [year, month] = filters.reg_dt_to.split('-');
+      currentYearTo.value = parseInt(year);
+      currentMonthTo.value = parseInt(month) - 1;
+    }
   }
 }
-const formatDate = toDateStr
+
+function prevMonth(type) {
+  if (type === 'from') {
+    if (currentMonthFrom.value === 0) {
+      currentMonthFrom.value = 11;
+      currentYearFrom.value--;
+    } else {
+      currentMonthFrom.value--;
+    }
+  } else {
+    if (currentMonthTo.value === 0) {
+      currentMonthTo.value = 11;
+      currentYearTo.value--;
+    } else {
+      currentMonthTo.value--;
+    }
+  }
+}
+
+function nextMonth(type) {
+  if (type === 'from') {
+    if (currentMonthFrom.value === 11) {
+      currentMonthFrom.value = 0;
+      currentYearFrom.value++;
+    } else {
+      currentMonthFrom.value++;
+    }
+  } else {
+    if (currentMonthTo.value === 11) {
+      currentMonthTo.value = 0;
+      currentYearTo.value++;
+    } else {
+      currentMonthTo.value++;
+    }
+  }
+}
+
+function selectDate(type, day) {
+  if (!day.isCurrentMonth) return;
+  if (type === 'from') {
+    filters.reg_dt_from = day.fullDate;
+    showCalendarFrom.value = false;
+  } else {
+    filters.reg_dt_to = day.fullDate;
+    showCalendarTo.value = false;
+  }
+}
+
+function handleClickOutside(event) {
+  if (calendarRefFrom.value && !calendarRefFrom.value.contains(event.target)) {
+    const dateWrapper = event.target.closest('.date-input-wrapper');
+    if (!dateWrapper) {
+      showCalendarFrom.value = false;
+    }
+  }
+  if (calendarRefTo.value && !calendarRefTo.value.contains(event.target)) {
+    const dateWrapper = event.target.closest('.date-input-wrapper');
+    if (!dateWrapper) {
+      showCalendarTo.value = false;
+    }
+  }
+}
+
+// 결과 데이터
+const rows = ref([]);
+
+// 초기 컬럼 폭
+const colWidths = ref([
+  "50px",   // No
+  "120px",  // 수주 ID
+  "100px",  // 수주 담당자
+  "140px",  // 납품 업체 명
+  "120px",  // 제품 명
+  "120px",  // 제품 옵션 명
+  "80px",   // 규격
+  "60px",   // 단위
+  "100px",  // 요청 수량
+  "120px",  // 수주 등록 일자
+  "120px",  // 납품 예정 일자
+  "100px",  // 출고 상태
+  "200px",  // 비고
+]);
+
+// 컬럼 리사이즈
+const resizing = reactive({ idx: -1, startX: 0, startW: 0 });
+
+function onResizerDown(idx, e) {
+  e.preventDefault();
+  const w = parseInt(String(colWidths.value[idx] || "").replace(/px$/, "")) || 0;
+  resizing.idx = idx;
+  resizing.startX = e.clientX;
+  resizing.startW = w;
+  document.body.classList.add("resizing");
+  document.addEventListener("mousemove", onResizerMove);
+  document.addEventListener("mouseup", onResizerUp);
+}
+
+function onResizerMove(e) {
+  if (resizing.idx < 0) return;
+  const dx = e.clientX - resizing.startX;
+  const min = 50;
+  const max = 600;
+  const next = Math.min(max, Math.max(min, resizing.startW + dx));
+  colWidths.value[resizing.idx] = `${next}px`;
+}
+
+function onResizerUp() {
+  resizing.idx = -1;
+  document.body.classList.remove("resizing");
+  document.removeEventListener("mousemove", onResizerMove);
+  document.removeEventListener("mouseup", onResizerUp);
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener("mousemove", onResizerMove);
+  document.removeEventListener("mouseup", onResizerUp);
+  document.removeEventListener('click', handleClickOutside);
+});
+
+// 화면에 보이는 표준 행 수
+const PAGE_ROWS = 10;
+const displayedRows = computed(() => rows.value);
+const emptyRowCount = computed(() => Math.max(0, PAGE_ROWS - rows.value.length));
+
+function formatNumber(val) {
+  if (val == null || val === "") return "";
+  const num = Number(val);
+  return Number.isFinite(num) ? num.toLocaleString() : String(val);
+}
+
+function toDateStr(d) {
+  if (!d) return "";
+  try {
+    if (typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+    const dt = new Date(d);
+    if (isNaN(dt.getTime())) return "";
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, "0");
+    const day = String(dt.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  } catch {
+    return "";
+  }
+}
+
+const formatDate = toDateStr;
 
 function onReset() {
-  filters.rcvord_id = ''
-  filters.co_nm = ''
-  filters.emp_nm = ''
-  filters.reg_dt_from = ''
-  filters.reg_dt_to = ''
-  rows.value = []
+  filters.rcvord_id = "";
+  filters.co_nm = "";
+  filters.emp_nm = "";
+  filters.reg_dt_from = "";
+  filters.reg_dt_to = "";
+  rows.value = [];
 }
 
 async function onSearch() {
   try {
-    const params = { ...filters }
-    const { data } = await axios.get('/api/rcvord-search', { params })
-    rows.value = Array.isArray(data?.data) ? data.data : []
+    const params = { ...filters };
+    const { data } = await axios.get("/api/rcvord-search", { params });
+    rows.value = Array.isArray(data?.data) ? data.data : [];
   } catch (err) {
-    console.error('검색 오류', err)
-    alert('검색 중 오류가 발생했습니다.')
+    console.error("검색 오류", err);
+    alert("검색 중 오류가 발생했습니다.");
   }
 }
 </script>
 
 <style scoped>
-/* ============================================
-   기본 설정 및 컨테이너
-   ============================================ */
+/* 페이지 진입 애니메이션 */
+.page-container {
+  animation: pageLoad 0.5s ease-out;
+}
+
+@keyframes pageLoad {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.button-group {
+  animation: fadeInDown 0.4s ease-out;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.5s ease-out both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 :deep(*) {
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
   line-height: 1.6;
@@ -245,37 +579,31 @@ async function onSearch() {
 :deep(.container-fluid) {
   background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
   padding: 1.5rem !important;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  overflow: auto;
+  width: 100%;
 }
 
-/* ============================================
-   검색 필터 박스
-   ============================================ */
 .search-filter-box {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 2rem 1.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  margin-bottom: 1.25rem;
+  margin-bottom: 0.75rem;
+  position: relative;
+  z-index: 100;
 }
 
-/* ============================================
-   그리드 박스 - 15개 행 표시
-   ============================================ */
 .grid-box {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   overflow: hidden;
-  height: calc(46px + 15 * 46px + 2px); /* 헤더 + 15개 행 + 테두리 */
+  max-height: calc(46px + 10 * 46px + 2px);
 }
 
-/* ============================================
-   버튼 스타일
-   ============================================ */
 :deep(.btn) {
   font-size: 13px;
   font-weight: 600;
@@ -303,22 +631,33 @@ async function onSearch() {
   transform: scale(0.98);
 }
 
-.gap-2 {
+/* 검색 필터 스타일 */
+.search-row-container {
+  display: flex;
+  align-items: center;
   gap: 0.5rem;
+  width: 100%;
 }
 
-/* ============================================
-   폼 요소
-   ============================================ */
-:deep(.form-label) {
+.search-label-fixed {
   font-size: 13px;
   font-weight: 600;
   color: #334155;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0;
   letter-spacing: -0.2px;
+  min-width: 90px;
+  white-space: nowrap;
+  text-align: right;
+  flex-shrink: 0;
 }
 
-:deep(.form-control) {
+.search-row-container .form-input-search,
+.search-row-container .date-range-wrapper-custom {
+  flex: 1;
+  min-width: 0;
+}
+
+.form-input-search {
   font-size: 13px;
   font-weight: 400;
   padding: 0.65rem 0.85rem;
@@ -327,86 +666,254 @@ async function onSearch() {
   transition: all 0.2s ease;
   background-color: #ffffff;
   height: 42px;
+  width: 100%;
 }
 
-:deep(.form-control:focus) {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+.form-input-search:focus {
+  border-color: #6b7280;
+  box-shadow: 0 0 0 4px rgba(107, 114, 128, 0.12);
   background-color: #ffffff;
   outline: none;
 }
 
-input[type='date'].form-control {
+/* 날짜 범위 입력 */
+.date-range-wrapper-custom {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.date-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.date-input-wrapper .form-input-search {
+  padding-right: 35px;
+  cursor: pointer;
+}
+
+.date-separator {
   font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+  flex-shrink: 0;
+  padding: 0 0.25rem;
 }
 
-:deep(.g-3) {
-  --bs-gutter-y: 0.75rem;
-  --bs-gutter-x: 1rem;
+/* 달력 아이콘 & 팝업 */
+.calendar-icon {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  pointer-events: all;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* ============================================
-   테이블 래퍼 - 15개 행 표시
-   ============================================ */
+.calendar-icon:hover {
+  color: #828282;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.custom-calendar {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  z-index: 99999;
+  padding: 10px;
+  min-width: 280px;
+  animation: calendarFadeIn 0.2s ease;
+}
+
+@keyframes calendarFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1.5px solid #f1f5f9;
+}
+
+.calendar-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: -0.3px;
+}
+
+.calendar-nav-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-nav-btn:hover {
+  background: #f1f5f9;
+  color: #828282;
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.weekday {
+  text-align: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #64748b;
+  padding: 4px 0;
+}
+
+.calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 500;
+  color: #334155;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  position: relative;
+  min-height: 32px;
+}
+
+.calendar-day:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.calendar-day.other-month {
+  color: #cbd5e1;
+  cursor: default;
+}
+
+.calendar-day.other-month:hover {
+  background: transparent;
+}
+
+.calendar-day.today {
+  background: #e5e7eb;
+  color: #1f2937;
+  font-weight: 700;
+}
+
+.calendar-day.today:hover {
+  background: #d1d5db;
+}
+
+.calendar-day.selected {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
+}
+
+.calendar-day.selected:hover {
+  background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
+}
+
+/* 테이블 래퍼 */
 .table-wrapper {
-  overflow-y: auto;
+  overflow-y: scroll;
   overflow-x: hidden;
   height: 100%;
   display: flex;
   flex-direction: column;
   background: #ffffff;
+  scrollbar-gutter: stable;
 }
 
-/* 모던 스크롤바 */
 .table-wrapper::-webkit-scrollbar {
-  width: 14px;
-  background: #ffffff;
+  width: 16px;
+  background: linear-gradient(to right, #f8fafc, #f1f5f9);
 }
 
 .table-wrapper::-webkit-scrollbar-track {
-  background: #ffffff;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px;
+  margin: 6px 0;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.05);
 }
 
 .table-wrapper::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #9ca3af 0%, #6b7280 100%);
-  border-radius: 10px;
-  border: 3px solid #ffffff;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(180deg, #64748b 0%, #475569 100%);
+  border-radius: 12px;
+  border: 3px solid #f1f5f9;
+  box-shadow: 
+    0 3px 10px rgba(71, 85, 105, 0.25),
+    inset 0 1px 3px rgba(255, 255, 255, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .table-wrapper::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #6b7280 0%, #4b5563 100%);
-  border-color: #ffffff;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+  background: linear-gradient(180deg, #475569 0%, #334155 100%);
+  border-color: #e2e8f0;
+  box-shadow: 
+    0 5px 15px rgba(71, 85, 105, 0.4),
+    inset 0 1px 3px rgba(255, 255, 255, 0.4);
+  transform: scaleX(1.15);
 }
 
-.table-wrapper::-webkit-scrollbar-button:single-button {
-  display: block;
-  height: 20px;
-  background-color: #ffffff;
-  background-repeat: no-repeat;
-  background-position: center;
-  border: none;
+.table-wrapper::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
+  border-width: 2px;
+  box-shadow: 
+    0 2px 8px rgba(30, 41, 59, 0.5),
+    inset 0 2px 5px rgba(0, 0, 0, 0.25);
 }
 
-.table-wrapper::-webkit-scrollbar-button:single-button:vertical:decrement {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 4L2 8h8z'/%3E%3C/svg%3E");
-  margin-top: 46px;
+.table-wrapper::-webkit-scrollbar-button {
+  display: none;
 }
 
-.table-wrapper::-webkit-scrollbar-button:single-button:vertical:increment {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
-  margin-bottom: 46px;
+.table-wrapper {
+  scrollbar-width: auto;
+  scrollbar-color: #64748b #f1f5f9;
 }
 
-.table-wrapper::-webkit-scrollbar-button:single-button:hover {
-  background-color: #f3f4f6;
-}
-
-/* ============================================
-   데이터 테이블
-   ============================================ */
 :deep(.data-table) {
   margin-bottom: 0;
   border-collapse: separate;
@@ -418,21 +925,6 @@ input[type='date'].form-control {
   display: table;
   table-layout: fixed;
 }
-
-/* 컬럼별 너비 설정 */
-:deep(.data-table col:nth-child(1)) { width: 70px; }   /* No */
-:deep(.data-table col:nth-child(2)) { width: 100px; }  /* 수주ID */
-:deep(.data-table col:nth-child(3)) { width: 100px; }  /* 수주담당자 */
-:deep(.data-table col:nth-child(4)) { width: 140px; }  /* 납품업체명 */
-:deep(.data-table col:nth-child(5)) { width: 150px; }  /* 제품명 */
-:deep(.data-table col:nth-child(6)) { width: 130px; }  /* 제품옵션명 */
-:deep(.data-table col:nth-child(7)) { width: 100px; }  /* 규격 */
-:deep(.data-table col:nth-child(8)) { width: 60px; }   /* 단위 */
-:deep(.data-table col:nth-child(9)) { width: 90px; }   /* 요청수량 */
-:deep(.data-table col:nth-child(10)) { width: 110px; } /* 수주등록일자 */
-:deep(.data-table col:nth-child(11)) { width: 110px; } /* 납품예정일자 */
-:deep(.data-table col:nth-child(12)) { width: 90px; }  /* 출고상태 */
-:deep(.data-table col:nth-child(13)) { width: auto; }  /* 비고 */
 
 :deep(.data-table thead) {
   position: sticky;
@@ -454,9 +946,7 @@ input[type='date'].form-control {
   padding: 0.85rem 0.75rem;
   border: none;
   letter-spacing: -0.2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  position: relative;
 }
 
 :deep(.data-table th:first-child) {
@@ -467,7 +957,34 @@ input[type='date'].form-control {
   border-top-right-radius: 12px;
 }
 
-/* 컬럼 리사이즈 기능 */
+:deep(.data-table td) {
+  font-size: 13px;
+  font-weight: 400;
+  vertical-align: middle;
+  padding: 0.75rem 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  color: #334155;
+  height: 46px;
+}
+
+:deep(.data-table tbody tr.data-row) {
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background-color: #ffffff;
+}
+
+:deep(.data-table tbody tr.data-row:hover) {
+  background-color: #f8fafc;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+
+.empty-row td {
+  height: 46px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+/* 컬럼 리사이즈 */
 .th-resizable {
   position: relative;
   padding-right: 8px;
@@ -481,6 +998,12 @@ input[type='date'].form-control {
   width: 6px;
   cursor: col-resize;
   z-index: 2;
+  background: transparent;
+  transition: background 0.2s ease;
+}
+
+.col-resizer:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 body.resizing {
@@ -488,74 +1011,34 @@ body.resizing {
   cursor: col-resize !important;
 }
 
-:deep(.data-table td) {
+body.resizing * {
+  cursor: col-resize !important;
+}
+
+:deep(.form-label) {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.2px;
+}
+
+:deep(.form-control) {
   font-size: 13px;
   font-weight: 400;
-  vertical-align: middle;
-  padding: 0.75rem 0.75rem;
-  border-bottom: 1px solid #e2e8f0;
-  border-right: 1px solid #f1f5f9;
-  color: #334155;
-  height: 46px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-:deep(.data-table td:last-child) {
-  border-right: none;
-}
-
-:deep(.data-table tbody tr) {
-  transition: all 0.15s ease;
+  padding: 0.65rem 0.85rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
   background-color: #ffffff;
+  height: 42px;
+  width: 100%;
 }
 
-:deep(.data-table tbody tr:hover:not(.empty-row)) {
-  background-color: #f8fafc;
-  box-shadow: inset 0 0 0 1px #e2e8f0;
-}
-
-:deep(.data-table tbody tr:hover:not(.empty-row) td) {
-  background-color: #f8fafc;
-}
-
-.empty-row td {
-  height: 46px;
+:deep(.form-control:focus) {
+  border-color: #6b7280;
+  box-shadow: 0 0 0 4px rgba(107, 114, 128, 0.12);
   background-color: #ffffff;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-/* ============================================
-   반응형 디자인
-   ============================================ */
-@media (max-width: 1600px) {
-  :deep(.form-label) {
-    font-size: 12px !important;
-  }
-  
-  :deep(.form-control) {
-    font-size: 12px !important;
-    height: 38px !important;
-    padding: 0.55rem 0.75rem !important;
-  }
-  
-  :deep(.btn) {
-    font-size: 12px !important;
-    padding: 0.5rem 1.1rem !important;
-  }
-  
-  :deep(.data-table th),
-  :deep(.data-table td) {
-    font-size: 12px !important;
-  }
-  
-  :deep(.data-table td) {
-    height: 42px !important;
-  }
-  
-  .empty-row td {
-    height: 42px !important;
-  }
+  outline: none;
 }
 </style>

@@ -2,102 +2,89 @@
   <CContainer fluid class="h-100 d-flex flex-column p-3">
     <!-- 상단 조회/초기화 버튼 -->
     <div class="d-flex justify-content-end mb-2 gap-2">
-      <CButton color="secondary" size="sm" @click="handleSearch">조회</CButton>
-      <CButton color="secondary" size="sm" @click="handleReset">초기화</CButton>
+      <CButton color="secondary" size="sm" @click="searchEqm">조회</CButton>
+      <CButton color="secondary" size="sm" @click="resetSearch">초기화</CButton>
     </div>
 
     <!-- 검색 필터 영역 -->
     <div class="search-filter-box mb-2">
       <CRow class="g-3">
-        <CCol :md="4">
-          <CFormLabel class="form-label">설비그룹명</CFormLabel>
-          <CFormInput v-model="searchFilters.name" size="sm" placeholder="입력해주세요" />
-        </CCol>
-
-        <CCol :md="4">
-          <CFormLabel class="form-label">설비명</CFormLabel>
-          <CFormInput v-model="searchFilters.name" size="sm" placeholder="입력해주세요" />
-        </CCol>
-
         <CCol :md="3">
-          <CFormLabel class="form-label">제조회사</CFormLabel>
-          <div class="custom-select-wrapper">
-            <div class="custom-select" @click="toggleTypeDropdown" ref="typeSelect">
-              <span>{{ getTypeDisplayText(searchFilters.type) }}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12">
-                <path fill="#6c757d" d="M6 9L1 4h10z" />
-              </svg>
-            </div>
-            <div v-if="showTypeDropdown" class="custom-dropdown">
-              <div class="custom-option" @click="selectType('')">전체</div>
-              <div class="custom-option" @click="selectType('PRESSWORLD')">프레스월드</div>
-              <div class="custom-option" @click="selectType('COCO')">사출코</div>
-              <div class="custom-option" @click="selectType('LINEMAKER')">라인메이커</div>
-              <div class="custom-option" @click="selectType('VISIONTEC')">비전텍</div>
-              <div class="custom-option" @click="selectType('YEDAM')">예담</div>
-            </div>
-          </div>
+          <CFormLabel class="form-label">설비 그룹 명</CFormLabel>
+          <CFormInput
+            v-model="searchForm.eqm_grp_nm"
+            size="sm"
+            placeholder="설비그룹명을 입력하세요"
+          />
+        </CCol>
+        <CCol :md="3">
+          <CFormLabel class="form-label">설비 명</CFormLabel>
+          <CFormInput v-model="searchForm.eqm_nm" size="sm" placeholder="설비명을 입력하세요" />
+        </CCol>
+        <CCol :md="3">
+          <CFormLabel class="form-label">제조 회사</CFormLabel>
+          <CFormSelect v-model="searchForm.make_co" size="sm">
+            <option value="">전체</option>
+            <option v-for="co in makeCompanies" :key="co" :value="co">
+              {{ getEqmMakeCoLabel(co) }}
+            </option>
+          </CFormSelect>
         </CCol>
         <CCol :md="3">
           <CFormLabel class="form-label">상태</CFormLabel>
-          <div class="custom-select-wrapper">
-            <div class="custom-select" @click="toggleStatusDropdown" ref="statusSelect">
-              <span>{{ getStatusDisplayText(searchFilters.status) }}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12">
-                <path fill="#6c757d" d="M6 9L1 4h10z" />
-              </svg>
-            </div>
-            <div v-if="showStatusDropdown" class="custom-dropdown">
-              <div class="custom-option" @click="selectStatus('')">전체</div>
-              <div class="custom-option" @click="selectStatus('ACT')">가능</div>
-              <div class="custom-option" @click="selectStatus('INA')">불가능</div>
-            </div>
-          </div>
+          <CFormSelect v-model="searchForm.st" size="sm">
+            <option value="">전체</option>
+            <option v-for="s in statuses" :key="s.st" :value="s.st">{{ s.st_nm }}</option>
+          </CFormSelect>
         </CCol>
       </CRow>
+      <!-- Removed the incorrectly inserted CRow block for 점검 주기 -->
     </div>
 
     <!-- 메인 컨텐츠 영역 -->
-    <CRow class="flex-grow-1 overflow-hidden g-2">
+    <CRow class="flex-grow-1 overflow-hidden g-2 main-content-row">
       <!-- 좌측: 데이터 그리드 -->
-      <CCol :md="6" class="d-flex flex-column overflow-hidden">
-        <!-- 높이 맞추기용 투명 버튼 영역 -->
+      <CCol :md="6" class="d-flex flex-column overflow-hidden left-pane">
         <div class="button-spacer mb-2">
           <CButton color="secondary" size="sm">신규</CButton>
           <CButton color="secondary" size="sm">저장</CButton>
           <CButton color="danger" size="sm">삭제</CButton>
         </div>
 
-        <!-- 그리드 테이블 -->
         <div class="grid-box flex-grow-1 overflow-hidden d-flex flex-column">
-          <div class="table-wrapper">
+          <div class="table-wrapper" :style="tableWrapperStyle">
             <CTable bordered hover class="data-table">
               <CTableHead>
                 <CTableRow>
-                  <CTableHeaderCell style="width: 15%">설비명</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 15%">제조모델</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 30%">제조사</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 15%">제조일자</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 15%">설치일자</CTableHeaderCell>
+                  <CTableHeaderCell scope="col" class="text-center" style="width: 60px"
+                    >No</CTableHeaderCell
+                  >
+                  <CTableHeaderCell scope="col" class="text-center">설비 명</CTableHeaderCell>
+                  <CTableHeaderCell scope="col" class="text-center">제조 모델</CTableHeaderCell>
+                  <CTableHeaderCell scope="col" class="text-center">제조 일자</CTableHeaderCell>
+                  <CTableHeaderCell scope="col" class="text-center">설치 일자</CTableHeaderCell>
+                  <CTableHeaderCell scope="col" class="text-center" style="width: 100px"
+                    >상태</CTableHeaderCell
+                  >
+                  <CTableHeaderCell scope="col" class="text-center">비고</CTableHeaderCell>
                 </CTableRow>
               </CTableHead>
               <CTableBody>
-                <!-- 데이터 행 -->
                 <CTableRow
                   v-for="(item, index) in displayedData"
-                  :key="index"
-                  @click="handleRowSelect(item, index)"
+                  :key="item.eqm_id"
+                  @click="selectEqm(item, index)"
                   :class="{ 'selected-row': selectedRowIndex === index }"
                 >
-                  <CTableDataCell class="text-end">{{ item.id }}</CTableDataCell>
-                  <CTableDataCell>{{ getTypeLabel(item.type) }}</CTableDataCell>
-                  <CTableDataCell>{{ item.name }}</CTableDataCell>
-                  <CTableDataCell>{{ item.ceo }}</CTableDataCell>
-                  <CTableDataCell>{{ item.managerName }}</CTableDataCell>
-                </CTableRow>
-                <!-- 빈 행 채우기 (10행 고정) -->
-                <CTableRow v-for="i in emptyRowCount" :key="'empty-' + i" class="empty-row">
-                  <CTableDataCell colspan="5">&nbsp;</CTableDataCell>
+                  <CTableDataCell class="text-center">{{ index + 1 }}</CTableDataCell>
+                  <CTableDataCell class="text-center">{{ item.eqm_nm }}</CTableDataCell>
+                  <CTableDataCell>{{ item.make_model }}</CTableDataCell>
+                  <CTableDataCell>{{ formatDate(item.make_dt) }}</CTableDataCell>
+                  <CTableDataCell>{{ formatDate(item.setp_dt) }}</CTableDataCell>
+                  <CTableDataCell class="text-center">{{
+                    item.st_nm || item.st || ''
+                  }}</CTableDataCell>
+                  <CTableDataCell>{{ item.rm || '' }}</CTableDataCell>
                 </CTableRow>
               </CTableBody>
             </CTable>
@@ -106,51 +93,138 @@
       </CCol>
 
       <!-- 우측: 상세 입력 폼 -->
-      <CCol :md="6" class="d-flex flex-column overflow-hidden">
-        <!-- 신규/저장/삭제 버튼 -->
+      <CCol :md="6" class="d-flex flex-column overflow-hidden right-pane">
         <div class="d-flex justify-content-end gap-2 mb-2">
-          <CButton color="secondary" size="sm" @click="handleNew">신규</CButton>
-          <CButton color="secondary" size="sm" @click="handleSave">저장</CButton>
-          <CButton color="danger" size="sm" @click="handleDelete">삭제</CButton>
+          <CButton color="secondary" size="sm" @click="resetForm">신규</CButton>
+          <CButton color="secondary" size="sm" @click="saveEqm">저장</CButton>
+          <CButton color="danger" size="sm" @click="deleteEqm" :disabled="!selectedEqm"
+            >삭제</CButton
+          >
         </div>
 
-        <!-- 입력 폼 -->
         <div class="form-box flex-grow-1 d-flex flex-column overflow-hidden">
           <div class="p-3 flex-grow-1 overflow-auto">
-            <CRow class="mb-2" v-for="field in formFields" :key="field.key">
+            <CRow class="mb-2">
               <CCol :md="3" class="text-end pe-2">
-                <CFormLabel class="form-label pt-1">{{ field.label }}</CFormLabel>
+                <CFormLabel class="form-label pt-1">설비 그룹 명</CFormLabel>
               </CCol>
               <CCol :md="8" class="ps-3">
-                <!-- 일반 텍스트 입력 -->
                 <CFormInput
-                  v-if="field.type === 'text'"
-                  v-model="formData[field.key]"
+                  v-model="formData.eqm_grp_nm"
                   size="sm"
-                  :placeholder="getPlaceholder(field.key)"
+                  placeholder="그룹명을 입력 또는 선택"
                 />
+              </CCol>
+            </CRow>
 
-                <!-- 날짜 입력 -->
+            <CRow class="mb-2">
+              <CCol :md="3" class="text-end pe-2">
+                <CFormLabel class="form-label pt-1">설비 명</CFormLabel>
+              </CCol>
+              <CCol :md="8" class="ps-3">
+                <CFormInput v-model="formData.eqm_nm" size="sm" />
+              </CCol>
+            </CRow>
+
+            <CRow class="mb-2">
+              <CCol :md="3" class="text-end pe-2">
+                <CFormLabel class="form-label pt-1">제조 모델</CFormLabel>
+              </CCol>
+              <CCol :md="8" class="ps-3">
                 <CFormInput
-                  v-else-if="field.type === 'date'"
-                  v-model="formData[field.key]"
-                  type="date"
+                  v-model="formData.make_model"
                   size="sm"
+                  placeholder="제조 모델을 입력하세요"
                 />
-                <!-- 라디오 버튼 -->
-                <div v-else-if="field.type === 'radio'" class="radio-group">
+              </CCol>
+            </CRow>
+
+            <CRow class="mb-2">
+              <CCol :md="3" class="text-end pe-2">
+                <CFormLabel class="form-label pt-1">제조사</CFormLabel>
+              </CCol>
+              <CCol :md="8" class="ps-3">
+                <CFormInput
+                  v-model="formData.make_co"
+                  size="sm"
+                  placeholder="제조사를 입력하세요"
+                />
+              </CCol>
+            </CRow>
+
+            <CRow class="mb-2">
+              <CCol :md="3" class="text-end pe-2">
+                <CFormLabel class="form-label pt-1">제조 일자</CFormLabel>
+              </CCol>
+              <CCol :md="8" class="ps-3">
+                <CFormInput type="date" v-model="formData.make_dt" size="sm" />
+              </CCol>
+            </CRow>
+
+            <CRow class="mb-2">
+              <CCol :md="3" class="text-end pe-2">
+                <CFormLabel class="form-label pt-1">설치 일자</CFormLabel>
+              </CCol>
+              <CCol :md="8" class="ps-3">
+                <CFormInput type="date" v-model="formData.setp_dt" size="sm" />
+              </CCol>
+            </CRow>
+
+            <CRow class="mb-2">
+              <CCol :md="3" class="text-end pe-2">
+                <CFormLabel class="form-label pt-1">설비 상태</CFormLabel>
+              </CCol>
+              <CCol :md="8" class="ps-3">
+                <div class="radio-group">
                   <CFormCheck
-                    v-for="option in field.options"
-                    :key="option.value"
-                    type="radio"
-                    :name="field.key"
-                    :label="option.label"
-                    :value="option.value"
-                    v-model="formData[field.key]"
-                    inline
                     class="radio-item"
+                    type="radio"
+                    id="status-active"
+                    name="status"
+                    :value="'M2'"
+                    v-model="formData.st"
+                    label="가동"
+                  />
+                  <CFormCheck
+                    class="radio-item"
+                    type="radio"
+                    id="status-inactive"
+                    name="status"
+                    :value="'M1'"
+                    v-model="formData.st"
+                    label="비가동"
                   />
                 </div>
+              </CCol>
+            </CRow>
+
+            <CRow class="mb-2"> </CRow>
+
+            <CRow class="mb-2">
+              <CCol :md="3" class="text-end pe-2">
+                <CFormLabel class="form-label pt-1">점검 주기</CFormLabel>
+              </CCol>
+              <CCol :md="8" class="ps-3">
+                <CFormInput
+                  type="text"
+                  v-model="formData.chck_cycle"
+                  size="sm"
+                  placeholder="일 수"
+                />
+              </CCol>
+            </CRow>
+
+            <CRow class="mb-2">
+              <CCol :md="3" class="text-end pe-2">
+                <CFormLabel class="form-label pt-1">비고</CFormLabel>
+              </CCol>
+              <CCol :md="8" class="ps-3">
+                <CFormTextarea
+                  v-model="formData.rm"
+                  rows="6"
+                  placeholder="비고사항을 입력하세요"
+                  size="sm"
+                />
               </CCol>
             </CRow>
           </div>
@@ -161,301 +235,267 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import axios from 'axios'
 
-const searchFilters = reactive({
-  type: '',
-  name: '',
-  status: '',
+// 조회 조건 폼
+const searchForm = reactive({
+  eqm_grp_nm: '',
+  eqm_nm: '',
+  make_co: '',
+  st: '',
 })
 
-const showTypeDropdown = ref(false)
-const showStatusDropdown = ref(false)
-const typeSelect = ref(null)
-const statusSelect = ref(null)
+// 설비 데이터 목록
+const eqmData = ref([])
+const makeCompanies = ref([])
+const statuses = ref([])
 
-const formData = reactive({
-  id: '',
-  businessNo: '',
-  name: '',
-  ceo: '',
-  email: '',
-  ceoPhone: '',
-  regDate: '',
-  managerName: '',
-  managerPhone: '',
-  type: 'customer',
-  status: 'active',
-})
-
-const getPlaceholder = (key) => {
-  switch (key) {
-    case 'id':
-      return 'C001'
-    case 'businessNo':
-      return '114-86-65214'
-    case 'name':
-      return '스타쉽엔터테인먼트'
-    case 'ceo':
-      return '이진성'
-    case 'email':
-      return 'cs@starship-square.com'
-    case 'ceoPhone':
-      return '02-592-4000'
-    case 'regDate':
-      return '2025-10-11'
-    case 'managerName':
-      return '장원영'
-    case 'managerPhone':
-      return '010-0000-0000'
-    default:
-      return '입력해주세요'
-  }
-}
-
-const formFields = [
-  { key: 'id', label: '업체 ID', type: 'text' },
-  { key: 'businessNo', label: '사업자 등록번호', type: 'text' },
-  { key: 'name', label: '업체명', type: 'text' },
-  { key: 'ceo', label: '대표자명', type: 'text' },
-  { key: 'email', label: '대표 이메일', type: 'text' },
-  { key: 'ceoPhone', label: '대표 연락처', type: 'text' },
-  { key: 'regDate', label: '등록일자', type: 'date' },
-  { key: 'managerName', label: '담당자명', type: 'text' },
-  { key: 'managerPhone', label: '담당자 연락처', type: 'text' },
-  {
-    key: 'type',
-    label: '업체유형',
-    type: 'radio',
-    options: [
-      { label: '고객사', value: 'customer' },
-      { label: '공급업체', value: 'supplier' },
-    ],
-  },
-  {
-    key: 'status',
-    label: '상태',
-    type: 'radio',
-    options: [
-      { label: '활성', value: 'active' },
-      { label: '비활성', value: 'inactive' },
-    ],
-  },
-]
-
-// 그리드 데이터
-const gridData = ref([])
+// 선택된 설비
+const selectedEqm = ref(null)
 const selectedRowIndex = ref(null)
-const originalId = ref('')
 
-// 표시할 데이터 (최대 10행)
+// 입력 폼 데이터
+const formData = reactive({
+  eqm_grp_nm: '',
+  eqm_nm: '',
+  make_model: '',
+  make_co: '',
+  make_dt: '',
+  setp_dt: '',
+  chck_cycle: '',
+  st: 'M2',
+  rm: '',
+})
+
+// 편집 모드 여부
+const isEditMode = ref(false)
+
+// 표시할 데이터 (전체)
 const displayedData = computed(() => {
-  return gridData.value.slice(0, 10)
+  return eqmData.value
 })
 
-// 빈 행 개수 계산
-const emptyRowCount = computed(() => {
-  const dataCount = displayedData.value.length
-  return dataCount < 10 ? 10 - dataCount : 0
+// 빈 행 패딩 제거 (스크롤을 위해 전체 데이터만 렌더)
+const emptyRowCount = computed(() => 0)
+
+// ==============================
+// 그리드 표시 행수/높이 설정
+// 사용자가 조절 가능한 설정 값들입니다.
+// ==============================
+// 최대 표시 줄 수 (필요 시 변경)
+const MAX_GRID_ROWS = ref(12)
+// 데이터 행 높이(px) - 테마/패딩에 따라 34~40 사이, 필요 시 조정
+const GRID_ROW_HEIGHT = ref(36)
+// 헤더 높이(px) - th padding 기준 대략 40~48, 필요 시 조정
+const GRID_HEADER_HEIGHT = ref(44)
+
+// 테이블 래퍼 스타일: 최대 높이를 계산해 초과 시 세로 스크롤
+const tableWrapperStyle = computed(() => {
+  const rows = Math.max(1, Math.min(MAX_GRID_ROWS.value, displayedData.value.length || 0))
+  const maxH = GRID_HEADER_HEIGHT.value + GRID_ROW_HEIGHT.value * rows
+  return { height: 'auto', maxHeight: `${maxH}px` }
 })
 
-// ============================================
-// Lifecycle
-// ============================================
-onMounted(() => {
-  handleSearch()
-  document.addEventListener('click', handleClickOutside)
-})
-
-onBeforeUnmount(() => {
-  document.removeEventListener('click', handleClickOutside)
-})
-
-// ============================================
-// 메서드
-// ============================================
-
-// 커스텀 셀렉트 관련
-const toggleTypeDropdown = () => {
-  showTypeDropdown.value = !showTypeDropdown.value
-  showStatusDropdown.value = false
-}
-
-const toggleStatusDropdown = () => {
-  showStatusDropdown.value = !showStatusDropdown.value
-  showTypeDropdown.value = false
-}
-
-const selectType = (value) => {
-  searchFilters.type = value
-  showTypeDropdown.value = false
-}
-
-const selectStatus = (value) => {
-  searchFilters.status = value
-  showStatusDropdown.value = false
-}
-
-const getTypeDisplayText = (value) => {
-  if (value === 'VENDOR') return '공급업체'
-  if (value === 'CUSTOMER') return '고객사'
-  return '전체'
-}
-
-const getStatusDisplayText = (value) => {
-  if (value === 'ACT') return '활성'
-  if (value === 'INA') return '비활성'
-  return '전체'
-}
-
-const handleClickOutside = (event) => {
-  if (typeSelect.value && !typeSelect.value.contains(event.target)) {
-    showTypeDropdown.value = false
-  }
-  if (statusSelect.value && !statusSelect.value.contains(event.target)) {
-    showStatusDropdown.value = false
-  }
-}
-
-// 검색
-const handleSearch = async () => {
-  const params = {
-    type: searchFilters.type || '',
-    name: searchFilters.name || '',
-    status: searchFilters.status || '',
-  }
-  console.log('검색 파라미터:', params)
-
+// 설비 목록 조회
+const searchEqm = async () => {
   try {
-    let result = await axios.get('/api/co_list_view', { params })
-    console.log('조회 결과:', result.data)
-    gridData.value = result.data
+    const { data } = await axios.get('/api/eqm', { params: searchForm })
+    eqmData.value = Array.isArray(data) ? data : []
     selectedRowIndex.value = null
   } catch (error) {
-    console.error('조회 오류:', error)
-    gridData.value = []
+    console.error('[eqm] 조회 에러:', error)
+    alert('설비 목록 조회 중 오류가 발생했습니다.')
   }
 }
 
-// 초기화
-const handleReset = () => {
-  searchFilters.type = ''
-  searchFilters.name = ''
-  searchFilters.status = ''
+// 조회 조건 초기화
+const resetSearch = () => {
+  searchForm.eqm_grp_nm = ''
+  searchForm.eqm_nm = ''
+  searchForm.make_co = ''
+  searchForm.st = ''
   selectedRowIndex.value = null
-  gridData.value = []
+  eqmData.value = []
+
+  // 우측 입력 폼도 함께 초기화
+  resetForm()
 }
 
-// 폼 초기화
-const resetFormData = () => {
-  Object.assign(formData, {
-    id: '',
-    businessNo: '',
-    name: '',
-    ceo: '',
-    email: '',
-    ceoPhone: '',
-    regDate: '',
-    managerName: '',
-    managerPhone: '',
-    type: 'customer',
-    status: 'active',
-  })
-  originalId.value = ''
-  selectedRowIndex.value = null
-}
-
-// 행 선택
-const handleRowSelect = (item, index) => {
-  formData.id = item.id
-  formData.businessNo = item.businessNo
-  formData.name = item.name
-  formData.ceo = item.ceo
-  formData.ceoPhone = item.ceoPhone
-  formData.type = item.type === 'CUSTOMER' ? 'customer' : 'supplier'
-  formData.status = item.status === 'ACT' ? 'active' : 'inactive'
-
-  originalId.value = item.id
+// 설비 선택
+const selectEqm = (item, index) => {
+  selectedEqm.value = item
   selectedRowIndex.value = index
+  isEditMode.value = true
+
+  // 폼에 선택된 데이터 설정
+  formData.eqm_grp_nm = item.eqm_grp_nm || ''
+  formData.eqm_nm = item.eqm_nm
+  formData.make_co = item.make_co || ''
+  formData.st = mapStatusCode(item.st, item.st_nm)
+  formData.make_model = item.make_model || ''
+  formData.make_dt = toDateInput(item.make_dt)
+  formData.setp_dt = toDateInput(item.setp_dt)
+  formData.chck_cycle = item.chck_cycle ?? ''
+  formData.rm = item.rm || ''
 }
-// 신규
-const handleNew = () => {
-  resetFormData()
+
+// 폼 초기화 (신규 모드)
+const resetForm = () => {
+  selectedEqm.value = null
+  selectedRowIndex.value = null
+  isEditMode.value = false
+
+  formData.eqm_grp_nm = ''
+  formData.eqm_nm = ''
+  formData.make_model = ''
+  formData.make_co = ''
+  formData.make_dt = ''
+  formData.setp_dt = ''
+  formData.chck_cycle = ''
+  formData.st = 'M2'
+  formData.rm = ''
 }
 
-// 저장
-const handleSave = async () => {
-  console.log('=== 저장 시작 ===')
-
-  if (!formData.name || !formData.ceo) {
-    alert('업체명과 대표자명은 필수 입력 항목입니다.')
-    return
-  }
-
+// 설비 저장 (신규/수정)
+const saveEqm = async () => {
   try {
-    const sendData = {
-      co_id: formData.id,
-      bizr_reg_no: formData.businessNo,
-      co_nm: formData.name,
-      rpstr_nm: formData.ceo,
-      rpstr_tel: formData.ceoPhone,
-      co_ty_id: formData.type === 'customer' ? 'CUSTOMER' : 'VENDOR',
-      st: formData.status === 'active' ? 'ACT' : 'INA',
+    // 간단 검증
+    if (!formData.eqm_nm || !String(formData.eqm_nm).trim()) {
+      alert('설비명을 입력해주세요.')
+      return
     }
 
-    console.log('전송 데이터:', sendData)
+    // 저장 payload 구성
+    const payload = {
+      // eqm_grp_id는 현재 UI에서 선택 기능이 없어 전송하지 않음(업데이트 시 null 덮어쓰기 방지)
+      eqm_grp_nm: formData.eqm_grp_nm || null,
+      eqm_nm: String(formData.eqm_nm).trim(),
+      make_co: formData.make_co || null,
+      make_model: formData.make_model || null,
+      make_dt: formData.make_dt || null,
+      setp_dt: formData.setp_dt || null,
+      chck_cycle: formData.chck_cycle || null,
+      st: mapStatusForPersist(formData.st),
+      rm: formData.rm || null,
+    }
 
-    let response
-    if (originalId.value) {
-      // 수정: 기존 ID를 별도로 전송
-      sendData.original_co_id = originalId.value
-      response = await axios.post('/api/coUpdate', sendData)
+    let res
+    if (selectedEqm.value && selectedEqm.value.eqm_id) {
+      // UPDATE
+      res = await axios.put(`/api/eqm/${selectedEqm.value.eqm_id}`, payload)
     } else {
-      // 신규
-      response = await axios.post('/api/coInsert', sendData)
+      // INSERT
+      res = await axios.post('/api/eqm', payload)
     }
 
-    console.log('서버 응답:', response.data)
-
-    if (response.data.isSuccessed) {
-      alert(response.data.message)
-      await handleSearch()
-      resetFormData()
-    } else {
-      alert(response.data.message)
+    if (res?.data?.success === false) {
+      throw new Error(res.data.message || '저장 실패')
     }
+
+    alert('저장되었습니다.')
+    await searchEqm()
+    resetForm()
   } catch (error) {
-    console.error('저장 오류:', error)
-    alert('저장 중 오류가 발생했습니다.')
+    console.error('[eqm] 저장 에러:', error)
+    alert(error?.response?.data?.message || error.message || '설비 저장 중 오류가 발생했습니다.')
   }
 }
-// 삭제
-const handleDelete = async () => {
-  if (!formData.id) {
-    alert('삭제할 데이터를 선택해주세요.')
-    return
-  }
 
-  if (!confirm('정말 삭제하시겠습니까?')) return
-
+// 설비 삭제
+const deleteEqm = async () => {
   try {
-    const response = await axios.post('/api/coDelete', { co_id: formData.id })
-
-    if (response.data.isSuccessed) {
-      alert(response.data.message)
-      await handleSearch()
-      resetFormData()
+    if (!selectedEqm.value || !selectedEqm.value.eqm_id) return
+    const ok = confirm('선택한 설비를 삭제하시겠습니까?')
+    if (!ok) return
+    const res = await axios.delete(`/api/eqm/${selectedEqm.value.eqm_id}`)
+    if (res?.data?.success === false) {
+      throw new Error(res.data.message || '삭제 실패')
     }
+    alert('삭제되었습니다.')
+    await searchEqm()
+    resetForm()
   } catch (error) {
-    console.error('삭제 오류:', error)
-    alert('삭제 중 오류가 발생했습니다.')
+    console.error('[eqm] 삭제 에러:', error)
+    alert(error?.response?.data?.message || error.message || '설비 삭제 중 오류가 발생했습니다.')
   }
 }
 
-// 라벨 반환
-const getTypeLabel = (type) => {
-  return type === 'customer' ? '고객사' : '공급업체'
+// 컴포넌트 마운트시에는 자동 조회하지 않음
+onMounted(async () => {
+  try {
+    const [coRes, stRes] = await Promise.all([
+      axios.get('/api/eqm/make-companies'),
+      axios.get('/api/eqm/statuses'),
+    ])
+    makeCompanies.value = Array.isArray(coRes.data) ? coRes.data : []
+    statuses.value = Array.isArray(stRes.data) ? stRes.data : []
+  } catch (e) {
+    console.warn('[eqm] 드롭다운 초기화 실패', e)
+  }
+})
+
+// 품목 유형 라벨 변환 함수
+const getEqmMakeCoLabel = (code) => {
+  const map = { E1: '프레스월드', E2: '사출코', E3: '라인메이커', E4: '비전텍', E5: '예담' }
+  return map[code] || code || ''
+}
+
+const formatDate = (val) => {
+  if (!val) return ''
+  try {
+    const d = new Date(val)
+    if (Number.isNaN(d.getTime())) return String(val)
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd}`
+  } catch {
+    return String(val)
+  }
+}
+
+const toDateInput = (val) => {
+  if (!val) return ''
+  // ISO 또는 Date 가능한 값 처리
+  const d = new Date(val)
+  if (!Number.isNaN(d.getTime())) {
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd}`
+  }
+  // 'YYYYMMDD' 같은 문자열 처리
+  const s = String(val)
+  if (s.length === 8 && /^\d{8}$/.test(s)) {
+    return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`
+  }
+  return ''
+}
+
+// 상태 코드 매핑 (행 클릭 시 폼 표시용)
+// DB 코드: Q1(가동), Q2(비가동) 또는 과거 코드 M2(가동), M1(비가동)
+// 폼 라디오는 M2(가동)/M1(비가동)으로 유지
+const mapStatusCode = (st, st_nm) => {
+  const code = String(st || '').trim()
+  if (code === 'Q1') return 'M2'
+  if (code === 'Q2') return 'M1'
+  if (code === 'M1' || code === 'M2') return code
+  const name = String(st_nm || '').trim()
+  if (name.includes('비가동')) return 'M1'
+  if (name.includes('가동')) return 'M2'
+  return 'M2' // 기본은 가동
+}
+
+// 저장용 매핑 (폼 라디오 → DB 코드)
+// 폼: M2(가동)→DB: Q1, 폼: M1(비가동)→DB: Q2
+const mapStatusForPersist = (formCode) => {
+  const c = String(formCode || '').trim()
+  if (c === 'M2') return 'Q1'
+  if (c === 'M1') return 'Q2'
+  // 이미 Q1/Q2가 들어왔을 가능성도 고려
+  if (c === 'Q1' || c === 'Q2') return c
+  return 'Q1'
 }
 </script>
 
@@ -492,6 +532,8 @@ const getTypeLabel = (type) => {
   border-radius: 8px;
   background: #ffffff;
   overflow: hidden;
+  /* 세로 스크롤 컨테이너가 정상 축소되도록 */
+  min-height: 0;
 }
 
 /* 폼 박스 - 얇은 회색 테두리 */
@@ -581,92 +623,10 @@ const getTypeLabel = (type) => {
   background-color: #ffffff;
 }
 
-:deep(input[type='date']) {
-  font-size: 12px;
-}
-
 /* 검색 필터 영역 압축 */
 :deep(.g-3) {
   --bs-gutter-y: 0.5rem;
   --bs-gutter-x: 0.75rem;
-}
-
-/* ============================================
-   커스텀 셀렉트박스 스타일
-   ============================================ */
-.custom-select-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-.custom-select {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 12px;
-  font-weight: 400;
-  padding: 0.4rem 0.75rem;
-  border: 2px solid #e9ecef;
-  border-radius: 8px;
-  background-color: #f8f9fa;
-  height: 34px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  user-select: none;
-}
-
-.custom-select:hover {
-  border-color: #dee2e6;
-  background-color: #ffffff;
-}
-
-.custom-select svg {
-  margin-left: 8px;
-  flex-shrink: 0;
-}
-
-.custom-dropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  background: #ffffff;
-  border: 2px solid #e9ecef;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  overflow: hidden;
-  animation: dropdownFadeIn 0.2s ease;
-}
-
-@keyframes dropdownFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.custom-option {
-  padding: 0.5rem 0.75rem;
-  font-size: 12px;
-  font-weight: 500;
-  color: #2c3e50;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.custom-option:hover {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  color: #495057;
-}
-
-.custom-option:active {
-  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
-  color: #ffffff;
 }
 
 /* ============================================
@@ -683,7 +643,6 @@ const getTypeLabel = (type) => {
   align-items: center !important;
   margin-bottom: 0 !important;
   padding: 0 !important;
-  width: 80px !important;
 }
 
 :deep(.radio-item .form-check-input) {
@@ -721,9 +680,10 @@ const getTypeLabel = (type) => {
    ============================================ */
 .table-wrapper {
   flex: 1;
-  overflow-y: auto;
+  height: 100%;
+  overflow-y: auto; /* 상하 스크롤 */
+  overflow-x: hidden; /* 좌우 스크롤 제거 */
   border-radius: 10px;
-  max-height: calc(100vh - 400px);
 }
 
 :deep(.data-table) {
@@ -732,6 +692,8 @@ const getTypeLabel = (type) => {
   border-spacing: 0;
   user-select: none;
   cursor: default;
+  table-layout: fixed; /* 가로 폭 고정으로 가로 스크롤 방지 */
+  width: 100%;
 }
 
 :deep(.data-table thead) {
@@ -766,6 +728,9 @@ const getTypeLabel = (type) => {
   padding: 0.55rem 0.5rem;
   border-bottom: 1px solid #e9ecef;
   color: #2c3e50;
+  overflow: hidden; /* 긴 텍스트 말줄임 */
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 :deep(.data-table tbody tr) {
@@ -776,7 +741,6 @@ const getTypeLabel = (type) => {
 
 :deep(.data-table tbody tr:hover) {
   background-color: #f8f9fa;
-  transform: scale(1.005);
 }
 
 /* 선택된 행 스타일 - 모던 그레이 테마 */
@@ -803,7 +767,7 @@ const getTypeLabel = (type) => {
 }
 
 /* ============================================
-   모던 스크롤바 스타일 (Smooth & Elegant)
+   모던 스크롤바 스타일 (Glass / Minimal)
    ============================================ */
 .table-wrapper,
 :deep(.overflow-auto) {
@@ -813,43 +777,51 @@ const getTypeLabel = (type) => {
   -webkit-overflow-scrolling: touch;
 }
 
-/* 스크롤바 너비 - 10px → 14px로 변경 */
+/* 좌측 컬럼이 스크롤 컨테이너를 만들 수 있도록 */
+.left-pane {
+  min-height: 0;
+}
+
+/* 메인 컨텐츠 행과 우측 패널도 자식 스크롤 허용 */
+.main-content-row {
+  min-height: 0;
+}
+
+.right-pane {
+  min-height: 0;
+}
+
+/* 모던 스크롤바 스타일 (Glass / Minimal) */
 .table-wrapper::-webkit-scrollbar,
 :deep(.overflow-auto)::-webkit-scrollbar {
-  width: 14px;
+  width: 8px;
 }
 
-/* 스크롤바 트랙 (배경) - 더 진한 회색 */
 .table-wrapper::-webkit-scrollbar-track,
 :deep(.overflow-auto)::-webkit-scrollbar-track {
-  background: #e9ecef;
+  background: rgba(240, 240, 240, 0.6);
   border-radius: 10px;
-  margin: 4px 0;
 }
 
-/* 스크롤바 썸 (움직이는 부분) - 더 진하고 굵게 */
 .table-wrapper::-webkit-scrollbar-thumb,
 :deep(.overflow-auto)::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #6c757d 0%, #495057 100%);
+  background: linear-gradient(180deg, #bfc2c7, #9ea2a8);
   border-radius: 10px;
-  border: 3px solid #e9ecef;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(2px);
+  transition: all 0.2s ease;
 }
 
-/* 스크롤바 호버 - 더욱 진하게 */
 .table-wrapper::-webkit-scrollbar-thumb:hover,
 :deep(.overflow-auto)::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #495057 0%, #343a40 100%);
-  border-color: #dee2e6;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+  background: linear-gradient(180deg, #a4a8ae, #7e838a);
 }
 
 /* Firefox 대응 */
 .table-wrapper,
 :deep(.overflow-auto) {
-  scrollbar-width: auto;
-  scrollbar-color: #6c757d #e9ecef;
+  scrollbar-width: thin;
+  scrollbar-color: #9ea2a8 rgba(240, 240, 240, 0.6);
 }
 
 /* ============================================

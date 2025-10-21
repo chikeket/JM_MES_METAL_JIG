@@ -1,87 +1,106 @@
 <template>
-  <CContainer fluid class="h-100 d-flex flex-column p-3">
+  <CContainer fluid class="h-100 d-flex flex-column p-3 page-container">
     <!-- 상단 조회/초기화 버튼 -->
-    <div class="d-flex justify-content-end mb-2 gap-2">
-      <CButton color="secondary" size="sm" @click="searchWrhous">조회</CButton>
-      <CButton color="secondary" size="sm" @click="resetSearch">초기화</CButton>
+    <div class="d-flex justify-content-end mb-2 gap-2 button-group">
+      <CButton color="secondary" size="sm" @click="searchWrhous" class="btn-search">조회</CButton>
+      <CButton color="secondary" size="sm" @click="resetSearch" class="btn-reset">초기화</CButton>
     </div>
 
     <!-- 검색 필터 영역 -->
-    <div class="search-filter-box mb-2">
-      <CRow class="g-3">
+    <div class="search-filter-box mb-4 fade-in-up" style="animation-delay: 0.1s">
+      <CRow class="g-3 align-items-center">
         <CCol :md="3">
-          <CFormLabel class="form-label">창고 ID</CFormLabel>
-          <CFormInput v-model="searchForm.wrhous_id" size="sm" placeholder="창고 ID를 입력하세요" />
+          <div class="search-row-container">
+            <CFormLabel class="search-label-fixed">창고 ID</CFormLabel>
+            <CFormInput v-model="searchForm.wrhous_id" size="sm" class="form-input-search" />
+          </div>
         </CCol>
         <CCol :md="3">
-          <CFormLabel class="form-label">창고명</CFormLabel>
-          <CFormInput v-model="searchForm.wrhous_nm" size="sm" placeholder="창고명을 입력하세요" />
+          <div class="search-row-container">
+            <CFormLabel class="search-label-fixed">창고명</CFormLabel>
+            <CFormInput v-model="searchForm.wrhous_nm" size="sm" class="form-input-search" />
+          </div>
         </CCol>
         <CCol :md="3">
-          <CFormLabel class="form-label">품목 유형</CFormLabel>
-          <CFormSelect v-model="searchForm.item_ty" size="sm">
-            <option value="">전체</option>
-            <option value="E1">자재</option>
-            <option value="E2">반제품</option>
-            <option value="E3">완제품</option>
-          </CFormSelect>
+          <div class="search-row-container">
+            <CFormLabel class="search-label-fixed">품목 유형</CFormLabel>
+            <div class="custom-select-wrapper">
+              <div class="custom-select" @click="toggleItemTypeDropdown" ref="itemTypeSelect">
+                <span>{{ getItemTypeDisplayText(searchForm.item_ty) }}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12">
+                  <path fill="#495057" d="M6 9L1 4h10z" />
+                </svg>
+              </div>
+              <div v-if="showItemTypeDropdown" class="custom-dropdown">
+                <div class="custom-option" @click="selectItemType('')">전체</div>
+                <div class="custom-option" @click="selectItemType('E1')">자재</div>
+                <div class="custom-option" @click="selectItemType('E2')">반제품</div>
+                <div class="custom-option" @click="selectItemType('E3')">완제품</div>
+              </div>
+            </div>
+          </div>
         </CCol>
         <CCol :md="3">
-          <CFormLabel class="form-label">상태</CFormLabel>
-          <CFormSelect v-model="searchForm.st" size="sm">
-            <option value="">전체</option>
-            <option value="M1">활성</option>
-            <option value="M2">비활성</option>
-          </CFormSelect>
+          <div class="search-row-container">
+            <CFormLabel class="search-label-fixed">상태</CFormLabel>
+            <div class="custom-select-wrapper">
+              <div class="custom-select" @click="toggleStatusDropdown" ref="statusSelect">
+                <span>{{ getStatusDisplayText(searchForm.st) }}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12">
+                  <path fill="#495057" d="M6 9L1 4h10z" />
+                </svg>
+              </div>
+              <div v-if="showStatusDropdown" class="custom-dropdown">
+                <div class="custom-option" @click="selectStatus('')">전체</div>
+                <div class="custom-option" @click="selectStatus('M1')">활성</div>
+                <div class="custom-option" @click="selectStatus('M2')">비활성</div>
+              </div>
+            </div>
+          </div>
         </CCol>
       </CRow>
     </div>
 
     <!-- 메인 컨텐츠 영역 -->
-    <CRow class="flex-grow-1 overflow-hidden g-2">
+    <CRow class="flex-grow-1 overflow-hidden g-2 fade-in-up" style="animation-delay: 0.2s">
       <!-- 좌측: 데이터 그리드 -->
-      <CCol :md="6" class="d-flex flex-column overflow-hidden">
-        <!-- 높이 맞추기용 투명 버튼 영역 -->
-        <div class="button-spacer mb-2">
-          <CButton color="secondary" size="sm">신규</CButton>
-          <CButton color="secondary" size="sm">저장</CButton>
-          <CButton color="danger" size="sm">삭제</CButton>
+      <CCol :md="6" class="d-flex flex-column overflow-hidden pe-1">
+        <div class="d-flex gap-2 mb-2">
+          <CButton color="secondary" size="sm" class="btn-hidden" style="visibility: hidden">숨김</CButton>
         </div>
-        
-        <!-- 그리드 테이블 -->
+
         <div class="grid-box flex-grow-1 overflow-hidden d-flex flex-column">
           <div class="table-wrapper">
             <CTable bordered hover class="data-table">
               <CTableHead>
                 <CTableRow>
-                  <CTableHeaderCell scope="col" class="text-center" style="width: 60px">No</CTableHeaderCell>
-                  <CTableHeaderCell scope="col" class="text-center">창고 ID</CTableHeaderCell>
-                  <CTableHeaderCell scope="col" class="text-center">창고명</CTableHeaderCell>
-                  <CTableHeaderCell scope="col" class="text-center">품목 유형</CTableHeaderCell>
-                  <CTableHeaderCell scope="col" class="text-center" style="width: 100px">상태</CTableHeaderCell>
-                  <CTableHeaderCell scope="col" class="text-center">비고</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 10%">No</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 18%">창고 ID</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 22%">창고명</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 18%">품목 유형</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 12%">상태</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 20%">비고</CTableHeaderCell>
                 </CTableRow>
               </CTableHead>
               <CTableBody>
-                <!-- 데이터 행 -->
-                <CTableRow 
-                  v-for="(item, index) in displayedData" 
+                <CTableRow
+                  v-for="(item, index) in displayedData"
                   :key="item.wrhous_id"
                   @click="selectWrhous(item, index)"
                   :class="{ 'selected-row': selectedRowIndex === index }"
+                  class="data-row"
                 >
                   <CTableDataCell class="text-center">{{ index + 1 }}</CTableDataCell>
                   <CTableDataCell class="text-center">{{ item.wrhous_id }}</CTableDataCell>
                   <CTableDataCell>{{ item.wrhous_nm }}</CTableDataCell>
                   <CTableDataCell>{{ getItemTypeLabel(item.item_ty) }}</CTableDataCell>
                   <CTableDataCell class="text-center">
-                    <CBadge :color="item.st === 'M1' ? 'success' : 'secondary'">
+                    <span :class="['status-badge', item.st === 'M1' ? 'status-active' : 'status-inactive']">
                       {{ item.st === 'M1' ? '활성' : '비활성' }}
-                    </CBadge>
+                    </span>
                   </CTableDataCell>
                   <CTableDataCell>{{ item.rm || '' }}</CTableDataCell>
                 </CTableRow>
-                <!-- 빈 행 채우기 (10행 고정) -->
                 <CTableRow v-for="i in emptyRowCount" :key="'empty-' + i" class="empty-row">
                   <CTableDataCell colspan="6">&nbsp;</CTableDataCell>
                 </CTableRow>
@@ -92,97 +111,84 @@
       </CCol>
 
       <!-- 우측: 상세 입력 폼 -->
-      <CCol :md="6" class="d-flex flex-column overflow-hidden">
-        <!-- 신규/저장/삭제 버튼 -->
-        <div class="d-flex justify-content-end gap-2 mb-2">
-          <CButton color="secondary" size="sm" @click="resetForm">신규</CButton>
-          <CButton color="secondary" size="sm" @click="saveWrhous">저장</CButton>
-          <CButton color="danger" size="sm" @click="deleteWrhous" :disabled="!selectedWrhous">삭제</CButton>
+      <CCol :md="6" class="d-flex flex-column overflow-hidden ps-1">
+        <div class="d-flex gap-2 justify-content-end mb-2">
+          <CButton color="secondary" size="sm" @click="resetForm" class="btn-action">신규</CButton>
+          <CButton color="secondary" size="sm" @click="saveWrhous" class="btn-action">저장</CButton>
+          <CButton color="danger" size="sm" @click="deleteWrhous" :disabled="!selectedWrhous" class="btn-action">삭제</CButton>
         </div>
-
-        <!-- 입력 폼 -->
         <div class="form-box flex-grow-1 d-flex flex-column overflow-hidden">
-          <div class="p-3 flex-grow-1 overflow-auto">
-            <CRow class="mb-2">
-              <CCol :md="3" class="text-end pe-2">
-                <CFormLabel class="form-label pt-1">창고 ID</CFormLabel>
-              </CCol>
-              <CCol :md="8" class="ps-3">
-                <CFormInput 
-                  v-model="formData.wrhous_id" 
-                  size="sm"
-                  placeholder="자동 생성됩니다"
-                  readonly
-                />
-              </CCol>
-            </CRow>
-            
-            <CRow class="mb-2">
-              <CCol :md="3" class="text-end pe-2">
-                <CFormLabel class="form-label pt-1">창고명</CFormLabel>
-              </CCol>
-              <CCol :md="8" class="ps-3">
-                <CFormInput 
-                  v-model="formData.wrhous_nm" 
-                  size="sm"
-                  placeholder="자재창고"
-                />
-              </CCol>
-            </CRow>
-            
-            <CRow class="mb-2">
-              <CCol :md="3" class="text-end pe-2">
-                <CFormLabel class="form-label pt-1">품목 유형</CFormLabel>
-              </CCol>
-              <CCol :md="8" class="ps-3">
-                <CFormSelect v-model="formData.item_ty" size="sm">
-                  <option value="">선택하세요</option>
-                  <option value="E1">자재</option>
-                  <option value="E2">반제품</option>
-                  <option value="E3">완제품</option>
-                </CFormSelect>
-              </CCol>
-            </CRow>
-            
-            <CRow class="mb-2">
-              <CCol :md="3" class="text-end pe-2">
-                <CFormLabel class="form-label pt-1">상태</CFormLabel>
-              </CCol>
-              <CCol :md="8" class="ps-3">
-                <div class="radio-group">
-                  <CFormCheck 
-                    class="radio-item"
-                    type="radio" 
-                    id="status-active"
-                    name="status"
-                    value="M1"
-                    v-model="formData.st"
-                    label="활성상태"
-                  />
-                  <CFormCheck 
-                    class="radio-item"
-                    type="radio" 
-                    id="status-inactive"
-                    name="status"
-                    value="M2"
-                    v-model="formData.st"
-                    label="비활성상태"
+          <div class="p-3 flex-grow-1" style="overflow: visible !important; padding-top: 2rem !important">
+            <CRow class="g-2" style="width: 100%; margin-top: 0">
+              <CCol :md="12">
+                <div class="form-row-horizontal mb-3">
+                  <CFormLabel class="form-label-inline">창고 ID</CFormLabel>
+                  <CFormInput 
+                    v-model="formData.wrhous_id" 
+                    size="sm" 
+                    disabled 
+                    class="form-input-compact" 
+                    placeholder="자동 생성"
                   />
                 </div>
-              </CCol>
-            </CRow>
-            
-            <CRow class="mb-2">
-              <CCol :md="3" class="text-end pe-2">
-                <CFormLabel class="form-label pt-1">비고</CFormLabel>
-              </CCol>
-              <CCol :md="8" class="ps-3">
-                <CFormTextarea 
-                  v-model="formData.rm" 
-                  rows="6" 
-                  placeholder="비고사항을 입력하세요"
-                  size="sm"
-                />
+
+                <div class="form-row-horizontal mb-3">
+                  <CFormLabel class="form-label-inline">창고명</CFormLabel>
+                  <CFormInput 
+                    v-model="formData.wrhous_nm" 
+                    size="sm" 
+                    class="form-input-compact" 
+                  />
+                </div>
+
+                <div class="form-row-horizontal mb-3">
+                  <CFormLabel class="form-label-inline">품목 유형</CFormLabel>
+                  <div class="custom-select-wrapper" style="width: 230px;">
+                    <div class="custom-select custom-select-form" @click="toggleFormItemTypeDropdown" ref="formItemTypeSelect">
+                      <span>{{ getItemTypeDisplayText(formData.item_ty) || '선택하세요' }}</span>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12">
+                        <path fill="#495057" d="M6 9L1 4h10z" />
+                      </svg>
+                    </div>
+                    <div v-if="showFormItemTypeDropdown" class="custom-dropdown">
+                      <div class="custom-option" @click="selectFormItemType('')">선택하세요</div>
+                      <div class="custom-option" @click="selectFormItemType('E1')">자재</div>
+                      <div class="custom-option" @click="selectFormItemType('E2')">반제품</div>
+                      <div class="custom-option" @click="selectFormItemType('E3')">완제품</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-row-horizontal mb-3" style="align-items: flex-start">
+                  <CFormLabel class="form-label-inline" style="padding-top: 0.5rem; min-width: 80px">상태</CFormLabel>
+                  <div class="radio-group-horizontal">
+                    <CFormCheck 
+                      type="radio" 
+                      name="status" 
+                      label="활성" 
+                      value="M1" 
+                      v-model="formData.st" 
+                      class="radio-item-inline" 
+                    />
+                    <CFormCheck 
+                      type="radio" 
+                      name="status" 
+                      label="비활성" 
+                      value="M2" 
+                      v-model="formData.st" 
+                      class="radio-item-inline" 
+                    />
+                  </div>
+                </div>
+
+                <div class="form-row-horizontal mb-3" style="align-items: flex-start">
+                  <CFormLabel class="form-label-inline" style="padding-top: 0.5rem; min-width: 80px">비고</CFormLabel>
+                  <CFormTextarea 
+                    v-model="formData.rm" 
+                    rows="6" 
+                    class="form-textarea-compact"
+                  />
+                </div>
               </CCol>
             </CRow>
           </div>
@@ -193,10 +199,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, computed } from 'vue'
 import axios from 'axios'
 
-// 조회 조건 폼
 const searchForm = reactive({
   wrhous_id: '',
   wrhous_nm: '',
@@ -204,14 +209,17 @@ const searchForm = reactive({
   st: ''
 })
 
-// 창고 데이터 목록
-const wrhousData = ref([])
+const showItemTypeDropdown = ref(false)
+const showStatusDropdown = ref(false)
+const showFormItemTypeDropdown = ref(false)
+const itemTypeSelect = ref(null)
+const statusSelect = ref(null)
+const formItemTypeSelect = ref(null)
 
-// 선택된 창고
+const wrhousData = ref([])
 const selectedWrhous = ref(null)
 const selectedRowIndex = ref(null)
 
-// 입력 폼 데이터
 const formData = reactive({
   wrhous_id: '',
   wrhous_nm: '',
@@ -220,21 +228,75 @@ const formData = reactive({
   rm: ''
 })
 
-// 편집 모드 여부
 const isEditMode = ref(false)
 
-// 표시할 데이터 (최대 10행)
 const displayedData = computed(() => {
   return wrhousData.value.slice(0, 10)
 })
 
-// 빈 행 개수 계산
 const emptyRowCount = computed(() => {
   const dataCount = displayedData.value.length
   return dataCount < 10 ? 10 - dataCount : 0
 })
 
-// 창고 목록 조회
+const toggleItemTypeDropdown = () => {
+  showItemTypeDropdown.value = !showItemTypeDropdown.value
+  showStatusDropdown.value = false
+  showFormItemTypeDropdown.value = false
+}
+
+const toggleStatusDropdown = () => {
+  showStatusDropdown.value = !showStatusDropdown.value
+  showItemTypeDropdown.value = false
+  showFormItemTypeDropdown.value = false
+}
+
+const toggleFormItemTypeDropdown = () => {
+  showFormItemTypeDropdown.value = !showFormItemTypeDropdown.value
+  showItemTypeDropdown.value = false
+  showStatusDropdown.value = false
+}
+
+const selectItemType = (value) => {
+  searchForm.item_ty = value
+  showItemTypeDropdown.value = false
+}
+
+const selectStatus = (value) => {
+  searchForm.st = value
+  showStatusDropdown.value = false
+}
+
+const selectFormItemType = (value) => {
+  formData.item_ty = value
+  showFormItemTypeDropdown.value = false
+}
+
+const getItemTypeDisplayText = (value) => {
+  if (value === 'E1') return '자재'
+  if (value === 'E2') return '반제품'
+  if (value === 'E3') return '완제품'
+  return '전체'
+}
+
+const getStatusDisplayText = (value) => {
+  if (value === 'M1') return '활성'
+  if (value === 'M2') return '비활성'
+  return '전체'
+}
+
+const handleClickOutside = (event) => {
+  if (itemTypeSelect.value && !itemTypeSelect.value.contains(event.target)) {
+    showItemTypeDropdown.value = false
+  }
+  if (statusSelect.value && !statusSelect.value.contains(event.target)) {
+    showStatusDropdown.value = false
+  }
+  if (formItemTypeSelect.value && !formItemTypeSelect.value.contains(event.target)) {
+    showFormItemTypeDropdown.value = false
+  }
+}
+
 const searchWrhous = async () => {
   try {
     console.log('[wrhousManage] 조회 조건:', searchForm)
@@ -250,7 +312,6 @@ const searchWrhous = async () => {
   }
 }
 
-// 조회 조건 초기화
 const resetSearch = () => {
   searchForm.wrhous_id = ''
   searchForm.wrhous_nm = ''
@@ -258,18 +319,14 @@ const resetSearch = () => {
   searchForm.st = ''
   selectedRowIndex.value = null
   wrhousData.value = []
-  
-  // 우측 입력 폼도 함께 초기화
   resetForm()
 }
 
-// 창고 선택
 const selectWrhous = (item, index) => {
   selectedWrhous.value = item
   selectedRowIndex.value = index
   isEditMode.value = true
   
-  // 폼에 선택된 데이터 설정
   formData.wrhous_id = item.wrhous_id
   formData.wrhous_nm = item.wrhous_nm
   formData.item_ty = item.item_ty || ''
@@ -277,7 +334,6 @@ const selectWrhous = (item, index) => {
   formData.rm = item.rm || ''
 }
 
-// 폼 초기화 (신규 모드)
 const resetForm = () => {
   selectedWrhous.value = null
   selectedRowIndex.value = null
@@ -290,10 +346,8 @@ const resetForm = () => {
   formData.rm = ''
 }
 
-// 창고 저장 (신규/수정)
 const saveWrhous = async () => {
   try {
-    // 입력값 검증 (ID는 자동 생성되므로 제외)
     if (!formData.wrhous_nm.trim()) {
       alert('창고명을 입력해주세요.')
       return
@@ -305,8 +359,8 @@ const saveWrhous = async () => {
     
     if (response.data.success) {
       alert(isEditMode.value ? '창고 정보가 수정되었습니다.' : '새 창고가 등록되었습니다.')
-      await searchWrhous() // 목록 재조회
-      resetForm() // 폼 초기화
+      await searchWrhous()
+      resetForm()
     }
   } catch (error) {
     console.error('[wrhousManage] 저장 에러:', error)
@@ -314,7 +368,6 @@ const saveWrhous = async () => {
   }
 }
 
-// 창고 삭제
 const deleteWrhous = async () => {
   if (!selectedWrhous.value) {
     alert('삭제할 창고를 선택해주세요.')
@@ -332,8 +385,8 @@ const deleteWrhous = async () => {
     
     if (response.data.success) {
       alert('창고가 삭제되었습니다.')
-      await searchWrhous() // 목록 재조회
-      resetForm() // 폼 초기화
+      await searchWrhous()
+      resetForm()
     }
   } catch (error) {
     console.error('[wrhousManage] 삭제 에러:', error)
@@ -341,12 +394,14 @@ const deleteWrhous = async () => {
   }
 }
 
-// 컴포넌트 마운트시에는 자동 조회하지 않음
 onMounted(() => {
-  // 자동 조회 제거 - 사용자가 조회 버튼을 눌러야 조회됨
+  document.addEventListener('click', handleClickOutside)
 })
 
-// 품목 유형 라벨 변환 함수
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
+
 const getItemTypeLabel = (itemType) => {
   const itemTypeMap = {
     'E1': '자재',
@@ -358,186 +413,370 @@ const getItemTypeLabel = (itemType) => {
 </script>
 
 <style scoped>
-/* ============================================
-   전역 스타일 - 2025 Modern Design
-   ============================================ */
+.page-container {
+  animation: pageLoad 0.5s ease-out;
+}
+
+@keyframes pageLoad {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.button-group {
+  animation: fadeInDown 0.4s ease-out;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.5s ease-out both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 :deep(*) {
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
-  line-height: 1.5;
+  line-height: 1.6;
   box-sizing: border-box;
 }
 
-/* 전체 컨테이너 - 흰색 배경 */
 :deep(.container-fluid) {
-  background: #ffffff;
-  padding: 1rem !important;
-  height: 100vh;
-  overflow: hidden;
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+  padding: 1.5rem !important;
+  min-height: 100vh;
+  overflow: auto;
+  width: 100%;
 }
 
-/* 검색 필터 박스 - 얇은 회색 테두리 */
 .search-filter-box {
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-  padding: 1rem;
   background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 2rem 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  margin-bottom: 0.75rem;
+  position: relative;
+  z-index: 100;
 }
 
-/* 그리드 박스 - 얇은 회색 테두리 */
-.grid-box {
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
+.grid-box, .form-box {
   background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   overflow: hidden;
+  max-height: calc(46px + 10 * 46px + 2px);
 }
 
-/* 폼 박스 - 얇은 회색 테두리 */
 .form-box {
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-  background: #ffffff;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  z-index: 1;
+  overflow: visible !important;
 }
 
-/* ============================================
-   버튼 스타일 - Modern & Clean
-   ============================================ */
 :deep(.btn) {
   font-size: 13px;
   font-weight: 600;
-  padding: 0.5rem 1.2rem;
+  padding: 0.55rem 1.2rem;
   border: none;
   border-radius: 8px;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   letter-spacing: -0.3px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-width: 80px;
 }
 
 :deep(.btn-secondary) {
-  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
   color: #fff !important;
 }
 
 :deep(.btn-secondary:hover) {
-  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
+  box-shadow: 0 4px 8px rgba(71, 85, 105, 0.3);
+  transform: translateY(-1px);
 }
 
 :deep(.btn-danger) {
-  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: #fff !important;
 }
 
 :deep(.btn-danger:hover) {
-  background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+  transform: translateY(-1px);
 }
 
 :deep(.btn:active) {
-  transform: translateY(0);
+  transform: scale(0.98);
 }
 
-/* 높이 맞추기용 투명 버튼 영역 */
-.button-spacer {
-  visibility: hidden;
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  height: 38px;
+:deep(.btn:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
 }
 
-/* ============================================
-   폼 요소 스타일 - Clean & Modern
-   ============================================ */
-:deep(.form-label) {
-  font-size: 12px;
-  font-weight: 600;
-  color: #2c3e50;
-  margin-bottom: 0.25rem;
-  letter-spacing: -0.2px;
-}
-
-:deep(.form-control),
-:deep(.form-select) {
-  font-size: 12px;
-  font-weight: 400;
-  padding: 0.4rem 0.75rem;
-  border: 2px solid #e9ecef;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  background-color: #f8f9fa;
-  height: 34px;
-}
-
-:deep(.form-control:focus),
-:deep(.form-select:focus) {
-  border-color: #6c757d;
-  box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.15);
-  background-color: #ffffff;
-}
-
-/* 검색 필터 영역 압축 */
-:deep(.g-3) {
-  --bs-gutter-y: 0.5rem;
-  --bs-gutter-x: 0.75rem;
-}
-
-/* ============================================
-   라디오 버튼 스타일 - Modern
-   ============================================ */
-.radio-group {
+.form-row-horizontal {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 0.6rem;
+  justify-content: flex-start;
+  margin-bottom: 1.1rem;
 }
 
-:deep(.radio-item) {
-  display: flex !important;
-  align-items: center !important;
-  margin-bottom: 0 !important;
-  padding: 0 !important;
+.form-label-inline {
+  font-size: 11px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 0;
+  letter-spacing: -0.2px;
+  min-width: 80px;
+  white-space: nowrap;
+  text-align: right;
 }
 
-:deep(.radio-item .form-check-input) {
-  width: 18px !important;
-  height: 18px !important;
-  margin: 0 6px 0 0 !important;
-  flex-shrink: 0 !important;
+.form-input-compact {
+  font-size: 11px;
+  font-weight: 400;
+  padding: 0.3rem 0.5rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+  height: 28px;
+  width: 230px;
+  max-width: 230px;
+}
+
+.form-input-compact:focus {
+  border-color: #6b7280;
+  box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.1);
+  background-color: #ffffff;
+  outline: none;
+}
+
+.form-input-compact:disabled {
+  background-color: #f8fafc;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.form-textarea-compact {
+  font-size: 11px;
+  font-weight: 400;
+  padding: 0.5rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+  width: 230px;
+  max-width: 230px;
+  resize: vertical;
+}
+
+.form-textarea-compact:focus {
+  border-color: #6b7280;
+  box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.1);
+  background-color: #ffffff;
+  outline: none;
+}
+
+.radio-group-horizontal {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-direction: row;
+}
+
+.radio-item-inline {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+:deep(.radio-item-inline .form-check-input) {
+  margin-right: 0.4rem;
   cursor: pointer;
-  border: 2px solid #6c757d;
 }
 
-:deep(.radio-item .form-check-input:checked) {
-  background-color: #6c757d;
-  border-color: #6c757d;
-}
-
-:deep(.radio-item .form-check-label) {
-  font-size: 12px !important;
-  font-weight: 500 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  line-height: 18px !important;
-  white-space: nowrap !important;
+:deep(.radio-item-inline .form-check-label) {
+  font-size: 13px;
+  color: #334155;
   cursor: pointer;
-  color: #2c3e50;
+  font-weight: 500;
+  margin-bottom: 0;
 }
 
-/* 폼 행 간격 줄이기 */
-:deep(.mb-2) {
-  margin-bottom: 0.5rem !important;
+.custom-select-wrapper {
+  position: relative;
+  width: 100%;
+  z-index: 50;
 }
 
-/* ============================================
-   테이블 스타일 - Modern & Clean
-   ============================================ */
-.table-wrapper {
+.custom-select {
+  font-size: 13px;
+  font-weight: 400;
+  padding: 0.65rem 0.85rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  background-color: #ffffff;
+  height: 42px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #334155;
+}
+
+.custom-select-form {
+  font-size: 11px;
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
+  height: 28px;
+  width: 230px;
+}
+
+.custom-select:hover {
+  border-color: #94a3b8;
+}
+
+.custom-select span {
   flex: 1;
+}
+
+.custom-select svg {
+  flex-shrink: 0;
+}
+
+.custom-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background-color: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 9999;
+  max-height: 200px;
   overflow-y: auto;
-  border-radius: 10px;
-  max-height: calc(100vh - 400px);
+  animation: dropdownFadeIn 0.2s ease;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.custom-option {
+  padding: 0.75rem 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #334155;
+  font-size: 13px;
+  border-radius: 8px;
+  margin: 6px 8px;
+}
+
+.custom-option:first-child {
+  margin-top: 8px;
+}
+
+.custom-option:last-child {
+  margin-bottom: 8px;
+}
+
+.custom-option:hover {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  color: #1e293b;
+  transform: translateX(2px);
+}
+
+.table-wrapper {
+  overflow-y: scroll;
+  overflow-x: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  scrollbar-gutter: stable;
+}
+
+.table-wrapper::-webkit-scrollbar {
+  width: 16px;
+  background: linear-gradient(to right, #f8fafc, #f1f5f9);
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px;
+  margin: 6px 0;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.05);
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #64748b 0%, #475569 100%);
+  border-radius: 12px;
+  border: 3px solid #f1f5f9;
+  box-shadow: 
+    0 3px 10px rgba(71, 85, 105, 0.25),
+    inset 0 1px 3px rgba(255, 255, 255, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #475569 0%, #334155 100%);
+  border-color: #e2e8f0;
+  box-shadow: 
+    0 5px 15px rgba(71, 85, 105, 0.4),
+    inset 0 1px 3px rgba(255, 255, 255, 0.4);
+  transform: scaleX(1.15);
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
+  border-width: 2px;
+  box-shadow: 
+    0 2px 8px rgba(30, 41, 59, 0.5),
+    inset 0 2px 5px rgba(0, 0, 0, 0.25);
+}
+
+.table-wrapper::-webkit-scrollbar-button {
+  display: none;
+}
+
+.table-wrapper {
+  scrollbar-width: auto;
+  scrollbar-color: #64748b #f1f5f9;
 }
 
 :deep(.data-table) {
@@ -546,135 +785,155 @@ const getItemTypeLabel = (itemType) => {
   border-spacing: 0;
   user-select: none;
   cursor: default;
+  font-size: 13px;
+  width: 100%;
+  display: table;
+  table-layout: fixed;
 }
 
 :deep(.data-table thead) {
   position: sticky;
   top: 0;
   z-index: 10;
+  display: table-header-group;
+}
+
+:deep(.data-table tbody) {
+  display: table-row-group;
 }
 
 :deep(.data-table th) {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
-  background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
   color: #ffffff;
   text-align: center;
-  padding: 0.65rem 0.5rem;
+  padding: 0.85rem 0.75rem;
   border: none;
   letter-spacing: -0.2px;
 }
 
 :deep(.data-table th:first-child) {
-  border-top-left-radius: 10px;
+  border-top-left-radius: 12px;
 }
 
 :deep(.data-table th:last-child) {
-  border-top-right-radius: 10px;
+  border-top-right-radius: 12px;
 }
 
 :deep(.data-table td) {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 400;
   vertical-align: middle;
-  padding: 0.55rem 0.5rem;
-  border-bottom: 1px solid #e9ecef;
-  color: #2c3e50;
+  padding: 0.75rem 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  color: #334155;
+  height: 46px;
 }
 
-:deep(.data-table tbody tr) {
+:deep(.data-table tbody tr.data-row) {
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   background-color: #ffffff;
 }
 
-:deep(.data-table tbody tr:hover) {
-  background-color: #f8f9fa;
-  transform: scale(1.005);
+:deep(.data-table tbody tr.data-row:hover) {
+  background-color: #f8fafc;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
 }
 
-/* 선택된 행 스타일 - 모던 그레이 테마 */
 :deep(.selected-row) {
-  background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%) !important;
+  background: #e5e7eb !important;
   font-weight: 600;
-  box-shadow: inset 0 0 0 2px #6c757d;
+  box-shadow: inset 4px 0 0 0 #6b7280, 0 4px 12px rgba(107, 114, 128, 0.3) !important;
 }
 
 :deep(.selected-row td) {
-  border-bottom: 2px solid #495057;
-  color: #212529;
+  border-bottom: 1px solid #d1d5db !important;
+  color: #1f2937 !important;
 }
 
-/* 빈 행 스타일 */
 .empty-row td {
-  height: 34px;
-  background-color: #fafbfc;
+  height: 46px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
 }
 
-/* 우측 폼 영역 높이 조정 */
-:deep(.overflow-auto) {
-  max-height: calc(100vh - 280px);
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: -0.1px;
 }
 
-/* ============================================
-   모던 스크롤바 스타일 (Glass / Minimal)
-   ============================================ */
-.table-wrapper,
-:deep(.overflow-auto) {
-  overflow-y: scroll;
-  overflow-x: hidden;
-  scrollbar-gutter: stable;
-  -webkit-overflow-scrolling: touch;
+.status-active {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
 }
 
-/* 모던 스크롤바 스타일 (Glass / Minimal) */
-.table-wrapper::-webkit-scrollbar,
-:deep(.overflow-auto)::-webkit-scrollbar {
-  width: 8px;
+.status-inactive {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  color: #ffffff;
 }
 
-.table-wrapper::-webkit-scrollbar-track,
-:deep(.overflow-auto)::-webkit-scrollbar-track {
-  background: rgba(240, 240, 240, 0.6);
-  border-radius: 10px;
+:deep(.form-check-input:checked) {
+  background-color: #dc2626 !important;
+  border-color: #dc2626 !important;
 }
 
-.table-wrapper::-webkit-scrollbar-thumb,
-:deep(.overflow-auto)::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #bfc2c7, #9ea2a8);
-  border-radius: 10px;
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(2px);
+:deep(.form-check-input:checked:hover) {
+  background-color: #b91c1c !important;
+  border-color: #b91c1c !important;
+}
+
+:deep(.form-check-input:focus) {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 0.25rem rgba(220, 38, 38, 0.25) !important;
+}
+
+.search-row-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.search-label-fixed {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 0;
+  letter-spacing: -0.2px;
+  min-width: 70px;
+  white-space: nowrap;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.search-row-container .custom-select-wrapper,
+.search-row-container .form-input-search {
+  flex: 1;
+  min-width: 0;
+}
+
+.form-input-search {
+  font-size: 13px;
+  font-weight: 400;
+  padding: 0.65rem 0.85rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
   transition: all 0.2s ease;
+  background-color: #ffffff;
+  height: 42px;
+  width: 100%;
 }
 
-.table-wrapper::-webkit-scrollbar-thumb:hover,
-:deep(.overflow-auto)::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #a4a8ae, #7e838a);
-}
-
-/* Firefox 대응 */
-.table-wrapper,
-:deep(.overflow-auto) {
-  scrollbar-width: thin;
-  scrollbar-color: #9ea2a8 rgba(240, 240, 240, 0.6);
-}
-
-/* ============================================
-   반응형
-   ============================================ */
-@media (max-width: 1600px) {
-  :deep(.form-label),
-  :deep(.form-control),
-  :deep(.form-select),
-  :deep(.btn),
-  :deep(th),
-  :deep(td) {
-    font-size: 11px !important;
-  }
-  
-  :deep(.btn) {
-    padding: 0.4rem 1rem;
-  }
+.form-input-search:focus {
+  border-color: #6b7280;
+  box-shadow: 0 0 0 4px rgba(107, 114, 128, 0.12);
+  background-color: #ffffff;
+  outline: none;
 }
 </style>

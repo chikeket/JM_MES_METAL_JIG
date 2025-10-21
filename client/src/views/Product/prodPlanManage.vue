@@ -1,14 +1,184 @@
-<script setup>
-import { ref, reactive, watch } from 'vue'
+<template>
+  <CContainer fluid class="h-100 d-flex flex-column p-3">
+    <!-- 상단 버튼 -->
+    <div class="d-flex justify-content-end mb-2 gap-2">
+      <CButton color="secondary" size="sm" @click="masterReset()" class="btn-action">신규</CButton>
+      <CButton color="secondary" size="sm" @click="goToProdPlan()" class="btn-action">
+        생산계획서 조회
+      </CButton>
+      <ProdPlanModal
+        :visible="isProdPlanModalVisible"
+        @close="closeProdPlanModal"
+        @select="selectedPrdt"
+      />
+      <CButton color="secondary" size="sm" @click="insertRowsToDB" class="btn-action">저장</CButton>
+      <CButton color="secondary" size="sm" @click="updateRowsToDB" class="btn-action">수정</CButton>
+      <CButton color="danger" size="sm" @click="deleteRowsToDB()" class="btn-action">삭제</CButton>
+    </div>
 
+    <!-- 검색 필터 영역 -->
+    <div class="search-filter-box mb-4">
+      <CRow class="g-3">
+        <CCol :md="3">
+          <CFormLabel class="form-label">생산계획서 명</CFormLabel>
+          <CFormInput v-model="Info.ordrName1" placeholder="생산지시서 명" class="form-input-enhanced" />
+        </CCol>
+        <CCol :md="3">
+          <CFormLabel class="form-label">등록 일자</CFormLabel>
+          <CFormInput type="date" v-model="Info.regDate" class="form-input-enhanced" />
+        </CCol>
+        <CCol :md="3">
+          <CFormLabel class="form-label">시작 일자</CFormLabel>
+          <CFormInput type="date" v-model="Info.startDate" class="form-input-enhanced" />
+        </CCol>
+        <CCol :md="3">
+          <CFormLabel class="form-label">종료 일자</CFormLabel>
+          <CFormInput type="date" v-model="Info.endDate" class="form-input-enhanced" />
+        </CCol>
+      </CRow>
+
+      <CRow class="g-3 mt-2">
+        <CCol :md="12">
+          <CFormLabel class="form-label">비고</CFormLabel>
+          <CFormTextarea
+            v-model="Info.remark"
+            rows="2"
+            placeholder="필요 시 기재"
+            class="form-input-enhanced"
+          ></CFormTextarea>
+        </CCol>
+      </CRow>
+    </div>
+
+    <!-- 수주서 조회 버튼 -->
+    <div class="d-flex justify-content-end mb-2 gap-2">
+      <CButton color="secondary" size="sm" @click="goToDrctPlan()" class="btn-action">
+        수주서 조회
+      </CButton>
+      <ProdDrctModal
+        :visible="isProdDrctModalVisible"
+        @close="closeProdDrctModal"
+        @select="selectedPrdt"
+      />
+    </div>
+
+    <!-- 테이블 -->
+    <div class="grid-box flex-grow-1 overflow-hidden d-flex flex-column">
+      <div class="table-wrapper">
+        <CTable bordered hover class="data-table">
+          <CTableHead>
+            <CTableRow>
+              <CTableHeaderCell style="width: 160px">코드</CTableHeaderCell>
+              <CTableHeaderCell style="width: 200px">제품명</CTableHeaderCell>
+              <CTableHeaderCell style="width: 100px">규격</CTableHeaderCell>
+              <CTableHeaderCell style="width: 60px">단위</CTableHeaderCell>
+              <CTableHeaderCell style="width: 140px">납품일</CTableHeaderCell>
+              <CTableHeaderCell style="width: 120px">계획수량</CTableHeaderCell>
+              <CTableHeaderCell style="width: 100px">우선순위</CTableHeaderCell>
+              <CTableHeaderCell style="width: 150px">비고</CTableHeaderCell>
+            </CTableRow>
+          </CTableHead>
+
+          <CTableBody>
+            <CTableRow v-for="(row, idx) in rows" :key="row.id ?? idx" class="data-row">
+              <!-- 코드 명 -->
+              <CTableDataCell class="text-center">{{
+                row.prdt_id + ' - ' + row.prdt_opt_id
+              }}</CTableDataCell>
+
+              <!-- 제품 명 -->
+              <CTableDataCell>{{ row.prdt_nm + ' - ' + row.opt_nm }}</CTableDataCell>
+
+              <!-- 규격 -->
+              <CTableDataCell class="text-center">{{ row.spec }}</CTableDataCell>
+
+              <!-- 단위 -->
+              <CTableDataCell class="text-center">{{ row.unit }}</CTableDataCell>
+
+              <!-- 납품 예정 일자 -->
+              <CTableDataCell class="text-center">{{
+                userDateUtils.dateFormat(row.paprd_dt, 'yyyy-MM-dd')
+              }}</CTableDataCell>
+
+              <!-- 계획수량 -->
+              <CTableDataCell class="text-end editable-cell" @dblclick="startEdit(row, 'plan_qy')">
+                <template v-if="isEditing(row, 'plan_qy')">
+                  <CFormInput
+                    v-model.number="editDraft"
+                    type="number"
+                    min="0"
+                    size="sm"
+                    class="text-end edit-input"
+                    @keyup.enter="commitEdit(row, 'plan_qy')"
+                    @keyup.esc="cancelEdit"
+                    @blur="commitEdit(row, 'plan_qy')"
+                    placeholder="0"
+                  />
+                </template>
+                <template v-else>{{ fmtQty(row.plan_qy) }}</template>
+              </CTableDataCell>
+
+              <!-- 우선순위 -->
+              <CTableDataCell class="text-end editable-cell" @dblclick="startEdit(row, 'priort')">
+                <template v-if="isEditing(row, 'priort')">
+                  <CFormInput
+                    v-model.number="editDraft"
+                    type="number"
+                    min="0"
+                    size="sm"
+                    class="text-end edit-input"
+                    @keyup.enter="commitEdit(row, 'priort')"
+                    @keyup.esc="cancelEdit"
+                    @blur="commitEdit(row, 'priort')"
+                    placeholder="0"
+                  />
+                </template>
+                <template v-else>{{ fmtQty(row.priort) }}</template>
+              </CTableDataCell>
+
+              <!-- 비고 -->
+              <CTableDataCell class="editable-cell" @dblclick="startEdit(row, 'rm')">
+                <template v-if="isEditing(row, 'rm')">
+                  <CFormInput
+                    v-model="editDraft"
+                    size="sm"
+                    class="edit-input"
+                    @keyup.enter="commitEdit(row, 'rm')"
+                    @keyup.esc="cancelEdit"
+                    @blur="commitEdit(row, 'rm')"
+                  />
+                </template>
+                <template v-else>{{ row.rm || '—' }}</template>
+              </CTableDataCell>
+            </CTableRow>
+
+            <CTableRow v-for="n in emptyRowCount" :key="'empty-' + n" class="empty-row">
+              <CTableDataCell colspan="8">&nbsp;</CTableDataCell>
+            </CTableRow>
+
+            <CTableRow v-if="!rows || rows.length === 0">
+              <CTableDataCell colspan="8" class="text-center text-muted py-5">
+                행이 없습니다.
+              </CTableDataCell>
+            </CTableRow>
+          </CTableBody>
+        </CTable>
+      </div>
+    </div>
+  </CContainer>
+</template>
+
+<script setup>
+import { ref, reactive, watch, computed } from 'vue'
 import axios from 'axios'
 import userDateUtils from '@/utils/useDates.js'
 import ProdPlanModal from '../modal/prodPlanRealModal.vue'
 import ProdDrctModal from '../modal/rcvordMykModal.vue'
 import { useAuthStore } from '@/stores/auth.js'
+
 const auth = useAuthStore()
-// console.log('auth정보')
-// console.log(auth.user)
+const PAGE_ROWS = 7
+const emptyRowCount = computed(() => Math.max(0, PAGE_ROWS - rows.value.length))
 
 //생산계획모달
 const isProdPlanModalVisible = ref(false)
@@ -41,7 +211,6 @@ const Info = ref({
 })
 
 const insertRowsToDB = async () => {
-  // console.log(Info.value)
   if (Info.value.endDate == null) {
     return alert('종료일을 지정해주세요')
   }
@@ -68,9 +237,7 @@ const insertRowsToDB = async () => {
     detailList: detail,
   }
   console.log(payload)
-  let result = await axios
-    .post('/api/insertProdPlanManage', payload)
-    .catch((err) => console.log(err))
+  let result = await axios.post('/api/insertProdPlanManage', payload).catch((err) => console.log(err))
   let addRes = result.data
   if (addRes.isSuccessed) {
     console.log('생산계획이 등록되었습니다.')
@@ -108,9 +275,7 @@ const updateRowsToDB = async () => {
     detailList: detail,
   }
   console.log(payload)
-  let result = await axios
-    .post('/api/updateProdPlanManage', payload)
-    .catch((err) => console.log(err))
+  let result = await axios.post('/api/updateProdPlanManage', payload).catch((err) => console.log(err))
   let addRes = result.data
   if (addRes.isSuccessed) {
     console.log('생산계획수정이 등록되었습니다.')
@@ -120,10 +285,8 @@ const updateRowsToDB = async () => {
 }
 
 const deleteRowsToDB = async () => {
-  const payload = { prod_drct_id: 'test' }
-  let result = await axios
-    .post('/api/deleteProdPlanManage', payload)
-    .catch((err) => console.log(err))
+  const payload = { prod_plan_id: Info.value.prod_plan_id }
+  let result = await axios.post('/api/deleteProdPlanManage', payload).catch((err) => console.log(err))
   let addRes = result.data
   if (addRes.isSuccessed) {
     console.log('생산계획삭제가 성공되었습니다.')
@@ -132,25 +295,11 @@ const deleteRowsToDB = async () => {
   }
 }
 
-const rows = ref([
-  // {
-  //   id: 1,
-  //   prdt_id: 'a091',
-  //   prdt_opt_id: 'optid',
-  //   prdt_nm: 'prdt',
-  //   opt_nm: 'opt',
-  //   spec: 'spec',
-  //   unit: 'unit',
-  //   paprd_dt: '1970-01-01',
-  //   plan_qy: 100,
-  //   priort: 1,
-  //   rm: '',
-  // },
-])
+const rows = ref([])
 
 const selectedPrdt = (prdts) => {
   console.log(prdts)
-  Info.value.prod_drct_id = !prdts.searchParams.prod_plan_id
+  Info.value.prod_plan_id = !prdts.searchParams.prod_plan_id
     ? Info.value.prod_plan_id
     : prdts.searchParams.prod_plan_id
   Info.value.rcvord_id = !prdts.searchParams.rcvord_id
@@ -187,8 +336,6 @@ const selectedPrdt = (prdts) => {
       priort: prdt.priort,
       rm: prdt.rm,
     })
-
-  // console.log(rows.value)
 }
 
 const masterReset = () => {
@@ -209,7 +356,6 @@ function startEdit(row, field) {
   editing.id = row.id
   editing.field = field
   const cur = row[field]
-  // boolean 셀렉트 대비
   editDraft.value = field === 'producible' ? String(!!cur) : cur
 }
 
@@ -244,162 +390,360 @@ watch(
 const fmtQty = (n) => (n ?? 0).toLocaleString()
 </script>
 
-<template>
-  <CContainer fluid>
-    <div class="d-flex justify-content-end gap-2 mb-3">
-      <CButton color="secondary" @click="masterReset()">신규</CButton>
-      <CButton color="secondary" @click="goToProdPlan()">생산계획서 조회</CButton>
-      <ProdPlanModal
-        :visible="isProdPlanModalVisible"
-        @close="closeProdPlanModal"
-        @select="selectedPrdt"
-      />
-      <CButton color="secondary" @click="insertRowsToDB">저장</CButton>
-      <CButton color="secondary" @click="updateRowsToDB">수정</CButton>
-      <CButton color="danger" @click="deleteRowsToDB()">삭제</CButton>
-    </div>
+<style scoped>
+/* ============================================
+   기본 설정 및 컨테이너
+   ============================================ */
+:deep(*) {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
+    sans-serif;
+  line-height: 1.6;
+  box-sizing: border-box;
+}
 
-    <CContainer fluid>
-      <CRow class="g-3 mb-3">
-        <CCol md="3">
-          <CInputGroup>
-            <CInputGroupText id="addon-ordr-name-1">생산계획서 명</CInputGroupText>
-            <CFormInput v-model="Info.ordrName1" placeholder="생산지시서 명" />
-          </CInputGroup>
-        </CCol>
+:deep(.container-fluid) {
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+  padding: 1.5rem !important;
+  min-height: 100vh;
+  overflow: auto;
+  width: 100%;
+}
 
-        <CCol md="3">
-          <CInputGroup>
-            <CInputGroupText id="addon-ordr-name-2">등록 일자</CInputGroupText>
-            <CFormInput type="date" v-model="Info.regDate" />
-          </CInputGroup>
-        </CCol>
-        <CCol md="3">
-          <CInputGroup>
-            <CInputGroupText id="addon-ordr-name-2">시작 일자</CInputGroupText>
-            <CFormInput type="date" v-model="Info.startDate" />
-          </CInputGroup>
-        </CCol>
-        <CCol md="3">
-          <CInputGroup>
-            <CInputGroupText id="addon-ordr-name-2">종료 일자</CInputGroupText>
-            <CFormInput type="date" v-model="Info.endDate" />
-          </CInputGroup>
-        </CCol>
-      </CRow>
-    </CContainer>
-    <CFormTextarea v-model="Info.remark" label="비고" rows="3" text="필요 시 기재"></CFormTextarea>
+/* ============================================
+   검색 필터 박스
+   ============================================ */
+.search-filter-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.75rem 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  margin-bottom: 0.75rem;
+}
 
-    <div class="d-flex justify-content-end gap-2 mb-3">
-      <CButton color="secondary" @click="goToDrctPlan()">수주서 조회</CButton>
-      <ProdDrctModal
-        :visible="isProdDrctModalVisible"
-        @close="closeProdDrctModal"
-        @select="selectedPrdt"
-      />
-    </div>
+/* ============================================
+   그리드 박스 - 고정 높이 (10개 행)
+   ============================================ */
+.grid-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  max-height: calc(46px + 7 * 46px + 2px);
+}
 
-    <CTable hover bordered small class="align-middle">
-      <CTableHead color="dark">
-        <CTableRow>
-          <CTableHeaderCell scope="col" class="text-center" style="width: 160px"
-            >코드</CTableHeaderCell
-          >
-          <CTableHeaderCell scope="col" class="text-center">제품명</CTableHeaderCell>
-          <CTableHeaderCell scope="col" class="text-center" style="width: 100px"
-            >규격</CTableHeaderCell
-          >
-          <CTableHeaderCell scope="col" class="text-center" style="width: 60px"
-            >단위</CTableHeaderCell
-          >
-          <CTableHeaderCell scope="col" class="text-center" style="width: 140px"
-            >납품일</CTableHeaderCell
-          >
-          <CTableHeaderCell scope="col" class="text-center" style="width: 120px"
-            >계획수량</CTableHeaderCell
-          >
+/* ============================================
+   버튼 스타일
+   ============================================ */
+:deep(.btn) {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0.55rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  letter-spacing: -0.3px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-width: 80px;
+}
 
-          <CTableHeaderCell scope="col" class="text-center">우선순위</CTableHeaderCell>
-          <CTableHeaderCell scope="col" class="text-center">비고</CTableHeaderCell>
-        </CTableRow>
-      </CTableHead>
+:deep(.btn-secondary) {
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+  color: #fff !important;
+}
 
-      <CTableBody>
-        <CTableRow v-for="(row, idx) in rows" :key="row.id ?? idx">
-          <!-- 코드 명 -->
-          <CTableDataCell scope="row">{{ row.prdt_id + ' - ' + row.prdt_opt_id }}</CTableDataCell>
+:deep(.btn-secondary:hover) {
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
+  box-shadow: 0 4px 8px rgba(71, 85, 105, 0.3);
+  transform: translateY(-1px);
+}
 
-          <!-- 제품 명 -->
-          <CTableDataCell scope="row">{{ row.prdt_nm + ' - ' + row.opt_nm }}</CTableDataCell>
+:deep(.btn-danger) {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #fff !important;
+}
 
-          <!-- 규격 -->
-          <CTableDataCell scope="row">{{ row.spec }}</CTableDataCell>
+:deep(.btn-danger:hover) {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+  transform: translateY(-1px);
+}
 
-          <!-- 단위 -->
-          <CTableDataCell scope="row">{{ row.unit }}</CTableDataCell>
+:deep(.btn:active) {
+  transform: scale(0.98);
+}
 
-          <!-- 납품 예정 일자 -->
-          <CTableDataCell scope="row">{{
-            userDateUtils.dateFormat(row.paprd_dt, 'yyyy-MM-dd')
-          }}</CTableDataCell>
+/* ============================================
+   폼 요소
+   ============================================ */
+:deep(.form-label) {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.2px;
+}
 
-          <!-- 계획수량 -->
-          <CTableDataCell class="text-end" @dblclick="startEdit(row, 'plan_qy')">
-            <template v-if="isEditing(row, 'plan_qy')">
-              <CFormInput
-                v-model.number="editDraft"
-                type="number"
-                min="0"
-                size="sm"
-                class="text-end"
-                @keyup.enter="commitEdit(row, 'plan_qy')"
-                @keyup.esc="cancelEdit"
-                @blur="commitEdit(row, 'plan_qy')"
-                placeholder="0"
-              />
-            </template>
-            <template v-else>{{ fmtQty(row.plan_qy) }}</template>
-          </CTableDataCell>
+.form-input-enhanced {
+  font-size: 13px;
+  font-weight: 400;
+  padding: 0.65rem 0.85rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+  height: 42px;
+  width: 100%;
+}
 
-          <!-- 우선순위 -->
-          <CTableDataCell class="text-end" @dblclick="startEdit(row, 'priort')">
-            <template v-if="isEditing(row, 'priort')">
-              <CFormInput
-                v-model.number="editDraft"
-                type="number"
-                min="0"
-                size="sm"
-                class="text-end"
-                @keyup.enter="commitEdit(row, 'priort')"
-                @keyup.esc="cancelEdit"
-                @blur="commitEdit(row, 'priort')"
-                placeholder="0"
-              />
-            </template>
-            <template v-else>{{ fmtQty(row.priort) }}</template>
-          </CTableDataCell>
+.form-input-enhanced:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+  background-color: #ffffff;
+  outline: none;
+}
 
-          <!-- 비고 -->
-          <CTableDataCell @dblclick="startEdit(row, 'rm')">
-            <template v-if="isEditing(row, 'rm')">
-              <CFormInput
-                v-model="editDraft"
-                size="sm"
-                @keyup.enter="commitEdit(row, 'rm')"
-                @keyup.esc="cancelEdit"
-                @blur="commitEdit(row, 'rm')"
-              />
-            </template>
-            <template v-else>{{ row.rm || '—' }}</template>
-          </CTableDataCell>
-          <!-- <CTableHeaderCell scope="row">{{ row.rm }}</CTableHeaderCell> -->
-        </CTableRow>
-        <CTableRow v-if="!rows || rows.length === 0">
-          <CTableDataCell colspan="10" class="text-center text-muted py-5"
-            >행이 없습니다.</CTableDataCell
-          >
-        </CTableRow>
-      </CTableBody>
-    </CTable>
-  </CContainer>
-</template>
+.form-input-enhanced::placeholder {
+  display: none;
+}
+
+:deep(.g-3) {
+  --bs-gutter-y: 0.75rem;
+  --bs-gutter-x: 1rem;
+}
+
+:deep(.mb-2) {
+  margin-bottom: 0.5rem !important;
+}
+
+:deep(.mb-4) {
+  margin-bottom: 1rem !important;
+}
+
+:deep(.mt-2) {
+  margin-top: 0.5rem !important;
+}
+
+/* ============================================
+   테이블 래퍼
+   ============================================ */
+.table-wrapper {
+  overflow-y: scroll;
+  overflow-x: auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  scrollbar-gutter: stable;
+}
+
+/* 스크롤바 전체 너비 */
+.table-wrapper::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(to right, #f8fafc, #f1f5f9);
+}
+
+/* 스크롤바 트랙 (배경) */
+.table-wrapper::-webkit-scrollbar-track {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px;
+  margin: 6px 0;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.05);
+}
+
+/* 스크롤바 썸 (손잡이) */
+.table-wrapper::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #64748b 0%, #475569 100%);
+  border-radius: 12px;
+  border: 3px solid #f1f5f9;
+  box-shadow: 0 3px 10px rgba(71, 85, 105, 0.25), inset 0 1px 3px rgba(255, 255, 255, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 호버 시 */
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #475569 0%, #334155 100%);
+  border-color: #e2e8f0;
+  box-shadow: 0 5px 15px rgba(71, 85, 105, 0.4), inset 0 1px 3px rgba(255, 255, 255, 0.4);
+  transform: scaleX(1.15);
+}
+
+/* 활성화(드래그) 시 */
+.table-wrapper::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
+  border-width: 2px;
+  box-shadow: 0 2px 8px rgba(30, 41, 59, 0.5), inset 0 2px 5px rgba(0, 0, 0, 0.25);
+}
+
+/* 스크롤바 버튼 제거 */
+.table-wrapper::-webkit-scrollbar-button {
+  display: none;
+}
+
+/* Firefox용 */
+.table-wrapper {
+  scrollbar-width: auto;
+  scrollbar-color: #64748b #f1f5f9;
+}
+
+/* ============================================
+   데이터 테이블
+   ============================================ */
+:deep(.data-table) {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  user-select: none;
+  cursor: default;
+  font-size: 13px;
+  width: max-content;
+  min-width: 100%;
+  display: table;
+}
+
+:deep(.data-table thead) {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: table-header-group;
+}
+
+:deep(.data-table tbody) {
+  display: table-row-group;
+}
+
+:deep(.data-table th) {
+  font-size: 13px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  color: #ffffff;
+  text-align: center;
+  padding: 0.85rem 0.75rem;
+  border: none;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+}
+
+:deep(.data-table th:first-child) {
+  border-top-left-radius: 12px;
+}
+
+:deep(.data-table th:last-child) {
+  border-top-right-radius: 12px;
+}
+
+:deep(.data-table td) {
+  font-size: 13px;
+  font-weight: 400;
+  vertical-align: middle;
+  padding: 0.75rem 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  color: #334155;
+  height: 46px;
+  white-space: nowrap;
+}
+
+:deep(.data-table tbody tr.data-row) {
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background-color: #ffffff;
+}
+
+:deep(.data-table tbody tr.data-row:hover) {
+  background-color: #f8fafc;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+
+.empty-row td {
+  height: 46px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+/* 편집 가능한 셀 스타일 */
+.editable-cell {
+  cursor: pointer;
+  position: relative;
+}
+
+.editable-cell:hover {
+  background-color: #fef3c7 !important;
+}
+
+.edit-input {
+  font-size: 12px;
+  padding: 0.3rem 0.5rem;
+  height: 30px;
+  border: 1.5px solid #3b82f6;
+  border-radius: 4px;
+}
+
+.edit-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  outline: none;
+}
+
+/* ============================================
+   텍스트 정렬
+   ============================================ */
+:deep(.text-end) {
+  text-align: right;
+}
+
+:deep(.text-start) {
+  text-align: left;
+}
+
+:deep(.text-center) {
+  text-align: center;
+}
+
+:deep(.text-muted) {
+  color: #94a3b8 !important;
+}
+
+:deep(.py-5) {
+  padding-top: 2rem !important;
+  padding-bottom: 2rem !important;
+}
+
+/* ============================================
+   반응형 디자인
+   ============================================ */
+@media (max-width: 1600px) {
+  :deep(.form-label) {
+    font-size: 12px !important;
+  }
+
+  .form-input-enhanced {
+    font-size: 12px !important;
+    height: 38px !important;
+    padding: 0.55rem 0.75rem !important;
+  }
+
+  :deep(.btn) {
+    font-size: 12px !important;
+    padding: 0.5rem 1.1rem !important;
+  }
+
+  :deep(.data-table th),
+  :deep(.data-table td) {
+    font-size: 12px !important;
+  }
+
+  :deep(.data-table td) {
+    height: 42px !important;
+  }
+
+  .empty-row td {
+    height: 42px !important;
+  }
+
+  .grid-box {
+    max-height: calc(42px + 7 * 42px + 2px) !important;
+  }
+}
+</style>

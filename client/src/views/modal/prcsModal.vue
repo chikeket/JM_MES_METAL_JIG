@@ -1,154 +1,131 @@
 <template>
-  <div v-if="isPrcsModalOpen" class="modal-backdrop" @click="closeModal">
-    <div class="modal-container" @click.stop>
-      <div class="modal-header">
-        <h5>공정검색</h5>
-        <button type="button" class="btn-close" @click="closeModal"></button>
-      </div>
-      <!-- 커밋 용 -->
-      <div class="modal-body">
-        <!-- 검색 조건 영역 -->
-        <div class="search-area">
-          <div class="row g-3">
-            <div class="col-md-3">
-              <label class="form-label">검색조건</label>
-              <select v-model="searchTerm.searchKind" class="form-select">
-                <option value="all">전체</option>
-                <option value="prcs_id">공정코드</option>
-                <option value="prcs_nm">공정명</option>
-              </select>
-            </div>
-
-            <div class="col-md-3">
-              <label class="form-label">공정코드</label>
-              <input
-                v-model="searchTerm.prcs_id"
-                type="text"
-                class="form-control"
-                placeholder="공정코드 입력"
+  <CModal :visible="isPrcsModalOpen" @close="closeModal" size="xl">
+    <CModalHeader class="modal-header-custom">
+      <CModalTitle class="modal-title-custom">공정 조회</CModalTitle>
+    </CModalHeader>
+    <CModalBody class="modal-body-custom">
+      <div class="modal-content-wrapper">
+        <!-- 검색 영역 -->
+        <div class="search-section">
+          <div class="search-row-multiple">
+            <div class="search-input-group">
+              <label class="search-label">공정 ID</label>
+              <input 
+                v-model="searchTerm.prcs_id" 
+                type="text" 
+                class="search-input"
                 @keyup.enter="prcsSearch"
               />
             </div>
-            <div class="col-md-3">
-              <label class="form-label">공정명</label>
-              <input
-                v-model="searchTerm.prcs_nm"
-                type="text"
-                class="form-control"
-                placeholder="공정명 입력"
+
+            <div class="search-input-group">
+              <label class="search-label">공정 명</label>
+              <input 
+                v-model="searchTerm.prcs_nm" 
+                type="text" 
+                class="search-input"
                 @keyup.enter="prcsSearch"
               />
             </div>
-          </div>
 
-          <div class="col-md-3 d-flex align-items-end">
-            <button type="button" class="btn btn-secondary me-2" @click="prcsSearch">조회</button>
-            <button type="button" class="btn btn-secondary" @click="prcsReset">초기화</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 공정 목록 테이블 -->
-      <div class="table-area mt-3">
-        <div class="table-responsive" style="max-height: 400px; overflow-y: auto">
-          <table class="table table-sm table-hover">
-            <thead class="table-light">
-              <tr>
-                <th style="width: 50px">
-                  <input
-                    type="checkbox"
-                    :checked="allChoice"
-                    @change="toggleAll($event)"
-                    class="form-check-input"
-                  />
-                </th>
-                <th>공정아이디</th>
-                <th>공정명</th>
-                <th>설비그룹명</th>
-                <th>리드타임</th>
-                <th>금형사용유무</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="prcs in prcsList"
-                :key="prcs.prcs_id"
-                class="cursor-pointer"
-                :class="{
-                  'table-active': selectedPrcs.some(
-                    (s) => s.prcs_id === prcs.prcs_id && s.prcs_nm === prcs.prcs_nm,
-                  ),
-                }"
-                @click="handleRowClick(prcs)"
+            <div class="button-group">
+              <button class="btn-reset-modal" @click="prcsReset">초기화</button>
+              <button class="btn-search-modal" @click="prcsSearch">조회</button>
+              <button 
+                class="btn-modal-action" 
+                @click="onSelectPrcs" 
+                :disabled="selectedPrcs.length === 0"
               >
-                <td @click.stop>
-                  <input
-                    type="checkbox"
-                    :checked="choiceCheck(prcs)"
-                    @change="checkboxDeselect(prcs)"
-                    class="form-check-input"
-                  />
-                </td>
-                <td>{{ prcs.prcs_id }}</td>
-                <td>{{ prcs.prcs_nm }}</td>
-                <td>{{ prcs.eqm_grp_nm }}</td>
-                <td>{{ prcs.lead_tm }}</td>
-                <td>{{ prcs.mold_use_at }}</td>
-              </tr>
-              <tr v-if="!prcsList || prcsList.length === 0">
-                <td colspan="11" class="text-center text-muted py-4">검색 결과가 없습니다.</td>
-              </tr>
-            </tbody>
-          </table>
+                선택 ({{ selectedPrcs.length }}건)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 결과 테이블 -->
+        <div class="table-section">
+          <div class="table-wrapper-modal">
+            <table class="data-table-modal">
+              <thead>
+                <tr>
+                  <th style="width: 5%">
+                    <input
+                      type="checkbox"
+                      :checked="allChoice"
+                      @change="toggleAll($event)"
+                      class="form-check-input"
+                    />
+                  </th>
+                  <th style="width: 10%">공정ID</th>
+                  <th style="width: 15%">공정 명</th>
+                  <th style="width: 18%">설비 그룹 명</th>
+                  <th style="width: 12%">금형 사용 유무</th>
+                  <th style="width: 10%">리드 타임</th>
+                  <th style="width: 10%">공정 상태</th>
+                  <th style="width: 20%">비고</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="prcs in prcsList"
+                  :key="prcs.prcs_id"
+                  @click="handleRowClick(prcs)"
+                  class="data-row-modal"
+                  :class="{
+                    'row-selected': selectedPrcs.some(
+                      (s) => s.prcs_id === prcs.prcs_id && s.prcs_nm === prcs.prcs_nm,
+                    ),
+                  }"
+                >
+                  <td @click.stop class="text-center">
+                    <input
+                      type="checkbox"
+                      :checked="choiceCheck(prcs)"
+                      @change="checkboxDeselect(prcs)"
+                      class="form-check-input"
+                    />
+                  </td>
+                  <td class="text-center">{{ prcs.prcs_id }}</td>
+                  <td class="text-left">{{ prcs.prcs_nm }}</td>
+                  <td class="text-left">{{ prcs.eqm_grp_nm }}</td>
+                  <td class="text-center">{{ prcs.mold_use_at_nm || prcs.mold_use_at }}</td>
+                  <td class="text-center">{{ prcs.lead_tm }}</td>
+                  <td class="text-center">{{ prcs.st_nm || prcs.st }}</td>
+                  <td class="text-left">{{ prcs.rm }}</td>
+                </tr>
+                <tr v-if="!prcsList || prcsList.length === 0" class="empty-state">
+                  <td colspan="8">검색 결과가 없습니다.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-    </div>
-
-    <div class="modal-footer">
-      <button
-        type="button"
-        class="btn btn-secondary"
-        @click="onSelectPrcs"
-        :disabled="selectedPrcs.length === 0"
-      >
-        선택 ({{ selectedPrcs.length }}건)
-      </button>
-      <button type="button" class="btn btn-secondary" @click="closeModal">취소</button>
-    </div>
-  </div>
+    </CModalBody>
+  </CModal>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import axios from 'axios'
-const pickValue = ref('') // 검색 기준 선택값
-const searchKeyword = ref('') // 검색어
 
-// Props 정의
 const props = defineProps({
-  isPrcsModalOpen: {
-    type: Boolean,
-    default: false,
-  },
+  isPrcsModalOpen: { type: Boolean, default: false },
 })
 
-// Emit 정의
 const emit = defineEmits(['close', 'select'])
 
-// 반응형 데이터
 const prcsList = ref([])
 const selectedPrcs = ref([])
 const selectedPrcsRow = ref(null)
 const selectedPrcsRowNo = ref('')
 
-// 검색 조건
 const searchTerm = reactive({
   prcs_id: '',
-  prcs_nm: '', // 기본값
+  prcs_nm: '',
   searchKind: 'all',
 })
 
-// 계산된 속성
 const allChoice = computed(() => {
   return (
     prcsList.value.length > 0 &&
@@ -158,12 +135,9 @@ const allChoice = computed(() => {
   )
 })
 
-// 공정 목록 조회
 const prcsSearch = async () => {
   try {
     const params = { prcs_id: '', prcs_nm: '', eqm_grp_nm: '', lead_tm: '', mold_use_at: '' }
-
-    // 간단한 매핑: 검색 종류가 pickValue 같은 외부 값이 아니라 searchTerm.searchKind 사용
     if (searchTerm.searchKind === 'prcs_id')
       params.prcs_id = searchTerm.prcs_id || searchTerm.prcs_nm
     else if (searchTerm.searchKind === 'prcs_nm')
@@ -178,78 +152,55 @@ const prcsSearch = async () => {
   } catch (err) {
     console.error('공정 검색 오류:', err)
     alert('검색 중 오류가 발생했습니다.')
+    prcsList.value = []
   }
 }
 
-// 검색 조건 초기화
 const prcsReset = () => {
   searchTerm.prcs_id = ''
   searchTerm.prcs_nm = ''
   selectedPrcs.value = []
 }
 
-// 행 클릭 핸들러 (체크박스 토글)
 const handleRowClick = (prcs) => {
   checkboxDeselect(prcs)
   selectSinglePrcs(prcs)
 }
 
-// 단일 공정 선택 (행 클릭 시)
 const selectSinglePrcs = (prcs) => {
   selectedPrcsRow.value = { ...prcs }
   selectedPrcsRowNo.value = prcs.prcs_id
   console.log('[prcsModal] 단일 공정 선택:', selectedPrcsRow.value)
 }
 
-// 체크박스 선택/해제
 const checkboxDeselect = (prcs) => {
-  // 고유 식별자: 공정ID + 공정명 조합
   const index = selectedPrcs.value.findIndex(
     (s) => s.prcs_id === prcs.prcs_id && s.prcs_nm === prcs.prcs_nm,
   )
   if (index > -1) {
     selectedPrcs.value.splice(index, 1)
   } else {
-    // 선택 시 원래 데이터 그대로 push
     selectedPrcs.value.push({ ...prcs })
   }
-  console.log('[prcsModal] 선택된 공정들:', selectedPrcs.value)
 }
 
-// 전체 선택/해제
 const toggleAll = (event) => {
-  if (event.target.checked) {
-    selectedPrcs.value = prcsList.value.map((prcs) => ({ ...prcs }))
-  } else {
-    selectedPrcs.value = []
-  }
+  if (event.target.checked) selectedPrcs.value = prcsList.value.map((p) => ({ ...p }))
+  else selectedPrcs.value = []
 }
 
-// 선택 여부 확인
-const choiceCheck = (prcs) => {
-  return selectedPrcs.value.some((s) => s.prcs_id === prcs.prcs_id && s.prcs_nm === prcs.prcs_nm)
-}
+const choiceCheck = (prcs) =>
+  selectedPrcs.value.some((s) => s.prcs_id === prcs.prcs_id && s.prcs_nm === prcs.prcs_nm)
 
-// 선택 상태 초기화
-const choiceReset = () => {
-  selectedPrcs.value = []
-  selectedPrcsRow.value = null
-  selectedPrcsRowNo.value = ''
-}
-
-// 선택 확인
 const onSelectPrcs = () => {
   if (selectedPrcs.value.length === 0) {
     alert('공정을 선택해주세요.')
     return
   }
-
-  console.log('[prcsModal] 최종 선택된 공정들:', selectedPrcs.value)
   emit('select', selectedPrcs.value)
   closeModal()
 }
 
-// 모달 닫기 (이름을 template과 일치시킴)
 const closeModal = () => {
   prcsReset()
   prcsList.value = []
@@ -257,122 +208,331 @@ const closeModal = () => {
   emit('close')
 }
 
-// 컴포넌트 마운트 시 초기화
 onMounted(() => {
   console.log('[prcsModal] 컴포넌트 마운트됨')
 })
 </script>
 
 <style scoped>
-.modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1050;
+/* ============================================
+   모달 헤더
+   ============================================ */
+.modal-header-custom {
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  border-bottom: none;
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px 12px 0 0;
 }
 
-.modal-container {
-  background: white;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 1200px;
-  max-height: 90vh;
-  overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #dee2e6;
-  background-color: #f8f9fa;
-}
-
-.modal-header h5 {
+.modal-title-custom {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.3px;
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif;
   margin: 0;
-  font-weight: 600;
-  color: #495057;
 }
 
-.btn-close {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
+:deep(.btn-close) {
+  filter: brightness(0) invert(1);
+  opacity: 0.8;
+}
+
+:deep(.btn-close:hover) {
+  opacity: 1;
+}
+
+/* ============================================
+   모달 바디
+   ============================================ */
+:deep(.modal-body-custom) {
   padding: 0;
-  width: 24px;
-  height: 24px;
+  background: #f8fafc;
+}
+
+.modal-content-wrapper {
+  padding: 1.5rem;
+}
+
+/* ============================================
+   검색 영역
+   ============================================ */
+.search-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.search-row-multiple {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
-.btn-close:before {
-  content: '×';
+.search-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.modal-body {
-  padding: 1.5rem;
-  max-height: calc(90vh - 140px);
-  overflow-y: auto;
+.search-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  min-width: 70px;
+  margin-bottom: 0;
+  font-family: "Pretendard", sans-serif;
+  white-space: nowrap;
 }
 
-.search-area {
-  background-color: #f8f9fa;
-  padding: 1rem;
-  border-radius: 6px;
-  border: 1px solid #e9ecef;
+.search-input {
+  font-size: 13px;
+  font-weight: 400;
+  padding: 0.65rem 0.85rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+  height: 42px;
+  font-family: "Pretendard", sans-serif;
+  width: 150px;
 }
 
-.table-area {
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
+.search-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+  outline: none;
+}
+
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.btn-search-modal,
+.btn-reset-modal,
+.btn-modal-action {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0.65rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  letter-spacing: -0.3px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-width: 80px;
+  height: 42px;
+  cursor: pointer;
+  font-family: "Pretendard", sans-serif;
+}
+
+.btn-search-modal {
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+  color: #fff;
+}
+
+.btn-search-modal:hover {
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
+  box-shadow: 0 4px 8px rgba(71, 85, 105, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-reset-modal {
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+  color: #fff;
+}
+
+.btn-reset-modal:hover {
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+  box-shadow: 0 4px 8px rgba(100, 116, 139, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-modal-action {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
+}
+
+.btn-modal-action:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-modal-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-search-modal:active,
+.btn-reset-modal:active,
+.btn-modal-action:active {
+  transform: scale(0.98);
+}
+
+/* ============================================
+   테이블 영역
+   ============================================ */
+.table-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   overflow: hidden;
 }
 
-.cursor-pointer {
+.table-wrapper-modal {
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.table-wrapper-modal::-webkit-scrollbar {
+  width: 14px;
+  background: #ffffff;
+}
+
+.table-wrapper-modal::-webkit-scrollbar-track {
+  background: #ffffff;
+}
+
+.table-wrapper-modal::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #9ca3af 0%, #6b7280 100%);
+  border-radius: 10px;
+  border: 3px solid #ffffff;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.table-wrapper-modal::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #6b7280 0%, #4b5563 100%);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+
+:deep(.data-table-modal) {
+  width: 100% !important;
+  margin-bottom: 0 !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  font-size: 13px !important;
+  font-family: "Pretendard", sans-serif !important;
+}
+
+:deep(.data-table-modal thead) {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+}
+
+:deep(.data-table-modal thead tr th) {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%) !important;
+  color: #ffffff !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  padding: 0.85rem 0.75rem !important;
+  border: none !important;
+  letter-spacing: -0.2px !important;
+  font-family: "Pretendard", sans-serif !important;
+}
+
+:deep(.data-table-modal tbody tr td) {
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  vertical-align: middle !important;
+  padding: 0.75rem 0.75rem !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  color: #334155 !important;
+  height: 46px !important;
+  font-family: "Pretendard", sans-serif !important;
+}
+
+:deep(.text-center) {
+  text-align: center !important;
+}
+
+:deep(.text-left) {
+  text-align: left !important;
+}
+
+:deep(.data-row-modal) {
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  background-color: #ffffff !important;
+}
+
+:deep(.data-row-modal:hover) {
+  background-color: #f8fafc !important;
+  box-shadow: inset 0 0 0 1px #e2e8f0 !important;
+}
+
+:deep(.data-row-modal.row-selected) {
+  background-color: #eff6ff !important;
+  box-shadow: inset 0 0 0 1px #bfdbfe !important;
+}
+
+:deep(.data-row-modal:hover td),
+:deep(.data-row-modal.row-selected td) {
+  background-color: inherit !important;
+}
+
+:deep(.empty-state td) {
+  text-align: center !important;
+  color: #94a3b8 !important;
+  font-style: italic !important;
+  padding: 3rem 0.75rem !important;
+  background-color: #f8fafc !important;
+  font-family: "Pretendard", sans-serif !important;
+}
+
+:deep(.form-check-input) {
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 4px;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.table tbody tr:hover {
-  background-color: #f8f9fa;
+:deep(.form-check-input:checked) {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
 }
 
-.table tbody tr.table-active {
-  background-color: #e3f2fd !important;
-}
+/* ============================================
+   반응형
+   ============================================ */
+@media (max-width: 1600px) {
+  .search-label,
+  .search-input,
+  .btn-search-modal,
+  .btn-reset-modal,
+  .btn-modal-action {
+    font-size: 12px;
+  }
 
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #dee2e6;
-  background-color: #f8f9fa;
-}
+  :deep(.data-table-modal thead tr th),
+  :deep(.data-table-modal tbody tr td) {
+    font-size: 12px !important;
+  }
 
-.badge {
-  font-size: 0.75rem;
-  padding: 0.25em 0.5em;
-}
+  .search-input,
+  .btn-search-modal,
+  .btn-reset-modal,
+  .btn-modal-action {
+    height: 38px;
+    padding: 0.55rem 0.75rem;
+  }
 
-.form-label {
-  font-weight: 500;
-  color: #495057;
-  margin-bottom: 0.25rem;
-}
-
-.form-control:focus,
-.form-select:focus {
-  border-color: #80bdff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  .search-input {
+    width: 130px;
+  }
 }
 </style>

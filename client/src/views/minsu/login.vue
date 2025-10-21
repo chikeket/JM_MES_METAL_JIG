@@ -1,37 +1,51 @@
 <template>
   <div class="login-wrapper">
-    <form class="login-form" @submit.prevent="onLogin">
-      <h2>로그인</h2>
-      <fieldset>
-        <div class="form-row">
-          <label for="username">아이디</label>
-          <input
-            v-model="username"
-            type="text"
-            id="username"
-            name="username"
-            autocomplete="username"
-            required
-          />
+    <div class="login-container">
+      <form class="login-form" @submit.prevent="onLogin">
+        <div class="login-header">
+          <h2>로그인</h2>
+          <p class="login-subtitle">MES 시스템에 오신 것을 환영합니다</p>
         </div>
-        <div class="form-row">
-          <label for="password">비밀번호</label>
-          <input
-            v-model="password"
-            type="password"
-            id="password"
-            name="password"
-            autocomplete="current-password"
-            required
-          />
-        </div>
-        <div class="actions">
-          <button type="submit" class="btn btn-xs btn-outline-secondary" :disabled="loading">
-            {{ loading ? '처리중...' : '로그인' }}
-          </button>
-        </div>
-      </fieldset>
-    </form>
+        
+        <fieldset>
+          <div class="form-row">
+            <label for="username">아이디</label>
+            <input
+              v-model="username"
+              type="text"
+              id="username"
+              name="username"
+              autocomplete="username"
+              placeholder="아이디를 입력하세요"
+              required
+            />
+          </div>
+          
+          <div class="form-row">
+            <label for="password">비밀번호</label>
+            <input
+              v-model="password"
+              type="password"
+              id="password"
+              name="password"
+              autocomplete="current-password"
+              placeholder="비밀번호를 입력하세요"
+              required
+            />
+          </div>
+          
+          <div class="actions">
+            <button 
+              type="submit" 
+              class="btn btn-login" 
+              :disabled="loading"
+            >
+              {{ loading ? '처리중...' : '로그인' }}
+            </button>
+          </div>
+        </fieldset>
+      </form>
+    </div>
   </div>
 </template>
 
@@ -80,77 +94,187 @@ async function onLogin() {
 </script>
 
 <style scoped>
+* {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  box-sizing: border-box;
+}
+
 .login-wrapper {
   min-height: 100vh;
-  box-sizing: border-box;
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  padding: 0 0 0 20px;
-}
-.login-form fieldset {
-  width: 420px;
-  background: #f1f1f1;
-  padding: 32px 46px 26px;
-  border: 1px solid #cfcfcf;
-  border-radius: 8px;
-}
-.form-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 22px;
+  justify-content: center;
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+  padding: 2rem;
 }
-.form-row label {
-  width: 90px;
-  text-align: left;
-  font-size: 16px;
-  color: #222;
+
+.login-container {
+  width: 100%;
+  max-width: 460px;
 }
-.form-row input {
-  flex: 1;
-  padding: 6px 8px;
+
+.login-form {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 
+    0 10px 40px rgba(0, 0, 0, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.login-header {
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  padding: 2.5rem 2rem 2rem;
+  text-align: center;
+  color: #ffffff;
+}
+
+.login-header h2 {
+  margin: 0 0 0.5rem;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.login-subtitle {
+  margin: 0;
   font-size: 14px;
-  border: 1px solid #9a9a9a;
-  background: #fff;
-  outline: none;
-  transition: border-color 0.2s;
-  border-radius: 4px;
+  color: #cbd5e1;
+  font-weight: 400;
+  letter-spacing: -0.2px;
 }
+
+.login-form fieldset {
+  border: none;
+  padding: 2.5rem 2rem 2rem;
+  margin: 0;
+}
+
+.form-row {
+  margin-bottom: 1.5rem;
+}
+
+.form-row:last-of-type {
+  margin-bottom: 2rem;
+}
+
+.form-row label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.2px;
+}
+
+.form-row input {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-size: 14px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  color: #334155;
+  font-weight: 400;
+}
+
+.form-row input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
 .form-row input:focus {
-  border-color: #333;
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+  background-color: #ffffff;
 }
+
+.form-row input:hover:not(:focus) {
+  border-color: #cbd5e1;
+}
+
 .actions {
-  text-align: right;
-  margin-top: 6px;
+  margin-top: 2rem;
 }
 
 .btn {
+  width: 100%;
   cursor: pointer;
-  border-radius: 4px;
-  border: 1px solid transparent;
-  background: #6e7b85;
-  color: #fff;
-  font-weight: 500;
-  transition: background 0.15s;
-  height: 32px;
-  line-height: 1;
-  display: inline-flex;
+  border-radius: 10px;
+  border: none;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.3px;
+  transition: all 0.3s ease;
+  padding: 1rem;
+  display: flex;
   align-items: center;
-  padding: 0 14px;
-  font-size: 13px;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(100, 116, 139, 0.15);
 }
-.btn-xs {
-  height: 32px;
-  padding: 0 14px;
-  font-size: 13px;
+
+.btn-login {
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+  color: #ffffff;
 }
-.btn-outline-secondary {
-  background: #6e7b85;
-  color: #fff;
-  border-color: #5d6871;
+
+.btn-login:hover:not(:disabled) {
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
+  box-shadow: 0 6px 20px rgba(71, 85, 105, 0.3);
+  transform: translateY(-2px);
 }
-.btn-outline-secondary:hover {
-  background: #5d6871;
+
+.btn-login:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(71, 85, 105, 0.2);
 }
+
+.btn-login:disabled {
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+  cursor: not-allowed;
+  box-shadow: none;
+  opacity: 0.7;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .login-wrapper {
+    padding: 1rem;
+  }
+  
+  .login-container {
+    max-width: 100%;
+  }
+  
+  .login-header {
+    padding: 2rem 1.5rem 1.5rem;
+  }
+  
+  .login-header h2 {
+    font-size: 24px;
+  }
+  
+  .login-form fieldset {
+    padding: 2rem 1.5rem 1.5rem;
+  }
+}
+
+/* 애니메이션 */
+.login-form {
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 </style>

@@ -1,192 +1,188 @@
 <template>
   <CModal :visible="visible" @close="close" size="xl">
     <CModalHeader class="modal-header-custom">
-      <CModalTitle>
+      <CModalTitle class="modal-title-custom">
         수주 리스트
         <span v-if="deliId" class="ms-2 text-muted" style="font-weight: 600; font-size: 0.95rem">
           (납품 ID: {{ deliId }})
         </span>
       </CModalTitle>
     </CModalHeader>
-    <CModalBody>
-      <!-- 상단 그리드: 해당 납품서의 수주 헤더 목록 -->
-      <div
-        class="table-responsive"
-        style="max-height: 260px; overflow-y: auto; margin-bottom: 12px"
-      >
-        <CTable bordered hover small>
-          <CTableHead color="dark">
-            <CTableRow>
-              <CTableHeaderCell class="text-center" style="width: 50px">No</CTableHeaderCell>
-              <CTableHeaderCell class="text-center" style="width: 160px">수주 ID</CTableHeaderCell>
-              <CTableHeaderCell class="text-center" style="width: 160px"
-                >수주 담당자</CTableHeaderCell
-              >
-              <CTableHeaderCell class="text-center" style="width: 200px"
-                >납품 업체 명</CTableHeaderCell
-              >
-              <CTableHeaderCell class="text-center" style="width: 160px"
-                >수주 등록 일자</CTableHeaderCell
-              >
-              <CTableHeaderCell class="text-center" style="width: 140px"
-                >수주 상태</CTableHeaderCell
-              >
-              <CTableHeaderCell class="text-center">비고</CTableHeaderCell>
-            </CTableRow>
-          </CTableHead>
-          <CTableBody>
-            <CTableRow
-              v-for="(row, idx) in rcvordHeaders"
-              :key="row.rcvord_id"
-              :class="{ 'row-active': row.rcvord_id === selectedHeaderId }"
-              @click="selectHeader(row)"
-              style="cursor: pointer"
-            >
-              <CTableDataCell class="cell-no">{{ idx + 1 }}</CTableDataCell>
-              <CTableDataCell class="cell-left">{{ row.rcvord_id }}</CTableDataCell>
-              <CTableDataCell class="cell-left">{{ row.emp_nm }}</CTableDataCell>
-              <CTableDataCell class="cell-left">{{ row.co_nm }}</CTableDataCell>
-              <CTableDataCell class="cell-left">{{
-                formatDate(row.rcv_reg_dt || row.reg_dt)
-              }}</CTableDataCell>
-              <CTableDataCell class="cell-left">{{
-                row.status || row.rcv_status || '진행 중'
-              }}</CTableDataCell>
-              <CTableDataCell class="cell-left">{{ row.rcv_rm }}</CTableDataCell>
-            </CTableRow>
-            <CTableRow v-if="!rcvordHeaders.length">
-              <CTableDataCell colspan="7" class="text-center text-muted py-3"
-                >데이터가 없습니다.</CTableDataCell
-              >
-            </CTableRow>
-          </CTableBody>
-        </CTable>
-      </div>
+    <CModalBody class="modal-body-custom">
+      <div class="modal-content-wrapper">
+        <!-- 상단 테이블: 수주 헤더 목록 -->
+        <div class="table-section mb-3">
+          <div class="table-header-label">수주 정보</div>
+          <div class="table-wrapper-modal" style="max-height: 260px">
+            <table class="data-table-modal">
+              <thead>
+                <tr>
+                  <th style="width: 5%">No</th>
+                  <th style="width: 12%">수주 ID</th>
+                  <th style="width: 12%">수주 담당자</th>
+                  <th style="width: 15%">납품 업체 명</th>
+                  <th style="width: 13%">수주 등록 일자</th>
+                  <th style="width: 11%">수주 상태</th>
+                  <th style="width: 32%">비고</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="(row, idx) in rcvordHeaders"
+                  :key="row.rcvord_id"
+                  :class="{ 'row-selected': row.rcvord_id === selectedHeaderId }"
+                  @click="selectHeader(row)"
+                  class="data-row-modal"
+                >
+                  <td class="text-center">{{ idx + 1 }}</td>
+                  <td class="text-left">{{ row.rcvord_id }}</td>
+                  <td class="text-left">{{ row.emp_nm }}</td>
+                  <td class="text-left">{{ row.co_nm }}</td>
+                  <td class="text-center">{{ formatDate(row.rcv_reg_dt || row.reg_dt) }}</td>
+                  <td class="text-center">{{ row.status || row.rcv_status || '진행 중' }}</td>
+                  <td class="text-left">{{ row.rcv_rm }}</td>
+                </tr>
+                <tr v-if="!rcvordHeaders.length" class="empty-state">
+                  <td colspan="7">데이터가 없습니다.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-      <!-- 하단 그리드: 선택된 헤더의 상세 라인 -->
-      <div class="table-responsive" style="max-height: 260px; overflow-y: auto">
-        <CTable bordered hover small style="table-layout: fixed; width: 100%">
-          <CTableHead color="dark">
-            <CTableRow>
-              <CTableHeaderCell
-                class="text-center th-resizable"
-                :style="{ width: colWidthsLines[0] }"
-              >
-                No<span class="col-resizer" @mousedown="onResizerDownLines(0, $event)"></span>
-              </CTableHeaderCell>
-              <CTableHeaderCell
-                class="text-center th-resizable"
-                :style="{ width: colWidthsLines[1] }"
-              >
-                제품 명<span class="col-resizer" @mousedown="onResizerDownLines(1, $event)"></span>
-              </CTableHeaderCell>
-              <CTableHeaderCell
-                class="text-center th-resizable"
-                :style="{ width: colWidthsLines[2] }"
-              >
-                제품 옵션 명<span
-                  class="col-resizer"
-                  @mousedown="onResizerDownLines(2, $event)"
-                ></span>
-              </CTableHeaderCell>
-              <CTableHeaderCell
-                class="text-center th-resizable"
-                :style="{ width: colWidthsLines[3] }"
-              >
-                규격<span class="col-resizer" @mousedown="onResizerDownLines(3, $event)"></span>
-              </CTableHeaderCell>
-              <CTableHeaderCell
-                class="text-center th-resizable"
-                :style="{ width: colWidthsLines[4] }"
-              >
-                단위<span class="col-resizer" @mousedown="onResizerDownLines(4, $event)"></span>
-              </CTableHeaderCell>
-              <CTableHeaderCell
-                class="text-center th-resizable"
-                :style="{ width: colWidthsLines[5] }"
-              >
-                요청 수량<span
-                  class="col-resizer"
-                  @mousedown="onResizerDownLines(5, $event)"
-                ></span>
-              </CTableHeaderCell>
-              <CTableHeaderCell
-                class="text-center th-resizable"
-                :style="{ width: colWidthsLines[6] }"
-              >
-                기납품 수량<span
-                  class="col-resizer"
-                  @mousedown="onResizerDownLines(6, $event)"
-                ></span>
-              </CTableHeaderCell>
-              <CTableHeaderCell
-                class="text-center th-resizable"
-                :style="{ width: colWidthsLines[7] }"
-              >
-                미납품 수량<span
-                  class="col-resizer"
-                  @mousedown="onResizerDownLines(7, $event)"
-                ></span>
-              </CTableHeaderCell>
-              <CTableHeaderCell
-                class="text-center th-resizable"
-                :style="{ width: colWidthsLines[8] }"
-              >
-                당회 납품 수량<span
-                  class="col-resizer"
-                  @mousedown="onResizerDownLines(8, $event)"
-                ></span>
-              </CTableHeaderCell>
-              <CTableHeaderCell
-                class="text-center th-resizable"
-                :style="{ width: colWidthsLines[9] }"
-              >
-                비고<span class="col-resizer" @mousedown="onResizerDownLines(9, $event)"></span>
-              </CTableHeaderCell>
-            </CTableRow>
-          </CTableHead>
-          <CTableBody>
-            <CTableRow v-for="(row, idx) in rcvordLinesFiltered" :key="row.rcvord_deta_id">
-              <CTableDataCell class="cell-no" :style="{ width: colWidthsLines[0] }">{{
-                idx + 1
-              }}</CTableDataCell>
-              <CTableDataCell class="cell-left" :style="{ width: colWidthsLines[1] }">{{
-                row.prdt_nm
-              }}</CTableDataCell>
-              <CTableDataCell class="cell-left" :style="{ width: colWidthsLines[2] }">{{
-                row.opt_nm
-              }}</CTableDataCell>
-              <CTableDataCell class="cell-left" :style="{ width: colWidthsLines[3] }">{{
-                row.spec
-              }}</CTableDataCell>
-              <CTableDataCell class="cell-left" :style="{ width: colWidthsLines[4] }">{{
-                row.unit
-              }}</CTableDataCell>
-              <CTableDataCell class="cell-number" :style="{ width: colWidthsLines[5] }">{{
-                formatNumber(row.total_req_qty)
-              }}</CTableDataCell>
-              <CTableDataCell class="cell-number" :style="{ width: colWidthsLines[6] }">{{
-                formatNumber(row.delivered_qty)
-              }}</CTableDataCell>
-              <CTableDataCell class="cell-number" :style="{ width: colWidthsLines[7] }">{{
-                formatNumber(Math.max((row.total_req_qty || 0) - (row.delivered_qty || 0), 0))
-              }}</CTableDataCell>
-              <CTableDataCell class="cell-number" :style="{ width: colWidthsLines[8] }">{{
-                formatNumber(row.doc_delivered_qty)
-              }}</CTableDataCell>
-              <CTableDataCell class="cell-left" :style="{ width: colWidthsLines[9] }">{{
-                row.line_rm
-              }}</CTableDataCell>
-            </CTableRow>
-            <CTableRow v-if="!rcvordLinesFiltered.length">
-              <CTableDataCell colspan="10" class="text-center text-muted py-3"
-                >데이터가 없습니다.</CTableDataCell
-              >
-            </CTableRow>
-          </CTableBody>
-        </CTable>
+        <!-- 하단 테이블: 선택된 수주의 상세 라인 -->
+        <div class="table-section">
+          <div class="table-header-label">수주 상세</div>
+          <div class="table-wrapper-modal" style="max-height: 260px">
+            <table class="data-table-modal" style="table-layout: fixed; width: 100%">
+              <thead>
+                <tr>
+                  <th
+                    class="th-resizable"
+                    :style="{ width: colWidthsLines[0] }"
+                  >
+                    No<span class="col-resizer" @mousedown="onResizerDownLines(0, $event)"></span>
+                  </th>
+                  <th
+                    class="th-resizable"
+                    :style="{ width: colWidthsLines[1] }"
+                  >
+                    제품 명<span class="col-resizer" @mousedown="onResizerDownLines(1, $event)"></span>
+                  </th>
+                  <th
+                    class="th-resizable"
+                    :style="{ width: colWidthsLines[2] }"
+                  >
+                    제품 옵션 명<span
+                      class="col-resizer"
+                      @mousedown="onResizerDownLines(2, $event)"
+                    ></span>
+                  </th>
+                  <th
+                    class="th-resizable"
+                    :style="{ width: colWidthsLines[3] }"
+                  >
+                    규격<span class="col-resizer" @mousedown="onResizerDownLines(3, $event)"></span>
+                  </th>
+                  <th
+                    class="th-resizable"
+                    :style="{ width: colWidthsLines[4] }"
+                  >
+                    단위<span class="col-resizer" @mousedown="onResizerDownLines(4, $event)"></span>
+                  </th>
+                  <th
+                    class="th-resizable"
+                    :style="{ width: colWidthsLines[5] }"
+                  >
+                    요청 수량<span
+                      class="col-resizer"
+                      @mousedown="onResizerDownLines(5, $event)"
+                    ></span>
+                  </th>
+                  <th
+                    class="th-resizable"
+                    :style="{ width: colWidthsLines[6] }"
+                  >
+                    기납품 수량<span
+                      class="col-resizer"
+                      @mousedown="onResizerDownLines(6, $event)"
+                    ></span>
+                  </th>
+                  <th
+                    class="th-resizable"
+                    :style="{ width: colWidthsLines[7] }"
+                  >
+                    미납품 수량<span
+                      class="col-resizer"
+                      @mousedown="onResizerDownLines(7, $event)"
+                    ></span>
+                  </th>
+                  <th
+                    class="th-resizable"
+                    :style="{ width: colWidthsLines[8] }"
+                  >
+                    당회 납품 수량<span
+                      class="col-resizer"
+                      @mousedown="onResizerDownLines(8, $event)"
+                    ></span>
+                  </th>
+                  <th
+                    class="th-resizable"
+                    :style="{ width: colWidthsLines[9] }"
+                  >
+                    비고<span class="col-resizer" @mousedown="onResizerDownLines(9, $event)"></span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="(row, idx) in rcvordLinesFiltered"
+                  :key="row.rcvord_deta_id"
+                  class="data-row-modal"
+                >
+                  <td class="text-center" :style="{ width: colWidthsLines[0] }">
+                    {{ idx + 1 }}
+                  </td>
+                  <td class="text-left" :style="{ width: colWidthsLines[1] }">
+                    {{ row.prdt_nm }}
+                  </td>
+                  <td class="text-left" :style="{ width: colWidthsLines[2] }">
+                    {{ row.opt_nm }}
+                  </td>
+                  <td class="text-left" :style="{ width: colWidthsLines[3] }">
+                    {{ row.spec }}
+                  </td>
+                  <td class="text-left" :style="{ width: colWidthsLines[4] }">
+                    {{ row.unit }}
+                  </td>
+                  <td class="text-right" :style="{ width: colWidthsLines[5] }">
+                    {{ formatNumber(row.total_req_qty) }}
+                  </td>
+                  <td class="text-right" :style="{ width: colWidthsLines[6] }">
+                    {{ formatNumber(row.delivered_qty) }}
+                  </td>
+                  <td class="text-right" :style="{ width: colWidthsLines[7] }">
+                    {{ formatNumber(Math.max((row.total_req_qty || 0) - (row.delivered_qty || 0), 0)) }}
+                  </td>
+                  <td class="text-right" :style="{ width: colWidthsLines[8] }">
+                    {{ formatNumber(row.doc_delivered_qty) }}
+                  </td>
+                  <td class="text-left" :style="{ width: colWidthsLines[9] }">
+                    {{ row.line_rm }}
+                  </td>
+                </tr>
+                <tr v-if="!rcvordLinesFiltered.length" class="empty-state">
+                  <td colspan="10">데이터가 없습니다.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </CModalBody>
+    <CModalFooter class="modal-footer-custom">
+      <button class="btn-modal-close" @click="close">닫기</button>
+    </CModalFooter>
   </CModal>
 </template>
 
@@ -209,14 +205,11 @@ const props = defineProps({
 })
 const emit = defineEmits(['close'])
 
-// 닫기
 const close = () => emit('close')
 
-// 포맷 함수
 const formatDate = (d) => {
   if (!d) return ''
   try {
-    // d가 이미 'YYYY-MM-DD' 형태 문자열일 경우 그대로 반환
     if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)) return d
     const date = new Date(d)
     if (isNaN(date.getTime())) return ''
@@ -229,7 +222,6 @@ const formatDate = (d) => {
   }
 }
 
-// 상/하단 데이터 상태
 const rcvordHeaders = shallowRef([])
 const rcvordLines = shallowRef([])
 const selectedHeaderId = ref('')
@@ -239,21 +231,21 @@ const rcvordLinesFiltered = computed(() => {
   return (rcvordLines.value || []).filter((r) => r.rcvord_id === id)
 })
 
-// 하단 그리드: 컬럼 폭 상태 및 리사이즈 핸들러
 const colWidthsLines = ref([
-  '50px', // No
-  '150px', // 제품 명
-  '150px', // 제품 옵션 명
-  '100px', // 규격
-  '100px', // 단위
-  '120px', // 요청 수량
-  '120px', // 기납품 수량
-  '120px', // 미납품 수량
-  '140px', // 당회 납품 수량
-  '240px', // 비고
+  '50px',
+  '150px',
+  '150px',
+  '100px',
+  '100px',
+  '120px',
+  '120px',
+  '120px',
+  '140px',
+  '240px',
 ])
 
 const resizingLines = reactive({ idx: -1, startX: 0, startW: 0 })
+
 function onResizerDownLines(idx, e) {
   e.preventDefault()
   const w = parseInt(String(colWidthsLines.value[idx] || '').replace(/px$/, '')) || 0
@@ -264,6 +256,7 @@ function onResizerDownLines(idx, e) {
   document.addEventListener('mousemove', onResizerMoveLines)
   document.addEventListener('mouseup', onResizerUpLines)
 }
+
 function onResizerMoveLines(e) {
   if (resizingLines.idx < 0) return
   const dx = e.clientX - resizingLines.startX
@@ -272,6 +265,7 @@ function onResizerMoveLines(e) {
   const next = Math.min(max, Math.max(min, resizingLines.startW + dx))
   colWidthsLines.value[resizingLines.idx] = `${next}px`
 }
+
 function onResizerUpLines() {
   resizingLines.idx = -1
   document.body.classList.remove('resizing')
@@ -284,7 +278,6 @@ onBeforeUnmount(() => {
   document.removeEventListener('mouseup', onResizerUpLines)
 })
 
-// 데이터 로드: deli_id 기준으로 헤더/라인 로드
 const loadByDeli = async (deliId) => {
   if (!deliId) {
     rcvordHeaders.value = []
@@ -297,7 +290,6 @@ const loadByDeli = async (deliId) => {
     const hdr = data?.header || {}
     const lines = Array.isArray(data?.lines) ? data.lines : []
 
-    // 상단 그리드: 라인에서 rcvord 헤더 정보를 집계(중복 제거)
     const headersMap = new Map()
     for (const ln of lines) {
       const key = ln.rcvord_id
@@ -306,14 +298,13 @@ const loadByDeli = async (deliId) => {
         rcvord_id: ln.rcvord_id,
         emp_nm: ln.emp_nm,
         co_nm: ln.co_nm,
-        reg_dt: ln.rcv_reg_dt || hdr.deli_dt, // 없으면 문서일자 보조
-        status: ln.rcv_deta_st_nm || ln.deli_st_nm || '', // 보조 표시
+        reg_dt: ln.rcv_reg_dt || hdr.deli_dt,
+        status: ln.rcv_deta_st_nm || ln.deli_st_nm || '',
         rcv_rm: ln.rcv_rm || '',
       })
     }
     rcvordHeaders.value = Array.from(headersMap.values())
     rcvordLines.value = lines
-    // 기본 선택: 첫 행
     selectedHeaderId.value = rcvordHeaders.value[0]?.rcvord_id || ''
   } catch (err) {
     console.error('loadByDeli error', err)
@@ -327,7 +318,6 @@ function selectHeader(row) {
   selectedHeaderId.value = row?.rcvord_id || ''
 }
 
-// 숫자 포맷터
 const formatNumber = (n) => (n == null || n === '' ? '' : Number(n).toLocaleString())
 
 watch(
@@ -340,118 +330,177 @@ watch(
 </script>
 
 <style scoped>
-:deep(*) {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
-    sans-serif;
-  line-height: 1.5;
-  box-sizing: border-box;
-}
-.text-danger {
-  color: #dc3545;
-}
+/* ============================================
+   모달 헤더
+   ============================================ */
 .modal-header-custom {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-right: 12px;
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  border-bottom: none;
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px 12px 0 0;
 }
-.search-bar {
-  display: flex;
-  align-items: center;
+
+.modal-title-custom {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.3px;
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif;
+  margin: 0;
 }
-.flex-spacer {
-  flex: 1;
+
+:deep(.btn-close) {
+  filter: brightness(0) invert(1);
+  opacity: 0.8;
 }
-.right-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px; /* 조회와 초기화 사이 간격 */
+
+:deep(.btn-close:hover) {
+  opacity: 1;
 }
-.search-label {
-  font-weight: 600;
-  font-size: 0.85rem;
-  color: #222;
-  display: inline-block;
-  min-width: 56px;
-  text-align: right;
+
+/* ============================================
+   모달 바디
+   ============================================ */
+:deep(.modal-body-custom) {
+  padding: 0;
+  background: #f8fafc;
 }
-.cell-no {
+
+.modal-content-wrapper {
+  padding: 1.5rem;
+}
+
+/* ============================================
+   테이블 영역
+   ============================================ */
+.table-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.table-header-label {
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid #e2e8f0;
+  letter-spacing: -0.2px;
+}
+
+.table-wrapper-modal {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.table-wrapper-modal::-webkit-scrollbar {
+  width: 14px;
+  background: #ffffff;
+}
+
+.table-wrapper-modal::-webkit-scrollbar-track {
+  background: #ffffff;
+}
+
+.table-wrapper-modal::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #9ca3af 0%, #6b7280 100%);
+  border-radius: 10px;
+  border: 3px solid #ffffff;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.table-wrapper-modal::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #6b7280 0%, #4b5563 100%);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+
+:deep(.data-table-modal) {
+  width: 100% !important;
+  margin-bottom: 0 !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  font-size: 12px !important;
+  font-family: "Pretendard", sans-serif !important;
+}
+
+:deep(.data-table-modal thead) {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+}
+
+:deep(.data-table-modal thead tr th) {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%) !important;
+  color: #ffffff !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  padding: 0.75rem 0.5rem !important;
+  border: none !important;
+  letter-spacing: -0.2px !important;
+  font-family: "Pretendard", sans-serif !important;
+  white-space: nowrap !important;
+}
+
+:deep(.data-table-modal tbody tr td) {
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  vertical-align: middle !important;
+  padding: 0.65rem 0.5rem !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  color: #334155 !important;
+  height: 42px !important;
+  font-family: "Pretendard", sans-serif !important;
+}
+
+:deep(.text-center) {
   text-align: center !important;
 }
-.cell-number {
-  text-align: right !important;
-}
-.cell-left {
+
+:deep(.text-left) {
   text-align: left !important;
 }
 
-/* CompanyManage 스타일 적용 */
-:deep(.btn) {
-  font-size: 13px;
-  font-weight: 600;
-  padding: 0.5rem 1.2rem;
-  border: none;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  letter-spacing: -0.3px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-:deep(.btn-secondary) {
-  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
-  color: #fff !important;
-}
-:deep(.btn-secondary:hover) {
-  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.25);
+:deep(.text-right) {
+  text-align: right !important;
 }
 
-/* 테이블 헤더/바디 스타일 (CompanyManage 준용) */
-:deep(.table-responsive) {
-  border-radius: 10px;
-}
-:deep(.table-responsive thead) {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-:deep(.table-responsive thead th) {
-  font-size: 13px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #495057 0%, #343a40 100%) !important;
-  color: #ffffff !important;
-  text-align: center;
-  padding: 0.6rem 0.5rem;
-  border: none;
-}
-:deep(.table-responsive tbody td) {
-  font-size: 14px;
-  vertical-align: middle;
+:deep(.data-row-modal) {
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  background-color: #ffffff !important;
 }
 
-/* Row hover - match prdtManage look */
-:deep(.table-responsive tbody tr) {
-  transition: all 0.2s ease;
-  background-color: #ffffff;
-}
-:deep(.table-responsive tbody tr:hover) {
-  background-color: #f8f9fa !important;
-}
-/* Ensure cell background also changes to the same tone */
-:deep(.table-responsive tbody tr:hover) td {
-  background-color: #f8f9fa !important;
+:deep(.data-row-modal:hover) {
+  background-color: #f8fafc !important;
+  box-shadow: inset 0 0 0 1px #e2e8f0 !important;
 }
 
-/* Active row highlight */
-:deep(.table-responsive tbody tr.row-active),
-:deep(.table-responsive tbody tr.row-active td) {
-  background-color: #e9f5ff !important;
+:deep(.data-row-modal.row-selected),
+:deep(.data-row-modal.row-selected td) {
+  background-color: #eff6ff !important;
+  box-shadow: inset 0 0 0 1px #bfdbfe !important;
+}
+
+:deep(.empty-state td) {
+  text-align: center !important;
+  color: #94a3b8 !important;
+  font-style: italic !important;
+  padding: 2.5rem 0.5rem !important;
+  background-color: #f8fafc !important;
+  font-family: "Pretendard", sans-serif !important;
 }
 
 /* 컬럼 리사이즈 핸들 */
 .th-resizable {
   position: relative;
 }
+
 .th-resizable .col-resizer {
   position: absolute;
   top: 0;
@@ -460,29 +509,62 @@ watch(
   height: 100%;
   cursor: col-resize;
   user-select: none;
-}
-.resizing {
-  cursor: col-resize !important;
+  background: transparent;
+  transition: background 0.2s ease;
 }
 
-/* 모던 스크롤바 (CompanyManage 준용) */
-:deep(.table-responsive) {
-  scrollbar-gutter: stable;
-  -webkit-overflow-scrolling: touch;
+.th-resizable:hover .col-resizer {
+  background: rgba(59, 130, 246, 0.3);
 }
-:deep(.table-responsive::-webkit-scrollbar) {
-  width: 8px;
+
+:global(.resizing) {
+  cursor: col-resize !important;
+  user-select: none !important;
 }
-:deep(.table-responsive::-webkit-scrollbar-track) {
-  background: rgba(240, 240, 240, 0.6);
-  border-radius: 10px;
+
+/* ============================================
+   모달 푸터
+   ============================================ */
+:deep(.modal-footer-custom) {
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  padding: 1rem 1.5rem;
+  border-radius: 0 0 12px 12px;
 }
-:deep(.table-responsive::-webkit-scrollbar-thumb) {
-  background: linear-gradient(180deg, #bfc2c7, #9ea2a8);
-  border-radius: 10px;
-  border: 2px solid rgba(255, 255, 255, 0.4);
+
+.btn-modal-close {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0.65rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  letter-spacing: -0.3px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-width: 80px;
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+  color: #fff;
+  cursor: pointer;
+  font-family: "Pretendard", sans-serif;
 }
-:deep(.table-responsive::-webkit-scrollbar-thumb:hover) {
-  background: linear-gradient(180deg, #a4a8ae, #7e838a);
+
+.btn-modal-close:hover {
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
+  box-shadow: 0 4px 8px rgba(71, 85, 105, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-modal-close:active {
+  transform: scale(0.98);
+}
+
+/* ============================================
+   반응형
+   ============================================ */
+@media (max-width: 1600px) {
+  :deep(.data-table-modal thead tr th),
+  :deep(.data-table-modal tbody tr td) {
+    font-size: 11px !important;
+  }
 }
 </style>

@@ -1,174 +1,182 @@
 <template>
-  <div class="prcs-prog-page vars-scope">
-    <div class="global-toolbar">
-      <div class="toolbar-buttons">
-        <button class="btn btn-sm btn-outline-secondary" @click="onOpenModal">지시 조회</button>
-        <button class="btn btn-sm btn-outline-secondary" @click="onReset">초기화</button>
-      </div>
+  <CContainer fluid class="h-100 d-flex flex-column p-3">
+    <!-- 상단 버튼 영역 -->
+    <div class="d-flex justify-content-end mb-2 gap-2">
+      <CButton color="secondary" size="sm" @click="onOpenModal" class="btn-search">지시 조회</CButton>
+      <CButton color="secondary" size="sm" @click="onReset" class="btn-reset">초기화</CButton>
     </div>
 
-    <div class="grid-card">
-      <div class="grid-title main-title">
-        <span v-if="selectedId" class="id-badge" :title="selectedId">{{ selectedId }}</span>
-        공정 진행
-      </div>
-      <div class="table-wrapper table-wrapper-expanded">
-        <table class="data-grid">
-          <thead>
-            <tr>
-              <th class="no-col">No</th>
-              <th class="date-col">지시 일자</th>
-              <th class="name-col">생산 지시 명</th>
-              <th class="prod-col">제품 명</th>
-              <th class="opt-col">제품 옵션 명</th>
-              <th class="ord-col">공정 순서</th>
-              <th class="pr-col">공정 ID</th>
-              <th class="drct-col">지시 수량</th>
-              <th class="inpt-col">투입 수량</th>
-              <th class="st-col">상태</th>
-              <th class="remark-col">비고</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="(r, i) in mainRows"
-              :key="r.prcs_id + '-' + i"
-              :class="{ 'selected-row': selectedMain && selectedMain.prcs_id === r.prcs_id }"
-              @click="onSelectMain(r)"
-            >
-              <td class="cell-no">{{ i + 1 }}</td>
-              <td class="cell-left">
-                <span class="cell-text" :title="fmtDate(selectedFrDt)">{{
-                  fmtDate(selectedFrDt)
-                }}</span>
-              </td>
-              <td class="cell-left">
-                <span class="cell-text" :title="selectedNm">{{ selectedNm }}</span>
-              </td>
-              <td class="cell-left">
-                <span class="cell-text" :title="r.prdt_nm">{{ r.prdt_nm }}</span>
-              </td>
-              <td class="cell-left">
-                <span class="cell-text" :title="r.opt_nm">{{ r.opt_nm }}</span>
-              </td>
-              <td class="cell-number">{{ r.prcs_ord }}</td>
-              <td class="cell-left">
-                <span class="cell-text mono" :title="r.prcs_id">{{ r.prcs_id }}</span>
-              </td>
-              <td class="cell-number">
-                <span class="cell-text">{{ fmtNumber(r.drct_qy) }}</span>
-              </td>
-              <td class="cell-number">
-                <span class="cell-text">{{ fmtNumber(r.inpt_qy) }}</span>
-              </td>
-              <td class="cell-left">
-                <span class="cell-text" :title="r.st_nm || r.st">{{ r.st_nm || r.st }}</span>
-              </td>
-              <td class="cell-left">
-                <span class="cell-text" :title="r.rm">{{ r.rm }}</span>
-              </td>
-            </tr>
-            <tr
-              v-for="n in Math.max(0, 12 - mainRows.length)"
-              :key="'m-empty-' + n"
-              class="empty-row"
-            >
-              <td colspan="11">&nbsp;</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="grid-row">
-      <div class="grid-card small">
-        <div class="grid-title">작업자</div>
-        <div class="table-wrapper table-wrapper-sm">
-          <table class="data-grid">
-            <thead>
-              <tr>
-                <th class="empid-col">사원 ID</th>
-                <th class="empname-col">사원 이름</th>
-                <th class="dept-col">부서 명</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="(r, i) in empRows"
-                :key="r.emp_id + '-' + i"
-                :class="{ 'selected-row': selectedEmp && selectedEmp.emp_id === r.emp_id }"
-                @click="onSelectEmp(r)"
-              >
-                <td class="cell-left">
-                  <span class="cell-text mono" :title="r.emp_id">{{ r.emp_id }}</span>
-                </td>
-                <td class="cell-left">
-                  <span class="cell-text" :title="r.emp_nm">{{ r.emp_nm }}</span>
-                </td>
-                <td class="cell-left">
-                  <span class="cell-text" :title="r.dept_nm">{{ r.dept_nm }}</span>
-                </td>
-              </tr>
-              <tr
-                v-for="n in Math.max(0, 8 - empRows.length)"
-                :key="'e-empty-' + n"
-                class="empty-row"
-              >
-                <td colspan="3">&nbsp;</td>
-              </tr>
-            </tbody>
-          </table>
+    <!-- 메인 컨텐츠 영역 -->
+    <CRow class="flex-grow-1 overflow-hidden g-2">
+      <!-- 상단: 공정 진행 그리드 (전체 너비) -->
+      <CCol :md="12" class="d-flex flex-column overflow-hidden mb-2">
+        <!-- 타이틀 영역 -->
+        <div class="section-header-box mb-2">
+          <span v-if="selectedId" class="id-badge" :title="selectedId">{{ selectedId }}</span>
+          <span class="section-title">공정 진행</span>
         </div>
-      </div>
 
-      <div class="grid-card small">
-        <div class="grid-title">설비</div>
-        <div class="table-wrapper table-wrapper-sm">
-          <table class="data-grid">
-            <thead>
-              <tr>
-                <th class="pr-col">설비 ID</th>
-                <th class="prod-col">설비 명</th>
-                <th class="st-col">설비 상태</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="(r, i) in eqmRows"
-                :key="r.eqm_id + '-' + i"
-                :class="{ 'selected-row': selectedEqm && selectedEqm.eqm_id === r.eqm_id }"
-                @click="onSelectEqm(r)"
-              >
-                <td class="cell-left">
-                  <span class="cell-text mono" :title="r.eqm_id">{{ r.eqm_id }}</span>
-                </td>
-                <td class="cell-left">
-                  <span class="cell-text" :title="r.eqm_nm">{{ r.eqm_nm }}</span>
-                </td>
-                <td class="cell-left">
-                  <span class="cell-text" :title="r.st_nm || r.st">{{ r.st_nm || r.st }}</span>
-                </td>
-              </tr>
-              <tr
-                v-for="n in Math.max(0, 8 - eqmRows.length)"
-                :key="'q-empty-' + n"
-                class="empty-row"
-              >
-                <td colspan="3">&nbsp;</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="grid-box flex-grow-1 overflow-hidden d-flex flex-column">
+          <div class="table-wrapper">
+            <CTable bordered hover class="data-table">
+              <CTableHead>
+                <CTableRow>
+                  <CTableHeaderCell style="width: 50px">No</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 10%">지시 일자</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 15%">생산 지시 명</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 12%">제품 명</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 12%">제품 옵션 명</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 8%">공정 순서</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 10%">공정 ID</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 8%">지시 수량</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 8%">투입 수량</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 8%">상태</CTableHeaderCell>
+                  <CTableHeaderCell>비고</CTableHeaderCell>
+                </CTableRow>
+              </CTableHead>
+              <CTableBody>
+                <CTableRow
+                  v-for="(item, index) in mainRows"
+                  :key="item.prcs_id + '-' + index"
+                  @click="onSelectMain(item)"
+                  :class="{ 'selected-row': selectedMain && selectedMain.prcs_id === item.prcs_id }"
+                  class="data-row"
+                >
+                  <CTableDataCell class="text-end">{{ index + 1 }}</CTableDataCell>
+                  <CTableDataCell class="text-center">
+                    <span class="cell-text">{{ fmtDate(selectedFrDt) }}</span>
+                  </CTableDataCell>
+                  <CTableDataCell>
+                    <span class="cell-text" :title="selectedNm">{{ selectedNm }}</span>
+                  </CTableDataCell>
+                  <CTableDataCell>
+                    <span class="cell-text" :title="item.prdt_nm">{{ item.prdt_nm }}</span>
+                  </CTableDataCell>
+                  <CTableDataCell>
+                    <span class="cell-text" :title="item.opt_nm">{{ item.opt_nm }}</span>
+                  </CTableDataCell>
+                  <CTableDataCell class="text-center">{{ item.prcs_ord }}</CTableDataCell>
+                  <CTableDataCell class="text-center text-primary">
+                    <span class="cell-text mono" :title="item.prcs_id">{{ item.prcs_id }}</span>
+                  </CTableDataCell>
+                  <CTableDataCell class="text-end">
+                    <span class="cell-text">{{ fmtNumber(item.drct_qy) }}</span>
+                  </CTableDataCell>
+                  <CTableDataCell class="text-end">
+                    <span class="cell-text">{{ fmtNumber(item.inpt_qy) }}</span>
+                  </CTableDataCell>
+                  <CTableDataCell class="text-center">
+                    <span class="cell-text" :title="item.st_nm || item.st">{{ item.st_nm || item.st }}</span>
+                  </CTableDataCell>
+                  <CTableDataCell>
+                    <span class="cell-text" :title="item.rm">{{ item.rm }}</span>
+                  </CTableDataCell>
+                </CTableRow>
+                <CTableRow v-for="i in mainEmptyRows" :key="'main-empty-' + i" class="empty-row">
+                  <CTableDataCell colspan="11">&nbsp;</CTableDataCell>
+                </CTableRow>
+              </CTableBody>
+            </CTable>
+          </div>
         </div>
-      </div>
-    </div>
+      </CCol>
+
+      <!-- 하단 좌측: 작업자 그리드 -->
+      <CCol :md="6" class="d-flex flex-column overflow-hidden pe-1">
+        <!-- 타이틀 영역 -->
+        <div class="section-header-box mb-2">
+          <span class="section-title">작업자</span>
+        </div>
+
+        <div class="grid-box flex-grow-1 overflow-hidden d-flex flex-column">
+          <div class="table-wrapper">
+            <CTable bordered hover class="data-table">
+              <CTableHead>
+                <CTableRow>
+                  <CTableHeaderCell style="width: 30%">사원 ID</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 30%">사원 이름</CTableHeaderCell>
+                  <CTableHeaderCell>부서 명</CTableHeaderCell>
+                </CTableRow>
+              </CTableHead>
+              <CTableBody>
+                <CTableRow
+                  v-for="(item, index) in empRows"
+                  :key="item.emp_id + '-' + index"
+                  @click="onSelectEmp(item)"
+                  :class="{ 'selected-row': selectedEmp && selectedEmp.emp_id === item.emp_id }"
+                  class="data-row"
+                >
+                  <CTableDataCell class="text-center text-primary">
+                    <span class="cell-text mono" :title="item.emp_id">{{ item.emp_id }}</span>
+                  </CTableDataCell>
+                  <CTableDataCell>
+                    <span class="cell-text" :title="item.emp_nm">{{ item.emp_nm }}</span>
+                  </CTableDataCell>
+                  <CTableDataCell>
+                    <span class="cell-text" :title="item.dept_nm">{{ item.dept_nm }}</span>
+                  </CTableDataCell>
+                </CTableRow>
+                <CTableRow v-for="i in empEmptyRows" :key="'emp-empty-' + i" class="empty-row">
+                  <CTableDataCell colspan="3">&nbsp;</CTableDataCell>
+                </CTableRow>
+              </CTableBody>
+            </CTable>
+          </div>
+        </div>
+      </CCol>
+
+      <!-- 하단 우측: 설비 그리드 -->
+      <CCol :md="6" class="d-flex flex-column overflow-hidden ps-1">
+        <!-- 타이틀 영역 -->
+        <div class="section-header-box mb-2">
+          <span class="section-title">설비</span>
+        </div>
+
+        <div class="grid-box flex-grow-1 overflow-hidden d-flex flex-column">
+          <div class="table-wrapper">
+            <CTable bordered hover class="data-table">
+              <CTableHead>
+                <CTableRow>
+                  <CTableHeaderCell style="width: 30%">설비 ID</CTableHeaderCell>
+                  <CTableHeaderCell style="width: 40%">설비 명</CTableHeaderCell>
+                  <CTableHeaderCell>설비 상태</CTableHeaderCell>
+                </CTableRow>
+              </CTableHead>
+              <CTableBody>
+                <CTableRow
+                  v-for="(item, index) in eqmRows"
+                  :key="item.eqm_id + '-' + index"
+                  @click="onSelectEqm(item)"
+                  :class="{ 'selected-row': selectedEqm && selectedEqm.eqm_id === item.eqm_id }"
+                  class="data-row"
+                >
+                  <CTableDataCell class="text-center text-primary">
+                    <span class="cell-text mono" :title="item.eqm_id">{{ item.eqm_id }}</span>
+                  </CTableDataCell>
+                  <CTableDataCell>
+                    <span class="cell-text" :title="item.eqm_nm">{{ item.eqm_nm }}</span>
+                  </CTableDataCell>
+                  <CTableDataCell class="text-center">
+                    <span class="cell-text" :title="item.st_nm || item.st">{{ item.st_nm || item.st }}</span>
+                  </CTableDataCell>
+                </CTableRow>
+                <CTableRow v-for="i in eqmEmptyRows" :key="'eqm-empty-' + i" class="empty-row">
+                  <CTableDataCell colspan="3">&nbsp;</CTableDataCell>
+                </CTableRow>
+              </CTableBody>
+            </CTable>
+          </div>
+        </div>
+      </CCol>
+    </CRow>
 
     <PrcsProgPreconModalOne v-model="showModal" @selected="onSelected" />
     <PrcsProgPreconModalTwo v-model="showModalTwo" @selected="onSelectedMold" />
-  </div>
+  </CContainer>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
 import PrcsProgPreconModalOne from '../modal/prcsProgPreconModalOne.vue'
@@ -190,9 +198,26 @@ const selectedEqm = ref(null)
 const showModalTwo = ref(false)
 const router = useRouter()
 
+// Empty rows 계산
+const mainEmptyRows = computed(() => {
+  const dataCount = mainRows.value.length
+  return dataCount < 10 ? Math.max(0, 5 - dataCount) : 0
+})
+
+const empEmptyRows = computed(() => {
+  const dataCount = empRows.value.length
+  return dataCount < 10 ? Math.max(0, 5 - dataCount) : 0
+})
+
+const eqmEmptyRows = computed(() => {
+  const dataCount = eqmRows.value.length
+  return dataCount < 10 ? Math.max(0, 5 - dataCount) : 0
+})
+
 const onOpenModal = () => {
   showModal.value = true
 }
+
 const onReset = () => {
   selectedId.value = ''
   selectedFrDt.value = ''
@@ -210,7 +235,6 @@ const onSelected = async (payload) => {
   selectedFrDt.value = payload?.prod_drct_fr_dt || ''
   selectedNm.value = payload?.prod_drct_nm || ''
   showModal.value = false
-  // 선택 상태 초기화
   selectedMain.value = null
   selectedEmp.value = null
   selectedEqm.value = null
@@ -227,7 +251,6 @@ const fetchMainList = async () => {
       params: { prod_drct_id: selectedId.value },
     })
     const arr = Array.isArray(data) ? data : []
-    // 서버가 st='J2'만 내려주지 않는 경우를 대비해 클라이언트에서 보조 필터
     const hasStCode = arr.some((r) => r && typeof r.st === 'string')
     mainRows.value = hasStCode ? arr.filter((r) => (r.st || '').trim() === 'J2') : arr
   } catch (err) {
@@ -237,7 +260,6 @@ const fetchMainList = async () => {
 }
 
 const fetchEmpList = async () => {
-  // 선택된 지시가 없으면 비워둔다
   if (!selectedId.value) {
     empRows.value = []
     return
@@ -251,25 +273,42 @@ const fetchEmpList = async () => {
   }
 }
 
+const fetchEqmList = async () => {
+  try {
+    const { data } = await axios.get('/api/prcs-prog-precon/eqms')
+    const arr = Array.isArray(data) ? data : []
+    eqmRows.value = arr.filter((r) => {
+      const text = (r?.st_nm ?? '').toString().trim()
+      const code = (r?.st ?? '').toString().trim()
+      if (text) return text === '비가동'
+      if (code) return code === 'Q2'
+      return false
+    })
+  } catch (err) {
+    console.error('fetchEqmList error', err)
+    eqmRows.value = []
+  }
+}
+
 function onSelectMain(row) {
   selectedMain.value = row
   maybeProceed()
 }
+
 function onSelectEmp(row) {
   selectedEmp.value = row
   maybeProceed()
 }
+
 function onSelectEqm(row) {
   selectedEqm.value = row
   maybeProceed()
 }
 
 async function maybeProceed() {
-  // 세 개의 그리드에서 각각 하나씩 선택되었을 때만 동작
   if (!selectedMain.value || !selectedEmp.value || !selectedEqm.value) return
   try {
     const prcsId = selectedMain.value.prcs_id
-    // mainRows에 mold_use_at이 포함되어 있으면 그대로 사용
     let moldUse = selectedMain.value.mold_use_at
     if (!moldUse) {
       const { data } = await axios.get(`/api/prcs-prog-precon/prcs/${encodeURIComponent(prcsId)}`)
@@ -278,7 +317,6 @@ async function maybeProceed() {
     if (String(moldUse || '').trim() === 'P1') {
       showModalTwo.value = true
     } else {
-      // 금형 미사용: 금형 관련 값은 '-'로 채워 procCtrl로 이동
       const m = selectedMain.value || {}
       const e = selectedEmp.value || {}
       const q = selectedEqm.value || {}
@@ -312,7 +350,6 @@ async function maybeProceed() {
 }
 
 function onSelectedMold(moldRow) {
-  // 조립: procCtrl 에 필요한 값을 쿼리로 전달
   const m = selectedMain.value || {}
   const e = selectedEmp.value || {}
   const q = selectedEqm.value || {}
@@ -342,24 +379,6 @@ function onSelectedMold(moldRow) {
   router.push({ path: '/Minsu/procCtrl', query: Object.fromEntries(params) })
 }
 
-const fetchEqmList = async () => {
-  try {
-    const { data } = await axios.get('/api/prcs-prog-precon/eqms')
-    const arr = Array.isArray(data) ? data : []
-    // 설비 상태 컬럼 값이 '비가동'인 행만 노출 (st_nm이 우선, 없으면 코드 'Q2'로 대체)
-    eqmRows.value = arr.filter((r) => {
-      const text = (r?.st_nm ?? '').toString().trim()
-      const code = (r?.st ?? '').toString().trim()
-      if (text) return text === '비가동'
-      if (code) return code === 'Q2'
-      return false
-    })
-  } catch (err) {
-    console.error('fetchEqmList error', err)
-    eqmRows.value = []
-  }
-}
-
 function fmtDate(d) {
   if (!d) return ''
   try {
@@ -374,6 +393,7 @@ function fmtDate(d) {
     return ''
   }
 }
+
 function fmtNumber(v) {
   const n = Number(v)
   return Number.isFinite(n) ? n.toLocaleString() : ''
@@ -382,406 +402,339 @@ function fmtNumber(v) {
 
 <style scoped>
 :deep(*) {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
-    sans-serif;
-  line-height: 1.5;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  line-height: 1.6;
   box-sizing: border-box;
 }
-.vars-scope {
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --color-btn-gray: #6e7b85;
-  --color-btn-gray-hover: #5d6871;
-  --color-btn-danger: #c53030;
-  --color-btn-danger-hover: #a82323;
-  --color-btn-text: #fff;
-  --table-visible-rows: 9;
-  --row-h: 34px;
-  --thead-h: 34px;
 
-  /* 메인 그리드 열 너비 변수 (필요 시 여기서만 숫자 조절) */
-  --col-main-no: 46px;
-  --col-main-date: 110px;
-  --col-main-name: 180px;
-  --col-main-prod: 120px;
-  --col-main-opt: 140px;
-  --col-main-ord: 90px;
-  --col-main-pr: 100px;
-  --col-main-drct: 90px;
-  --col-main-inpt: 90px;
-  --col-main-st: 110px;
-  --col-main-remark: 320px;
-}
-.global-toolbar {
-  display: flex;
-  justify-content: flex-end;
-  padding: 0 14px;
-  margin-bottom: 8px;
-}
-.global-toolbar .toolbar-buttons {
-  display: flex;
-  gap: 6px;
-}
-.card-like {
-  border: 1px solid #ccc;
-  background: #fff;
-  padding: 12px 14px 16px;
-  margin-bottom: 12px;
-  border-radius: var(--radius-md);
-}
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px 18px;
-}
-.field {
-  display: flex;
-  flex-direction: column;
-}
-.field label {
-  font-weight: 600;
-  margin-bottom: 4px;
-  font-size: 12px;
-  color: #2c3e50;
-}
-.field input[type='text'] {
-  height: 34px;
-  font-size: 12px;
-  padding: 0.4rem 0.75rem;
-  border: 2px solid #e9ecef;
-  border-radius: 8px;
-  background-color: #f8f9fa;
-}
-.field input[readonly] {
-  background: #e9e9e9;
-  color: #222;
+:deep(.container-fluid) {
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+  padding: 1.5rem !important;
+  min-height: 100vh;
+  overflow: auto;
+  width: 100%;
 }
 
-.btn {
-  cursor: pointer;
+.section-header-box {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  padding: 0.65rem 0.85rem;
   border-radius: 8px;
-  border: none;
-  color: var(--color-btn-text);
-  font-weight: 600;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.section-header-box:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* 타이틀 왼쪽 강조 바 */
+.section-header-box::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #64748b 0%, #cbd5e1 100%);
+  border-radius: 8px 0 0 8px;
+}
+
+.section-title {
+  font-weight: 700;
+  color: #1e293b;
   font-size: 13px;
   letter-spacing: -0.3px;
-  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.id-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 0.5rem 1.2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-.btn-sm {
-  height: auto;
-  padding: 0.5rem 1.2rem;
-  font-size: 13px;
-}
-.btn-outline-secondary {
-  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
-  color: var(--color-btn-text);
-}
-.btn-outline-secondary:hover {
-  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
-}
-.btn-ghost {
-  background: transparent;
-  border: 1px solid #c7c7c7;
-  color: #333;
+  font-size: 11px;
+  font-weight: 600;
+  color: #1e40af;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border: 1px solid #93c5fd;
+  border-radius: 6px;
+  padding: 0.25rem 0.65rem;
+  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.1);
+  letter-spacing: -0.2px;
 }
 
+/* ============================================
+   그리드 박스
+   ============================================ */
+.grid-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  max-height: calc(46px + 5 * 46px + 2px);
+}
+
+/* ============================================
+   버튼 스타일
+   ============================================ */
+:deep(.btn) {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0.55rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  letter-spacing: -0.3px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-width: 80px;
+}
+
+:deep(.btn-secondary) {
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+  color: #fff !important;
+}
+
+:deep(.btn-secondary:hover) {
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
+  box-shadow: 0 4px 8px rgba(71, 85, 105, 0.3);
+  transform: translateY(-1px);
+}
+
+:deep(.btn:active) {
+  transform: scale(0.98);
+}
+
+/* ============================================
+   테이블 래퍼
+   ============================================ */
 .table-wrapper {
-  height: calc(var(--row-h) * var(--table-visible-rows) + var(--thead-h));
   overflow-y: auto;
   overflow-x: hidden;
-  border: 1px solid #bcbcbc;
-  border-radius: var(--radius-md);
-}
-.table-wrapper-expanded {
-  margin-top: 0;
-  background: #ffffff;
-  padding: 0;
-}
-.table-wrapper-sm {
-  height: calc(var(--row-h) * 6 + var(--thead-h));
-}
-
-table.data-grid {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  table-layout: fixed;
-  font-size: 12px;
-}
-.data-grid thead th {
-  position: sticky;
-  top: 0;
-  background: linear-gradient(135deg, #495057 0%, #343a40 100%);
-  color: #fff;
-  z-index: 10;
-  border: none;
-  padding: 0.65rem 0.5rem;
-  font-weight: 700;
-  text-align: center;
-  height: var(--thead-h);
-}
-.data-grid thead th:first-child {
-  border-top-left-radius: var(--radius-sm);
-}
-.data-grid thead th:last-child {
-  border-top-right-radius: var(--radius-sm);
-}
-.data-grid tbody td {
-  border: none;
-  border-bottom: 1px solid #e9ecef;
-  border-right: 2px solid #e9ecef;
-  padding: 0.55rem 0.5rem;
-  background: #fff;
-  height: var(--row-h);
-}
-.data-grid tbody td:last-child {
-  border-right: none;
-}
-.data-grid tbody tr {
-  height: var(--row-h);
-  transition: all 0.2s ease;
-  background: #fff;
-}
-.data-grid tbody tr:hover:not(.empty-row),
-.data-grid tbody tr:hover:not(.empty-row) td,
-.data-grid tbody tr:hover:not(.empty-row) .input-like {
-  background-color: var(
-    --cui-table-hover-bg,
-    var(--bs-table-hover-bg, rgba(33, 37, 41, 0.075))
-  ) !important;
-}
-
-.cell-no {
-  text-align: center;
-}
-.cell-number {
-  text-align: right;
-}
-.cell-left {
-  text-align: left;
-}
-.ellipsis {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.input-like {
-  display: block;
-  width: 100%;
-  background-color: #ffffff;
-  border: 2px solid #e9ecef;
-  border-radius: 8px;
-  padding: 0.25rem 0.5rem;
-  min-height: 28px;
-  line-height: 1.2;
-}
-.input-like--compact {
-  padding: 0.2rem 0.5rem;
-  min-height: 26px;
-}
-.input-like--number {
-  text-align: right;
-}
-.input-like--textarea {
-  padding-top: 0.35rem;
-  padding-bottom: 0.35rem;
-}
-.input-like .value {
-  display: inline-block;
-  color: #2c3e50;
-}
-
-/* 메인 그리드: 열별 너비 매핑 */
-.no-col {
-  width: var(--col-main-no);
-}
-.date-col {
-  width: var(--col-main-date);
-}
-.name-col {
-  width: var(--col-main-name);
-}
-.prod-col {
-  width: var(--col-main-prod);
-}
-.opt-col {
-  width: var(--col-main-opt);
-}
-.ord-col {
-  width: var(--col-main-ord);
-}
-.pr-col {
-  width: var(--col-main-pr);
-}
-.drct-col {
-  width: var(--col-main-drct);
-}
-.inpt-col {
-  width: var(--col-main-inpt);
-}
-.st-col {
-  width: var(--col-main-st);
-}
-.remark-col {
-  width: var(--col-main-remark);
-}
-
-.grid-row {
-  display: flex;
-  gap: 12px;
-  margin-top: 12px;
-}
-.grid-card {
-  flex: 1;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 8px 10px;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  background: #fff;
-}
-.grid-card .grid-title {
-  font-weight: 600;
-  color: #111827;
+  background: #ffffff;
+  scrollbar-width: auto;
+  scrollbar-color: #64748b #f1f5f9;
 }
 
-.table-wrapper {
-  scrollbar-gutter: stable;
-  -webkit-overflow-scrolling: touch;
-}
+/* ============================================
+   두툼한 모던 스크롤바 디자인
+   ============================================ */
 .table-wrapper::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-.table-wrapper::-webkit-scrollbar-track {
-  background: rgba(240, 240, 240, 0.6);
-  border-radius: 10px;
-}
-.table-wrapper::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #bfc2c7, #9ea2a8);
-  border-radius: 10px;
-  border: 2px solid rgba(255, 255, 255, 0.4);
-}
-.table-wrapper::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #a4a8ae, #7e838a);
+  width: 14px;
+  background: #ffffff;
 }
 
-.data-grid tbody td {
-  padding-top: 6px;
-  padding-bottom: 6px;
-  vertical-align: middle;
-  overflow: hidden;
+.table-wrapper::-webkit-scrollbar-track {
+  background: #ffffff;
 }
-.data-grid .cell-text {
+
+.table-wrapper::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #9ca3af 0%, #6b7280 100%);
+  border-radius: 10px;
+  border: 3px solid #ffffff;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #6b7280 0%, #4b5563 100%);
+  border-color: #ffffff;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+
+.table-wrapper::-webkit-scrollbar-button:single-button {
+  display: block;
+  height: 20px;
+  background-color: #ffffff;
+  background-repeat: no-repeat;
+  background-position: center;
+  border: none;
+}
+
+.table-wrapper::-webkit-scrollbar-button:single-button:vertical:decrement {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 4L2 8h8z'/%3E%3C/svg%3E");
+  margin-top: 46px;
+}
+
+.table-wrapper::-webkit-scrollbar-button:single-button:vertical:increment {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
+  margin-bottom: 46px;
+}
+
+.table-wrapper::-webkit-scrollbar-button:single-button:hover {
+  background-color: #f3f4f6;
+}
+
+/* ============================================
+   데이터 테이블
+   ============================================ */
+:deep(.data-table) {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  user-select: none;
+  cursor: default;
+  font-size: 13px;
+  width: 100%;
+  display: table;
+  table-layout: fixed;
+}
+
+:deep(.data-table thead) {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: table-header-group;
+}
+
+:deep(.data-table tbody) {
+  display: table-row-group;
+}
+
+:deep(.data-table th) {
+  font-size: 13px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  color: #ffffff;
+  text-align: center;
+  padding: 0.85rem 0.75rem;
+  border: none;
+  letter-spacing: -0.2px;
+}
+
+:deep(.data-table th:first-child) {
+  border-top-left-radius: 12px;
+}
+
+:deep(.data-table th:last-child) {
+  border-top-right-radius: 12px;
+}
+
+:deep(.data-table td) {
+  font-size: 13px;
+  font-weight: 400;
+  vertical-align: middle;
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  color: #334155;
+  height: 46px;
+}
+
+:deep(.data-table tbody tr.data-row) {
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background-color: #ffffff;
+}
+
+:deep(.data-table tbody tr.data-row:hover) {
+  background-color: #f8fafc;
+  box-shadow: inset 0 0 0 1px #e2e8f0;
+}
+
+:deep(.selected-row) {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%) !important;
+  font-weight: 600;
+  box-shadow: inset 0 0 0 2px #3b82f6;
+}
+
+:deep(.selected-row td) {
+  border-bottom: 1px solid #93c5fd;
+  color: #1e40af;
+}
+
+.empty-row td {
+  height: 46px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+/* ============================================
+   셀 텍스트
+   ============================================ */
+.cell-text {
   display: block;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: calc(var(--row-h) - 12px);
-  max-height: calc(var(--row-h) - 12px);
-}
-.data-grid .input-like {
-  min-height: 0;
-  height: calc(var(--row-h) - 12px);
-  padding-top: 2px;
-  padding-bottom: 2px;
-  display: flex;
-  align-items: center;
-  box-sizing: border-box;
-}
-.data-grid .input-like .value {
-  line-height: 1.2;
-  max-height: calc(var(--row-h) - 12px);
-}
-.data-grid .editor-input {
-  height: calc(var(--row-h) - 12px) !important;
-  min-height: 0 !important;
-  padding-top: 2px;
-  padding-bottom: 2px;
-  box-sizing: border-box;
-}
-.data-grid .editor-textarea {
-  height: calc(var(--row-h) - 12px) !important;
-  min-height: 0 !important;
-  max-height: calc(var(--row-h) - 12px) !important;
-  overflow-y: auto !important;
-  box-sizing: border-box;
 }
 
+.cell-text.mono {
+  font-family: 'Courier New', monospace;
+}
+
+:deep(.text-end) {
+  text-align: right;
+}
+
+:deep(.text-start) {
+  text-align: left;
+}
+
+:deep(.text-center) {
+  text-align: center;
+}
+
+:deep(.text-primary) {
+  color: #3b82f6 !important;
+}
+
+:deep(.g-2) {
+  --bs-gutter-y: 0.5rem;
+  --bs-gutter-x: 0.5rem;
+}
+
+:deep(.mb-2) {
+  margin-bottom: 0.5rem !important;
+}
+
+/* ============================================
+   반응형
+   ============================================ */
 @media (max-width: 1600px) {
-  .btn {
-    font-size: 11px !important;
-    padding: 0.4rem 1rem;
+  .section-title {
+    font-size: 12px !important;
   }
-}
-@media (max-height: 900px) {
-  .table-wrapper {
-    height: calc(var(--row-h) * 7 + var(--thead-h));
+  
+  .id-badge {
+    font-size: 10px !important;
+    padding: 0.2rem 0.55rem !important;
   }
-}
-@media (max-height: 780px) {
-  .table-wrapper {
-    height: calc(var(--row-h) * 6 + var(--thead-h));
+  
+  .section-header-box::before {
+    height: 16px !important;
   }
-}
-@media (max-height: 700px) {
-  .table-wrapper {
-    height: calc(var(--row-h) * 5 + var(--thead-h));
+  
+  :deep(.btn) {
+    font-size: 12px !important;
+    padding: 0.5rem 1.1rem !important;
   }
-}
+  
+  :deep(.data-table th),
+  :deep(.data-table td) {
+    font-size: 12px !important;
+  }
+  
+  :deep(.data-table td) {
+    padding: 0.35rem 0.45rem !important;
+    height: 42px !important;
+  }
+  
+  .empty-row td {
+    height: 42px !important;
+  }
 
-/* 행 높이 고정 패치 변수 */
-.vars-scope {
-  --row-h: 34px;
-  --row-vpad: 6px;
-  --cell-inner-h: calc(var(--row-h) - (var(--row-vpad) * 2));
-}
-.data-grid tbody td {
-  padding-top: var(--row-vpad);
-  padding-bottom: var(--row-vpad);
-}
-.data-grid .input-like {
-  height: var(--cell-inner-h);
-}
-/* 메인 타이틀 + 지시 ID 배지 */
-.main-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 700;
-  color: #111827;
-  margin: 6px 0 6px 2px;
-}
-.id-badge {
-  display: inline-block;
-  font-size: 12px;
-  font-weight: 600;
-  color: #0b5ed7;
-  background: #e7f1ff;
-  border: 1px solid #cde0ff;
-  border-radius: 999px;
-  padding: 2px 8px;
-}
-
-.selected-row td {
-  background-color: #e7f1ff !important;
-}
-
-/* 카드가 화면 좌우에서 살짝 떨어져 보이도록 외곽 여백 추가 */
-.prcs-prog-page > .grid-card {
-  margin-left: 8px;
-  margin-right: 8px;
-}
-.grid-row {
-  padding-left: 8px;
-  padding-right: 8px;
+  .grid-box {
+    max-height: calc(42px + 5 * 42px + 2px) !important;
+  }
 }
 </style>

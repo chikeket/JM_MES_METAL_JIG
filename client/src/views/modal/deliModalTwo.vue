@@ -1,75 +1,79 @@
 <template>
   <CModal :visible="visible" @close="close" size="xl">
     <CModalHeader class="modal-header-custom">
-      <CModalTitle>수주 조회</CModalTitle>
+      <CModalTitle class="modal-title-custom">수주 조회</CModalTitle>
     </CModalHeader>
-    <CModalBody>
-      <div class="vars">
+    <CModalBody class="modal-body-custom">
+      <div class="modal-content-wrapper">
         <!-- 검색 영역 -->
-        <div class="search-bar mb-3">
-          <div class="left-controls d-flex gap-2 align-items-center">
-            <label class="search-label">수주 ID</label>
-            <CFormInput v-model="searchRcvordId" style="width: 200px" />
-          </div>
-          <div class="flex-spacer"></div>
-          <div class="right-controls">
-            <CButton color="secondary" @click="search">조회</CButton>
-            <CButton color="secondary" @click="reset">초기화</CButton>
+        <div class="search-section">
+          <div class="search-row-container">
+            <div class="search-input-group">
+              <label class="search-label">수주 ID</label>
+              <input 
+                v-model="searchRcvordId" 
+                type="text" 
+                class="search-input-compact"
+                @keyup.enter="search"
+              />
+            </div>
+
+            <div class="button-group">
+              <button class="btn-search-modal" @click="search">조회</button>
+              <button class="btn-reset-modal" @click="reset">초기화</button>
+            </div>
           </div>
         </div>
 
         <!-- 결과 테이블 -->
-        <div class="table-responsive" style="max-height: 400px; overflow-y: auto">
-          <CTable bordered hover small>
-            <CTableHead color="dark">
-              <CTableRow>
-                <CTableHeaderCell class="text-center col-no">No</CTableHeaderCell>
-                <CTableHeaderCell class="text-center col-id">수주 ID</CTableHeaderCell>
-                <CTableHeaderCell class="text-center col-co">납품 업체 명</CTableHeaderCell>
-                <CTableHeaderCell class="text-center col-emp">수주 담당자</CTableHeaderCell>
-                <CTableHeaderCell class="text-center col-date">수주 등록 일자</CTableHeaderCell>
-                <CTableHeaderCell class="text-center col-status">수주 상태</CTableHeaderCell>
-                <CTableHeaderCell class="text-center col-rm">비고</CTableHeaderCell>
-              </CTableRow>
-            </CTableHead>
-            <CTableBody>
-              <CTableRow v-if="loading">
-                <CTableDataCell colspan="7" class="text-center py-3">로딩중...</CTableDataCell>
-              </CTableRow>
-              <CTableRow v-else-if="errorMsg">
-                <CTableDataCell colspan="7" class="text-center text-danger py-3">{{
-                  errorMsg
-                }}</CTableDataCell>
-              </CTableRow>
-              <CTableRow
-                v-else
-                v-for="(row, idx) in rcvordList"
-                :key="row.rcvord_id"
-                @dblclick="select(row)"
-                style="cursor: pointer"
-              >
-                <CTableDataCell class="cell-no col-no">{{ idx + 1 }}</CTableDataCell>
-                <CTableDataCell class="cell-left col-id">{{ row.rcvord_id }}</CTableDataCell>
-                <CTableDataCell class="cell-left col-co">{{ row.co_nm }}</CTableDataCell>
-                <CTableDataCell class="cell-left col-emp">{{ row.emp_nm }}</CTableDataCell>
-                <CTableDataCell class="cell-left col-date">{{
-                  formatDate(row.reg_dt)
-                }}</CTableDataCell>
-                <CTableDataCell class="cell-left col-status">{{
-                  row.status || '진행 중'
-                }}</CTableDataCell>
-                <CTableDataCell class="cell-left col-rm">{{ row.rm }}</CTableDataCell>
-              </CTableRow>
-              <CTableRow v-if="!loading && !errorMsg && !rcvordList.length">
-                <CTableDataCell colspan="7" class="text-center text-muted py-3">
-                  데이터가 없습니다.
-                </CTableDataCell>
-              </CTableRow>
-            </CTableBody>
-          </CTable>
+        <div class="table-section">
+          <div class="table-wrapper-modal">
+            <table class="data-table-modal">
+              <thead>
+                <tr>
+                  <th style="width: 5%">No</th>
+                  <th style="width: 12%">수주 ID</th>
+                  <th style="width: 15%">납품 업체 명</th>
+                  <th style="width: 12%">수주 담당자</th>
+                  <th style="width: 13%">수주 등록 일자</th>
+                  <th style="width: 11%">수주 상태</th>
+                  <th style="width: 32%">비고</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="loading" class="loading-state">
+                  <td colspan="7" class="text-center">로딩중...</td>
+                </tr>
+                <tr v-else-if="errorMsg" class="error-state">
+                  <td colspan="7" class="text-center">{{ errorMsg }}</td>
+                </tr>
+                <tr v-else-if="rcvordList.length === 0" class="empty-state">
+                  <td colspan="7">수주 ID를 입력하고 조회 버튼을 클릭하세요</td>
+                </tr>
+                <tr
+                  v-else
+                  v-for="(row, idx) in rcvordList"
+                  :key="row.rcvord_id"
+                  @dblclick="select(row)"
+                  class="data-row-modal"
+                >
+                  <td class="text-center">{{ idx + 1 }}</td>
+                  <td class="text-left">{{ row.rcvord_id }}</td>
+                  <td class="text-left">{{ row.co_nm }}</td>
+                  <td class="text-left">{{ row.emp_nm }}</td>
+                  <td class="text-center">{{ formatDate(row.reg_dt) }}</td>
+                  <td class="text-center">{{ row.status || '진행 중' }}</td>
+                  <td class="text-left">{{ row.rm }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </CModalBody>
+    <CModalFooter class="modal-footer-custom">
+      <button class="btn-modal-close" @click="close">닫기</button>
+    </CModalFooter>
   </CModal>
 </template>
 
@@ -82,22 +86,15 @@ const props = defineProps({
 })
 const emit = defineEmits(['close', 'select'])
 
-// 상태
 const searchRcvordId = ref('')
 const rcvordList = ref([])
 const loading = ref(false)
 const errorMsg = ref('')
 
-// 닫기
 const close = () => {
   emit('close')
 }
 
-const formatNumber = (val) => {
-  const n = Number(val || 0)
-  if (!Number.isFinite(n)) return ''
-  return n.toLocaleString()
-}
 const formatDate = (d) => {
   if (!d) return ''
   try {
@@ -113,13 +110,13 @@ const formatDate = (d) => {
   }
 }
 
-// 서버에서 rcvord 목록 가져오기 (검색어 없으면 전체)
 const fetchAll = async () => {
+  const keyword = (searchRcvordId.value || '').trim()
   loading.value = true
   errorMsg.value = ''
   try {
-    const keyword = (searchRcvordId.value || '').trim()
-    const params = { rcvord_id: keyword }
+    // 키워드가 있을 때만 params에 추가
+    const params = keyword ? { rcvord_id: keyword } : {}
     const { data } = await axios.get('/api/rcvords', { params })
     rcvordList.value = Array.isArray(data) ? data : []
   } catch (err) {
@@ -130,204 +127,363 @@ const fetchAll = async () => {
   }
 }
 
-// 조회 버튼
 const search = async () => {
   await fetchAll()
 }
 
-// 초기화: 검색어 비우고 전체 재조회
-const reset = async () => {
+const reset = () => {
+  // ✅ 검색어 및 리스트 초기화
   searchRcvordId.value = ''
-  await fetchAll()
+  rcvordList.value = []
+  errorMsg.value = ''
 }
 
-// 행 선택 (더블클릭)
 const select = (row) => {
   emit('select', row)
   close()
 }
 
-// 모달 표시될 때마다 검색조건 초기화 + 전체조회
+// ✅ 모달이 열릴 때 자동 조회하지 않도록 변경
 watch(
   () => props.visible,
   (v) => {
     if (v) {
       searchRcvordId.value = ''
-      fetchAll()
+      rcvordList.value = []
+      errorMsg.value = ''
     }
-  },
+  }
 )
-
-// 수동 초기 로드 (이미 열려 있는 상태로 mount될 가능성)
-onMounted(() => {
-  if (props.visible && !rcvordList.value.length) fetchAll()
-})
 </script>
 
+
 <style scoped>
-:deep(*) {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
-    sans-serif;
-  line-height: 1.5;
-  box-sizing: border-box;
-}
-.vars {
-  --w-no: 40px;
-  --w-id: 140px;
-  --w-co: 130px;
-  --w-emp: 80px;
-  --w-date: 110px;
-  --w-status: 90px;
-  --w-rm: 260px;
+/* ============================================
+   모달 헤더
+   ============================================ */
+.modal-header-custom {
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  border-bottom: none;
+  padding: 1.25rem 1.5rem;
 }
 
-.text-danger {
-  color: #dc3545;
+.modal-title-custom {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.3px;
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif;
+  margin: 0;
 }
-.modal-header-custom {
+
+:deep(.btn-close) {
+  filter: brightness(0) invert(1);
+  opacity: 0.8;
+}
+
+:deep(.btn-close:hover) {
+  opacity: 1;
+}
+
+/* ============================================
+   모달 바디
+   ============================================ */
+:deep(.modal-body-custom) {
+  padding: 0;
+  background: #f8fafc;
+}
+
+.modal-content-wrapper {
+  padding: 1.5rem;
+}
+
+/* ============================================
+   검색 영역
+   ============================================ */
+.search-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.search-row-container {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  padding-right: 12px;
+  gap: 1rem;
 }
-.search-bar {
+
+.search-input-group {
   display: flex;
   align-items: center;
-}
-.flex-spacer {
+  gap: 0.75rem;
   flex: 1;
 }
-.right-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+
 .search-label {
+  font-size: 13px;
   font-weight: 600;
-  font-size: 0.85rem;
-  color: #222;
-  display: inline-block;
-  min-width: 70px;
-  text-align: right;
+  color: #334155;
+  min-width: 75px;
+  margin-bottom: 0;
+  font-family: "Pretendard", sans-serif;
+  white-space: nowrap;
 }
-/* 테이블 자동 레이아웃 */
-::v-deep table {
-  table-layout: auto !important;
-  width: 100%;
+
+.search-input-compact {
+  font-size: 13px;
+  font-weight: 400;
+  padding: 0.65rem 0.85rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+  height: 42px;
+  font-family: "Pretendard", sans-serif;
+  flex: 1;
+  max-width: 300px;
 }
-.col-no {
-  width: var(--w-no);
-  min-width: var(--w-no);
+
+.search-input-compact:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+  outline: none;
 }
-.col-id {
-  width: var(--w-id);
-  min-width: var(--w-id);
+
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  margin-left: auto;
 }
-.col-co {
-  width: var(--w-co);
-  min-width: var(--w-co);
+
+.btn-search-modal,
+.btn-reset-modal {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0.65rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  letter-spacing: -0.3px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-width: 80px;
+  height: 42px;
+  cursor: pointer;
+  font-family: "Pretendard", sans-serif;
 }
-.col-emp {
-  width: var(--w-emp);
-  min-width: var(--w-emp);
+
+.btn-search-modal {
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+  color: #fff;
 }
-.col-date {
-  width: var(--w-date);
-  min-width: var(--w-date);
+
+.btn-search-modal:hover {
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
+  box-shadow: 0 4px 8px rgba(71, 85, 105, 0.3);
+  transform: translateY(-1px);
 }
-.col-status {
-  width: var(--w-status);
-  min-width: var(--w-status);
+
+.btn-reset-modal {
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+  color: #fff;
 }
-.col-rm {
-  width: var(--w-rm);
-  min-width: var(--w-rm);
+
+.btn-reset-modal:hover {
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+  box-shadow: 0 4px 8px rgba(100, 116, 139, 0.3);
+  transform: translateY(-1px);
 }
-.cell-no {
+
+.btn-search-modal:active,
+.btn-reset-modal:active {
+  transform: scale(0.98);
+}
+
+/* ============================================
+   테이블 영역
+   ============================================ */
+.table-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.table-wrapper-modal {
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.table-wrapper-modal::-webkit-scrollbar {
+  width: 14px;
+  background: #ffffff;
+}
+
+.table-wrapper-modal::-webkit-scrollbar-track {
+  background: #ffffff;
+}
+
+.table-wrapper-modal::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #9ca3af 0%, #6b7280 100%);
+  border-radius: 10px;
+  border: 3px solid #ffffff;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.table-wrapper-modal::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #6b7280 0%, #4b5563 100%);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+
+:deep(.data-table-modal) {
+  width: 100% !important;
+  margin-bottom: 0 !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  font-size: 13px !important;
+  font-family: "Pretendard", sans-serif !important;
+}
+
+:deep(.data-table-modal thead) {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+}
+
+:deep(.data-table-modal thead tr th) {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  background: linear-gradient(135deg, #374151 0%, #1f2937 100%) !important;
+  color: #ffffff !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  padding: 0.85rem 0.75rem !important;
+  border: none !important;
+  letter-spacing: -0.2px !important;
+  font-family: "Pretendard", sans-serif !important;
+}
+
+:deep(.data-table-modal tbody tr td) {
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  vertical-align: middle !important;
+  padding: 0.75rem 0.75rem !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  color: #334155 !important;
+  height: 46px !important;
+  font-family: "Pretendard", sans-serif !important;
+}
+
+:deep(.text-center) {
   text-align: center !important;
 }
-.cell-number {
-  text-align: right !important;
-}
-.cell-left {
+
+:deep(.text-left) {
   text-align: left !important;
 }
 
-/* CompanyManage 스타일 적용 */
-:deep(.btn) {
+:deep(.data-row-modal) {
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  background-color: #ffffff !important;
+}
+
+:deep(.data-row-modal:hover) {
+  background-color: #f8fafc !important;
+  box-shadow: inset 0 0 0 1px #e2e8f0 !important;
+}
+
+:deep(.data-row-modal:hover td) {
+  background-color: #f8fafc !important;
+}
+
+:deep(.loading-state td),
+:deep(.error-state td) {
+  text-align: center !important;
+  padding: 2.5rem 0.75rem !important;
+  color: #64748b !important;
+}
+
+:deep(.error-state td) {
+  color: #dc3545 !important;
+}
+
+:deep(.empty-state td) {
+  text-align: center !important;
+  color: #94a3b8 !important;
+  font-style: italic !important;
+  padding: 3rem 0.75rem !important;
+  background-color: #f8fafc !important;
+  font-family: "Pretendard", sans-serif !important;
+}
+
+/* ============================================
+   모달 푸터
+   ============================================ */
+:deep(.modal-footer-custom) {
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  padding: 1rem 1.5rem;
+}
+
+.btn-modal-close {
   font-size: 13px;
   font-weight: 600;
-  padding: 0.5rem 1.2rem;
+  padding: 0.65rem 1.5rem;
   border: none;
   border-radius: 8px;
-  transition: all 0.3s ease;
-  letter-spacing: -0.3px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-:deep(.btn-secondary) {
-  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
-  color: #fff !important;
-}
-:deep(.btn-secondary:hover) {
-  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.25);
-}
-
-/* 테이블 헤더/바디 스타일 (CompanyManage 준용) */
-:deep(.table-responsive) {
-  border-radius: 10px;
-}
-:deep(.table-responsive thead) {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-:deep(.table-responsive thead th) {
-  font-size: 13px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #495057 0%, #343a40 100%) !important;
-  color: #ffffff !important;
-  text-align: center;
-  padding: 0.6rem 0.5rem;
-  border: none;
-}
-:deep(.table-responsive tbody td) {
-  font-size: 14px;
-  vertical-align: middle;
-}
-
-/* Row hover - match prdtManage look */
-:deep(.table-responsive tbody tr) {
   transition: all 0.2s ease;
-  background-color: #ffffff;
-}
-:deep(.table-responsive tbody tr:hover) {
-  background-color: #f8f9fa !important;
-}
-/* Ensure cell background also changes to the same tone */
-:deep(.table-responsive tbody tr:hover) td {
-  background-color: #f8f9fa !important;
+  letter-spacing: -0.3px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-width: 80px;
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+  color: #fff;
+  cursor: pointer;
+  font-family: "Pretendard", sans-serif;
 }
 
-/* 모던 스크롤바 (CompanyManage 준용) */
-:deep(.table-responsive) {
-  scrollbar-gutter: stable;
-  -webkit-overflow-scrolling: touch;
+.btn-modal-close:hover {
+  background: linear-gradient(135deg, #475569 0%, #334155 100%);
+  box-shadow: 0 4px 8px rgba(71, 85, 105, 0.3);
+  transform: translateY(-1px);
 }
-:deep(.table-responsive::-webkit-scrollbar) {
-  width: 8px;
+
+.btn-modal-close:active {
+  transform: scale(0.98);
 }
-:deep(.table-responsive::-webkit-scrollbar-track) {
-  background: rgba(240, 240, 240, 0.6);
-  border-radius: 10px;
-}
-:deep(.table-responsive::-webkit-scrollbar-thumb) {
-  background: linear-gradient(180deg, #bfc2c7, #9ea2a8);
-  border-radius: 10px;
-  border: 2px solid rgba(255, 255, 255, 0.4);
-}
-:deep(.table-responsive::-webkit-scrollbar-thumb:hover) {
-  background: linear-gradient(180deg, #a4a8ae, #7e838a);
+
+/* ============================================
+   반응형
+   ============================================ */
+@media (max-width: 1600px) {
+  .search-label,
+  .search-input-compact,
+  .btn-search-modal,
+  .btn-reset-modal {
+    font-size: 12px;
+  }
+
+  :deep(.data-table-modal thead tr th),
+  :deep(.data-table-modal tbody tr td) {
+    font-size: 12px !important;
+  }
+
+  .search-input-compact,
+  .btn-search-modal,
+  .btn-reset-modal {
+    height: 38px;
+    padding: 0.55rem 0.75rem;
+  }
+
+  .search-input-compact {
+    max-width: 250px;
+  }
 }
 </style>

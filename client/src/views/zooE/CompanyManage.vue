@@ -1,46 +1,55 @@
 <template>
-  <CContainer fluid class="h-100 d-flex flex-column p-3">
-    <div class="d-flex justify-content-end mb-3 gap-2">
+  <CContainer fluid class="h-100 d-flex flex-column p-3 page-container">
+    <!-- 수정 후 -->
+    <div class="d-flex justify-content-end mb-2 gap-2 button-group">
       <CButton color="secondary" size="sm" @click="handleSearch" class="btn-search">조회</CButton>
       <CButton color="secondary" size="sm" @click="handleReset" class="btn-reset">초기화</CButton>
     </div>
 
     <!-- 검색 필터 영역 -->
-    <div class="search-filter-box mb-3">
-      <CRow class="g-3">
-        <CCol :md="3">
-          <CFormLabel class="form-label">업체유형</CFormLabel>
-          <div class="custom-select-wrapper">
-            <div class="custom-select" @click="toggleTypeDropdown" ref="typeSelect">
-              <span>{{ getTypeDisplayText(searchFilters.type) }}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12">
-                <path fill="#495057" d="M6 9L1 4h10z" />
-              </svg>
-            </div>
-            <div v-if="showTypeDropdown" class="custom-dropdown">
-              <div class="custom-option" @click="selectType('')">전체</div>
-              <div class="custom-option" @click="selectType('VENDOR')">공급업체</div>
-              <div class="custom-option" @click="selectType('CUSTOMER')">고객사</div>
+    <div class="search-filter-box mb-4 fade-in-up" style="animation-delay: 0.1s">
+      <CRow class="g-3 align-items-center">
+        <CCol :md="4">
+          <div class="search-row-container">
+            <CFormLabel class="search-label-fixed">업체유형</CFormLabel>
+            <div class="custom-select-wrapper">
+              <div class="custom-select" @click="toggleTypeDropdown" ref="typeSelect">
+                <span>{{ getTypeDisplayText(searchFilters.type) }}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12">
+                  <path fill="#495057" d="M6 9L1 4h10z" />
+                </svg>
+              </div>
+              <div v-if="showTypeDropdown" class="custom-dropdown">
+                <div class="custom-option" @click="selectType('')">전체</div>
+                <div class="custom-option" @click="selectType('VENDOR')">공급업체</div>
+                <div class="custom-option" @click="selectType('CUSTOMER')">고객사</div>
+              </div>
             </div>
           </div>
         </CCol>
+
         <CCol :md="4">
-          <CFormLabel class="form-label">업체명</CFormLabel>
-          <CFormInput v-model="searchFilters.name" size="sm" class="form-input-enhanced" />
+          <div class="search-row-container">
+            <CFormLabel class="search-label-fixed">업체명</CFormLabel>
+            <CFormInput v-model="searchFilters.name" size="sm" class="form-input-search" />
+          </div>
         </CCol>
-        <CCol :md="3">
-          <CFormLabel class="form-label">상태</CFormLabel>
-          <div class="custom-select-wrapper">
-            <div class="custom-select" @click="toggleStatusDropdown" ref="statusSelect">
-              <span>{{ getStatusDisplayText(searchFilters.status) }}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12">
-                <path fill="#495057" d="M6 9L1 4h10z" />
-              </svg>
-            </div>
-            <div v-if="showStatusDropdown" class="custom-dropdown">
-              <div class="custom-option" @click="selectStatus('')">전체</div>
-              <div class="custom-option" @click="selectStatus('ACT')">활성</div>
-              <div class="custom-option" @click="selectStatus('INA')">비활성</div>
+
+        <CCol :md="4">
+          <div class="search-row-container">
+            <CFormLabel class="search-label-fixed">상태</CFormLabel>
+            <div class="custom-select-wrapper">
+              <div class="custom-select" @click="toggleStatusDropdown" ref="statusSelect">
+                <span>{{ getStatusDisplayText(searchFilters.status) }}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12">
+                  <path fill="#495057" d="M6 9L1 4h10z" />
+                </svg>
+              </div>
+              <div v-if="showStatusDropdown" class="custom-dropdown">
+                <div class="custom-option" @click="selectStatus('')">전체</div>
+                <div class="custom-option" @click="selectStatus('ACT')">활성</div>
+                <div class="custom-option" @click="selectStatus('INA')">비활성</div>
+              </div>
             </div>
           </div>
         </CCol>
@@ -48,14 +57,10 @@
     </div>
 
     <!-- 메인 컨텐츠 영역 -->
-    <CRow class="flex-grow-1 overflow-hidden g-2">
+    <CRow class="flex-grow-1 overflow-hidden g-2 fade-in-up" style="animation-delay: 0.2s">
       <!-- 좌측: 데이터 그리드 -->
       <CCol :md="7" class="d-flex flex-column overflow-hidden pe-1">
-        <!-- 히든 버튼 (우측 버튼과 높이 맞추기) -->
-        <div
-          class="d-flex gap-2 mb-2"
-          style="min-height: 50px; align-items: center; padding: 0.8rem 0"
-        >
+        <div class="d-flex gap-2 mb-2">
           <CButton color="secondary" size="sm" class="btn-hidden" style="visibility: hidden"
             >숨김</CButton
           >
@@ -98,63 +103,201 @@
 
       <!-- 우측: 상세 입력 폼 -->
       <CCol :md="5" class="d-flex flex-column overflow-hidden ps-1">
-        <!-- 버튼 그룹 -->
-        <div
-          class="d-flex gap-2 justify-content-end mb-2"
-          style="min-height: 50px; align-items: center; padding: 0.8rem 0"
-        >
+        <div class="d-flex gap-2 justify-content-end mb-2" style="z-index: 100; position: relative">
           <CButton color="secondary" size="sm" @click="handleNew" class="btn-action">신규</CButton>
           <CButton color="secondary" size="sm" @click="handleSave" class="btn-action">저장</CButton>
           <CButton color="danger" size="sm" @click="handleDelete" class="btn-action">삭제</CButton>
         </div>
-
         <div class="form-box flex-grow-1 d-flex flex-column overflow-hidden">
-          <div class="p-3 flex-grow-1 overflow-hidden">
-            <CRow class="g-3">
-              <CCol :md="7">
-                <div
-                  v-for="field in leftFormFields"
-                  :key="field.key"
-                  class="form-row-horizontal mb-2-5"
-                >
-                  <CFormLabel class="form-label-inline">{{ field.label }}</CFormLabel>
-                  <!-- 일반 텍스트 입력 -->
-                  <CFormInput
-                    v-if="field.type === 'text'"
-                    v-model="formData[field.key]"
-                    size="sm"
-                    :disabled="field.key === 'id'"
-                    class="form-input-enhanced"
-                  />
+          <div
+            class="p-3 flex-grow-1"
+            style="overflow: visible !important; padding-top: 2rem !important"
+          >
+            <CRow class="g-2" style="width: 100%; margin-top: 0">
+              <!-- 좌측 1열 -->
+              <CCol :md="6">
+                <div class="form-row-horizontal mb-3">
+                  <CFormLabel class="form-label-inline">업체 ID</CFormLabel>
+                  <CFormInput v-model="formData.id" size="sm" disabled class="form-input-compact" />
+                </div>
 
-                  <!-- 날짜 입력 -->
-                  <CFormInput
-                    v-else-if="field.type === 'date'"
-                    v-model="formData[field.key]"
-                    type="date"
-                    size="sm"
-                    class="form-input-enhanced"
-                  />
+                <div class="form-row-horizontal mb-3">
+                  <CFormLabel class="form-label-inline">사업자등록번호</CFormLabel>
+                  <CFormInput v-model="formData.businessNo" size="sm" class="form-input-compact" />
+                </div>
+
+                <div class="form-row-horizontal mb-3">
+                  <CFormLabel class="form-label-inline">대표자명</CFormLabel>
+                  <CFormInput v-model="formData.ceo" size="sm" class="form-input-compact" />
+                </div>
+
+                <!-- 등록일자 with 커스텀 달력 -->
+                <div class="form-row-horizontal mb-3">
+                  <CFormLabel class="form-label-inline">등록일자</CFormLabel>
+                  <div class="date-input-wrapper">
+                    <CFormInput
+                      v-model="formData.regDate"
+                      type="text"
+                      size="sm"
+                      class="form-input-compact"
+                      readonly
+                      @click="toggleCalendar"
+                      placeholder="YYYY-MM-DD"
+                    />
+                    <div class="calendar-icon" @click="toggleCalendar">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                      </svg>
+                    </div>
+                    <!-- 커스텀 달력 팝업 -->
+                    <div v-if="showCalendar" class="custom-calendar" ref="calendarRef">
+                      <div class="calendar-header">
+                        <button type="button" @click="prevMonth" class="calendar-nav-btn">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path
+                              d="M15 18l-6-6 6-6"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                            />
+                          </svg>
+                        </button>
+                        <div class="calendar-title">{{ calendarTitle }}</div>
+                        <button type="button" @click="nextMonth" class="calendar-nav-btn">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path
+                              d="M9 18l6-6-6-6"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                      <div class="calendar-weekdays">
+                        <div class="weekday">일</div>
+                        <div class="weekday">월</div>
+                        <div class="weekday">화</div>
+                        <div class="weekday">수</div>
+                        <div class="weekday">목</div>
+                        <div class="weekday">금</div>
+                        <div class="weekday">토</div>
+                      </div>
+                      <div class="calendar-days">
+                        <div
+                          v-for="day in calendarDays"
+                          :key="day.key"
+                          :class="[
+                            'calendar-day',
+                            {
+                              'other-month': !day.isCurrentMonth,
+                              today: day.isToday,
+                              selected: day.isSelected,
+                            },
+                          ]"
+                          @click="selectDate(day)"
+                        >
+                          {{ day.date }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-row-horizontal mb-3">
+                  <CFormLabel class="form-label-inline">담당자명</CFormLabel>
+                  <CFormInput v-model="formData.managerName" size="sm" class="form-input-compact" />
+                </div>
+
+                <div class="form-row-horizontal mb-3" style="align-items: flex-start">
+                  <CFormLabel class="form-label-inline" style="padding-top: 0.5rem; min-width: 80px"
+                    >업체유형</CFormLabel
+                  >
+                  <div class="radio-group-horizontal">
+                    <CFormCheck
+                      type="radio"
+                      name="type"
+                      label="고객사"
+                      value="customer"
+                      v-model="formData.type"
+                      class="radio-item-inline"
+                    />
+                    <CFormCheck
+                      type="radio"
+                      name="type"
+                      label="공급업체"
+                      value="supplier"
+                      v-model="formData.type"
+                      class="radio-item-inline"
+                    />
+                  </div>
                 </div>
               </CCol>
 
-              <!-- 우측 열: 라디오 버튼들 -->
-              <CCol
-                :md="5"
-                class="d-flex flex-column justify-content-start"
-                style="padding-left: 56px"
-              >
-                <div v-for="field in rightFormFields" :key="field.key" class="mb-4">
-                  <CFormLabel class="form-label-radio">{{ field.label }}</CFormLabel>
+              <!-- 우측 2열 -->
+              <CCol :md="6">
+                <div class="form-row-horizontal mb-3">
+                  <CFormLabel class="form-label-inline">업체명</CFormLabel>
+                  <CFormInput v-model="formData.name" size="sm" class="form-input-compact" />
+                </div>
+
+                <div class="form-row-horizontal mb-3" style="visibility: hidden">
+                  <CFormLabel class="form-label-inline">-</CFormLabel>
+                  <CFormInput size="sm" class="form-input-compact" />
+                </div>
+
+                <div class="form-row-horizontal mb-3">
+                  <CFormLabel class="form-label-inline">대표 연락처</CFormLabel>
+                  <CFormInput v-model="formData.ceoPhone" size="sm" class="form-input-compact" />
+                </div>
+
+                <div class="form-row-horizontal mb-3" style="visibility: hidden">
+                  <CFormLabel class="form-label-inline">-</CFormLabel>
+                  <CFormInput size="sm" class="form-input-compact" />
+                </div>
+
+                <div class="form-row-horizontal mb-3">
+                  <CFormLabel class="form-label-inline">담당자 연락처</CFormLabel>
+                  <CFormInput
+                    v-model="formData.managerPhone"
+                    size="sm"
+                    class="form-input-compact"
+                  />
+                </div>
+
+                <div
+                  class="form-row-horizontal mb-3"
+                  style="align-items: flex-start; justify-content: flex-start"
+                >
+                  <CFormLabel class="form-label-inline" style="padding-top: 0.5rem; min-width: 80px"
+                    >상태</CFormLabel
+                  >
                   <div class="radio-group-horizontal">
                     <CFormCheck
-                      v-for="option in field.options"
-                      :key="option.value"
                       type="radio"
-                      :name="field.key"
-                      :label="option.label"
-                      :value="option.value"
-                      v-model="formData[field.key]"
+                      name="status"
+                      label="활성"
+                      value="active"
+                      v-model="formData.status"
+                      class="radio-item-inline"
+                    />
+                    <CFormCheck
+                      type="radio"
+                      name="status"
+                      label="비활성"
+                      value="inactive"
+                      v-model="formData.status"
                       class="radio-item-inline"
                     />
                   </div>
@@ -166,6 +309,7 @@
       </CCol>
     </CRow>
   </CContainer>
+  <!-- 이 태그가 있는지 확인! -->
 </template>
 
 <script setup>
@@ -182,6 +326,13 @@ const showTypeDropdown = ref(false)
 const showStatusDropdown = ref(false)
 const typeSelect = ref(null)
 const statusSelect = ref(null)
+const lastSavedId = ref('CO2510000')
+
+// 달력 관련 상태
+const showCalendar = ref(false)
+const calendarRef = ref(null)
+const currentYear = ref(new Date().getFullYear())
+const currentMonth = ref(new Date().getMonth())
 
 const formData = reactive({
   id: '',
@@ -197,79 +348,118 @@ const formData = reactive({
   status: 'active',
 })
 
-const getPlaceholder = (key) => {
-  switch (key) {
-    case 'id':
-      return 'CO001'
-    case 'businessNo':
-      return '114-86-65214'
-    case 'name':
-      return '업체명을 입력해주세요'
-    case 'ceo':
-      return '대표자명을 입력해주세요'
-    case 'email':
-      return 'example@company.com'
-    case 'ceoPhone':
-      return '02-0000-0000'
-    case 'regDate':
-      return '2025-10-11'
-    case 'managerName':
-      return '담당자명을 입력해주세요'
-    case 'managerPhone':
-      return '010-0000-0000'
-    default:
-      return '입력해주세요'
-  }
-}
-
-const leftFormFields = [
-  { key: 'id', label: '업체 ID', type: 'text' },
-  { key: 'businessNo', label: '사업자 등록번호', type: 'text' },
-  { key: 'name', label: '업체명', type: 'text' },
-  { key: 'ceo', label: '대표자명', type: 'text' },
-  { key: 'email', label: '대표 이메일', type: 'text' },
-  { key: 'ceoPhone', label: '대표 연락처', type: 'text' },
-  { key: 'regDate', label: '등록일자', type: 'date' },
-  { key: 'managerName', label: '담당자명', type: 'text' },
-  { key: 'managerPhone', label: '담당자 연락처', type: 'text' },
-]
-
-const rightFormFields = [
-  {
-    key: 'type',
-    label: '업체유형',
-    type: 'radio',
-    options: [
-      { label: '고객사', value: 'customer' },
-      { label: '공급업체', value: 'supplier' },
-    ],
-  },
-  {
-    key: 'status',
-    label: '상태',
-    type: 'radio',
-    options: [
-      { label: '활성', value: 'active' },
-      { label: '비활성', value: 'inactive' },
-    ],
-  },
-]
-
 const gridData = ref([])
 const selectedRowIndex = ref(null)
 const originalId = ref('')
 
 const displayedData = computed(() => {
-  return gridData.value.slice(0, 10)
+  return gridData.value
 })
 
 const emptyRowCount = computed(() => {
-  const dataCount = displayedData.value.length
+  const dataCount = gridData.value.length
   return dataCount < 10 ? 10 - dataCount : 0
 })
 
-onMounted(() => {
+// 달력 계산
+const calendarTitle = computed(() => {
+  return `${currentYear.value}년 ${currentMonth.value + 1}월`
+})
+
+const calendarDays = computed(() => {
+  const days = []
+  const firstDay = new Date(currentYear.value, currentMonth.value, 1)
+  const lastDay = new Date(currentYear.value, currentMonth.value + 1, 0)
+  const prevLastDay = new Date(currentYear.value, currentMonth.value, 0)
+
+  const firstDayOfWeek = firstDay.getDay()
+  const lastDate = lastDay.getDate()
+  const prevLastDate = prevLastDay.getDate()
+
+  const today = new Date()
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(
+    2,
+    '0',
+  )}-${String(today.getDate()).padStart(2, '0')}`
+
+  // 이전 달 날짜
+  for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+    days.push({
+      date: prevLastDate - i,
+      isCurrentMonth: false,
+      isToday: false,
+      isSelected: false,
+      key: `prev-${prevLastDate - i}`,
+    })
+  }
+
+  // 현재 달 날짜
+  for (let i = 1; i <= lastDate; i++) {
+    const dateStr = `${currentYear.value}-${String(currentMonth.value + 1).padStart(
+      2,
+      '0',
+    )}-${String(i).padStart(2, '0')}`
+    days.push({
+      date: i,
+      isCurrentMonth: true,
+      isToday: dateStr === todayStr,
+      isSelected: formData.regDate === dateStr,
+      key: `current-${i}`,
+      fullDate: dateStr,
+    })
+  }
+
+  // 다음 달 날짜
+  const remainingDays = 42 - days.length
+  for (let i = 1; i <= remainingDays; i++) {
+    days.push({
+      date: i,
+      isCurrentMonth: false,
+      isToday: false,
+      isSelected: false,
+      key: `next-${i}`,
+    })
+  }
+
+  return days
+})
+
+const toggleCalendar = () => {
+  showCalendar.value = !showCalendar.value
+  if (showCalendar.value && formData.regDate) {
+    const [year, month] = formData.regDate.split('-')
+    currentYear.value = parseInt(year)
+    currentMonth.value = parseInt(month) - 1
+  }
+}
+
+const prevMonth = () => {
+  if (currentMonth.value === 0) {
+    currentMonth.value = 11
+    currentYear.value--
+  } else {
+    currentMonth.value--
+  }
+}
+
+const nextMonth = () => {
+  if (currentMonth.value === 11) {
+    currentMonth.value = 0
+    currentYear.value++
+  } else {
+    currentMonth.value++
+  }
+}
+
+const selectDate = (day) => {
+  if (!day.isCurrentMonth) return
+  formData.regDate = day.fullDate
+  showCalendar.value = false
+}
+
+onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
+  await handleSearch()
 })
 
 onBeforeUnmount(() => {
@@ -315,6 +505,12 @@ const handleClickOutside = (event) => {
   if (statusSelect.value && !statusSelect.value.contains(event.target)) {
     showStatusDropdown.value = false
   }
+  if (calendarRef.value && !calendarRef.value.contains(event.target)) {
+    const dateWrapper = event.target.closest('.date-input-wrapper')
+    if (!dateWrapper) {
+      showCalendar.value = false
+    }
+  }
 }
 
 const handleSearch = async () => {
@@ -331,6 +527,11 @@ const handleSearch = async () => {
       const numB = parseInt(b.id.replace(/\D/g, '')) || 0
       return numA - numB
     })
+
+    if (gridData.value.length > 0) {
+      lastSavedId.value = gridData.value[gridData.value.length - 1].id
+    }
+
     selectedRowIndex.value = null
   } catch (error) {
     console.error('조회 오류:', error)
@@ -365,24 +566,15 @@ const resetFormData = () => {
 }
 
 const getNextId = () => {
-  console.log('현재 그리드 데이터:', gridData.value)
-  console.log('그리드 데이터 개수:', gridData.value.length)
+  const prefix = 'CO25'
+  const match = lastSavedId.value.match(/^CO25(\d+)$/)
 
-  if (gridData.value.length > 0) {
-    const lastId = gridData.value[gridData.value.length - 1].id
-    console.log('마지막 ID:', lastId)
-    const match = lastId.match(/^CO(\d+)$/)
-
-    if (match) {
-      const lastNumber = parseInt(match[1])
-      const nextNumber = lastNumber + 1
-      const newId = `CO${String(nextNumber).padStart(3, '0')}`
-      console.log('생성된 새 ID:', newId)
-      return newId
-    }
+  if (match) {
+    const lastNumber = parseInt(match[1])
+    const nextNumber = lastNumber + 1
+    return `${prefix}${String(nextNumber).padStart(4, '0')}`
   }
-  console.log('데이터 없음, CO001 반환')
-  return 'CO001'
+  return `${prefix}0001`
 }
 
 const handleRowSelect = (item, index) => {
@@ -411,7 +603,6 @@ const handleSave = async () => {
 
   try {
     const sendData = {
-      co_id: formData.id,
       bizr_reg_no: formData.businessNo,
       co_nm: formData.name,
       rpstr_nm: formData.ceo,
@@ -422,12 +613,10 @@ const handleSave = async () => {
 
     let response
     if (originalId.value) {
-      // 수정 시에만 co_id 포함
       sendData.co_id = formData.id
       sendData.original_co_id = originalId.value
       response = await axios.post('/api/coUpdate', sendData)
     } else {
-      // 신규 등록 시에는 co_id를 보내지 않음 (서버에서 자동 생성)
       response = await axios.post('/api/coInsert', sendData)
     }
 
@@ -472,9 +661,50 @@ const getTypeLabel = (type) => {
 </script>
 
 <style scoped>
-/* ============================================
-   기본 설정 및 컨테이너
-   ============================================ */
+/* 페이지 진입 애니메이션 */
+.page-container {
+  animation: pageLoad 0.5s ease-out;
+}
+
+@keyframes pageLoad {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.button-group {
+  animation: fadeInDown 0.4s ease-out;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.5s ease-out both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 :deep(*) {
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
     sans-serif;
@@ -485,26 +715,22 @@ const getTypeLabel = (type) => {
 :deep(.container-fluid) {
   background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
   padding: 1.5rem !important;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  overflow: auto;
   width: 100%;
 }
 
-/* ============================================
-   검색 필터 박스
-   ============================================ */
 .search-filter-box {
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 2rem 1.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  margin-bottom: 1.25rem;
+  margin-bottom: 0.75rem;
+  position: relative;
+  z-index: 100;
 }
 
-/* ============================================
-   그리드 박스와 폼 박스 - 고정 높이 (10개 행)
-   ============================================ */
 .grid-box,
 .form-box {
   background: #ffffff;
@@ -512,17 +738,30 @@ const getTypeLabel = (type) => {
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   overflow: hidden;
-  height: calc(46px + 10 * 46px + 2px);
+  max-height: calc(46px + 10 * 46px + 2px);
 }
 
 .form-box {
   display: flex;
   flex-direction: column;
+  z-index: 1;
+  overflow: visible !important;
 }
 
-/* ============================================
-   버튼 스타일
-   ============================================ */
+.custom-calendar {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  z-index: 99999;
+  padding: 10px;
+  min-width: 200px;
+  animation: calendarFadeIn 0.2s ease;
+}
+
 :deep(.btn) {
   font-size: 13px;
   font-weight: 600;
@@ -561,69 +800,60 @@ const getTypeLabel = (type) => {
   transform: scale(0.98);
 }
 
-/* ============================================
-   폼 요소 - 가로 배치 스타일
-   ============================================ */
 .form-row-horizontal {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 0.8rem;
+  gap: 0.6rem;
+  justify-content: flex-start;
+  margin-bottom: 1.1rem;
 }
 
 .form-label-inline {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   color: #334155;
   margin-bottom: 0;
   letter-spacing: -0.2px;
-  min-width: 110px;
+  min-width: 80px;
   white-space: nowrap;
   text-align: right;
 }
 
-.form-label-radio {
-  font-size: 13px;
-  font-weight: 600;
-  color: #334155;
-  margin-bottom: 0.5rem;
-  letter-spacing: -0.2px;
-  display: block;
-}
-
-.form-input-enhanced {
-  font-size: 13px;
+.form-input-compact {
+  font-size: 11px;
   font-weight: 400;
-  padding: 0.55rem 0.75rem;
+  padding: 0.3rem 0.5rem;
   border: 1.5px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 6px;
   transition: all 0.2s ease;
   background-color: #ffffff;
-  height: 38px;
-  width: 180px;
-  max-width: 180px;
+  height: 28px;
+  width: 75px;
+  max-width: 75px;
 }
 
-.form-input-enhanced:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+.form-input-compact:focus {
+  border-color: #6b7280;
+  box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.1);
   background-color: #ffffff;
   outline: none;
 }
 
-.form-input-enhanced:disabled {
+.form-input-compact:disabled {
   background-color: #f8fafc;
   color: #94a3b8;
   cursor: not-allowed;
 }
 
-/* ============================================
-   라디오 버튼 - 가로 배치
-   ============================================ */
+.form-input-compact::placeholder {
+  display: none;
+}
+
 .radio-group-horizontal {
   display: flex;
   gap: 1rem;
   align-items: center;
+  flex-direction: row;
 }
 
 .radio-item-inline {
@@ -645,9 +875,6 @@ const getTypeLabel = (type) => {
   margin-bottom: 0;
 }
 
-/* ============================================
-   기존 폼 요소 (검색 필터용)
-   ============================================ */
 :deep(.form-label) {
   font-size: 13px;
   font-weight: 600;
@@ -671,8 +898,8 @@ const getTypeLabel = (type) => {
 
 :deep(.form-control:focus),
 :deep(.form-select:focus) {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+  border-color: #6b7280;
+  box-shadow: 0 0 0 4px rgba(107, 114, 128, 0.12);
   background-color: #ffffff;
   outline: none;
 }
@@ -683,30 +910,34 @@ const getTypeLabel = (type) => {
   cursor: not-allowed;
 }
 
-:deep(.g-3) {
-  --bs-gutter-y: 0.75rem;
-  --bs-gutter-x: 1rem;
+:deep(.form-control)::placeholder {
+  display: none;
 }
 
-:deep(.g-2) {
-  --bs-gutter-y: 0.5rem;
-  --bs-gutter-x: 0.5rem;
+.form-input-enhanced {
+  font-size: 13px;
+  font-weight: 400;
+  padding: 0.55rem 0.75rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+  height: 38px;
+  width: 180px;
+  max-width: 180px;
 }
 
-:deep(.mb-2) {
-  margin-bottom: 0.5rem !important;
+.form-input-enhanced:focus {
+  border-color: #828282;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background-color: #ffffff;
+  outline: none;
 }
 
-:deep(.mb-3) {
-  margin-bottom: 1rem !important;
-}
-
-/* ============================================
-   커스텀 셀렉트 박스
-   ============================================ */
 .custom-select-wrapper {
   position: relative;
   width: 100%;
+  z-index: 50;
 }
 
 .custom-select {
@@ -727,13 +958,7 @@ const getTypeLabel = (type) => {
 }
 
 .custom-select:hover {
-  border-color: #cbd5e1;
-}
-
-.custom-select:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
-  outline: none;
+  border-color: #94a3b8;
 }
 
 .custom-select span {
@@ -746,97 +971,106 @@ const getTypeLabel = (type) => {
 
 .custom-dropdown {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 4px);
   left: 0;
   right: 0;
   background-color: #ffffff;
   border: 1.5px solid #e2e8f0;
-  border-top: none;
-  border-radius: 0 0 8px 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 9999;
   max-height: 200px;
   overflow-y: auto;
+  animation: dropdownFadeIn 0.2s ease;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .custom-option {
-  padding: 0.65rem 0.85rem;
+  padding: 0.75rem 0.85rem;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
   color: #334155;
   font-size: 13px;
-}
-
-.custom-option:hover {
-  background-color: #f1f5f9;
-  color: #3b82f6;
+  border-radius: 8px;
+  margin: 6px 8px;
 }
 
 .custom-option:first-child {
-  border-top: none;
+  margin-top: 8px;
 }
 
-/* ============================================
-   테이블 래퍼
-   ============================================ */
+.custom-option:last-child {
+  margin-bottom: 8px;
+}
+
+.custom-option:hover {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  color: #1e293b;
+  transform: translateX(2px);
+}
+
 .table-wrapper {
-  overflow-y: auto;
+  overflow-y: scroll;
   overflow-x: hidden;
   height: 100%;
   display: flex;
   flex-direction: column;
   background: #ffffff;
+  scrollbar-gutter: stable;
 }
 
 .table-wrapper::-webkit-scrollbar {
-  width: 14px;
-  background: #ffffff;
+  width: 16px;
+  background: linear-gradient(to right, #f8fafc, #f1f5f9);
 }
 
 .table-wrapper::-webkit-scrollbar-track {
-  background: #ffffff;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px;
+  margin: 6px 0;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.05);
 }
 
 .table-wrapper::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #9ca3af 0%, #6b7280 100%);
-  border-radius: 10px;
-  border: 3px solid #ffffff;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(180deg, #64748b 0%, #475569 100%);
+  border-radius: 12px;
+  border: 3px solid #f1f5f9;
+  box-shadow: 0 3px 10px rgba(71, 85, 105, 0.25), inset 0 1px 3px rgba(255, 255, 255, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .table-wrapper::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #6b7280 0%, #4b5563 100%);
-  border-color: #ffffff;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+  background: linear-gradient(180deg, #475569 0%, #334155 100%);
+  border-color: #e2e8f0;
+  box-shadow: 0 5px 15px rgba(71, 85, 105, 0.4), inset 0 1px 3px rgba(255, 255, 255, 0.4);
+  transform: scaleX(1.15);
 }
 
-.table-wrapper::-webkit-scrollbar-button:single-button {
-  display: block;
-  height: 20px;
-  background-color: #ffffff;
-  background-repeat: no-repeat;
-  background-position: center;
-  border: none;
+.table-wrapper::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
+  border-width: 2px;
+  box-shadow: 0 2px 8px rgba(30, 41, 59, 0.5), inset 0 2px 5px rgba(0, 0, 0, 0.25);
 }
 
-.table-wrapper::-webkit-scrollbar-button:single-button:vertical:decrement {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 4L2 8h8z'/%3E%3C/svg%3E");
-  margin-top: 46px;
+.table-wrapper::-webkit-scrollbar-button {
+  display: none;
 }
 
-.table-wrapper::-webkit-scrollbar-button:single-button:vertical:increment {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
-  margin-bottom: 46px;
+.table-wrapper {
+  scrollbar-width: auto;
+  scrollbar-color: #64748b #f1f5f9;
 }
 
-.table-wrapper::-webkit-scrollbar-button:single-button:hover {
-  background-color: #f3f4f6;
-}
-
-/* ============================================
-   데이터 테이블
-   ============================================ */
 :deep(.data-table) {
   margin-bottom: 0;
   border-collapse: separate;
@@ -901,14 +1135,14 @@ const getTypeLabel = (type) => {
 }
 
 :deep(.selected-row) {
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%) !important;
+  background: #e5e7eb !important;
   font-weight: 600;
-  box-shadow: inset 0 0 0 2px #3b82f6;
+  box-shadow: inset 4px 0 0 0 #6b7280, 0 4px 12px rgba(107, 114, 128, 0.3) !important;
 }
 
 :deep(.selected-row td) {
-  border-bottom: 1px solid #93c5fd;
-  color: #1e40af;
+  border-bottom: 1px solid #d1d5db !important;
+  color: #1f2937 !important;
 }
 
 .empty-row td {
@@ -917,94 +1151,227 @@ const getTypeLabel = (type) => {
   border-bottom: 1px solid #f1f5f9;
 }
 
-/* ============================================
-   간격 조정
-   ============================================ */
-:deep(.text-end) {
-  text-align: right;
+:deep(.form-check-input:checked) {
+  background-color: #dc2626 !important;
+  border-color: #dc2626 !important;
 }
 
-:deep(.text-start) {
-  text-align: left;
+:deep(.form-check-input:checked:hover) {
+  background-color: #b91c1c !important;
+  border-color: #b91c1c !important;
 }
 
-:deep(.text-center) {
-  text-align: center;
+:deep(.form-check-input:focus) {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 0.25rem rgba(220, 38, 38, 0.25) !important;
 }
 
-:deep(.text-primary) {
-  color: #3b82f6 !important;
-}
-
-/* ============================================
-   반응형 디자인
-   ============================================ */
-@media (max-width: 1600px) {
-  .form-label-inline,
-  .form-label-radio {
-    font-size: 12px !important;
-  }
-
-  .form-input-enhanced {
-    font-size: 12px !important;
-    height: 36px !important;
-    padding: 0.5rem 0.65rem !important;
-    width: 160px !important;
-    max-width: 160px !important;
-  }
-
-  :deep(.radio-item-inline .form-check-label) {
-    font-size: 12px !important;
-  }
-
-  :deep(.form-label) {
-    font-size: 12px !important;
-  }
-
-  :deep(.form-control),
-  :deep(.form-select) {
-    font-size: 12px !important;
-    height: 38px !important;
-    padding: 0.55rem 0.75rem !important;
-  }
-
-  :deep(.btn) {
-    font-size: 12px !important;
-    padding: 0.5rem 1.1rem !important;
-  }
-
-  :deep(.data-table th),
-  :deep(.data-table td) {
-    font-size: 12px !important;
-  }
-
-  :deep(.data-table td) {
-    height: 42px !important;
-  }
-
-  .empty-row td {
-    height: 42px !important;
-  }
-
-  .grid-box,
-  .form-box {
-    height: calc(42px + 10 * 42px + 2px) !important;
-  }
-}
-
-.mb-2-5 {
-  margin-bottom: 0.625rem; /* 10px */
-}
-
-.form-row-horizontal {
+.date-input-wrapper {
+  position: relative;
   display: flex;
-  align-items: center; /* 수직 중앙 정렬 */
-  margin-bottom: 0.625rem; /* mb-2-5 */
+  align-items: center;
+  width: 230px;
 }
 
-input,
-label {
-  height: 36px;
-  line-height: 36px;
+.date-input-wrapper .form-input-compact {
+  padding-right: 26px;
+  cursor: pointer;
+  width: 230px;
+}
+
+.calendar-icon {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  pointer-events: all;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-icon:hover {
+  color: #828282;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.custom-calendar {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 8px);
+  transform: translateY(-50%);
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  z-index: 99999;
+  padding: 10px;
+  min-width: 200px;
+  animation: calendarFadeIn 0.2s ease;
+}
+
+@keyframes calendarFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1.5px solid #f1f5f9;
+}
+
+.calendar-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: -0.3px;
+}
+
+.calendar-nav-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-nav-btn:hover {
+  background: #f1f5f9;
+  color: #828282;
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.weekday {
+  text-align: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #64748b;
+  padding: 4px 0;
+}
+
+.calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 500;
+  color: #334155;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  position: relative;
+  min-height: 24px;
+}
+
+.calendar-day:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.calendar-day.other-month {
+  color: #cbd5e1;
+  cursor: default;
+}
+
+.calendar-day.other-month:hover {
+  background: transparent;
+}
+
+.calendar-day.today {
+  background: #e5e7eb;
+  color: #1f2937;
+  font-weight: 700;
+}
+
+.calendar-day.today:hover {
+  background: #d1d5db;
+}
+
+.calendar-day.selected {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
+}
+
+.calendar-day.selected:hover {
+  background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+  box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
+}
+
+.search-row-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.search-label-fixed {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 0;
+  letter-spacing: -0.2px;
+  min-width: 70px;
+  white-space: nowrap;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.search-row-container .custom-select-wrapper,
+.search-row-container .form-input-search {
+  flex: 1;
+  min-width: 0;
+}
+
+.form-input-search {
+  font-size: 13px;
+  font-weight: 400;
+  padding: 0.65rem 0.85rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+  height: 42px;
+  width: 100%;
+}
+
+.form-input-search:focus {
+  border-color: #6b7280;
+  box-shadow: 0 0 0 4px rgba(107, 114, 128, 0.12);
+  background-color: #ffffff;
+  outline: none;
 }
 </style>
