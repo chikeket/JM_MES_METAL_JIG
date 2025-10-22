@@ -1748,3 +1748,266 @@ const getSelectKey = (row, idx) => {
   return row._selkey
 }
 </script>
+
+<style scoped>
+/* ============================================
+   컨테이너 / 박스 - CompanyManage 스타일 준용
+   ============================================ */
+:deep(*) {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
+    sans-serif;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+:deep(.container-fluid) {
+  background: #ffffff;
+  padding: 1rem !important;
+  min-height: 100vh;
+}
+
+/* 카드 박스 스타일 */
+.card {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+}
+.card-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 2px solid #dee2e6;
+  font-weight: 600;
+  font-size: 13px;
+  color: #2c3e50;
+}
+.card-body {
+  padding: 0;
+}
+
+/* ============================================
+   버튼 - CompanyManage 스타일 준용
+   ============================================ */
+.btn,
+:deep(.btn) {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0.5rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  letter-spacing: -0.3px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+:deep(.btn-secondary) {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+  color: #fff !important;
+}
+:deep(.btn-secondary:hover) {
+  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+:deep(.btn-outline-secondary) {
+  background: #ffffff;
+  border: 2px solid #6c757d;
+  color: #6c757d !important;
+}
+:deep(.btn-outline-secondary:hover) {
+  background: #6c757d;
+  color: #ffffff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+:deep(.btn-danger) {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  color: #fff !important;
+}
+:deep(.btn-danger:hover:not(:disabled)) {
+  background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+:deep(.btn:active) {
+  transform: translateY(0);
+}
+:deep(.btn:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 버튼 간격 */
+.gap-2 {
+  gap: 0.5rem;
+}
+
+/* ============================================
+   폼 요소 - CompanyManage 스타일 준용
+   ============================================ */
+:deep(.form-control),
+:deep(input.form-control) {
+  font-size: 12px;
+  font-weight: 400;
+  padding: 0.4rem 0.75rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  background-color: #f8f9fa;
+  height: 34px;
+}
+:deep(.form-control:focus),
+:deep(input.form-control:focus) {
+  border-color: #6c757d;
+  box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.15);
+  background-color: #ffffff;
+}
+:deep(input[type='number'].form-control) {
+  font-size: 12px;
+}
+
+/* ============================================
+   테이블 - CompanyManage 스타일 준용
+   ============================================ */
+:deep(.table) {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  user-select: none;
+  cursor: default;
+  width: 100%;
+}
+
+:deep(.table thead th) {
+  font-size: 12px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+  color: #ffffff;
+  text-align: center;
+  padding: 0.65rem 0.5rem;
+  border: none;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+:deep(.table thead th:first-child) {
+  border-top-left-radius: 10px;
+}
+:deep(.table thead th:last-child) {
+  border-top-right-radius: 10px;
+}
+
+:deep(.table tbody td) {
+  font-size: 12px;
+  font-weight: 400;
+  vertical-align: middle;
+  padding: 0.55rem 0.5rem;
+  border-bottom: 1px solid #e9ecef;
+  border-right: 2px solid #e9ecef;
+  color: #2c3e50;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background-color: #ffffff;
+}
+
+:deep(.table tbody td:last-child) {
+  border-right: none;
+}
+
+:deep(.table tbody tr) {
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+}
+
+/* hover 효과 */
+:deep(.table) {
+  --row-hover-bg: var(
+    --cui-table-hover-bg,
+    var(
+      --bs-table-hover-bg,
+      rgba(var(--cui-emphasis-color-rgb, var(--bs-emphasis-color-rgb, 33, 37, 41)), 0.075)
+    )
+  );
+}
+
+:deep(.table tbody tr:hover) {
+  background-color: var(--row-hover-bg) !important;
+}
+:deep(.table tbody tr:hover td) {
+  background-color: var(--row-hover-bg) !important;
+}
+
+/* 빈 행 스타일 */
+:deep(.table tbody tr .text-muted) {
+  color: #6c757d;
+  font-style: italic;
+}
+
+/* ============================================
+   모던 스크롤바 - CompanyManage 스타일 준용
+   ============================================ */
+.card-body {
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+.card-body::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.card-body::-webkit-scrollbar-track {
+  background: rgba(240, 240, 240, 0.6);
+  border-radius: 10px;
+}
+.card-body::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #bfc2c7, #9ea2a8);
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(2px);
+  transition: all 0.2s ease;
+}
+.card-body::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #a4a8ae, #7e838a);
+}
+.card-body {
+  scrollbar-width: thin;
+  scrollbar-color: #9ea2a8 rgba(240, 240, 240, 0.6);
+}
+
+/* ============================================
+   테이블 내 인풋 스타일 조정
+   ============================================ */
+:deep(.table tbody td input.form-control) {
+  font-size: 12px;
+  line-height: 1.2;
+  padding: 0.25rem 0.5rem;
+  height: 28px;
+  min-width: 80px;
+}
+
+/* 체크박스 정렬 */
+:deep(.form-check-input) {
+  cursor: pointer;
+}
+
+/* ============================================
+   반응형 축소 시 폰트 크기 조정
+   ============================================ */
+@media (max-width: 1600px) {
+  :deep(.form-control),
+  :deep(input.form-control),
+  :deep(.btn),
+  :deep(.table th),
+  :deep(.table td),
+  .card-header {
+    font-size: 11px !important;
+  }
+  :deep(.btn) {
+    padding: 0.4rem 1rem;
+  }
+}
+</style>
