@@ -1,6 +1,41 @@
-const express = require("express");
-// Express의 Router 모듈을 사용해서 라우팅 등록, 라우팅을 별도 파일로 관리
+const express = require('express');
 const router = express.Router();
+const wrhousdlvrService = require('../services/wrhousdlvr_service.js');
+
+// (1) 완제품 재고(납품용)
+router.get('/warehouse/available-fg-stock', async (req, res) => {
+  try {
+    const { prdt_id, prdt_opt_id = null } = req.query;
+    const result = await wrhousdlvrService.getAvailableFgStock({ prdt_id, prdt_opt_id });
+    res.json(result);
+  } catch (err) {
+    console.error('[API] /warehouse/available-fg-stock error:', err);
+    res.status(500).json({ error: err?.message ?? 'server error' });
+  }
+});
+
+// (2) 가용 생산수량(자재 불출용)
+router.get('/warehouse/available-finished-production-qty', async (req, res) => {
+  try {
+    const { prdt_id, prdt_opt_id = null } = req.query;
+    const result = await wrhousdlvrService.getAvailableFinishedProductionQty({ prdt_id, prdt_opt_id });
+    res.json(result);
+  } catch (err) {
+    console.error('[API] /warehouse/available-finished-production-qty error:', err);
+    res.status(500).json({ error: err?.message ?? 'server error' });
+  }
+});
+
+// (3) 생산지시 기반 자재 불출 저장
+router.post('/warehouse/material-issue', async (req, res) => {
+  try {
+    const result = await wrhousdlvrService.saveMaterialIssue(req.body);
+    res.json(result);
+  } catch (e) {
+    if (e?.code === 'INSUFFICIENT_STOCK') return res.status(409).json(e.payload);
+    console.error(e); res.status(500).json({ message: '자재 불출 저장 실패' });
+  }
+});
 
 // 창고 입출고(수불서) 마스터+디테일 검색 (모달용)
 router.get('/wrhsdlvr/search', async (req, res) => {
@@ -64,9 +99,6 @@ router.get('/warehouse/available-qty', async (req, res) => {
   }
 });
 
-
-// 해당 라우터를 통해 제공할 서비스를 가져옴
-const wrhousdlvrService = require("../services/wrhousdlvr_service.js");
 
 // 전체 창고 목록 조회 (품목 유형별 필터링 가능)
 router.get("/warehouses/all", async (req, res) => {
