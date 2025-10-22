@@ -26,7 +26,10 @@ const prodDrctDetailSearch =
  a.drct_qy,
  a.priort,
  a.rm,
- b.base_quantity,
+ CASE 
+    WHEN b.plan_qy = 0 THEN a.drct_qy 
+    ELSE b.base_quantity 
+  END AS base_quantity,
  b.plan_qy, 
  c.prdt_id,
  c.prdt_nm,
@@ -35,23 +38,27 @@ const prodDrctDetailSearch =
  d.prdt_opt_id
 FROM prod_drct_deta a
 JOIN (SELECT 
-	   a.prod_plan_deta_id,
+       a.prod_plan_deta_id,       
+       a.prdt_id,
+       a.prdt_opt_id,
 	   SUM(a.drct_qy) "base_quantity",
-       b.plan_qy
+       COALESCE(b.plan_qy,0) "plan_qy"
 	  FROM prod_drct_deta a
-      JOIN prod_plan_deta b
+      left JOIN prod_plan_deta b
       ON a.prod_plan_deta_id = b.prod_plan_deta_id
 	  WHERE a.prod_plan_deta_id IN (
 								SELECT
 								prod_plan_deta_id
 								FROM prod_drct_deta
-								WHERE prod_drct_id = ?)
-	  GROUP BY a.prod_plan_deta_id, b.plan_qy) b
+								WHERE prod_drct_id = ?)   
+	  
+GROUP BY a.prdt_id, a.prdt_opt_id, b.plan_qy) b
 ON a.prod_plan_deta_id = b.prod_plan_deta_id
 JOIN prdt c
 ON a.prdt_id = c.prdt_id
 JOIN prdt_opt d
 ON a.prdt_opt_id = d.prdt_opt_id
+and a.prdt_id = d.prdt_id
 WHERE prod_drct_id = ?
 AND c.prdt_st = 'K1'
 AND d.st = 'M1'`;
