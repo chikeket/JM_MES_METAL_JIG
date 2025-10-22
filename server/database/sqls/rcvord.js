@@ -214,6 +214,7 @@ join prdt d
 on b.prdt_id = d.prdt_id
 join prdt_opt e
 on b.prdt_opt_id = e.prdt_opt_id
+and b.prdt_id = e.prdt_id
 where a.rcvord_id = ?
 order by a.reg_dt desc
 `;

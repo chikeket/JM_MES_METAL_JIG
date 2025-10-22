@@ -139,6 +139,7 @@ join prdt d
 on a.prdt_id = d.prdt_id
 join prdt_opt e
 on a.prdt_opt_id = e.prdt_opt_id
+and a.prdt_id = e.prdt_id
 where a.prod_plan_id = ?`;
 
 module.exports = {
