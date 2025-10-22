@@ -136,6 +136,7 @@ const selectProduct = async (prdts) => {
       prod_expc_to_dt: userDateUtils.dateFormat(prdts.prod_drct_to_dt, 'yyyy-MM-dd'),
       remark: prdts.rm,
     },
+    crudBoolean: false,
   }) // 부모에게 선택된 제품 전달
   close() // 모달 닫기
 }

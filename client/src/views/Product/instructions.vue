@@ -46,6 +46,7 @@ const Info = ref({
   remark: '',
 })
 
+let crudBoolean = true
 const insertRowsToDB = async () => {
   // console.log(Info.value)
 
@@ -76,9 +77,9 @@ const insertRowsToDB = async () => {
   let result = await axios.post('/api/instruction', payload).catch((err) => console.log(err))
   let addRes = result.data
   if (addRes.isSuccessed) {
-    console.log('생산지시가 등록되었습니다.')
+    alert('생산지시가 등록되었습니다.')
   } else {
-    console.log('생산지시에 실패했습니다.')
+    alert('생산지시에 실패했습니다.')
   }
 }
 
@@ -114,9 +115,9 @@ const updateRowsToDB = async () => {
   let result = await axios.post('/api/updateInstruction', payload).catch((err) => console.log(err))
   let addRes = result.data
   if (addRes.isSuccessed) {
-    console.log('생산지시수정이 등록되었습니다.')
+    alert('생산지시수정이 등록되었습니다.')
   } else {
-    console.log('생산지시수정이 실패했습니다.')
+    alert('생산지시수정이 실패했습니다.')
   }
 }
 
@@ -125,9 +126,9 @@ const deleteRowsToDB = async () => {
   let result = await axios.post('/api/deleteInstruction', payload).catch((err) => console.log(err))
   let addRes = result.data
   if (addRes.isSuccessed) {
-    console.log('생산지시삭제가 성공되었습니다.')
+    alert('생산지시삭제가 성공되었습니다.')
   } else {
-    console.log('생산지시삭제가 실패했습니다.')
+    alert('생산지시삭제가 실패했습니다.')
   }
 }
 
@@ -149,6 +150,11 @@ const rows = ref([
 
 const selectedPrdt = (prdts) => {
   console.log(prdts)
+  if (prdts.crudBoolean == true) {
+    crudBoolean = true
+  } else {
+    crudBoolean = false
+  }
   Info.value.prod_drct_id = !prdts.searchParams.prod_drct_id
     ? Info.value.prod_drct_id
     : prdts.searchParams.prod_drct_id
@@ -291,9 +297,9 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
         @close="closeProdDrctModal"
         @select="selectedPrdt"
       />
-      <CButton color="secondary" @click="insertRowsToDB">저장</CButton>
-      <CButton color="secondary" @click="updateRowsToDB">수정</CButton>
-      <CButton color="danger" @click="deleteRowsToDB()">삭제</CButton>
+      <CButton v-if="crudBoolean" color="secondary" @click="insertRowsToDB">저장</CButton>
+      <CButton v-if="!crudBoolean" color="secondary" @click="updateRowsToDB">수정</CButton>
+      <CButton v-if="!crudBoolean" color="danger" @click="deleteRowsToDB()">삭제</CButton>
     </div>
     <div class="search-filter-box mb-2">
       <CContainer fluid>
@@ -380,13 +386,15 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
           <CTableDataCell scope="row">{{ row.unit }}</CTableDataCell>
 
           <!-- 계획수량 -->
-          <CTableDataCell scope="row">{{ row.plan_qy }}</CTableDataCell>
+          <CTableDataCell class="text-end" scope="row">{{ row.plan_qy }}</CTableDataCell>
 
           <!-- 기지시수량 -->
-          <CTableDataCell scope="row">{{ row.base_quantity }}</CTableDataCell>
+          <CTableDataCell class="text-end" scope="row">{{ row.base_quantity }}</CTableDataCell>
 
           <!-- 미지시수량 -->
-          <CTableDataCell scope="row">{{ row.unspecified_quantity }}</CTableDataCell>
+          <CTableDataCell class="text-end" scope="row">{{
+            row.unspecified_quantity
+          }}</CTableDataCell>
 
           <!-- 지시수량 -->
           <CTableDataCell class="text-end" @dblclick="startEdit(row, 'drct_qy')">
