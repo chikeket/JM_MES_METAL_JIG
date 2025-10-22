@@ -81,6 +81,11 @@ export default [
   },
   {
     component: 'CNavItem',
+    name: '생산 지시 조회',
+    to: '/prodDrctBoardList',
+  },
+  {
+    component: 'CNavItem',
     name: '공정 진행 현황',
     to: '/prcsProgPrecon',
   },
@@ -189,7 +194,6 @@ export default [
     component: 'CNavItem',
     name: '설비 관리',
     to: '/Eqm',
-
   },
 
   // {
