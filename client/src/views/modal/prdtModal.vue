@@ -43,7 +43,7 @@
               <td>{{ prdts.opt_nm }}</td>
             </tr>
           </tbody>
-        </table>        
+        </table>
       </div>
     </CModalBody>
     <CModalFooter>
@@ -59,7 +59,7 @@ import axios from 'axios'
 const props = defineProps({
   visible: Boolean,
 })
-const emit = defineEmits(['close','select'])
+const emit = defineEmits(['close', 'select'])
 const close = () => {
   prdtList.value = []
   emit('close')
@@ -88,18 +88,19 @@ const prdtSearch = async () => {
   prdtList.value = result.data
 }
 
-const selectProduct = (prdts) => {  
+const selectProduct = (prdts) => {
   emit('select', {
-  detailData: prdts,
-  searchParams: {
-    prod_drct_id: '',
-    prod_drct_nm: '',
-    reg_dt: '',
-    prod_expc_fr_dt: '',
-    prod_expc_to_dt: '',
-    remark: '',
-  }
-}) // 부모에게 선택된 제품 전달
+    detailData: prdts,
+    searchParams: {
+      prod_drct_id: '',
+      prod_drct_nm: '',
+      reg_dt: '',
+      prod_expc_fr_dt: '',
+      prod_expc_to_dt: '',
+      remark: '',
+    },
+    crudBoolean: true,
+  }) // 부모에게 선택된 제품 전달
   close() // 모달 닫기
 }
 </script>
