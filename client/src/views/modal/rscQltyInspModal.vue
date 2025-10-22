@@ -94,9 +94,12 @@ const selectProduct = async (prdts) => {
     .get('/api/rscQltyInspInferSelect', { params })
     .catch((err) => console.log(err))
   console.log(result.data)
+  const copyPrdts = { ...prdts }
+  const formatInspDt = userDateUtils.dateFormat(prdts.insp_dt, 'yyyy-MM-dd')
+  copyPrdts.insp_dt = formatInspDt
   emit('select', {
     detailData: result.data,
-    searchParams: prdts,
+    searchParams: copyPrdts,
   }) // 부모에게 선택된 제품 전달
   close() // 모달 닫기
 }

@@ -18,60 +18,71 @@
       <CButton color="secondary" @click="update()">수정</CButton>
       <CButton color="danger" @click="deleteFunc()">삭제</CButton>
     </div>
-<div class="search-filter-box mb-2">
-    <!-- 기본 정보 입력 -->
-    <CRow class="g-3 mb-3">
-      <CCol md="3">
-        <c-form-label for="prod_plan_id">검사자</c-form-label>
-            <c-form-input v-model="form.emp_nm" id="emp_nm" />
-      </CCol>
-      <CCol md="3">
-        <c-form-label>출고처</c-form-label>
-            <c-form-input v-model="form.co_nm" readonly class="bg-light"/>
-      </CCol>
-    </CRow>
+    <div class="search-filter-box mb-2">
+      <!-- 기본 정보 입력 -->
+      <CRow class="g-3 mb-3">
+        <CCol md="3">
+          <c-form-label for="prod_plan_id">검사자</c-form-label>
+          <c-form-input v-model="form.emp_nm" id="emp_nm" />
+        </CCol>
+        <CCol md="3">
+          <c-form-label>출고처</c-form-label>
+          <c-form-input v-model="form.co_nm" readonly class="bg-light" />
+        </CCol>
+      </CRow>
 
-    <CRow class="g-3 mb-3">
-      <CCol md="3">
-        <c-form-label>출고처</c-form-label>
-            <c-form-input v-model="form.rcs_nm" readonly class="bg-light" @click="openOrderModal"
- placeholder="자재발주서조회"/>
-      </CCol>
-      <CCol md="3">
-        <c-form-label>발주 수량</c-form-label>
-            <c-form-input v-model="form.qy" readonly type="number" min="0" class="bg-light"/>
-      </CCol>
-      <CCol md="3">
-        <c-form-label>기입고 수량</c-form-label>
-            <c-form-input v-model.number="form.receivedQty" readonly type="number" min="0" class="bg-light"/>
-      </CCol>
-      <CCol md="3">
-        <c-form-label>미입고 수량</c-form-label>
-            <c-form-input :value="pendingQty" readonly type="number" class="bg-light"/>
-      </CCol>
-    </CRow>
+      <CRow class="g-3 mb-3">
+        <CCol md="3">
+          <c-form-label>출고처</c-form-label>
+          <c-form-input
+            v-model="form.rcs_nm"
+            readonly
+            class="bg-light"
+            @click="openOrderModal"
+            placeholder="자재발주서조회"
+          />
+        </CCol>
+        <CCol md="3">
+          <c-form-label>발주 수량</c-form-label>
+          <c-form-input v-model="form.qy" readonly type="number" min="0" class="bg-light" />
+        </CCol>
+        <CCol md="3">
+          <c-form-label>기입고 수량</c-form-label>
+          <c-form-input
+            v-model.number="form.receivedQty"
+            readonly
+            type="number"
+            min="0"
+            class="bg-light"
+          />
+        </CCol>
+        <CCol md="3">
+          <c-form-label>미입고 수량</c-form-label>
+          <c-form-input :value="pendingQty" readonly type="number" class="bg-light" />
+        </CCol>
+      </CRow>
 
-    <CRow class="g-3 mb-3">
-      <CCol md="3">
-        <c-form-label>검수 수량</c-form-label>
-            <c-form-input v-model.number="form.insp_qy" type="number" min="0"/>
-      </CCol>
-      <CCol md="3">
-        <c-form-label>합격 수량</c-form-label>
-            <c-form-input :value="pass_qy" readonly type="number" min="0" class="bg-light"/>
-      </CCol>
-      <CCol md="3">
-        <c-form-label>불량 수량</c-form-label>
-            <c-form-input :value="defectQty" readonly type="number" class="bg-light"/>
-      </CCol>
-      <CCol md="3">
-        <c-form-label>검사 일자</c-form-label>
-            <c-form-input type="date" v-model="form.insp_dt" />
-      </CCol>
-    </CRow>
-    <CFormTextarea v-model="form.note" label="비고" rows="3" text="필요 시 기재"></CFormTextarea>
+      <CRow class="g-3 mb-3">
+        <CCol md="3">
+          <c-form-label>검수 수량</c-form-label>
+          <c-form-input v-model.number="form.insp_qy" type="number" min="0" />
+        </CCol>
+        <CCol md="3">
+          <c-form-label>합격 수량</c-form-label>
+          <c-form-input :value="pass_qy" readonly type="number" min="0" class="bg-light" />
+        </CCol>
+        <CCol md="3">
+          <c-form-label>불량 수량</c-form-label>
+          <c-form-input :value="defectQty" readonly type="number" class="bg-light" />
+        </CCol>
+        <CCol md="3">
+          <c-form-label>검사 일자</c-form-label>
+          <c-form-input type="date" v-model="form.insp_dt" />
+        </CCol>
+      </CRow>
+      <CFormTextarea v-model="form.note" label="비고" rows="3" text="필요 시 기재"></CFormTextarea>
     </div>
-    
+
     <!-- 검사 항목 테이블 -->
     <CTable hover bordered small class="align-middle mt-4">
       <CTableHead color="dark">
@@ -195,7 +206,7 @@ watch(
   (newVal) => {
     const order = Number(form.value.qy) || 0
     const received = Number(newVal)
-    
+
     if (isNaN(received) || received < 0) {
       alert('검수 수량은 0 이상의 숫자만 입력 가능합니다.')
       form.value.pass_qy = 0
@@ -205,7 +216,10 @@ watch(
       alert('검수 수량이 발주 수량보다 많을 수 없습니다.')
       form.value.pass_qy = 0
     }
-    form.value.receivedQty = Number(form.value.receivedQty_base) + Number(form.value.insp_qy) - Number(form.value.insp_qy_base)
+    form.value.receivedQty =
+      Number(form.value.receivedQty_base) +
+      Number(form.value.insp_qy) -
+      Number(form.value.insp_qy_base)
   },
 )
 
@@ -218,10 +232,14 @@ const selectOrdr = (prdts) => {
   form.value.receivedQty =
     Math.floor(prdts.searchParams.qy) - Math.floor(prdts.searchParams.rtngud_qy) || 0
   form.value.receivedQty_base =
-  Math.floor(prdts.searchParams.qy) - Math.floor(prdts.searchParams.rtngud_qy) || 0
+    Math.floor(prdts.searchParams.qy) - Math.floor(prdts.searchParams.rtngud_qy) || 0
   form.value.rcs_nm = prdts.searchParams.rsc_nm
   form.value.rsc_ordr_deta_id = prdts.searchParams.rsc_ordr_deta_id
   form.value.rsc_qlty_insp_id = prdts.searchParams.rsc_qlty_insp_id
+  form.value.emp_id = prdts.searchParams.emp_id
+  form.value.emp_nm = prdts.searchParams.emp_nm
+  form.value.note = prdts.searchParams.rm
+  form.value.insp_dt = prdts.searchParams.insp_dt
   for (const prdt of prdts.detailData)
     inspectItems.value.push({
       insp_item_nm: prdt.insp_item_nm,
@@ -321,13 +339,13 @@ const newFunc = async () => {
   form.value.rsc_ordr_deta_id = ''
   form.value.rsc_qlty_insp_id = ''
   inspectItems.value = []
-
 }
 </script>
 
 <style scoped>
 :deep(*) {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
+    sans-serif;
   line-height: 1.6;
   box-sizing: border-box;
 }
@@ -584,36 +602,34 @@ select.cell-input {
   :deep(.form-label) {
     font-size: 12px !important;
   }
-  
+
   :deep(.form-control),
   :deep(.form-select) {
     font-size: 12px !important;
     height: 38px !important;
     padding: 0.55rem 0.75rem !important;
   }
-  
+
   :deep(.btn) {
     font-size: 12px !important;
     padding: 0.5rem 1.1rem !important;
   }
-  
+
   :deep(th),
   :deep(td) {
     font-size: 12px !important;
   }
-  
+
   :deep(.data-table td) {
     height: 42px !important;
   }
-  
+
   .empty-row td {
     height: 42px !important;
   }
-  
+
   .cell-input {
     font-size: 12px !important;
   }
 }
-
-
 </style>
