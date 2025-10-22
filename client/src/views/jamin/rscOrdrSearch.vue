@@ -2,8 +2,8 @@
   <div class="container-fluid h-100 d-flex flex-column p-3">
     <!-- 상단 툴바: 초기화 / 조회 (CompanyManage와 동일한 배치/스타일) -->
     <div class="d-flex justify-content-end mb-2 gap-2">
-      <button class="btn btn-secondary btn-sm" @click="onSearch">조회</button>
       <button class="btn btn-secondary btn-sm" @click="onReset">초기화</button>
+      <button class="btn btn-secondary btn-sm" @click="onSearch">조회</button>
     </div>
 
     <!-- 검색 필터 -->
@@ -33,25 +33,53 @@
     </div>
 
     <!-- 결과 그리드 -->
-    <div class="grid-box flex-grow-1 d-flex flex-column overflow-hidden" style="height: calc(100vh - 220px); min-height: 500px;">
-      <div class="table-wrapper flex-grow-1" style="height: 100%; max-height: 100%; overflow-y: auto;">
+    <div
+      class="grid-box flex-grow-1 d-flex flex-column overflow-hidden"
+      style="height: calc(100vh - 220px); min-height: 500px"
+    >
+      <div
+        class="table-wrapper flex-grow-1"
+        style="height: 100%; max-height: 100%; overflow-y: auto"
+      >
         <table class="data-table w-100">
           <colgroup>
             <col v-for="(w, i) in colWidths" :key="i" :style="{ width: w }" />
           </colgroup>
           <thead>
             <tr>
-              <th class="text-center th-resizable">No<span class="col-resizer" @mousedown="onResizerDown(0, $event)"></span></th>
-              <th class="th-resizable">발주 ID<span class="col-resizer" @mousedown="onResizerDown(1, $event)"></span></th>
-              <th class="th-resizable">발주 담당자<span class="col-resizer" @mousedown="onResizerDown(2, $event)"></span></th>
-              <th class="th-resizable">공급 업체명<span class="col-resizer" @mousedown="onResizerDown(3, $event)"></span></th>
-              <th class="th-resizable">자재 명<span class="col-resizer" @mousedown="onResizerDown(4, $event)"></span></th>
-              <th class="th-resizable">규격<span class="col-resizer" @mousedown="onResizerDown(5, $event)"></span></th>
-              <th class="th-resizable">단위<span class="col-resizer" @mousedown="onResizerDown(6, $event)"></span></th>
-              <th class="th-resizable">요청 수량<span class="col-resizer" @mousedown="onResizerDown(7, $event)"></span></th>
-              <th class="th-resizable">발주 등록일자<span class="col-resizer" @mousedown="onResizerDown(8, $event)"></span></th>
-              <th class="th-resizable">공급 예정일자<span class="col-resizer" @mousedown="onResizerDown(9, $event)"></span></th>
-              <th class="th-resizable">비고<span class="col-resizer" @mousedown="onResizerDown(11, $event)"></span></th>
+              <th class="text-center th-resizable">
+                No<span class="col-resizer" @mousedown="onResizerDown(0, $event)"></span>
+              </th>
+              <th class="th-resizable">
+                발주 ID<span class="col-resizer" @mousedown="onResizerDown(1, $event)"></span>
+              </th>
+              <th class="th-resizable">
+                발주 담당자<span class="col-resizer" @mousedown="onResizerDown(2, $event)"></span>
+              </th>
+              <th class="th-resizable">
+                공급 업체명<span class="col-resizer" @mousedown="onResizerDown(3, $event)"></span>
+              </th>
+              <th class="th-resizable">
+                자재 명<span class="col-resizer" @mousedown="onResizerDown(4, $event)"></span>
+              </th>
+              <th class="th-resizable">
+                규격<span class="col-resizer" @mousedown="onResizerDown(5, $event)"></span>
+              </th>
+              <th class="th-resizable">
+                단위<span class="col-resizer" @mousedown="onResizerDown(6, $event)"></span>
+              </th>
+              <th class="th-resizable">
+                요청 수량<span class="col-resizer" @mousedown="onResizerDown(7, $event)"></span>
+              </th>
+              <th class="th-resizable">
+                발주 등록일자<span class="col-resizer" @mousedown="onResizerDown(8, $event)"></span>
+              </th>
+              <th class="th-resizable">
+                공급 예정일자<span class="col-resizer" @mousedown="onResizerDown(9, $event)"></span>
+              </th>
+              <th class="th-resizable">
+                비고<span class="col-resizer" @mousedown="onResizerDown(11, $event)"></span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -196,7 +224,8 @@ async function onSearch() {
    기본 설정 및 컨테이너
    ============================================ */
 :deep(*) {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
+    sans-serif;
   line-height: 1.6;
   box-sizing: border-box;
 }
@@ -379,19 +408,45 @@ input[type='date'].form-control {
 }
 
 /* 컬럼별 너비 설정 */
-:deep(.data-table col:nth-child(1)) { width: 70px; }   /* No */
-:deep(.data-table col:nth-child(2)) { width: 100px; }  /* 수주ID */
-:deep(.data-table col:nth-child(3)) { width: 100px; }  /* 수주담당자 */
-:deep(.data-table col:nth-child(4)) { width: 140px; }  /* 납품업체명 */
-:deep(.data-table col:nth-child(5)) { width: 150px; }  /* 제품명 */
-:deep(.data-table col:nth-child(6)) { width: 130px; }  /* 제품옵션명 */
-:deep(.data-table col:nth-child(7)) { width: 100px; }  /* 규격 */
-:deep(.data-table col:nth-child(8)) { width: 60px; }   /* 단위 */
-:deep(.data-table col:nth-child(9)) { width: 90px; }   /* 요청수량 */
-:deep(.data-table col:nth-child(10)) { width: 110px; } /* 수주등록일자 */
-:deep(.data-table col:nth-child(11)) { width: 110px; } /* 납품예정일자 */
-:deep(.data-table col:nth-child(12)) { width: 90px; }  /* 출고상태 */
-:deep(.data-table col:nth-child(13)) { width: auto; }  /* 비고 */
+:deep(.data-table col:nth-child(1)) {
+  width: 70px;
+} /* No */
+:deep(.data-table col:nth-child(2)) {
+  width: 100px;
+} /* 수주ID */
+:deep(.data-table col:nth-child(3)) {
+  width: 100px;
+} /* 수주담당자 */
+:deep(.data-table col:nth-child(4)) {
+  width: 140px;
+} /* 납품업체명 */
+:deep(.data-table col:nth-child(5)) {
+  width: 150px;
+} /* 제품명 */
+:deep(.data-table col:nth-child(6)) {
+  width: 130px;
+} /* 제품옵션명 */
+:deep(.data-table col:nth-child(7)) {
+  width: 100px;
+} /* 규격 */
+:deep(.data-table col:nth-child(8)) {
+  width: 60px;
+} /* 단위 */
+:deep(.data-table col:nth-child(9)) {
+  width: 90px;
+} /* 요청수량 */
+:deep(.data-table col:nth-child(10)) {
+  width: 110px;
+} /* 수주등록일자 */
+:deep(.data-table col:nth-child(11)) {
+  width: 110px;
+} /* 납품예정일자 */
+:deep(.data-table col:nth-child(12)) {
+  width: 90px;
+} /* 출고상태 */
+:deep(.data-table col:nth-child(13)) {
+  width: auto;
+} /* 비고 */
 
 :deep(.data-table thead) {
   position: sticky;
@@ -492,27 +547,27 @@ body.resizing {
   :deep(.form-label) {
     font-size: 12px !important;
   }
-  
+
   :deep(.form-control) {
     font-size: 12px !important;
     height: 38px !important;
     padding: 0.55rem 0.75rem !important;
   }
-  
+
   :deep(.btn) {
     font-size: 12px !important;
     padding: 0.5rem 1.1rem !important;
   }
-  
+
   :deep(.data-table th),
   :deep(.data-table td) {
     font-size: 12px !important;
   }
-  
+
   :deep(.data-table td) {
     height: 42px !important;
   }
-  
+
   .empty-row td {
     height: 42px !important;
   }

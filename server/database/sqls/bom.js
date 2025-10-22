@@ -30,8 +30,9 @@ const bomMasterSelect = `
     bm.st,
     bm.rm
   FROM BOM bm
-  LEFT JOIN prdt p ON bm.prdt_id = p.prdt_id
-  LEFT JOIN prdt_opt o ON bm.prdt_opt_id = o.prdt_opt_id
+  JOIN prdt_opt o ON bm.prdt_opt_id = o.prdt_opt_id
+  AND bm.prdt_id = o.prdt_id
+  JOIN prdt p ON o.prdt_id = p.prdt_id
   WHERE (? = '' OR p.prdt_nm LIKE CONCAT('%', ?, '%'))
     AND (? = '' OR o.opt_nm LIKE CONCAT('%', ?, '%'))
     AND (? = '' OR bm.st = ?)
@@ -123,8 +124,7 @@ const bomDetailDelete = `
   DELETE FROM BOM_DETA WHERE bom_comp_id = ?
 `;
 
-
-module.exports = { 
+module.exports = {
   bomMasterNewId,
   bomMasterSelect,
   bomMasterFindById,
@@ -136,6 +136,6 @@ module.exports = {
   bomDetailFindById,
   bomDetailInsert,
   bomDetailUpdate,
-  bomDetailDelete
-  ,bomNextVersionByPrdtOptId
-}
+  bomDetailDelete,
+  bomNextVersionByPrdtOptId,
+};

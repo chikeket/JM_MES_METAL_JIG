@@ -2,8 +2,8 @@
   <CContainer fluid class="h-100 d-flex flex-column p-3">
     <!-- 상단 조회/초기화 버튼 -->
     <div class="d-flex justify-content-end gap-2 mb-2">
-      <CButton color="secondary" size="sm" @click="handleSearch">조회</CButton>
       <CButton color="secondary" size="sm" @click="handleReset">초기화</CButton>
+      <CButton color="secondary" size="sm" @click="handleSearch">조회</CButton>
     </div>
 
     <!-- 상단폼 -->
@@ -520,7 +520,9 @@ const handleLeftDelete = async () => {
       if (!item.isNew && item.bom_id) {
         // BOM_DETA에 값이 있는지 확인
         const detailRes = await axios.get('/api/bom/detail', { params: { bom_id: item.bom_id } })
-        const detailList = Array.isArray(detailRes.data) ? detailRes.data : detailRes.data.data || []
+        const detailList = Array.isArray(detailRes.data)
+          ? detailRes.data
+          : detailRes.data.data || []
         if (detailList.length > 0) {
           alert('BOM 상세 정보를 먼저 삭제해 주세요.')
           return

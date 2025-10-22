@@ -2,8 +2,8 @@
   <CContainer fluid class="h-100 d-flex flex-column p-3">
     <!-- 상단 조회/초기화 버튼 -->
     <div class="d-flex justify-content-end mb-2 gap-2">
-      <CButton color="secondary" size="sm" @click="searchWrhousZone">조회</CButton>
       <CButton color="secondary" size="sm" @click="resetSearch">초기화</CButton>
+      <CButton color="secondary" size="sm" @click="searchWrhousZone">조회</CButton>
     </div>
 
     <!-- 검색 필터 영역 -->
@@ -60,27 +60,31 @@
           <CButton color="secondary" size="sm">저장</CButton>
           <CButton color="danger" size="sm">삭제</CButton>
         </div>
-        
+
         <!-- 그리드 테이블 -->
         <div class="grid-box flex-grow-1 overflow-hidden d-flex flex-column">
           <div class="table-wrapper">
             <CTable bordered hover class="data-table">
               <CTableHead>
                 <CTableRow>
-                  <CTableHeaderCell scope="col" class="text-center" style="width: 40px">No</CTableHeaderCell>
+                  <CTableHeaderCell scope="col" class="text-center" style="width: 40px"
+                    >No</CTableHeaderCell
+                  >
                   <CTableHeaderCell scope="col" class="text-center">창고 ID</CTableHeaderCell>
                   <CTableHeaderCell scope="col" class="text-center">창고 이름</CTableHeaderCell>
                   <CTableHeaderCell scope="col" class="text-center">로케이션 ID</CTableHeaderCell>
                   <CTableHeaderCell scope="col" class="text-center">로케이션 이름</CTableHeaderCell>
                   <CTableHeaderCell scope="col" class="text-center">품목 유형</CTableHeaderCell>
-                  <CTableHeaderCell scope="col" class="text-center" style="width: 80px">상태</CTableHeaderCell>
+                  <CTableHeaderCell scope="col" class="text-center" style="width: 80px"
+                    >상태</CTableHeaderCell
+                  >
                   <CTableHeaderCell scope="col" class="text-center">비고</CTableHeaderCell>
                 </CTableRow>
               </CTableHead>
               <CTableBody>
                 <!-- 데이터 행 -->
-                <CTableRow 
-                  v-for="(item, index) in displayedData" 
+                <CTableRow
+                  v-for="(item, index) in displayedData"
                   :key="`${item.wrhous_id}-${item.zone_id || 'no-zone'}`"
                   @click="selectZone(item, index)"
                   :class="{ 'selected-row': selectedRowIndex === index }"
@@ -123,7 +127,9 @@
         <div class="d-flex justify-content-end gap-2 mb-2">
           <CButton color="secondary" size="sm" @click="resetForm">신규</CButton>
           <CButton color="secondary" size="sm" @click="saveZone">저장</CButton>
-          <CButton color="danger" size="sm" @click="deleteZone" :disabled="!selectedZone">삭제</CButton>
+          <CButton color="danger" size="sm" @click="deleteZone" :disabled="!selectedZone"
+            >삭제</CButton
+          >
         </div>
 
         <!-- 입력 폼 -->
@@ -134,7 +140,7 @@
                 <CFormLabel class="form-label pt-1">창고 ID</CFormLabel>
               </CCol>
               <CCol :md="7" class="ps-3">
-                <CFormInput 
+                <CFormInput
                   v-model="formData.wrhous_id"
                   size="sm"
                   placeholder="창고 ID를 입력하세요"
@@ -142,48 +148,48 @@
                 />
               </CCol>
             </CRow>
-            
+
             <CRow class="mb-2">
               <CCol :md="4" class="text-end pe-2">
                 <CFormLabel class="form-label pt-1">창고 이름</CFormLabel>
               </CCol>
               <CCol :md="7" class="ps-3">
-                <CFormInput 
-                  v-model="formData.wrhous_nm" 
+                <CFormInput
+                  v-model="formData.wrhous_nm"
                   size="sm"
                   placeholder="창고 이름"
                   readonly
                 />
               </CCol>
             </CRow>
-            
+
             <CRow class="mb-2">
               <CCol :md="4" class="text-end pe-2">
                 <CFormLabel class="form-label pt-1">로케이션 ID</CFormLabel>
               </CCol>
               <CCol :md="7" class="ps-3">
-                <CFormInput 
-                  v-model="formData.zone_id" 
+                <CFormInput
+                  v-model="formData.zone_id"
                   size="sm"
                   placeholder="자동 생성됩니다"
                   readonly
                 />
               </CCol>
             </CRow>
-            
+
             <CRow class="mb-2">
               <CCol :md="4" class="text-end pe-2">
                 <CFormLabel class="form-label pt-1">로케이션 이름</CFormLabel>
               </CCol>
               <CCol :md="7" class="ps-3">
-                <CFormInput 
-                  v-model="formData.zone_nm" 
+                <CFormInput
+                  v-model="formData.zone_nm"
                   size="sm"
                   placeholder="자재창고 A구역 01번"
                 />
               </CCol>
             </CRow>
-            
+
             <CRow class="mb-2">
               <CCol :md="4" class="text-end pe-2">
                 <CFormLabel class="form-label pt-1">품목 유형</CFormLabel>
@@ -197,25 +203,25 @@
                 </CFormSelect>
               </CCol>
             </CRow>
-            
+
             <CRow class="mb-2">
               <CCol :md="4" class="text-end pe-2">
                 <CFormLabel class="form-label pt-1">상태</CFormLabel>
               </CCol>
               <CCol :md="7" class="ps-3">
                 <div class="radio-group">
-                  <CFormCheck 
+                  <CFormCheck
                     class="radio-item"
-                    type="radio" 
+                    type="radio"
                     id="status-active"
                     name="status"
                     value="M1"
                     v-model="formData.st"
                     label="활성상태"
                   />
-                  <CFormCheck 
+                  <CFormCheck
                     class="radio-item"
-                    type="radio" 
+                    type="radio"
                     id="status-inactive"
                     name="status"
                     value="M2"
@@ -225,15 +231,15 @@
                 </div>
               </CCol>
             </CRow>
-            
+
             <CRow class="mb-2">
               <CCol :md="4" class="text-end pe-2">
                 <CFormLabel class="form-label pt-1">비고</CFormLabel>
               </CCol>
               <CCol :md="7" class="ps-3">
-                <CFormTextarea 
-                  v-model="formData.rm" 
-                  rows="4" 
+                <CFormTextarea
+                  v-model="formData.rm"
+                  rows="4"
                   placeholder="비고사항을 입력하세요"
                   size="sm"
                 />
@@ -257,7 +263,7 @@ const searchForm = reactive({
   item_ty: '',
   zone_nm: '',
   st: '',
-  wrhous_nm: ''
+  wrhous_nm: '',
 })
 
 // 로케이션 데이터 목록
@@ -278,7 +284,7 @@ const formData = reactive({
   item_ty: '',
   zone_nm: '',
   st: 'M1',
-  rm: ''
+  rm: '',
 })
 
 // 편집 모드 여부
@@ -286,7 +292,7 @@ const isEditMode = ref(false)
 
 // 선택된 창고명 (표시용)
 const selectedWrhousNm = computed(() => {
-  const wrhous = wrhousOptions.value.find(w => w.wrhous_id === formData.wrhous_id)
+  const wrhous = wrhousOptions.value.find((w) => w.wrhous_id === formData.wrhous_id)
   return wrhous ? wrhous.wrhous_nm : ''
 })
 
@@ -317,7 +323,7 @@ const searchWrhousZone = async () => {
   try {
     console.log('[wrhousZoneManage] 조회 조건:', searchForm)
     const response = await axios.get('/api/wrhousZoneManage', {
-      params: searchForm
+      params: searchForm,
     })
     zoneData.value = response.data
     selectedRowIndex.value = null
@@ -338,7 +344,7 @@ const resetSearch = () => {
   searchForm.wrhous_nm = ''
   selectedRowIndex.value = null
   zoneData.value = []
-  
+
   // 우측 입력 폼 완전 초기화 (창고 정보도 포함)
   selectedZone.value = null
   isEditMode.value = false
@@ -355,11 +361,11 @@ const resetSearch = () => {
 const selectZone = (item, index) => {
   selectedZone.value = item
   selectedRowIndex.value = index
-  
+
   // 로케이션이 있는 경우는 편집 모드, 없는 경우는 신규 모드
   if (item.zone_id && item.zone_id.trim() !== '') {
     isEditMode.value = true
-    
+
     // 폼에 선택된 데이터 설정 (편집 모드)
     formData.zone_id = item.zone_id
     formData.wrhous_id = item.wrhous_id
@@ -371,7 +377,7 @@ const selectZone = (item, index) => {
   } else {
     // 로케이션이 없는 창고 선택시 신규 모드로 창고 정보만 설정
     isEditMode.value = false
-    
+
     formData.zone_id = ''
     formData.wrhous_id = item.wrhous_id
     formData.wrhous_nm = item.wrhous_nm
@@ -387,17 +393,17 @@ const resetForm = () => {
   selectedZone.value = null
   selectedRowIndex.value = null
   isEditMode.value = false
-  
+
   // 창고 정보를 유지하면서 나머지만 초기화
   const currentWrhousId = formData.wrhous_id
   const currentWrhousNm = formData.wrhous_nm
-  
+
   formData.zone_id = ''
   formData.item_ty = ''
   formData.zone_nm = ''
   formData.st = 'M1'
   formData.rm = ''
-  
+
   // 창고 정보가 있으면 유지, 없으면 빈 값
   if (currentWrhousId && currentWrhousNm) {
     formData.wrhous_id = currentWrhousId
@@ -410,7 +416,7 @@ const resetForm = () => {
 
 // 창고 선택시 창고명 자동 입력
 const onWrhousSelect = () => {
-  const selectedWrhous = wrhousOptions.value.find(w => w.wrhous_id === formData.wrhous_id)
+  const selectedWrhous = wrhousOptions.value.find((w) => w.wrhous_id === formData.wrhous_id)
   if (selectedWrhous) {
     formData.wrhous_nm = selectedWrhous.wrhous_nm
   } else {
@@ -421,9 +427,9 @@ const onWrhousSelect = () => {
 // 품목 유형 라벨 변환 함수
 const getItemTypeLabel = (itemType) => {
   const itemTypeMap = {
-    'E1': '자재',
-    'E2': '반제품', 
-    'E3': '완제품'
+    E1: '자재',
+    E2: '반제품',
+    E3: '완제품',
   }
   return itemTypeMap[itemType] || itemType || ''
 }
@@ -442,9 +448,9 @@ const saveZone = async () => {
     }
 
     console.log('[wrhousZoneManage] 저장 데이터:', formData)
-    
+
     const response = await axios.post('/api/wrhousZoneManage', formData)
-    
+
     if (response.data.success) {
       alert(isEditMode.value ? '로케이션 정보가 수정되었습니다.' : '새 로케이션이 등록되었습니다.')
       await searchWrhousZone() // 목록 재조회
@@ -469,9 +475,9 @@ const deleteZone = async () => {
 
   try {
     console.log('[wrhousZoneManage] 삭제 ID:', selectedZone.value.zone_id)
-    
+
     const response = await axios.delete(`/api/wrhousZoneManage/${selectedZone.value.zone_id}`)
-    
+
     if (response.data.success) {
       alert('로케이션이 삭제되었습니다.')
       await searchWrhousZone() // 목록 재조회
@@ -495,7 +501,8 @@ onMounted(async () => {
    전역 스타일 - 2025 Modern Design
    ============================================ */
 :deep(*) {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
+    sans-serif;
   line-height: 1.5;
   box-sizing: border-box;
 }
@@ -811,7 +818,7 @@ onMounted(async () => {
   :deep(td) {
     font-size: 11px !important;
   }
-  
+
   :deep(.btn) {
     padding: 0.4rem 1rem;
   }

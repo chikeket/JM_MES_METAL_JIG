@@ -304,17 +304,14 @@ const onSelectRscOrdr = async (ordr) => {
 
   console.log('[RscOrdr] master data:', ordr.master)
 
-
   // 마스터 정보 설정
   currentOrdrId.value = ordr.master?.rsc_ordr_id ?? null
   Info.value.ordrName1 = ordr.master?.rsc_ordr_nm ?? Info.value.ordrName1
   Info.value.co_nm = ordr.master?.co_nm ?? Info.value.co_nm
   Info.value.remark = ordr.master?.rm ?? ordr.master?.remark ?? Info.value.remark
 
-
   console.log('[RscOrdr] mapped remark:', Info.value.remark)
   console.log('[RscOrdr] source rm:', ordr.master?.rm)
-
 
   if (ordr.master?.reg_dt) {
     const v = ordr.master.reg_dt
@@ -393,7 +390,6 @@ function startEdit(row, field) {
   editing.id = row.id
   editing.field = field
 
-  
   if (field === 'qty') {
     editDraft.value = row.qty ?? 0
   } else if (field === 'deli_dt') {
@@ -401,7 +397,6 @@ function startEdit(row, field) {
   } else if (field === 'note') {
     editDraft.value = row.note ?? ''
   }
-
 }
 function commitEdit(row, field) {
   if (!row) return
@@ -440,7 +435,6 @@ const MIN_DISPLAY_ROWS = 10
 const displayRows = computed(() => {
   const arr = (rows.value || []).slice()
   while (arr.length < MIN_DISPLAY_ROWS)
-
     arr.push({
       __empty: true,
       id: '',
@@ -483,7 +477,6 @@ const saveRscOrdr = async () => {
     if (invalidQtyRows.length) {
       alert('수량이 0입니다. 수량을 입력하세요.')
       return
-
     }
 
     // 납품 예정일 검증 추가
@@ -507,7 +500,6 @@ const saveRscOrdr = async () => {
       alert('공급 업체를 선택하세요.')
       return
     }
-
 
     // 마스터/상세 구성(디테일은 여러 건 가능)
     const master = {

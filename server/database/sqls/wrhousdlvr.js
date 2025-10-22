@@ -105,14 +105,15 @@ FROM   end_prdt_qlty_insp epqi
 JOIN proc_ctrl pc ON epqi.prcs_ctrl_id = pc.prcs_ctrl_id
 JOIN prcs_prog_precon ppp ON pc.prcs_prog_precon_id = ppp.prcs_prog_precon_id
 JOIN prod_drct_deta pdd ON ppp.prod_drct_deta_id = pdd.prod_drct_deta_id
-JOIN prdt p ON pdd.prdt_id = p.prdt_id
-JOIN prdt_opt po ON p.prdt_id = po.prdt_id
+JOIN prdt_opt po ON po.prdt_id = pdd.prdt_id AND po.prdt_opt_id = pdd.prdt_opt_id
+JOIN prdt p ON po.prdt_id = p.prdt_id
 JOIN emp e ON e.emp_id = epqi.emp_id
 LEFT JOIN WRHOUS_WRHSDLVR wd 
        ON epqi.end_prdt_qlty_insp_id = wd.END_PRDT_QLTY_INSP_ID
 LEFT JOIN WRHOUS_WRHSDLVR_MAS wm 
        ON wd.WRHSDLVR_MAS_ID = wm.WRHSDLVR_MAS_ID 
        AND wm.RCVPAY_TY = 'S1'
+WHERE epqi.PASS_QY > 0;
 WHERE epqi.PASS_QY > 0
 AND (? = '' OR p.prdt_id LIKE CONCAT('%', ?, '%'))
 AND (? = '' OR p.prdt_nm LIKE CONCAT('%', ?, '%'))
@@ -193,15 +194,15 @@ SELECT  dd.deli_deta_id AS insp_no,
 FROM    deli_deta dd 
 JOIN    deli d ON dd.deli_id = d.deli_id
 JOIN    rcvord_deta rd ON dd.rcvord_deta_id = rd.rcvord_deta_id
-JOIN    prdt p ON rd.prdt_id = p.prdt_id
-JOIN    prdt_opt po ON rd.prdt_opt_id = po.prdt_opt_id
+JOIN    prdt_opt po ON rd.prdt_opt_id = po.prdt_opt_id AND po.prdt_id = rd.prdt_id
+JOIN    prdt p ON po.prdt_id = p.prdt_id
 JOIN    emp e ON d.emp_id = e.emp_id
 LEFT JOIN WRHOUS_WRHSDLVR wd 
        ON dd.deli_deta_id = wd.DELI_DETA_ID
 LEFT JOIN WRHOUS_WRHSDLVR_MAS wm 
        ON wd.WRHSDLVR_MAS_ID = wm.WRHSDLVR_MAS_ID 
        AND wm.RCVPAY_TY = 'S2'
-WHERE   dd.deli_st IN ('J1', 'J2')
+WHERE   dd.deli_st IN ('J1', 'J2');
   AND   (dd.deli_qy) > 0
   AND   (? = '' OR rd.prdt_id LIKE CONCAT('%', ?, '%'))
   AND   (? = '' OR p.prdt_nm LIKE CONCAT('%', ?, '%'))
@@ -230,10 +231,10 @@ SELECT
   e.emp_nm as emp_name
 FROM prod_drct_deta pdd
 JOIN prod_drct pd ON pdd.prod_drct_id = pd.prod_drct_id
-JOIN prdt p ON pdd.prdt_id = p.prdt_id
-JOIN prdt_opt po ON pdd.prdt_opt_id = po.prdt_opt_id
+JOIN prdt_opt po ON pdd.prdt_opt_id = po.prdt_opt_id AND pdd.prdt_id = po.prdt_id
+JOIN prdt p ON po.prdt_id = p.prdt_id
 JOIN emp e ON pd.emp_id = e.emp_id
-WHERE pdd.drct_qy > 0
+WHERE pdd.drct_qy > 0;
   AND (? = '' OR pdd.prdt_id LIKE CONCAT('%', ?, '%'))
   AND (? = '' OR p.prdt_nm LIKE CONCAT('%', ?, '%'))
 ORDER BY pd.reg_dt DESC, p.prdt_nm
@@ -267,7 +268,7 @@ ORDER BY r.rsc_nm
 
 // 자재 불출 대상 조회 (생산지시 상세 → BOM 기반) (기존 통합 쿼리)
 const selectMaterialWithdrawal = `
-SELECT 
+SELECT DISTINCT
   pdd.prod_drct_deta_id as withdrawal_id,
   pd.prod_drct_id as production_order_id,
   pdd.prdt_id as item_code,
@@ -289,10 +290,9 @@ SELECT
   COALESCE(0, 0) as withdrawn_qty,
   CEIL(pdd.drct_qy * bd.rec_qy) as remaining_qty
 FROM prod_drct_deta pdd
-LEFT OUTER JOIN rwmatr_rtun_trget rrt ON pdd.prod_drct_deta_id = rrt.prod_drct_deta_id
 JOIN prod_drct pd ON pdd.prod_drct_id = pd.prod_drct_id
-JOIN prdt p ON pdd.prdt_id = p.prdt_id
-JOIN prdt_opt po ON pdd.prdt_opt_id = po.prdt_opt_id
+JOIN prdt_opt po ON pdd.prdt_opt_id = po.prdt_opt_id AND po.prdt_id = pdd.prdt_id
+JOIN prdt p ON po.prdt_id = p.prdt_id
 JOIN bom b ON pdd.prdt_id = b.prdt_id
 JOIN bom_deta bd ON b.bom_id = bd.bom_id
 JOIN rsc r ON bd.rsc_id = r.rsc_id
@@ -942,45 +942,45 @@ const deleteWrhousdlvrDetailsByMasId = `
     DELETE FROM WRHOUS_WRHSDLVR WHERE WRHSDLVR_MAS_ID = ?
   `;
 
-  // [NEW] 마스터 총수량 차감
-  const decreaseWrhousdlvrMasQty = `
+// [NEW] 마스터 총수량 차감
+const decreaseWrhousdlvrMasQty = `
     UPDATE WRHOUS_WRHSDLVR_MAS
        SET ALL_RCVPAY_QY = GREATEST(ALL_RCVPAY_QY - ?, 0)
      WHERE WRHSDLVR_MAS_ID = ?
   `;
 
-  // [NEW] LOT 롤백(입고)
-  const decreaseLotIstQtyByMasId = `
+// [NEW] LOT 롤백(입고)
+const decreaseLotIstQtyByMasId = `
     UPDATE LOT_STC_PRECON
        SET IST_QY = GREATEST(IST_QY - ?, 0),
            NOW_STC_QY = GREATEST(NOW_STC_QY - ?, 0)
      WHERE WRHSDLVR_MAS_ID = ?
   `;
 
-  // [NEW] LOT 롤백(출고)
-  const decreaseLotOustQtyByMasId = `
+// [NEW] LOT 롤백(출고)
+const decreaseLotOustQtyByMasId = `
     UPDATE LOT_STC_PRECON
        SET OUST_QY = GREATEST(OUST_QY - ?, 0),
            NOW_STC_QY = NOW_STC_QY + ?
      WHERE WRHSDLVR_MAS_ID = ?
   `;
 
-  // [NEW] LOT 0이면 삭제
- const deleteLotIfZeroByMasId = `
+// [NEW] LOT 0이면 삭제
+const deleteLotIfZeroByMasId = `
   DELETE FROM LOT_STC_PRECON
    WHERE WRHSDLVR_MAS_ID = ?
      AND (COALESCE(IST_QY, 0) <= 0)
      AND (COALESCE(NOW_STC_QY, 0) <= 0)
 `;
 
-  // [NEW] 마스터 0이면 삭제
-  const deleteWrhousdlvrMasIfZero = `
+// [NEW] 마스터 0이면 삭제
+const deleteWrhousdlvrMasIfZero = `
     DELETE FROM WRHOUS_WRHSDLVR_MAS
      WHERE WRHSDLVR_MAS_ID = ?
        AND (ALL_RCVPAY_QY IS NULL OR ALL_RCVPAY_QY <= 0)
   `;
 
-  const selectWrhousdlvrDeletePackByDetailIds = `
+const selectWrhousdlvrDeletePackByDetailIds = `
   SELECT
   d.WRHOUS_WRHSDLVR_ID  AS detail_id,
   d.WRHSDLVR_MAS_ID     AS mas_id,
@@ -1036,7 +1036,7 @@ INSERT INTO LOT_STC_PRECON (
   OUST_QY,
   NOW_STC_QY,
   RM
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
 module.exports = {
   selectWrhousTransactionList,
