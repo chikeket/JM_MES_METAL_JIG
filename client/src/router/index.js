@@ -62,7 +62,6 @@ const routes = [
         path: '/deli_search',
         name: 'deli_search',
         component: () => import('@/views/minsu/deliSearch.vue'),
-
       },
       {
         path: '/prcsProgPrecon',
@@ -73,7 +72,6 @@ const routes = [
         path: '/procCtrl',
         name: 'procCtrl',
         component: () => import('@/views/minsu/procCtrl.vue'),
-
       },
       // ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
       // ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■ 재민 ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
@@ -138,6 +136,11 @@ const routes = [
         path: '/product-instructions',
         name: 'instructions',
         component: () => import('@/views/Product/instructions.vue'),
+      },
+      {
+        path: '/prodDrctBoardList',
+        name: 'prodDrctBoardList',
+        component: () => import('@/views/Product/prodDrctBoardList.vue'),
       },
       {
         path: '/prodPlanBoardList',
@@ -533,6 +536,7 @@ router.beforeEach(async (to) => {
     '/company-manage',
     '/prdt-manage',
     '/rsc-manage',
+    '/prodDrctBoardList',
   ]
   if (protectedPaths.includes(to.path)) {
     if (!auth.user) {
