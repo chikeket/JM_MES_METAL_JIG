@@ -304,7 +304,7 @@ async function maybeProceed() {
         prev_inpt_qy: m.inpt_qy != null ? String(m.inpt_qy) : '',
         emp_nm: e.emp_nm || '',
       })
-      router.push({ path: '/Minsu/procCtrl', query: Object.fromEntries(params) })
+      router.push({ path: '/procCtrl', query: Object.fromEntries(params) })
     }
   } catch (err) {
     console.error('mold_use_at 확인 실패', err)
@@ -339,7 +339,7 @@ function onSelectedMold(moldRow) {
     prev_inpt_qy: m.inpt_qy != null ? String(m.inpt_qy) : '',
     emp_nm: e.emp_nm || '',
   })
-  router.push({ path: '/Minsu/procCtrl', query: Object.fromEntries(params) })
+  router.push({ path: '/procCtrl', query: Object.fromEntries(params) })
 }
 
 const fetchEqmList = async () => {
