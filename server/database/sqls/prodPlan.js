@@ -83,7 +83,7 @@ JOIN prdt c
 ON b.prdt_id = c.prdt_id
 JOIN prdt_opt d
 ON b.prdt_opt_id = d.prdt_opt_id
-on b.prdt_id = d.prdt_id
+and b.prdt_id = d.prdt_id
 WHERE a.prod_plan_id LIKE CONCAT('%', ?, '%')
 AND a.prod_plan_nm LIKE CONCAT('%', ?, '%')
 AND a.prod_expc_fr_dt >= ?

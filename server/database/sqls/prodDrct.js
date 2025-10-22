@@ -136,7 +136,7 @@ join prdt f
 on b.prdt_id = f.prdt_id
 join prdt_opt g
 on b.prdt_opt_id = g.prdt_opt_id
-on b.prdt_id = g.prdt_id
+and b.prdt_id = g.prdt_id
 where a.prod_drct_nm LIKE CONCAT('%', ?, '%')
 and a.prod_drct_id LIKE CONCAT('%', ?, '%')
 and a.prod_drct_fr_dt >= ?
