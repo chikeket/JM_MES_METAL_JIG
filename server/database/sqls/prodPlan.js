@@ -19,11 +19,12 @@ JOIN (SELECT
  ,a.rm
  ,COALESCE(SUM(b.drct_qy), 0) AS drct_qy 
 FROM prod_plan_deta a
-left JOIN prod_drct_deta b
+JOIN prod_drct_deta b
 ON a.prod_plan_deta_id = b.prod_plan_deta_id
 GROUP BY a.prod_plan_id ,a.prod_plan_deta_id ,a.prdt_id ,a.prdt_opt_id ,a.plan_qy ,a.priort ,a.rm 
-HAVING COALESCE(SUM(b.drct_qy), 0) <= a.plan_qy
+HAVING COALESCE(SUM(b.drct_qy), 0) < a.plan_qy
 ) ae
+on a.prod_plan_id = ae.prod_plan_id
 WHERE a.prod_plan_id = ae.prod_plan_id
 AND prod_plan_nm LIKE CONCAT('%', ?, '%')
 AND reg_dt >= ?

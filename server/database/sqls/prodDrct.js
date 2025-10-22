@@ -90,6 +90,7 @@ JOIN prdt b
 ON a.prdt_id = b.prdt_id
 JOIN prdt_opt c
 ON a.prdt_opt_id = c.prdt_opt_id
+and a.prdt_id = c.prdt_id
 where prod_drct_id = ?`;
 
 const prodDrctBoardListSearch =
