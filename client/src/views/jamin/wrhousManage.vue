@@ -2,8 +2,8 @@
   <CContainer fluid class="h-100 d-flex flex-column p-3">
     <!-- 상단 조회/초기화 버튼 -->
     <div class="d-flex justify-content-end mb-2 gap-2">
-      <CButton color="secondary" size="sm" @click="searchWrhous">조회</CButton>
       <CButton color="secondary" size="sm" @click="resetSearch">초기화</CButton>
+      <CButton color="secondary" size="sm" @click="searchWrhous">조회</CButton>
     </div>
 
     <!-- 검색 필터 영역 -->
@@ -47,25 +47,29 @@
           <CButton color="secondary" size="sm">저장</CButton>
           <CButton color="danger" size="sm">삭제</CButton>
         </div>
-        
+
         <!-- 그리드 테이블 -->
         <div class="grid-box flex-grow-1 overflow-hidden d-flex flex-column">
           <div class="table-wrapper">
             <CTable bordered hover class="data-table">
               <CTableHead>
                 <CTableRow>
-                  <CTableHeaderCell scope="col" class="text-center" style="width: 60px">No</CTableHeaderCell>
+                  <CTableHeaderCell scope="col" class="text-center" style="width: 60px"
+                    >No</CTableHeaderCell
+                  >
                   <CTableHeaderCell scope="col" class="text-center">창고 ID</CTableHeaderCell>
                   <CTableHeaderCell scope="col" class="text-center">창고명</CTableHeaderCell>
                   <CTableHeaderCell scope="col" class="text-center">품목 유형</CTableHeaderCell>
-                  <CTableHeaderCell scope="col" class="text-center" style="width: 100px">상태</CTableHeaderCell>
+                  <CTableHeaderCell scope="col" class="text-center" style="width: 100px"
+                    >상태</CTableHeaderCell
+                  >
                   <CTableHeaderCell scope="col" class="text-center">비고</CTableHeaderCell>
                 </CTableRow>
               </CTableHead>
               <CTableBody>
                 <!-- 데이터 행 -->
-                <CTableRow 
-                  v-for="(item, index) in displayedData" 
+                <CTableRow
+                  v-for="(item, index) in displayedData"
                   :key="item.wrhous_id"
                   @click="selectWrhous(item, index)"
                   :class="{ 'selected-row': selectedRowIndex === index }"
@@ -97,7 +101,9 @@
         <div class="d-flex justify-content-end gap-2 mb-2">
           <CButton color="secondary" size="sm" @click="resetForm">신규</CButton>
           <CButton color="secondary" size="sm" @click="saveWrhous">저장</CButton>
-          <CButton color="danger" size="sm" @click="deleteWrhous" :disabled="!selectedWrhous">삭제</CButton>
+          <CButton color="danger" size="sm" @click="deleteWrhous" :disabled="!selectedWrhous"
+            >삭제</CButton
+          >
         </div>
 
         <!-- 입력 폼 -->
@@ -108,28 +114,24 @@
                 <CFormLabel class="form-label pt-1">창고 ID</CFormLabel>
               </CCol>
               <CCol :md="8" class="ps-3">
-                <CFormInput 
-                  v-model="formData.wrhous_id" 
+                <CFormInput
+                  v-model="formData.wrhous_id"
                   size="sm"
                   placeholder="자동 생성됩니다"
                   readonly
                 />
               </CCol>
             </CRow>
-            
+
             <CRow class="mb-2">
               <CCol :md="3" class="text-end pe-2">
                 <CFormLabel class="form-label pt-1">창고명</CFormLabel>
               </CCol>
               <CCol :md="8" class="ps-3">
-                <CFormInput 
-                  v-model="formData.wrhous_nm" 
-                  size="sm"
-                  placeholder="자재창고"
-                />
+                <CFormInput v-model="formData.wrhous_nm" size="sm" placeholder="자재창고" />
               </CCol>
             </CRow>
-            
+
             <CRow class="mb-2">
               <CCol :md="3" class="text-end pe-2">
                 <CFormLabel class="form-label pt-1">품목 유형</CFormLabel>
@@ -143,25 +145,25 @@
                 </CFormSelect>
               </CCol>
             </CRow>
-            
+
             <CRow class="mb-2">
               <CCol :md="3" class="text-end pe-2">
                 <CFormLabel class="form-label pt-1">상태</CFormLabel>
               </CCol>
               <CCol :md="8" class="ps-3">
                 <div class="radio-group">
-                  <CFormCheck 
+                  <CFormCheck
                     class="radio-item"
-                    type="radio" 
+                    type="radio"
                     id="status-active"
                     name="status"
                     value="M1"
                     v-model="formData.st"
                     label="활성상태"
                   />
-                  <CFormCheck 
+                  <CFormCheck
                     class="radio-item"
-                    type="radio" 
+                    type="radio"
                     id="status-inactive"
                     name="status"
                     value="M2"
@@ -171,15 +173,15 @@
                 </div>
               </CCol>
             </CRow>
-            
+
             <CRow class="mb-2">
               <CCol :md="3" class="text-end pe-2">
                 <CFormLabel class="form-label pt-1">비고</CFormLabel>
               </CCol>
               <CCol :md="8" class="ps-3">
-                <CFormTextarea 
-                  v-model="formData.rm" 
-                  rows="6" 
+                <CFormTextarea
+                  v-model="formData.rm"
+                  rows="6"
                   placeholder="비고사항을 입력하세요"
                   size="sm"
                 />
@@ -201,7 +203,7 @@ const searchForm = reactive({
   wrhous_id: '',
   wrhous_nm: '',
   item_ty: '',
-  st: ''
+  st: '',
 })
 
 // 창고 데이터 목록
@@ -217,7 +219,7 @@ const formData = reactive({
   wrhous_nm: '',
   item_ty: '',
   st: 'M1',
-  rm: ''
+  rm: '',
 })
 
 // 편집 모드 여부
@@ -239,7 +241,7 @@ const searchWrhous = async () => {
   try {
     console.log('[wrhousManage] 조회 조건:', searchForm)
     const response = await axios.get('/api/wrhousManage', {
-      params: searchForm
+      params: searchForm,
     })
     wrhousData.value = response.data
     selectedRowIndex.value = null
@@ -258,7 +260,7 @@ const resetSearch = () => {
   searchForm.st = ''
   selectedRowIndex.value = null
   wrhousData.value = []
-  
+
   // 우측 입력 폼도 함께 초기화
   resetForm()
 }
@@ -268,7 +270,7 @@ const selectWrhous = (item, index) => {
   selectedWrhous.value = item
   selectedRowIndex.value = index
   isEditMode.value = true
-  
+
   // 폼에 선택된 데이터 설정
   formData.wrhous_id = item.wrhous_id
   formData.wrhous_nm = item.wrhous_nm
@@ -282,7 +284,7 @@ const resetForm = () => {
   selectedWrhous.value = null
   selectedRowIndex.value = null
   isEditMode.value = false
-  
+
   formData.wrhous_id = ''
   formData.wrhous_nm = ''
   formData.item_ty = ''
@@ -300,9 +302,9 @@ const saveWrhous = async () => {
     }
 
     console.log('[wrhousManage] 저장 데이터:', formData)
-    
+
     const response = await axios.post('/api/wrhousManage', formData)
-    
+
     if (response.data.success) {
       alert(isEditMode.value ? '창고 정보가 수정되었습니다.' : '새 창고가 등록되었습니다.')
       await searchWrhous() // 목록 재조회
@@ -327,9 +329,9 @@ const deleteWrhous = async () => {
 
   try {
     console.log('[wrhousManage] 삭제 ID:', selectedWrhous.value.wrhous_id)
-    
+
     const response = await axios.delete(`/api/wrhousManage/${selectedWrhous.value.wrhous_id}`)
-    
+
     if (response.data.success) {
       alert('창고가 삭제되었습니다.')
       await searchWrhous() // 목록 재조회
@@ -349,9 +351,9 @@ onMounted(() => {
 // 품목 유형 라벨 변환 함수
 const getItemTypeLabel = (itemType) => {
   const itemTypeMap = {
-    'E1': '자재',
-    'E2': '반제품', 
-    'E3': '완제품'
+    E1: '자재',
+    E2: '반제품',
+    E3: '완제품',
   }
   return itemTypeMap[itemType] || itemType || ''
 }
@@ -362,7 +364,8 @@ const getItemTypeLabel = (itemType) => {
    전역 스타일 - 2025 Modern Design
    ============================================ */
 :deep(*) {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
+    sans-serif;
   line-height: 1.5;
   box-sizing: border-box;
 }
@@ -672,7 +675,7 @@ const getItemTypeLabel = (itemType) => {
   :deep(td) {
     font-size: 11px !important;
   }
-  
+
   :deep(.btn) {
     padding: 0.4rem 1rem;
   }

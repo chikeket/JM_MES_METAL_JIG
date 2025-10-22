@@ -2,8 +2,8 @@
   <div class="container-fluid h-100 d-flex flex-column p-3">
     <!-- 상단 툴바: 초기화 / 조회 (CompanyManage와 동일한 배치/스타일) -->
     <div class="d-flex justify-content-end mb-2 gap-2">
-      <button class="btn btn-secondary btn-sm" @click="onSearch">조회</button>
       <button class="btn btn-secondary btn-sm" @click="onReset">초기화</button>
+      <button class="btn btn-secondary btn-sm" @click="onSearch">조회</button>
     </div>
 
     <!-- 검색 필터 -->
@@ -210,7 +210,6 @@ function onReset() {
   rows.value = []
 }
 
-
 // 검색 파라미터 변환 및 LOT 기준 창고 입출고 내역 API 연동
 async function onSearch() {
   try {
@@ -223,10 +222,11 @@ async function onSearch() {
       keyword: filters.rsc_nm,
       page: 1,
       pageSize: 100,
-      orderBy: 'm.RCVPAY_DT DESC, d.WRHOUS_WRHSDLVR_ID DESC'
+      orderBy: 'm.RCVPAY_DT DESC, d.WRHOUS_WRHSDLVR_ID DESC',
     }
     // 조회 조건이 모두 비어있으면 전체 조회
-    const isAllEmpty = !params.rcvpay_ty && !params.lot_no && !params.from_dt && !params.to_dt && !params.keyword
+    const isAllEmpty =
+      !params.rcvpay_ty && !params.lot_no && !params.from_dt && !params.to_dt && !params.keyword
     if (isAllEmpty) {
       delete params.rcvpay_ty
       delete params.lot_no
@@ -238,8 +238,9 @@ async function onSearch() {
     const { data } = await axios.get('/api/invntry/wh-transactions', { params })
     // 응답 데이터 매핑(컬럼명 맞추기, 품목명은 rsc/prdt/prdt_opt 모두 참고)
     rows.value = Array.isArray(data?.list)
-      ? data.list.map(item => ({
-          io_type: item.RCVPAY_TY === 'S1' ? '입고' : item.RCVPAY_TY === 'S2' ? '출고' : item.RCVPAY_TY,
+      ? data.list.map((item) => ({
+          io_type:
+            item.RCVPAY_TY === 'S1' ? '입고' : item.RCVPAY_TY === 'S2' ? '출고' : item.RCVPAY_TY,
           io_dt: item.RCVPAY_DT,
           lot_no: item.LOT_NO,
           rsc_id: item.RSC_ID,
@@ -249,7 +250,7 @@ async function onSearch() {
           qty: item.DETAIL_QY,
           unit: item.UNIT || '',
           emp_nm: item.EMP_NM || '', // 담당자 정보가 있으면 출력
-          rm: item.RM || ''
+          rm: item.RM || '',
         }))
       : []
   } catch (err) {
@@ -257,7 +258,6 @@ async function onSearch() {
     alert('검색 중 오류가 발생했습니다.')
   }
 }
-
 </script>
 
 <style scoped>
@@ -265,7 +265,8 @@ async function onSearch() {
    기본 설정 및 컨테이너
    ============================================ */
 :deep(*) {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
+    sans-serif;
   line-height: 1.6;
   box-sizing: border-box;
 }
@@ -448,19 +449,45 @@ input[type='date'].form-control {
 }
 
 /* 컬럼별 너비 설정 */
-:deep(.data-table col:nth-child(1)) { width: 70px; }   /* No */
-:deep(.data-table col:nth-child(2)) { width: 100px; }  /* 수주ID */
-:deep(.data-table col:nth-child(3)) { width: 100px; }  /* 수주담당자 */
-:deep(.data-table col:nth-child(4)) { width: 140px; }  /* 납품업체명 */
-:deep(.data-table col:nth-child(5)) { width: 150px; }  /* 제품명 */
-:deep(.data-table col:nth-child(6)) { width: 130px; }  /* 제품옵션명 */
-:deep(.data-table col:nth-child(7)) { width: 100px; }  /* 규격 */
-:deep(.data-table col:nth-child(8)) { width: 60px; }   /* 단위 */
-:deep(.data-table col:nth-child(9)) { width: 90px; }   /* 요청수량 */
-:deep(.data-table col:nth-child(10)) { width: 110px; } /* 수주등록일자 */
-:deep(.data-table col:nth-child(11)) { width: 110px; } /* 납품예정일자 */
-:deep(.data-table col:nth-child(12)) { width: 90px; }  /* 출고상태 */
-:deep(.data-table col:nth-child(13)) { width: auto; }  /* 비고 */
+:deep(.data-table col:nth-child(1)) {
+  width: 70px;
+} /* No */
+:deep(.data-table col:nth-child(2)) {
+  width: 100px;
+} /* 수주ID */
+:deep(.data-table col:nth-child(3)) {
+  width: 100px;
+} /* 수주담당자 */
+:deep(.data-table col:nth-child(4)) {
+  width: 140px;
+} /* 납품업체명 */
+:deep(.data-table col:nth-child(5)) {
+  width: 150px;
+} /* 제품명 */
+:deep(.data-table col:nth-child(6)) {
+  width: 130px;
+} /* 제품옵션명 */
+:deep(.data-table col:nth-child(7)) {
+  width: 100px;
+} /* 규격 */
+:deep(.data-table col:nth-child(8)) {
+  width: 60px;
+} /* 단위 */
+:deep(.data-table col:nth-child(9)) {
+  width: 90px;
+} /* 요청수량 */
+:deep(.data-table col:nth-child(10)) {
+  width: 110px;
+} /* 수주등록일자 */
+:deep(.data-table col:nth-child(11)) {
+  width: 110px;
+} /* 납품예정일자 */
+:deep(.data-table col:nth-child(12)) {
+  width: 90px;
+} /* 출고상태 */
+:deep(.data-table col:nth-child(13)) {
+  width: auto;
+} /* 비고 */
 
 :deep(.data-table thead) {
   position: sticky;
@@ -561,27 +588,27 @@ body.resizing {
   :deep(.form-label) {
     font-size: 12px !important;
   }
-  
+
   :deep(.form-control) {
     font-size: 12px !important;
     height: 38px !important;
     padding: 0.55rem 0.75rem !important;
   }
-  
+
   :deep(.btn) {
     font-size: 12px !important;
     padding: 0.5rem 1.1rem !important;
   }
-  
+
   :deep(.data-table th),
   :deep(.data-table td) {
     font-size: 12px !important;
   }
-  
+
   :deep(.data-table td) {
     height: 42px !important;
   }
-  
+
   .empty-row td {
     height: 42px !important;
   }
