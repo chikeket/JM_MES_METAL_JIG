@@ -55,6 +55,7 @@ JOIN prdt c
 ON a.prdt_id = c.prdt_id
 JOIN prdt_opt d
 ON a.prdt_opt_id = d.prdt_opt_id
+and a.prdt_id = d.prdt_id
 WHERE a.prod_plan_id = ?
 GROUP BY a.prod_plan_id ,a.prod_plan_deta_id ,a.prdt_id ,a.prdt_opt_id ,a.plan_qy ,a.priort ,a.rm ,c.prdt_nm ,c.spec ,c.unit ,d.opt_nm
 HAVING a.plan_qy > COALESCE(SUM(b.drct_qy),0)`;
