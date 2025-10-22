@@ -10,14 +10,18 @@ const updateWrhousdlvrDetailQty = `
 
 // lot_stc_precon 입고 IST_QY update
 const updateLotStcPreconIstQty = `
-  UPDATE LOT_STC_PRECON 
-  SET IST_QY = ? , NOW_STC_QY = IST_QY
-  WHERE WRHSDLVR_MAS_ID = ?
+UPDATE LOT_STC_PRECON
+SET OUST_QY   = OUST_QY + ?,
+    NOW_STC_QY = GREATEST(NOW_STC_QY - ?, 0)
+WHERE WRHSDLVR_MAS_ID = ?
 `;
 
 // lot_stc_precon 출고 OUST_QY update
 const updateLotStcPreconOustQty = `
-  UPDATE LOT_STC_PRECON SET OUST_QY = ? WHERE WRHSDLVR_MAS_ID = ?
+UPDATE LOT_STC_PRECON
+SET OUST_QY = COALESCE(OUST_QY,0) + ?,
+    NOW_STC_QY = GREATEST(COALESCE(NOW_STC_QY,0) - ?, 0)
+WHERE WRHSDLVR_MAS_ID = ?
 `;
 
 // 자재 불출 테이블 수량
@@ -88,10 +92,10 @@ SELECT  epqi.end_prdt_qlty_insp_id AS insp_no,
         pdd.prdt_opt_id AS opt_code,
         po.opt_nm AS opt_name,
         epqi.insp_qy AS insp_qty,
-        epqi.pass_qy  AS pass_qty,
+        epqi.pass_qy AS pass_qty,
         epqi.infer_qy AS fail_qty,
         COALESCE(SUM(wd.RCVPAY_QY), 0) AS received_qty,
-  (epqi.pass_qy - COALESCE(SUM(wd.RCVPAY_QY), 0)) AS available_qty,
+        (epqi.pass_qy - COALESCE(SUM(wd.RCVPAY_QY), 0)) AS available_qty,
         p.spec AS item_spec,
         p.unit AS item_unit,
         CASE 
@@ -102,29 +106,24 @@ SELECT  epqi.end_prdt_qlty_insp_id AS insp_no,
         e.emp_nm AS insp_emp_name,
         epqi.RM AS rm
 FROM   end_prdt_qlty_insp epqi 
-JOIN proc_ctrl pc ON epqi.prcs_ctrl_id = pc.prcs_ctrl_id
-JOIN prcs_prog_precon ppp ON pc.prcs_prog_precon_id = ppp.prcs_prog_precon_id
-JOIN prod_drct_deta pdd ON ppp.prod_drct_deta_id = pdd.prod_drct_deta_id
-JOIN prdt_opt po ON po.prdt_id = pdd.prdt_id AND po.prdt_opt_id = pdd.prdt_opt_id
-JOIN prdt p ON po.prdt_id = p.prdt_id
-JOIN emp e ON e.emp_id = epqi.emp_id
-LEFT JOIN WRHOUS_WRHSDLVR wd 
-       ON epqi.end_prdt_qlty_insp_id = wd.END_PRDT_QLTY_INSP_ID
+JOIN   proc_ctrl pc           ON epqi.prcs_ctrl_id = pc.prcs_ctrl_id
+JOIN   prcs_prog_precon ppp   ON pc.prcs_prog_precon_id = ppp.prcs_prog_precon_id
+JOIN   prod_drct_deta pdd     ON ppp.prod_drct_deta_id = pdd.prod_drct_deta_id
+JOIN   prdt_opt po            ON po.prdt_id = pdd.prdt_id AND po.prdt_opt_id = pdd.prdt_opt_id
+JOIN   prdt p                 ON po.prdt_id = p.prdt_id
+JOIN   emp e                  ON e.emp_id = epqi.emp_id
+LEFT JOIN WRHOUS_WRHSDLVR wd  ON epqi.end_prdt_qlty_insp_id = wd.END_PRDT_QLTY_INSP_ID
 LEFT JOIN WRHOUS_WRHSDLVR_MAS wm 
-       ON wd.WRHSDLVR_MAS_ID = wm.WRHSDLVR_MAS_ID 
-       AND wm.RCVPAY_TY = 'S1'
-WHERE epqi.PASS_QY > 0;
-WHERE epqi.PASS_QY > 0
-AND (? = '' OR p.prdt_id LIKE CONCAT('%', ?, '%'))
-AND (? = '' OR p.prdt_nm LIKE CONCAT('%', ?, '%'))
-GROUP BY epqi.end_prdt_qlty_insp_id, pdd.prdt_id, p.prdt_nm, po.prdt_opt_id, po.opt_nm,
+       ON wd.WRHSDLVR_MAS_ID = wm.WRHSDLVR_MAS_ID AND wm.RCVPAY_TY = 'S1'
+WHERE  epqi.PASS_QY > 0
+  AND  (? = '' OR p.prdt_id LIKE CONCAT('%', ?, '%'))
+  AND  (? = '' OR p.prdt_nm LIKE CONCAT('%', ?, '%'))
+GROUP BY epqi.end_prdt_qlty_insp_id, pdd.prdt_id, p.prdt_nm, pdd.prdt_opt_id, po.opt_nm,
          epqi.insp_qy, epqi.pass_qy, epqi.infer_qy, p.spec, p.unit,
          epqi.INSP_DT, e.emp_nm, epqi.RM
-HAVING available_qty > 0
-ORDER BY epqi.INSP_DT ASC,
-         SUBSTR(epqi.end_prdt_qlty_insp_id,-3) DESC
-LIMIT 200
-`;
+HAVING  available_qty > 0
+ORDER BY epqi.INSP_DT ASC, SUBSTR(epqi.end_prdt_qlty_insp_id, -3) DESC
+LIMIT 200`;
 
 // 반제품 품질검사서 목록 조회 (사용) - 완전 입고된 것 제외
 const selectSemiInspectionList = `
@@ -173,73 +172,55 @@ LIMIT 200
 
 // 완제품 납품 대상 조회 (납품 상세) (사용) - 완전 출고된 것 제외
 const selectDeliveryProducts = `
-SELECT  dd.deli_deta_id AS insp_no,
-        rd.prdt_id AS item_code,
-        p.prdt_nm AS item_name,
-        rd.prdt_opt_id AS opt_code,
-        po.opt_nm AS opt_name,
-        dd.deli_qy  AS pass_qty,
-        COALESCE(SUM(wd.RCVPAY_QY), 0) AS delivered_qty,
-        (dd.deli_qy - COALESCE(SUM(wd.RCVPAY_QY), 0)) AS remaining_qty,
-        p.spec AS item_spec,
-        p.unit AS item_unit,
-        CASE 
-          WHEN dd.deli_st = 'J1' THEN '등록'
-          WHEN dd.deli_st = 'J2' THEN '진행 중'
-          ELSE '진행 완료'
-        END AS insp_status,
-        DATE_FORMAT(d.deli_dt, '%Y-%m-%d') AS insp_date,
-        e.emp_nm AS insp_emp_name,
-        dd.RM AS rm
-FROM    deli_deta dd 
-JOIN    deli d ON dd.deli_id = d.deli_id
-JOIN    rcvord_deta rd ON dd.rcvord_deta_id = rd.rcvord_deta_id
-JOIN    prdt_opt po ON rd.prdt_opt_id = po.prdt_opt_id AND po.prdt_id = rd.prdt_id
-JOIN    prdt p ON po.prdt_id = p.prdt_id
-JOIN    emp e ON d.emp_id = e.emp_id
-LEFT JOIN WRHOUS_WRHSDLVR wd 
-       ON dd.deli_deta_id = wd.DELI_DETA_ID
-LEFT JOIN WRHOUS_WRHSDLVR_MAS wm 
-       ON wd.WRHSDLVR_MAS_ID = wm.WRHSDLVR_MAS_ID 
-       AND wm.RCVPAY_TY = 'S2'
-WHERE   dd.deli_st IN ('J1', 'J2');
-  AND   (dd.deli_qy) > 0
-  AND   (? = '' OR rd.prdt_id LIKE CONCAT('%', ?, '%'))
-  AND   (? = '' OR p.prdt_nm LIKE CONCAT('%', ?, '%'))
-GROUP BY dd.deli_deta_id, rd.prdt_id, p.prdt_nm, rd.prdt_opt_id, po.opt_nm,
-         dd.deli_qy, p.spec, p.unit, dd.deli_st, d.deli_dt, e.emp_nm, dd.RM
-HAVING remaining_qty > 0
-ORDER BY d.deli_dt DESC, SUBSTR(dd.deli_deta_id, -3) DESC
-LIMIT 200
-`;
+SELECT
+  dd.deli_deta_id                          AS insp_no,
+  rd.prdt_id                               AS item_code,
+  p.prdt_nm                                AS item_name,
+  rd.prdt_opt_id                           AS opt_code,
+  po.opt_nm                                AS opt_name,
+  dd.DELI_QY                               AS pass_qty,
+  COALESCE(SUM(wd.RCVPAY_QY), 0)           AS delivered_qty,
+  (dd.DELI_QY - COALESCE(SUM(wd.RCVPAY_QY), 0)) AS available_qty,
+  p.spec                                   AS item_spec,
+  p.unit                                   AS item_unit,
+  dd.DELI_ST                                AS deli_st
+FROM DELI_DETA dd
+JOIN RCVORD_DETA rd ON dd.RCVORD_DETA_ID = rd.RCVORD_DETA_ID
+JOIN PRDT p        ON rd.PRDT_ID = p.PRDT_ID
+LEFT JOIN PRDT_OPT po ON po.PRDT_ID = p.PRDT_ID AND po.PRDT_OPT_ID <=> rd.PRDT_OPT_ID
+LEFT JOIN WRHOUS_WRHSDLVR wd ON dd.DELI_DETA_ID = wd.DELI_DETA_ID
+LEFT JOIN WRHOUS_WRHSDLVR_MAS wm ON wd.WRHSDLVR_MAS_ID = wm.WRHSDLVR_MAS_ID AND wm.RCVPAY_TY = 'S2'
+WHERE 1=1
+  AND (? = '' OR p.PRDT_ID LIKE CONCAT('%', ?, '%'))
+  AND (? = '' OR p.PRDT_NM LIKE CONCAT('%', ?, '%'))
+GROUP BY dd.DELI_DETA_ID, rd.PRDT_ID, p.PRDT_NM, rd.PRDT_OPT_ID, po.OPT_NM, dd.DELI_QY, p.SPEC, p.UNIT, dd.DELI_ST
+HAVING available_qty > 0
+ORDER BY dd.DELI_DETA_ID DESC
+LIMIT 200`;
 
 // 생산지시 상세 목록 조회 (상단 그리드용 - 완제품 정보)
 const selectProductionOrderDetails = `
-SELECT 
+SELECT
   pdd.prod_drct_deta_id as withdrawal_id,
-  pd.prod_drct_id as production_order_id,
-  '완제품' as item_type,
-  pdd.prdt_id as item_code,
-  p.prdt_nm as item_name,
-  pdd.prdt_opt_id as opt_code,
-  po.opt_nm as opt_name,
-  p.spec as item_spec,
-  p.unit as item_unit,
-  pdd.drct_qy as required_qty,
-  DATE_FORMAT(pd.reg_dt, '%Y-%m-%d') as order_date,
-  pd.emp_id as emp_id,
-  e.emp_nm as emp_name
+  pd.prod_drct_id       as production_order_id,
+  '완제품'              as item_type,
+  pdd.prdt_id           as item_code,
+  p.prdt_nm             as item_name,
+  pdd.prdt_opt_id       as opt_code,
+  po.opt_nm             as opt_name,
+  p.spec                as item_spec,
+  p.unit                as item_unit,
+  pdd.drct_qy           as order_qty,
+  DATE_FORMAT(pd.reg_dt, '%Y-%m-%d') as drct_date
 FROM prod_drct_deta pdd
-JOIN prod_drct pd ON pdd.prod_drct_id = pd.prod_drct_id
-JOIN prdt_opt po ON pdd.prdt_opt_id = po.prdt_opt_id AND pdd.prdt_id = po.prdt_id
-JOIN prdt p ON po.prdt_id = p.prdt_id
-JOIN emp e ON pd.emp_id = e.emp_id
-WHERE pdd.drct_qy > 0;
+JOIN prod_drct pd ON pd.prod_drct_id = pdd.prod_drct_id
+JOIN prdt p       ON p.prdt_id       = pdd.prdt_id
+LEFT JOIN prdt_opt po ON po.prdt_id = pdd.prdt_id AND po.prdt_opt_id = pdd.prdt_opt_id
+WHERE 1=1
   AND (? = '' OR pdd.prdt_id LIKE CONCAT('%', ?, '%'))
-  AND (? = '' OR p.prdt_nm LIKE CONCAT('%', ?, '%'))
-ORDER BY pd.reg_dt DESC, p.prdt_nm
-LIMIT 200
-`;
+  AND (? = '' OR p.prdt_nm  LIKE CONCAT('%', ?, '%'))
+ORDER BY pd.reg_dt DESC
+LIMIT 200`;
 
 // 특정 생산지시의 BOM 자재 목록 조회 (하단 그리드용)
 const selectMaterialByProductionOrder = `
@@ -722,27 +703,23 @@ ORDER BY first_rcvpay_dt ASC, wm.LOT_NO ASC
 
 // 출고 가능한 LOT 목록 조회 (선입선출)
 const selectAvailableLots = `
-SELECT 
-  wm.LOT_NO as lot_no,
-  wm.RSC_ID as rsc_id,
-  wm.PRDT_ID as prdt_id,
-  wm.PRDT_OPT_ID as prdt_opt_id,
-  SUM(CASE WHEN wm.RCVPAY_TY = 'S1' THEN wm.ALL_RCVPAY_QY ELSE -wm.ALL_RCVPAY_QY END) as available_qty,
-  MIN(wm.RCVPAY_DT) as first_rcvpay_dt,
-  wm.WRHOUS_ID as warehouse_id,
-  wm.ZONE_ID as zone_id
-FROM WRHOUS_WRHSDLVR_MAS wm
-WHERE (
-    (? = 'E1' AND wm.RSC_ID IS NOT NULL AND wm.PRDT_ID IS NULL)
-    OR (? = 'E2' AND wm.PRDT_ID IS NOT NULL AND wm.PRDT_OPT_ID IS NULL)
-    OR (? = 'E3' AND wm.PRDT_ID IS NOT NULL AND wm.PRDT_OPT_ID IS NOT NULL)
-  )
-  AND (? = '' OR wm.RSC_ID = ?)
-  AND (? = '' OR wm.PRDT_ID = ?)
-  AND (? = '' OR wm.PRDT_OPT_ID = ?)
-GROUP BY wm.LOT_NO, wm.RSC_ID, wm.PRDT_ID, wm.PRDT_OPT_ID, wm.WRHOUS_ID, wm.ZONE_ID
-HAVING available_qty > 0
-ORDER BY first_rcvpay_dt ASC, wm.LOT_NO ASC
+SELECT
+  lsp.WRHSDLVR_MAS_ID          AS wrhsdlvr_mas_id,
+  wm.LOT_NO                    AS lot_no,
+  COALESCE(lsp.NOW_STC_QY,0)   AS available_qty,
+  wm.WRHOUS_ID                 AS wrhous_id,
+  wm.ZONE_ID                   AS zone_id
+FROM LOT_STC_PRECON lsp
+JOIN WRHOUS_WRHSDLVR_MAS wm
+  ON wm.WRHSDLVR_MAS_ID = lsp.WRHSDLVR_MAS_ID
+WHERE wm.RCVPAY_TY = 'S1'  -- 입고에서 생성된 LOT만
+  AND (
+        (? = 'E1' AND wm.RSC_ID = ?)
+     OR (? = 'E2' AND wm.PRDT_ID = ? AND wm.PRDT_OPT_ID IS NULL)
+     OR (? = 'E3' AND wm.PRDT_ID = ? AND (wm.PRDT_OPT_ID <=> ?))
+      )
+  AND COALESCE(lsp.NOW_STC_QY,0) > 0
+ORDER BY wm.REG_DT ASC, wm.LOT_NO ASC
 `;
 
 // 납품서별 출고 완료 수량 확인
@@ -892,27 +869,29 @@ SELECT
   b.PRDT_ID,
   b.PRDT_OPT_ID,
   COALESCE(
-    FLOOR(MIN( COALESCE(stk.STOCK_QY,0) / NULLIF(req.REC_QY_PER_UNIT, 0) )),
-    0
+    FLOOR(
+      MIN(
+        COALESCE(stk.STOCK_QY,0) / NULLIF(req.REC_QY_PER_UNIT, 0)
+      )
+    ), 0
   ) AS AVAILABLE_QY
 FROM BOM b
 JOIN (
+  -- 제품 1EA 생산에 필요한 자재 소요량
   SELECT bd.BOM_ID, b.PRDT_ID, b.PRDT_OPT_ID, bd.RSC_ID, SUM(bd.REC_QY) AS REC_QY_PER_UNIT
   FROM BOM b
   JOIN BOM_DETA bd ON bd.BOM_ID = b.BOM_ID
-  WHERE b.PRDT_ID    = ?
-    AND b.PRDT_OPT_ID = ?
+  WHERE b.PRDT_ID = ? AND b.PRDT_OPT_ID <=> ?
   GROUP BY bd.BOM_ID, b.PRDT_ID, b.PRDT_OPT_ID, bd.RSC_ID
-) req
-  ON req.BOM_ID = b.BOM_ID
+) req ON req.BOM_ID = b.BOM_ID
 LEFT JOIN (
-  SELECT l.RSC_ID, SUM(l.NOW_STC_QY) AS STOCK_QY
-  FROM LOT_STC_PRECON l
-  GROUP BY l.RSC_ID
-) stk
-  ON stk.RSC_ID = req.RSC_ID
-WHERE b.PRDT_ID     = ?
-  AND b.PRDT_OPT_ID = ?            
+  -- 자재별 현재 재고(LOT 합계) = LOT_STC_PRECON ←(MAS 조인)→ RSC_ID
+  SELECT wm.RSC_ID, SUM(lsp.NOW_STC_QY) AS STOCK_QY
+  FROM LOT_STC_PRECON lsp
+  JOIN WRHOUS_WRHSDLVR_MAS wm ON wm.WRHSDLVR_MAS_ID = lsp.WRHSDLVR_MAS_ID
+  GROUP BY wm.RSC_ID
+) stk ON stk.RSC_ID = req.RSC_ID
+WHERE b.PRDT_ID = ? AND b.PRDT_OPT_ID <=> ?
 GROUP BY b.PRDT_ID, b.PRDT_OPT_ID
 `;
 
@@ -1036,7 +1015,13 @@ INSERT INTO LOT_STC_PRECON (
   OUST_QY,
   NOW_STC_QY,
   RM
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+VALUES (?, ?, ?, ?, ?, ?)`;
+
+const selectMasByLotNo = `
+SELECT WRHSDLVR_MAS_ID
+    FROM WRHOUS_WRHSDLVR_MAS
+   WHERE LOT_NO = ?
+`;
 
 module.exports = {
   selectWrhousTransactionList,
@@ -1121,4 +1106,7 @@ module.exports = {
   deleteLotIfZeroByS2MasId,
   createLotId,
   insertLotStcPrecon,
+
+  // 수정 중
+  selectMasByLotNo,
 };
