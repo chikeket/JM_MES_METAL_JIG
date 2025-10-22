@@ -277,7 +277,7 @@ async function startWork() {
   } catch (e) {
     console.error('prestart-guard 실패', e)
     alert('정보 중복 오류')
-    router.push({ path: '/Minsu/prcsProgPrecon' })
+    router.push({ path: '/prcsProgPrecon' })
     return
   }
   // 시작 시각 설정 및 타이머 시작
@@ -329,7 +329,7 @@ async function startWork() {
 function stopTimer() {
   // 아직 작업 시작 전인 경우: 공정 진행 화면으로 이동 (초기화 상태)
   if (!started.value) {
-    router.push({ path: '/Minsu/prcsProgPrecon' })
+    router.push({ path: '/prcsProgPrecon' })
     return
   }
   // 1차 클릭: 종료 모드로 전환 (타이머 정지 및 입력 가능)
@@ -349,19 +349,19 @@ function stopTimer() {
   // 필수값 확인: 작업자/설비가 없으면 종료 불가
   if (!form.emp_id) {
     alert('작업자를 선택한 후 진행해 주세요.')
-    router.push({ path: '/Minsu/prcsProgPrecon' })
+    router.push({ path: '/prcsProgPrecon' })
     return
   }
   if (!form.eqm_id) {
     alert('설비를 선택한 후 진행해 주세요.')
-    router.push({ path: '/Minsu/prcsProgPrecon' })
+    router.push({ path: '/prcsProgPrecon' })
     return
   }
   // 공정 순서 값 확인
   const prcsOrdNum = Number(form.prcs_ord)
   if (!Number.isFinite(prcsOrdNum)) {
     alert('공정 순서(prcs_ord) 값이 올바르지 않습니다. 처음 화면으로 돌아갑니다.')
-    router.push({ path: '/Minsu/prcsProgPrecon' })
+    router.push({ path: '/prcsProgPrecon' })
     return
   }
   const payload = {
@@ -409,7 +409,7 @@ function stopTimer() {
       })
     })
     .then(() => {
-      router.push({ path: '/Minsu/prcsProgPrecon' })
+      router.push({ path: '/prcsProgPrecon' })
     })
     .catch((err) => {
       console.error('작업 종료 처리 실패', err)
@@ -498,7 +498,7 @@ function onSave() {
     .then(() => {
       // 저장 성공 안내 후 공정 진행 화면(초기화 상태)으로 이동
       alert('저장이 완료 되었습니다.')
-      router.push({ path: '/Minsu/prcsProgPrecon' })
+      router.push({ path: '/prcsProgPrecon' })
     })
     .catch((e) => {
       console.error('작업 저장 실패', e)
