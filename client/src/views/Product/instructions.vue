@@ -163,6 +163,7 @@ const selectedPrdt = (prdts) => {
     : prdts.searchParams.prod_expc_to_dt
   Info.value.regDate = !prdts.searchParams.reg_dt ? Info.value.regDate : prdts.searchParams.reg_dt
   Info.value.remark = !prdts.searchParams.rm ? Info.value.remark : prdts.searchParams.rm
+  empId = !prdts.searchParams.emp_id ? empId : prdts.searchParams.emp_id
   let new_id = rows.value.length > 0 ? Math.max(...rows.value.map((r) => r.id ?? 0)) + 1 : 1
   if (Array.isArray(prdts.detailData)) {
     rows.value = []
@@ -294,29 +295,34 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
       <CButton color="secondary" @click="updateRowsToDB">수정</CButton>
       <CButton color="danger" @click="deleteRowsToDB()">삭제</CButton>
     </div>
-<div class="search-filter-box mb-2">
-    <CContainer fluid>
-      <CRow class="g-3 mb-3">
-        <CCol md="3">
-          <c-form-label for="prod_plan_id">생산지시서 명</c-form-label>
+    <div class="search-filter-box mb-2">
+      <CContainer fluid>
+        <CRow class="g-3 mb-3">
+          <CCol md="3">
+            <c-form-label for="prod_plan_id">생산지시서 명</c-form-label>
             <c-form-input v-model="Info.ordrName1" id="ordrName1" placeholder="생산지시서 명" />
-        </CCol>
-        <CCol md="3">
-          <c-form-label for="prod_plan_id">등록 일자</c-form-label>
+          </CCol>
+          <CCol md="3">
+            <c-form-label for="prod_plan_id">등록 일자</c-form-label>
             <c-form-input type="date" v-model="Info.regDate" id="regDate" />
-        </CCol>
-        <CCol md="3">
-          <c-form-label for="reg_dt">시작 일자</c-form-label>
+          </CCol>
+          <CCol md="3">
+            <c-form-label for="reg_dt">시작 일자</c-form-label>
             <c-form-input type="date" v-model="Info.startDate" id="startDate" />
-        </CCol>
-        <CCol md="3">
-          <c-form-label for="reg_dt">종료 일자</c-form-label>
+          </CCol>
+          <CCol md="3">
+            <c-form-label for="reg_dt">종료 일자</c-form-label>
             <c-form-input type="date" v-model="Info.endDate" id="endDate" />
-        </CCol>
-      </CRow>
-    </CContainer>
-    <CFormTextarea v-model="Info.remark" label="비고" rows="3" text="필요 시 기재"></CFormTextarea>
-</div>
+          </CCol>
+        </CRow>
+      </CContainer>
+      <CFormTextarea
+        v-model="Info.remark"
+        label="비고"
+        rows="3"
+        text="필요 시 기재"
+      ></CFormTextarea>
+    </div>
     <div class="d-flex justify-content-end gap-2 mb-3">
       <CButton color="secondary" @click="goToPrdtModal()">제품 조회</CButton>
       <!-- 모달 컴포넌트 -->
@@ -336,7 +342,8 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
       <CTableHead color="dark">
         <CTableRow>
           <CTableHeaderCell scope="col" class="text-center" style="width: 56px"
-            >코드</CTableHeaderCell>
+            >코드</CTableHeaderCell
+          >
           <CTableHeaderCell scope="col" class="text-center">제품명</CTableHeaderCell>
           <CTableHeaderCell scope="col" class="text-center">규격</CTableHeaderCell>
           <CTableHeaderCell scope="col" class="text-center" style="width: 140px"
@@ -444,7 +451,8 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
 
 <style scoped>
 :deep(*) {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
+    sans-serif;
   line-height: 1.6;
   box-sizing: border-box;
 }
@@ -701,36 +709,34 @@ select.cell-input {
   :deep(.form-label) {
     font-size: 12px !important;
   }
-  
+
   :deep(.form-control),
   :deep(.form-select) {
     font-size: 12px !important;
     height: 38px !important;
     padding: 0.55rem 0.75rem !important;
   }
-  
+
   :deep(.btn) {
     font-size: 12px !important;
     padding: 0.5rem 1.1rem !important;
   }
-  
+
   :deep(th),
   :deep(td) {
     font-size: 12px !important;
   }
-  
+
   :deep(.data-table td) {
     height: 42px !important;
   }
-  
+
   .empty-row td {
     height: 42px !important;
   }
-  
+
   .cell-input {
     font-size: 12px !important;
   }
 }
-
-
 </style>

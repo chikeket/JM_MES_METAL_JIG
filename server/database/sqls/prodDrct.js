@@ -6,7 +6,8 @@ const prodDrctMasterSearch =
  prod_drct_fr_dt,
  prod_drct_to_dt,
  reg_dt,
- rm
+ rm,
+ emp_id
 FROM prod_drct
 WHERE prod_drct_nm LIKE CONCAT('%', ?, '%')
 AND reg_dt >= ?
@@ -136,7 +137,7 @@ and g.opt_nm LIKE CONCAT('%', ?, '%')
 and e.emp_nm LIKE CONCAT('%', ?, '%')
 and a.reg_dt >= ?
 order by a.prod_drct_to_dt
-`
+`;
 
 module.exports = {
   prodDrctMasterSearch,
