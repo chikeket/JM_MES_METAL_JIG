@@ -1,219 +1,218 @@
 <template>
-  <CContainer fluid class="h-100 d-flex flex-column p-3">
-    <!-- 상단 조회/초기화 버튼 -->
-    <div class="d-flex justify-content-end gap-2 mb-2">
-      <CButton color="secondary" size="sm" @click="handleReset">초기화</CButton>
-      <CButton color="secondary" size="sm" @click="handleSearch">조회</CButton>
+  <!-- 상단 글로벌 툴바 (rcvord 스타일) -->
+  <div class="global-toolbar vars-scope">
+    <div class="toolbar-buttons">
+      <button class="btn btn-sm btn-outline-secondary" @click="handleReset">초기화</button>
+      <button class="btn btn-sm btn-outline-secondary" @click="handleSearch">조회</button>
     </div>
 
-    <!-- 상단폼 -->
-    <div class="search-filter-box mb-2">
-      <CRow class="g-2 align-items-end">
-        <CCol :md="4">
-          <CFormLabel class="form-label">제품명</CFormLabel>
-          <CFormInput v-model="searchFilters.productName" size="sm" placeholder="제품명 입력" />
-        </CCol>
-        <CCol :md="4">
-          <CFormLabel class="form-label">옵션명</CFormLabel>
-          <CFormInput v-model="searchFilters.optionName" size="sm" placeholder="옵션명 입력" />
-        </CCol>
-        <CCol :md="3">
-          <CFormLabel class="form-label">상태</CFormLabel>
-          <CFormSelect v-model="searchFilters.status" size="sm">
+    <!-- 제품/자재 모달: 위치는 상관없지만 페이지 상단에 둬 안정적으로 표시 -->
+    <rcvordModalTwo
+      :visible="isProductModalVisible"
+      @close="isProductModalVisible = false"
+      @select="onProductSelect"
+    />
+    <rscModal
+      :visible="isMaterialModalVisible"
+      @close="isMaterialModalVisible = false"
+      @select="onMaterialSelect"
+    />
+  </div>
+
+  <div class="bom-page vars-scope">
+    <!-- 검색 폼 (rcvord의 card-like + form-grid) -->
+    <div class="card-like">
+      <div class="form-grid form-grid-3">
+        <div class="field">
+          <label>제품명</label>
+          <input
+            type="text"
+            v-model="searchFilters.productName"
+            class="form-input"
+            placeholder="제품명 입력"
+          />
+        </div>
+        <div class="field">
+          <label>옵션명</label>
+          <input
+            type="text"
+            v-model="searchFilters.optionName"
+            class="form-input"
+            placeholder="옵션명 입력"
+          />
+        </div>
+        <div class="field">
+          <label>상태</label>
+          <select v-model="searchFilters.status" class="form-input">
             <option value="">전체</option>
             <option value="P1">사용</option>
             <option value="P2">미사용</option>
-          </CFormSelect>
-        </CCol>
-      </CRow>
+          </select>
+        </div>
+      </div>
     </div>
 
-    <!-- 하단 좌우 그리드 -->
-    <CRow class="flex-grow-1 overflow-hidden g-2">
-      <!-- 좌측 그리드 -->
-      <CCol :md="7" class="d-flex flex-column overflow-hidden gap-2">
-        <!-- 좌측 그리드 버튼들 -->
-        <div class="d-flex justify-content-end gap-2">
-          <!-- <CButton color="secondary" size="sm" @click="handleLeftNew">신규</CButton> -->
-          <CButton color="secondary" size="sm" @click="handleLeftProductSearch">제품 조회</CButton>
-          <CButton color="secondary" size="sm" @click="handleLeftSave">저장</CButton>
-          <CButton color="danger" size="sm" @click="handleLeftDelete">선택삭제</CButton>
-        </div>
-
-        <div class="grid-box flex-grow-1 overflow-hidden">
-          <div class="table-wrapper">
-            <CTable bordered hover class="data-table">
-              <CTableHead>
-                <CTableRow>
-                  <CTableHeaderCell style="width: 30px"
-                    ><CFormCheck :checked="allLeftChecked" @change="toggleAllLeftCheck"
-                  /></CTableHeaderCell>
-                  <CTableHeaderCell style="width: 40px">No</CTableHeaderCell>
-                  <CTableHeaderCell style="display: none">prdt_id</CTableHeaderCell>
-                  <CTableHeaderCell style="display: none">prdt_opt_id</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 120px">BOM ID</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 120px">제품명</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 120px">옵션명</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 100px">BOM 버전</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 120px">유효 시작일자</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 120px">유효 종료일자</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 80px">상태</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 100px">비고</CTableHeaderCell>
-                </CTableRow>
-              </CTableHead>
-              <CTableBody>
-                <CTableRow
-                  v-for="(item, index) in leftDisplayData"
-                  :key="index"
-                  :class="{ 'selected-row': selectedLeftIndex === index }"
-                  @click="selectLeftProduct(item, index)"
-                >
-                  <CTableDataCell class="text-center" style="width: 30px">
-                    <CFormCheck v-model="item.selected" @click.stop />
-                  </CTableDataCell>
-                  <CTableDataCell class="text-end" style="width: 40px">{{
-                    index + 1
-                  }}</CTableDataCell>
-                  <CTableDataCell style="display: none">
-                    <input v-model="item.prdt_id" class="cell-input" readonly />
-                  </CTableDataCell>
-                  <CTableDataCell style="display: none">
-                    <input v-model="item.prdt_opt_id" class="cell-input" readonly />
-                  </CTableDataCell>
-                  <CTableDataCell class="text-end text-primary" style="width: 120px">
-                    <input v-model="item.bom_id" class="cell-input" readonly @click.stop />
-                  </CTableDataCell>
-                  <CTableDataCell class="text-start" style="width: 120px">
-                    <input v-model="item.prdt_nm" class="cell-input" readonly @click.stop />
-                  </CTableDataCell>
-                  <CTableDataCell class="text-start" style="width: 120px">
-                    <input v-model="item.opt_nm" class="cell-input" readonly @click.stop />
-                  </CTableDataCell>
-                  <CTableDataCell class="text-start" style="width: 100px">
-                    <input v-model="item.bom_ver" class="cell-input" readonly @click.stop />
-                  </CTableDataCell>
-                  <CTableDataCell class="text-start" style="width: 120px">
-                    <input type="Date" v-model="item.valid_fr_dt" class="cell-input" @click.stop />
-                  </CTableDataCell>
-                  <CTableDataCell class="text-start" style="width: 120px">
-                    <input type="Date" v-model="item.valid_to_dt" class="cell-input" @click.stop />
-                  </CTableDataCell>
-                  <CTableDataCell class="text-start" style="width: 80px">
-                    <select
-                      v-model="item.st"
-                      class="form-select form-select-sm"
-                      @change="item._stChanged = true"
-                    >
-                      <option value="P1">사용</option>
-                      <option value="P2">미사용</option>
-                    </select>
-                  </CTableDataCell>
-                  <CTableDataCell class="text-start">
-                    <input v-model="item.rm" class="cell-input" @click.stop />
-                  </CTableDataCell>
-                </CTableRow>
-                <CTableRow v-for="i in leftEmptyRows" :key="'empty-' + i" class="empty-row">
-                  <CTableDataCell colspan="10">&nbsp;</CTableDataCell>
-                </CTableRow>
-              </CTableBody>
-            </CTable>
+    <!-- 좌/우 그리드 영역 -->
+    <div class="split-grid">
+      <!-- 좌측: BOM 마스터 -->
+      <div class="panel panel-left">
+        <!-- 좌측 버튼 -->
+        <div class="sub-toolbar">
+          <div class="sub-toolbar-buttons">
+            <button class="btn btn-sm btn-outline-secondary" @click="handleLeftProductSearch">
+              제품 조회
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" @click="handleLeftSave">저장</button>
+            <button class="btn btn-sm btn-outline-danger" @click="handleLeftDelete">
+              선택삭제
+            </button>
           </div>
         </div>
-      </CCol>
 
-      <!-- 우측 그리드 -->
-      <CCol :md="5" class="d-flex flex-column overflow-hidden gap-2">
-        <!-- 우측 그리드 버튼들 -->
-        <div class="d-flex justify-content-end gap-2">
-          <!-- <CButton color="secondary" size="sm" @click="handleRightNew">신규</CButton> -->
-          <CButton color="secondary" size="sm" @click="handleRightMaterialSearch"
-            >자재 조회</CButton
-          >
-          <!-- 제품/자재 조회 모달 (rcvord.vue 스타일) -->
-          <rcvordModalTwo
-            :visible="isProductModalVisible"
-            @close="isProductModalVisible = false"
-            @select="onProductSelect"
-          />
-          <rscModal
-            :visible="isMaterialModalVisible"
-            @close="isMaterialModalVisible = false"
-            @select="onMaterialSelect"
-          />
-          <CButton color="secondary" size="sm" @click="handleRightSave">저장</CButton>
-          <CButton color="danger" size="sm" @click="handleRightDelete">선택삭제</CButton>
+        <div class="table-wrapper">
+          <table class="data-grid">
+            <thead>
+              <tr>
+                <th class="chk-col">
+                  <input type="checkbox" :checked="allLeftChecked" @change="toggleAllLeftCheck" />
+                </th>
+                <th class="no-col">No</th>
+                <th class="bomid-col">BOM ID</th>
+                <th class="product-col">제품명</th>
+                <th class="option-col">옵션명</th>
+                <th class="bomver-col">BOM 버전</th>
+                <th class="date-col">유효 시작일자</th>
+                <th class="date-col">유효 종료일자</th>
+                <th class="st-col">상태</th>
+                <th class="remark-col">비고</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(item, index) in leftDisplayData"
+                :key="'l-' + index"
+                :class="{ 'row-selected': selectedLeftIndex === index }"
+                @click="selectLeftProduct(item, index)"
+              >
+                <td class="text-center">
+                  <input type="checkbox" v-model="item.selected" @click.stop />
+                </td>
+                <td class="cell-no">{{ index + 1 }}</td>
+
+                <!-- 읽기 필드는 input-like로, 수정 필드는 editor-input로 통일 -->
+                <td class="cell-left">
+                  <span class="cell-text" :title="item.bom_id">{{ item.bom_id || '' }}</span>
+                </td>
+                <td class="cell-left">
+                  <span class="cell-text" :title="item.prdt_nm">{{ item.prdt_nm || '' }}</span>
+                </td>
+                <td class="cell-left">
+                  <span class="cell-text" :title="item.opt_nm">{{ item.opt_nm || '' }}</span>
+                </td>
+                <td class="cell-left">
+                  <span class="cell-text" :title="item.bom_ver">{{ item.bom_ver || '' }}</span>
+                </td>
+
+                <td class="cell-left" @click.stop>
+                  <input type="date" v-model="item.valid_fr_dt" class="editor-input" />
+                </td>
+                <td class="cell-left" @click.stop>
+                  <input type="date" v-model="item.valid_to_dt" class="editor-input" />
+                </td>
+                <td class="cell-left" @click.stop>
+                  <select v-model="item.st" class="editor-input" @change="item._stChanged = true">
+                    <option value="P1">사용</option>
+                    <option value="P2">미사용</option>
+                  </select>
+                </td>
+                <td class="cell-left" @click.stop>
+                  <input v-model="item.rm" class="editor-input" placeholder="비고 입력" />
+                </td>
+              </tr>
+
+              <tr v-for="i in leftEmptyRows" :key="'l-empty-' + i" class="empty-row">
+                <td colspan="10">&nbsp;</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
+      </div>
 
-        <div class="grid-box flex-grow-1 overflow-hidden">
-          <div class="table-wrapper">
-            <CTable bordered hover class="data-table">
-              <CTableHead>
-                <CTableRow>
-                  <CTableHeaderCell style="width: 30px"
-                    ><CFormCheck :checked="allRightChecked" @change="toggleAllRightCheck"
-                  /></CTableHeaderCell>
-                  <CTableHeaderCell style="width: 40px">No</CTableHeaderCell>
-                  <CTableHeaderCell style="display: none">BOM_COMP_ID</CTableHeaderCell>
-                  <CTableHeaderCell style="display: none">자재ID</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 120px">자재명</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 100px">규격</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 80px">단위</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 100px">BOM 수량</CTableHeaderCell>
-                  <CTableHeaderCell style="width: 100px">비고</CTableHeaderCell>
-                </CTableRow>
-              </CTableHead>
-              <CTableBody>
-                <CTableRow
-                  v-for="(item, index) in rightDisplayData"
-                  :key="index"
-                  :class="{ 'selected-row': selectedRightIndex === index }"
-                  @click="selectRightOption(item, index)"
-                >
-                  <CTableDataCell class="text-center" style="width: 30px">
-                    <CFormCheck v-model="item.selected" @click.stop />
-                  </CTableDataCell>
-                  <CTableDataCell class="text-end" style="width: 40px">{{
-                    index + 1
-                  }}</CTableDataCell>
-                  <CTableDataCell style="display: none">
-                    <input v-model="item.bom_comp_id" class="cell-input" readonly />
-                  </CTableDataCell>
-                  <CTableDataCell style="display: none">
-                    <input v-model="item.rsc_id" class="cell-input" readonly />
-                  </CTableDataCell>
-                  <CTableDataCell class="text-start" style="width: 120px">
-                    <input v-model="item.rsc_nm" class="cell-input" @click.stop />
-                  </CTableDataCell>
-                  <CTableDataCell class="text-start" style="width: 100px">
-                    <input v-model="item.spec" class="cell-input" @click.stop />
-                  </CTableDataCell>
-                  <CTableDataCell class="text-start" style="width: 80px">
-                    <input v-model="item.unit" class="cell-input" @click.stop />
-                  </CTableDataCell>
-                  <CTableDataCell class="text-end" style="width: 100px">
-                    <input
-                      v-model="item.rec_qy"
-                      class="cell-input"
-                      @click.stop
-                      type="number"
-                      step="0.01"
-                      @blur="item.rec_qy = formatNumber(item.rec_qy)"
-                    />
-                  </CTableDataCell>
-                  <CTableDataCell class="text-start" style="width: 100px">
-                    <input v-model="item.rm" class="cell-input" @click.stop />
-                  </CTableDataCell>
-                </CTableRow>
-                <CTableRow v-for="i in rightEmptyRows" :key="'empty-right-' + i" class="empty-row">
-                  <CTableDataCell colspan="7">&nbsp;</CTableDataCell>
-                </CTableRow>
-              </CTableBody>
-            </CTable>
+      <!-- 우측: BOM 상세(자재) -->
+      <div class="panel panel-right">
+        <!-- 우측 버튼 -->
+        <div class="sub-toolbar">
+          <div class="sub-toolbar-buttons">
+            <button class="btn btn-sm btn-outline-secondary" @click="handleRightMaterialSearch">
+              자재 조회
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" @click="handleRightSave">저장</button>
+            <button class="btn btn-sm btn-outline-danger" @click="handleRightDelete">
+              선택삭제
+            </button>
           </div>
         </div>
-      </CCol>
-    </CRow>
-  </CContainer>
+
+        <div class="table-wrapper">
+          <table class="data-grid">
+            <thead>
+              <tr>
+                <th class="chk-col">
+                  <input type="checkbox" :checked="allRightChecked" @change="toggleAllRightCheck" />
+                </th>
+                <th class="no-col">No</th>
+                <th class="material-col">자재명</th>
+                <th class="spec-col">규격</th>
+                <th class="unit-col">단위</th>
+                <th class="qty-col">BOM 수량</th>
+                <th class="remark-col">비고</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(item, index) in rightDisplayData"
+                :key="'r-' + index"
+                :class="{ 'row-selected': selectedRightIndex === index }"
+                @click="selectRightOption(item, index)"
+              >
+                <td class="text-center">
+                  <input type="checkbox" v-model="item.selected" @click.stop />
+                </td>
+                <td class="cell-no">{{ index + 1 }}</td>
+
+                <td class="cell-left" @click.stop>
+                  <input v-model="item.rsc_nm" class="editor-input" placeholder="자재명" />
+                </td>
+                <td class="cell-left" @click.stop>
+                  <input v-model="item.spec" class="editor-input" placeholder="규격" />
+                </td>
+                <td class="cell-left" @click.stop>
+                  <input v-model="item.unit" class="editor-input" placeholder="단위" />
+                </td>
+                <td class="cell-number" @click.stop>
+                  <input
+                    v-model="item.rec_qy"
+                    class="editor-input text-end"
+                    type="number"
+                    step="0.01"
+                    @blur="item.rec_qy = formatNumber(item.rec_qy)"
+                    placeholder="0"
+                  />
+                </td>
+                <td class="cell-left" @click.stop>
+                  <input v-model="item.rm" class="editor-input" placeholder="비고 입력" />
+                </td>
+              </tr>
+
+              <tr v-for="i in rightEmptyRows" :key="'r-empty-' + i" class="empty-row">
+                <td colspan="7">&nbsp;</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -633,300 +632,405 @@ const handleRightDelete = async () => {
 </script>
 
 <style scoped>
+/* ===== 공통 베이스 (rcvord 스타일) ===== */
 :deep(*) {
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
     sans-serif;
-  line-height: 1.6;
+  line-height: 1.5;
   box-sizing: border-box;
 }
 
-:deep(.container-fluid) {
-  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
-  padding: 1.5rem !important;
-  height: 100vh;
-  overflow: hidden;
+/* 변수 스코프 */
+.vars-scope {
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --color-btn-gray: #6e7b85;
+  --color-btn-gray-hover: #5d6871;
+  --color-btn-danger: #c53030;
+  --color-btn-danger-hover: #a82323;
+  --color-btn-text: #fff;
+  --table-visible-rows: 10;
+  --row-h: 34px;
+  --thead-h: 34px;
+  --row-vpad: 6px;
+  --cell-inner-h: calc(var(--row-h) - (var(--row-vpad) * 2));
+
+  /* === 조절 가능한 컬럼 폭 변수 === */
+  --col-chk: 35px;
+  --col-no: 40px;
+
+  /* 좌측 그리드 (BOM 마스터) */
+  --left-col-bomid: 115px;
+  --left-col-product: 120px;
+  --left-col-option: 100px;
+  --left-col-bomver: 100px;
+  --left-col-date: 120px;
+  --left-col-status: 80px;
+  --left-col-remark: 140px;
+
+  /* 우측 그리드 (BOM 상세) */
+  --right-col-material: 100px;
+  --right-col-spec: 70px;
+  --right-col-unit: 70px;
+  --right-col-qty: 70px;
+  --right-col-remark: 100px;
 }
 
-.search-filter-box {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  margin-bottom: 1.25rem;
-}
-
-.grid-box {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  overflow: hidden;
-}
-
-:deep(.btn) {
+/* 페이지 래퍼 */
+.bom-page {
   font-size: 13px;
-  font-weight: 600;
-  padding: 0.55rem 1.2rem;
-  border: none;
+  padding: 0 12px;
+}
+
+/* 카드 모양 박스 */
+.card-like {
+  border: 1px solid #ccc;
+  background: #ffffff;
+  padding: 12px 14px 16px;
+  margin-bottom: 16px;
+  position: relative;
+  border-radius: var(--radius-md);
+}
+
+/* 상단 툴바 */
+.global-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 14px;
+  margin-bottom: 8px;
+}
+.global-toolbar .toolbar-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+/* 하위 툴바(버튼 그룹) */
+.sub-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin: -4px 0 8px;
+}
+.sub-toolbar-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+/* 버튼 */
+.btn {
+  cursor: pointer;
   border-radius: 8px;
-  transition: all 0.2s ease;
-  letter-spacing: -0.3px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  min-width: 80px;
-}
-
-:deep(.btn-secondary) {
-  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
-  color: #fff !important;
-}
-
-:deep(.btn-secondary:hover) {
-  background: linear-gradient(135deg, #475569 0%, #334155 100%);
-  box-shadow: 0 4px 8px rgba(71, 85, 105, 0.3);
-  transform: translateY(-1px);
-}
-
-:deep(.btn-danger) {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: #fff !important;
-}
-
-:deep(.btn-danger:hover) {
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
-  transform: translateY(-1px);
-}
-
-:deep(.btn:active) {
-  transform: scale(0.98);
-}
-
-:deep(.form-label) {
-  font-size: 13px;
+  border: none;
+  color: var(--color-btn-text);
   font-weight: 600;
-  color: #334155;
-  margin-bottom: 0.5rem;
+  font-size: 13px;
+  letter-spacing: -0.3px;
+  transition: all 0.3s ease;
+  line-height: 1.5;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.5rem 1.2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.btn-sm {
+  height: auto;
+  padding: 0.5rem 1.2rem;
+  font-size: 13px;
+}
+.btn-outline-secondary {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+  color: var(--color-btn-text);
+}
+.btn-outline-secondary:hover {
+  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+.btn-outline-danger {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  color: var(--color-btn-text);
+}
+.btn-outline-danger:hover {
+  background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+/* 폼 그리드 */
+.form-grid {
+  display: grid;
+  gap: 10px 18px;
+  margin-top: 0;
+}
+.form-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.field {
+  display: flex;
+  flex-direction: column;
+}
+.field label {
+  font-weight: 600;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: #2c3e50;
   letter-spacing: -0.2px;
 }
-
-:deep(.form-control),
-:deep(.form-select) {
-  font-size: 13px;
+.form-input,
+.field input[type='text'],
+.field select {
+  font-size: 12px;
   font-weight: 400;
-  padding: 0.65rem 0.85rem;
-  border: 1.5px solid #e2e8f0;
+  padding: 0.4rem 0.75rem;
+  border: 2px solid #e9ecef;
   border-radius: 8px;
-  transition: all 0.2s ease;
-  background-color: #ffffff;
-  height: 42px;
-}
-
-:deep(.form-control:focus),
-:deep(.form-select:focus) {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
-  background-color: #ffffff;
-  outline: none;
-}
-
-:deep(.g-2) {
-  --bs-gutter-y: 0.5rem;
-  --bs-gutter-x: 0.5rem;
-}
-
-.table-wrapper {
-  overflow-y: scroll;
-  overflow-x: hidden;
-  max-height: calc(100vh - 300px);
-  background: #ffffff;
-}
-
-.table-wrapper::-webkit-scrollbar {
-  width: 14px;
-  background: #ffffff;
-}
-
-.table-wrapper::-webkit-scrollbar-track {
-  background: #ffffff;
-}
-
-.table-wrapper::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #9ca3af 0%, #6b7280 100%);
-  border-radius: 10px;
-  border: 3px solid #ffffff;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  background-color: #f8f9fa;
+  height: 34px;
 }
-
-.table-wrapper::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #6b7280 0%, #4b5563 100%);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
-}
-
-.table-wrapper::-webkit-scrollbar-button:single-button {
-  display: block;
-  height: 20px;
+.field input[type='text']:focus,
+.field select:focus {
+  border-color: #6c757d;
+  box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.15);
   background-color: #ffffff;
-  background-repeat: no-repeat;
-  background-position: center;
-  border: none;
 }
 
-.table-wrapper::-webkit-scrollbar-button:single-button:vertical:decrement {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 4L2 8h8z'/%3E%3C/svg%3E");
-  margin-top: 46px;
+/* 좌우 분할 레이아웃 */
+.split-grid {
+  display: grid;
+  grid-template-columns: 7fr 5fr; /* 좌:우 비율 */
+  gap: 12px;
 }
 
-.table-wrapper::-webkit-scrollbar-button:single-button:vertical:increment {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
+/* 테이블 래퍼/스크롤바 */
+.table-wrapper {
+  height: calc(var(--row-h) * var(--table-visible-rows) + var(--thead-h));
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid #bcbcbc;
+  border-radius: var(--radius-md);
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+.table-wrapper::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.table-wrapper::-webkit-scrollbar-track {
+  background: rgba(240, 240, 240, 0.6);
+  border-radius: 10px;
+}
+.table-wrapper::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #bfc2c7, #9ea2a8);
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+}
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #a4a8ae, #7e838a);
 }
 
-.table-wrapper::-webkit-scrollbar-button:single-button:hover {
-  background-color: #f3f4f6;
-}
-
-:deep(.data-table) {
-  margin-bottom: 0;
+/* 데이터 그리드 (rcvord 버전) */
+.data-grid {
+  width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   table-layout: fixed;
-  width: 100%;
-  font-size: 13px;
+  font-size: 12px;
 }
-
-:deep(.data-table thead) {
+.data-grid thead th {
   position: sticky;
   top: 0;
+  background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+  color: #fff;
   z-index: 10;
-}
-
-:deep(.data-table th) {
-  font-size: 13px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
-  color: #ffffff;
-  text-align: center;
-  padding: 0.85rem 0.75rem;
   border: none;
-  letter-spacing: -0.2px;
+  padding: 0.65rem 0.5rem;
+  font-weight: 700;
+  text-align: center;
+  height: var(--thead-h);
 }
-
-:deep(.data-table th:first-child) {
-  border-top-left-radius: 12px;
+.data-grid thead th:first-child {
+  border-top-left-radius: var(--radius-sm);
 }
-
-:deep(.data-table th:last-child) {
-  border-top-right-radius: 12px;
+.data-grid thead th:last-child {
+  border-top-right-radius: var(--radius-sm);
 }
-
-:deep(.data-table td) {
-  font-size: 13px;
-  font-weight: 400;
+.data-grid tbody td {
+  border: none;
+  border-bottom: 1px solid #e9ecef;
+  border-right: 2px solid #e9ecef;
+  padding: 0.55rem 0.5rem;
+  background: #fff;
+  height: var(--row-h);
   vertical-align: middle;
-  padding: 0.75rem 0.75rem;
-  border-bottom: 1px solid #e2e8f0;
-  color: #334155;
-  height: 46px;
+  overflow: hidden;
 }
-
-:deep(.data-table tbody tr) {
-  cursor: pointer;
-  transition: all 0.15s ease;
+.data-grid tbody td:last-child {
+  border-right: none;
+}
+.data-grid tbody tr {
+  height: var(--row-h);
+  transition: all 0.2s ease;
   background-color: #ffffff;
 }
-
-:deep(.data-table tbody tr:hover:not(.empty-row)) {
-  background-color: #f8fafc;
-  box-shadow: inset 0 0 0 1px #e2e8f0;
+.data-grid tbody tr:hover:not(.empty-row),
+.data-grid tbody tr:hover:not(.empty-row) td,
+.data-grid tbody tr:hover:not(.empty-row) .input-like {
+  background-color: var(
+    --cui-table-hover-bg,
+    var(--bs-table-hover-bg, rgba(33, 37, 41, 0.075))
+  ) !important;
 }
 
-.cell-input {
-  width: 100%;
-  border: none;
-  background: transparent;
-  font-size: 13px;
-  padding: 4px 6px;
-  outline: none;
-  font-family: inherit;
-  color: #334155;
+/* 셀 정렬 */
+.cell-no {
+  text-align: center;
+}
+.cell-number {
+  text-align: right;
+}
+.cell-left {
+  text-align: left;
+}
+.text-center {
+  text-align: center;
+}
+.text-end {
+  text-align: right;
 }
 
-.cell-input:focus {
-  background: #fef3c7;
-  border: 1.5px solid #fbbf24;
-  border-radius: 6px;
-}
-
-select.cell-input {
-  cursor: pointer;
-}
-
-:deep(.selected-row) {
+/* 선택 행 강조 */
+.row-selected,
+.row-selected td,
+.row-selected .input-like {
   background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%) !important;
-  font-weight: 600;
-  box-shadow: inset 0 0 0 2px #3b82f6;
 }
-
-:deep(.selected-row td) {
+.row-selected td {
   border-bottom: 1px solid #93c5fd;
   color: #1e40af;
 }
 
-.empty-row td {
-  height: 46px;
+/* 가짜 입력 상자 (읽기) */
+.input-like {
+  display: block;
+  width: 100%;
   background-color: #ffffff;
-  border-bottom: 1px solid #f1f5f9;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 0.25rem 0.5rem;
+  min-height: 26px;
+  line-height: var(--cell-inner-h);
+  height: var(--cell-inner-h);
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+.input-like--compact {
+  padding: 0.2rem 0.5rem;
+}
+.input-like .value {
+  display: inline-block;
+  color: #2c3e50;
+  line-height: 1.2;
+  max-height: var(--cell-inner-h);
+}
+.placeholder-text {
+  color: #b5b5b5;
+  font-style: italic;
+}
+.empty-row td {
+  background-color: #fafbfc;
 }
 
-:deep(.text-end) {
-  text-align: right;
+/* 실제 입력 컨트롤(편집용) */
+.editor-input {
+  width: 100%;
+  background: #fff !important;
+  border: 1px solid #5b9dd9 !important;
+  border-radius: var(--radius-sm);
+  height: var(--cell-inner-h) !important;
+  min-height: 0 !important;
+  padding: 2px 6px;
+  box-sizing: border-box;
+  font-size: 12px;
 }
 
-:deep(.text-start) {
-  text-align: left;
+/* 입력 불가 셀에 쓸 텍스트 전용 스타일 */
+.data-grid .cell-text {
+  display: block;
+  padding: 2px 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: var(--cell-inner-h);
+  max-height: var(--cell-inner-h);
 }
 
-:deep(.text-center) {
-  text-align: center;
+/* 공통 체크/번호 컬럼 */
+.chk-col {
+  width: var(--col-chk);
+}
+.no-col {
+  width: var(--col-no);
 }
 
-:deep(.text-primary) {
-  color: #3b82f6 !important;
+/* 좌측 그리드: panel-left 스코프 내에서 변수로 제어 */
+.panel-left .bomid-col {
+  width: var(--left-col-bomid);
+}
+.panel-left .product-col {
+  width: var(--left-col-product);
+}
+.panel-left .option-col {
+  width: var(--left-col-option);
+}
+.panel-left .bomver-col {
+  width: var(--left-col-bomver);
+}
+.panel-left .date-col {
+  width: var(--left-col-date);
+}
+.panel-left .st-col {
+  width: var(--left-col-status);
+}
+.panel-left .remark-col {
+  width: var(--left-col-remark);
 }
 
+/* 우측 그리드: panel-right 스코프 내에서 변수로 제어 */
+.panel-right .material-col {
+  width: var(--right-col-material);
+}
+.panel-right .spec-col {
+  width: var(--right-col-spec);
+}
+.panel-right .unit-col {
+  width: var(--right-col-unit);
+}
+.panel-right .qty-col {
+  width: var(--right-col-qty);
+}
+.panel-right .remark-col {
+  width: var(--right-col-remark);
+}
+
+/* 좌/우 패널에서 흰 카드 느낌 제거 */
+.panel {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+/* 반응형 버튼/입력 크기 조정 */
 @media (max-width: 1600px) {
-  :deep(.form-label) {
+  .btn {
+    font-size: 11px !important;
+    padding: 0.4rem 1rem;
+  }
+  .form-input {
     font-size: 12px !important;
-  }
-
-  :deep(.form-control),
-  :deep(.form-select) {
-    font-size: 12px !important;
-    height: 38px !important;
-    padding: 0.55rem 0.75rem !important;
-  }
-
-  :deep(.btn) {
-    font-size: 12px !important;
-    padding: 0.5rem 1.1rem !important;
-  }
-
-  :deep(th),
-  :deep(td) {
-    font-size: 12px !important;
-  }
-
-  :deep(.data-table td) {
-    height: 42px !important;
-  }
-
-  .empty-row td {
-    height: 42px !important;
-  }
-
-  .cell-input {
-    font-size: 12px !important;
+    height: 32px !important;
   }
 }
 </style>
