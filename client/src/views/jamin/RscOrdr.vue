@@ -649,73 +649,78 @@ const reset = () => {
 </script>
 
 <style scoped>
-/* ============================================
-   컨테이너 / 박스 - CompanyManage 스타일 준용
-   ============================================ */
 :deep(*) {
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
     sans-serif;
   line-height: 1.5;
   box-sizing: border-box;
 }
-:deep(.container-fluid) {
-  background: #ffffff;
-  padding: 1rem !important;
-  min-height: 100vh;
+
+.vars-scope {
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --color-btn-gray: #6e7b85;
+  --color-btn-gray-hover: #5d6871;
+  --color-btn-danger: #c53030;
+  --color-btn-danger-hover: #a82323;
+  --color-btn-text: #fff;
+  --row-h: 34px;
+  --thead-h: 34px;
+  --row-vpad: 6px;
+  --cell-inner-h: calc(var(--row-h) - (var(--row-vpad) * 2));
 }
 
-/* ============================================
-   버튼 - CompanyManage 스타일 준용
-   ============================================ */
-:deep(.btn) {
-  font-size: 13px;
-  font-weight: 600;
-  padding: 0.5rem 1.2rem;
-  border: none;
+/* ========== 버튼 스타일 ========== */
+:deep(.btn),
+:deep(.btn-secondary),
+:deep(.btn-danger) {
+  cursor: pointer;
   border-radius: 8px;
-  transition: all 0.3s ease;
+  border: none;
+  color: #ffffff !important;
+  font-weight: 600;
+  font-size: 13px;
   letter-spacing: -0.3px;
+  transition: all 0.3s ease;
+  line-height: 1.5;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.5rem 1.2rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
+
 :deep(.btn-secondary) {
   background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
-  color: #fff !important;
+  color: #ffffff !important;
 }
+
 :deep(.btn-secondary:hover) {
   background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+  color: #ffffff !important;
 }
+
 :deep(.btn-danger) {
   background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-  color: #fff !important;
+  color: #ffffff !important;
 }
+
 :deep(.btn-danger:hover) {
   background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
-}
-:deep(.btn:active) {
-  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+  color: #ffffff !important;
 }
 
-/* 버튼 간격 */
-.gap-2 {
-  gap: 0.5rem;
-}
-
-/* ============================================
-   폼 요소 - CompanyManage 스타일 준용
-   ============================================ */
-:deep(.form-label) {
-  font-size: 12px;
-  font-weight: 600;
-  color: #2c3e50;
-  margin-bottom: 0.25rem;
-}
+/* ========== Input & Form 스타일 ========== */
 :deep(.form-control),
-:deep(input.form-control),
-:deep(textarea.form-control) {
+:deep(.form-select),
+:deep(input[type='text']),
+:deep(input[type='date']),
+:deep(input[type='number']),
+:deep(textarea) {
   font-size: 12px;
   font-weight: 400;
   padding: 0.4rem 0.75rem;
@@ -724,103 +729,84 @@ const reset = () => {
   transition: all 0.3s ease;
   background-color: #f8f9fa;
 }
+
 :deep(.form-control:focus),
-:deep(input.form-control:focus),
-:deep(textarea.form-control:focus) {
+:deep(.form-select:focus),
+:deep(input:focus),
+:deep(textarea:focus) {
   border-color: #6c757d;
   box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.15);
   background-color: #ffffff;
 }
-:deep(.form-control:disabled) {
-  background-color: #e9ecef;
-  cursor: not-allowed;
-}
-:deep(input[type='date'].form-control),
-:deep(input[type='number'].form-control) {
-  font-size: 12px;
+
+:deep(.form-control[disabled]),
+:deep(.form-control[readonly]),
+:deep(input[disabled]),
+:deep(input[readonly]) {
+  background: #e9e9e9;
+  color: #222;
 }
 
-/* InputGroup 스타일 */
-:deep(.input-group-text) {
-  font-size: 12px;
+:deep(.form-label) {
   font-weight: 600;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border: 2px solid #e9ecef;
+  margin-bottom: 4px;
+  font-size: 12px;
   color: #2c3e50;
-  border-radius: 8px 0 0 8px;
-}
-:deep(.input-group .form-control) {
-  border-left: none;
-  border-radius: 0 8px 8px 0;
-}
-:deep(.input-group svg) {
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-:deep(.input-group svg:hover) {
-  transform: scale(1.1);
-  color: #495057;
+  letter-spacing: -0.2px;
 }
 
-/* Textarea */
-:deep(textarea.form-control) {
-  min-height: 80px;
+:deep(.input-group-text) {
+  font-weight: 600;
+  font-size: 12px;
+  color: #2c3e50;
+  background-color: #f8f9fa;
+  border: 2px solid #e9ecef;
+}
+
+:deep(textarea) {
+  min-height: 78px;
   resize: vertical;
 }
 
-/* 검색 필터 영역 압축 */
-:deep(.g-3) {
-  --bs-gutter-y: 0.5rem;
-  --bs-gutter-x: 0.75rem;
-}
-
-/* ============================================
-   테이블 - CompanyManage 스타일 준용
-   ============================================ */
+/* ========== 테이블 스타일 ========== */
 :deep(.table) {
-  margin-bottom: 0;
+  font-size: 12px;
   border-collapse: separate;
   border-spacing: 0;
-  user-select: none;
-  cursor: default;
   width: 100%;
+  border: 1px solid #bcbcbc;
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
 :deep(.table thead th) {
-  font-size: 12px;
-  font-weight: 700;
   background: linear-gradient(135deg, #495057 0%, #343a40 100%);
-  color: #ffffff;
+  color: #fff;
+  font-weight: 700;
   text-align: center;
   padding: 0.65rem 0.5rem;
   border: none;
-  letter-spacing: -0.2px;
-  white-space: nowrap;
-  vertical-align: middle;
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  height: var(--thead-h);
 }
 
 :deep(.table thead th:first-child) {
-  border-top-left-radius: 10px;
+  border-top-left-radius: var(--radius-sm);
 }
+
 :deep(.table thead th:last-child) {
-  border-top-right-radius: 10px;
+  border-top-right-radius: var(--radius-sm);
 }
 
 :deep(.table tbody td) {
-  font-size: 12px;
-  font-weight: 400;
-  vertical-align: middle;
-  padding: 0.55rem 0.5rem;
   border-bottom: 1px solid #e9ecef;
   border-right: 2px solid #e9ecef;
-  color: #2c3e50;
-  white-space: nowrap;
+  padding: 0.55rem 0.5rem;
+  padding-top: var(--row-vpad);
+  padding-bottom: var(--row-vpad);
+  vertical-align: middle;
   overflow: hidden;
-  text-overflow: ellipsis;
-  background-color: #ffffff;
+  background: #ffffff;
+  height: var(--row-h);
 }
 
 :deep(.table tbody td:last-child) {
@@ -828,70 +814,173 @@ const reset = () => {
 }
 
 :deep(.table tbody tr) {
+  height: var(--row-h);
   transition: all 0.2s ease;
   background-color: #ffffff;
 }
 
-/* hover 효과 */
-:deep(.table) {
-  --row-hover-bg: var(
+:deep(.table tbody tr:hover:not(.table-secondary)) {
+  background-color: var(
     --cui-table-hover-bg,
-    var(
-      --bs-table-hover-bg,
-      rgba(var(--cui-emphasis-color-rgb, var(--bs-emphasis-color-rgb, 33, 37, 41)), 0.075)
-    )
-  );
+    var(--bs-table-hover-bg, rgba(33, 37, 41, 0.075))
+  ) !important;
 }
 
-:deep(.table tbody tr:hover:not(.table-secondary)) {
-  background-color: var(--row-hover-bg) !important;
-}
 :deep(.table tbody tr:hover:not(.table-secondary) td) {
-  background-color: var(--row-hover-bg) !important;
+  background-color: var(
+    --cui-table-hover-bg,
+    var(--bs-table-hover-bg, rgba(33, 37, 41, 0.075))
+  ) !important;
 }
 
 /* 빈 행 스타일 */
-:deep(.table tbody tr.table-secondary td) {
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
+:deep(.table-secondary) {
+  background: #fafbfc !important;
 }
 
-/* 더블클릭 편집 가능한 셀 커서 */
-:deep(.table tbody td:not(:first-child):not(:nth-child(2))) {
-  cursor: text;
+:deep(.table-secondary td) {
+  background: #fafbfc !important;
 }
 
-/* 테이블 내 인풋 스타일 */
-:deep(.table tbody td input.form-control) {
+/* ========== 테이블 내부 input 스타일 ========== */
+:deep(.table input),
+:deep(.table select),
+:deep(.table textarea) {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 2px 4px;
   font-size: 12px;
-  line-height: 1.2;
-  padding: 0.25rem 0.5rem;
-  height: 28px;
-  border: 2px solid #6c757d;
-  background-color: #ffffff;
+  border-radius: var(--radius-sm);
+  height: var(--cell-inner-h);
+  min-height: 0;
 }
 
-/* 체크박스 정렬 */
-:deep(.form-check-input) {
+:deep(.table input[readonly]),
+:deep(.table input[disabled]) {
+  background: #e9e9e9;
+}
+
+:deep(.table input:focus),
+:deep(.table select:focus),
+:deep(.table textarea:focus) {
+  outline: none;
+  border-color: #5b9dd9;
+  background: #fff;
+}
+
+:deep(.table input.form-control) {
+  height: var(--cell-inner-h) !important;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+/* ========== 텍스트 정렬 ========== */
+:deep(.text-center) {
+  text-align: center;
+}
+
+:deep(.text-end) {
+  text-align: right;
+}
+
+:deep(.text-start) {
+  text-align: left;
+}
+
+/* ========== 간격 조정 (일관된 여백) ========== */
+:deep(.container-fluid) {
+  padding: 16px;
+}
+
+:deep(.mb-3) {
+  margin-bottom: 16px !important;
+}
+
+:deep(.gap-2) {
+  gap: 8px !important;
+}
+
+:deep(.gap-3) {
+  gap: 16px !important;
+}
+
+:deep(.g-3) {
+  --bs-gutter-x: 16px;
+  --bs-gutter-y: 16px;
+}
+
+/* 상단/하단 버튼 영역 일관된 간격 */
+:deep(.d-flex.justify-content-end) {
+  padding: 0 16px;
+  margin-bottom: 16px;
+}
+
+/* Input Group 간격 */
+:deep(.input-group) {
+  margin-bottom: 0;
+}
+
+:deep(.row) {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+:deep(.col),
+:deep([class*='col-']) {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+/* ========== 아이콘 호버 효과 ========== */
+:deep(.icon) {
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-/* ============================================
-   반응형 축소 시 폰트 크기 조정
-   ============================================ */
+:deep(.icon:hover) {
+  opacity: 0.7;
+  transform: scale(1.1);
+}
+
+/* ========== 스크롤바 스타일 ========== */
+:deep(*::-webkit-scrollbar) {
+  width: 6px;
+  height: 6px;
+}
+
+:deep(*::-webkit-scrollbar-track) {
+  background: rgba(240, 240, 240, 0.6);
+  border-radius: 10px;
+}
+
+:deep(*::-webkit-scrollbar-thumb) {
+  background: linear-gradient(180deg, #bfc2c7, #9ea2a8);
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+:deep(*::-webkit-scrollbar-thumb:hover) {
+  background: linear-gradient(180deg, #a4a8ae, #7e838a);
+}
+
+/* ========== 반응형 ========== */
 @media (max-width: 1600px) {
-  :deep(.form-label),
-  :deep(.form-control),
-  :deep(input.form-control),
-  :deep(textarea.form-control),
-  :deep(.input-group-text),
-  :deep(.btn),
-  :deep(.table th),
-  :deep(.table td) {
-    font-size: 11px !important;
-  }
   :deep(.btn) {
+    font-size: 11px !important;
     padding: 0.4rem 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  :deep(.table) {
+    font-size: 11px;
+  }
+  
+  :deep(.table thead th),
+  :deep(.table tbody td) {
+    padding: 0.4rem 0.3rem;
   }
 }
 </style>
