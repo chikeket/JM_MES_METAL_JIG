@@ -88,6 +88,7 @@ const rwmatrRtun = require("./sqls/rwmatrRtunTrget.js");
 // 창고 입출고 모달 관련 쿼리
 const wrhsdlvr = require("./sqls/wrhsdlvr.js");
 
+const wrhsdlvrExt = require("./sqls/wrhousdlvrExt.js");
 
 // └───각 테이블별 SQL 쿼리들을 모아놓은 중앙 관리 파일───┘
 
@@ -126,4 +127,5 @@ module.exports = {
   ...lotStcPrecon,
   ...rwmatrRtun,
   ...wrhsdlvr,
+  ...wrhsdlvrExt,
 };
