@@ -4,14 +4,12 @@
       <CModalTitle>업체 검색</CModalTitle>
     </CModalHeader>
     <CModalBody>
-      <div class="modal-body" style="max-height: calc(100vh - 200px); overflow-y: auto; padding-right:8px;">
+      <div
+        class="modal-body"
+        style="max-height: calc(100vh - 200px); overflow-y: auto; padding-right: 8px"
+      >
         <!-- 검색 영역 -->
         <div class="d-flex gap-2 mb-3">
-          <select class="form-select" style="width: 150px" v-model="coTy">
-            <option value="">전체유형</option>
-            <option value="VENDOR">공급업체</option>
-            <option value="CUSTOMER">납품업체</option>
-          </select>
           <select class="form-select" style="width: 150px" v-model="pickValue">
             <option value="CO_NM">업체 이름</option>
             <option value="RPSTR_NM">대표자 이름</option>
@@ -19,16 +17,16 @@
           </select>
           <select class="form-select" style="width: 150px" v-model="st">
             <option value="">전체상태</option>
-            <option value="ACT">활성</option>
-            <option value="INA">비활성</option>
+            <option value="M1">활성</option>
+            <option value="M2">비활성</option>
           </select>
-          <input 
-            type="text" 
-            class="form-control" 
-            placeholder="검색어 입력" 
-            v-model="searchKeyword" 
-            style="width: 250px;"
-            @keyup.enter="coSearch" 
+          <input
+            type="text"
+            class="form-control"
+            placeholder="검색어 입력"
+            v-model="searchKeyword"
+            style="width: 250px"
+            @keyup.enter="coSearch"
           />
           <div class="ms-auto d-flex gap-2">
             <button class="btn btn-secondary" @click="coSearch()">검색</button>
@@ -50,9 +48,9 @@
             </tr>
           </thead>
           <tbody>
-            <tr 
-              v-for="(cos, i) in coList" 
-              :key="i" 
+            <tr
+              v-for="(cos, i) in coList"
+              :key="i"
               @dblclick="selectCo(cos)"
               class="cursor-pointer"
             >
@@ -86,7 +84,7 @@ import axios from 'axios'
 const props = defineProps({ visible: Boolean })
 const emit = defineEmits(['close', 'select'])
 
-const coTy = ref('')
+const coTy = ref('G2') // 기본값을 G2(공급업체)로 설정
 const pickValue = ref('CO_NM')
 const st = ref('')
 const searchKeyword = ref('')
@@ -95,16 +93,16 @@ const coList = shallowRef([])
 // 상태값과 업체유형 변환 함수
 const getStatusName = (st) => {
   const statusMap = {
-    'ACT': '활성',
-    'INA': '비활성'
+    M1: '활성',
+    M2: '비활성',
   }
   return statusMap[st] || st
 }
 
 const getCoTypeName = (type) => {
   const typeMap = {
-    'VENDOR': '공급업체',
-    'CUSTOMER': '납품업체'
+    G2: '공급업체',
+    G1: '납품업체',
   }
   return typeMap[type] || type
 }
@@ -126,13 +124,13 @@ const resetSearch = () => {
 const coSearch = async () => {
   try {
     console.log('[coModal] 검색 시작')
-    
+
     const params = {
-      co_ty_id: coTy.value || '',
+      co_ty_id: 'G2' || '',
       co_nm: '',
       rpstr_nm: '',
       rpstr_tel: '',
-      st: st.value || ''
+      st: st.value || '',
     }
 
     // 검색어를 해당 필드에 설정
@@ -145,23 +143,22 @@ const coSearch = async () => {
     }
 
     console.log('[coModal] 검색 파라미터:', params)
-    
-    const response = await axios.get('/api/cos', { params })
+
+    const response = await axios.get('/api/cos/forG2', { params })
     console.log('[coModal] API 응답:', response.data)
-    
+
     // 서비스에서 직접 배열을 반환하므로 response.data를 사용
     coList.value = Array.isArray(response.data) ? response.data : []
     console.log('[coModal] 검색 결과:', coList.value.length, '건')
-    
   } catch (error) {
     console.error('[coModal] 업체 검색 중 오류 발생:', error)
     console.error('[coModal] 에러 상세:', {
       status: error.response?.status,
       statusText: error.response?.statusText,
-      data: error.response?.data
+      data: error.response?.data,
     })
     coList.value = []
-    
+
     if (error.response?.status === 404) {
       alert('업체 검색 API를 찾을 수 없습니다. 서버 설정을 확인해주세요.')
     } else {
@@ -389,4 +386,4 @@ const selectCo = (cos) => {
     padding: 0.4rem 1rem;
   }
 }
-</style> 
+</style>

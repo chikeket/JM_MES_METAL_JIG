@@ -105,17 +105,19 @@ async function getAvailableLotsByRscId(rscId) {
          FROM LOT_STC_PRECON lsp
          JOIN WRHOUS_WRHSDLVR_MAS wm ON wm.WRHSDLVR_MAS_ID = lsp.WRHSDLVR_MAS_ID
         WHERE wm.RCVPAY_TY='S1' AND wm.RSC_ID = ? AND COALESCE(lsp.NOW_STC_QY,0) > 0
-        ORDER BY wm.REG_DT ASC, wm.LOT_NO ASC`,
+        ORDER BY wm.RCVPAY_DT ASC, wm.LOT_NO ASC`,
       [rscId]
     );
-    return lots.map(r => ({
+    return lots.map((r) => ({
       lot_no: r.LOT_NO || r.lot_no,
       now_stock: Number(r.now_stock || 0),
       wrhsdlvr_mas_id: r.wrhsdlvr_mas_id,
       wrhous_id: r.wrhous_id,
       zone_id: r.zone_id,
     }));
-  } finally { conn.release(); }
+  } finally {
+    conn.release();
+  }
 }
 
 /**
@@ -166,7 +168,9 @@ async function getLotStockByRscId(rscId) {
         ORDER BY wm.REG_DT ASC`,
       [rscId]
     );
-  } finally { conn.release(); }
+  } finally {
+    conn.release();
+  }
 }
 /**
  * 자재 불출 처리 예시: BOM 자재 리스트에 LOT 할당 결과 반영
@@ -287,26 +291,74 @@ async function getInspectionRemainingQty({ inspect_id, item_type }) {
 }
 // 가용 수량 단건 조회 API용 래퍼
 async function getAvailableQty({ item_type, item_code, item_opt_code = "" }) {
-  const typeMap = { 자재: "E1", 반제품: "E2", 완제품: "E3", E1: "E1", E2: "E2", E3: "E3" };
+  const typeMap = {
+    자재: "E1",
+    반제품: "E2",
+    완제품: "E3",
+    E1: "E1",
+    E2: "E2",
+    E3: "E3",
+  };
   const t = typeMap[item_type] || item_type;
-  const qty = await getAvailableQtyForItem({ item_type: t, item_code, item_opt_code });
+  const qty = await getAvailableQtyForItem({
+    item_type: t,
+    item_code,
+    item_opt_code,
+  });
   return { available_qty: Number(qty || 0) };
 }
 // 품목별(필요시 옵션 포함) 현재 가용 수량 계산
-const getAvailableQtyForItem = async ({ item_type, item_code, item_opt_code = "" }) => {
+const getAvailableQtyForItem = async ({
+  item_type,
+  item_code,
+  item_opt_code = "",
+}) => {
   const t = item_type; // 이미 매핑됨
   let params;
   if (t === "E1") {
-    params = ["E1","E1","E1", item_code||"", item_code||"", "", "", "", ""];
+    params = [
+      "E1",
+      "E1",
+      "E1",
+      item_code || "",
+      item_code || "",
+      "",
+      "",
+      "",
+      "",
+    ];
   } else if (t === "E2") {
-    params = ["E2","E2","E2", "", "", item_code||"", item_code||"", "", ""];
+    params = [
+      "E2",
+      "E2",
+      "E2",
+      "",
+      "",
+      item_code || "",
+      item_code || "",
+      "",
+      "",
+    ];
   } else if (t === "E3") {
-    params = ["E3","E3","E3", "", "", item_code||"", item_code||"", item_opt_code||"", item_opt_code||""];
+    params = [
+      "E3",
+      "E3",
+      "E3",
+      "",
+      "",
+      item_code || "",
+      item_code || "",
+      item_opt_code || "",
+      item_opt_code || "",
+    ];
   } else {
     return 0;
   }
   const lots = await mariadb.query("selectAvailableLots", params);
-  return (lots || []).reduce((s, r) => s + Number(r.available_qty || r.now_stock || 0), 0);
+  return (lots || []).reduce(
+    (s, r) => s + Number(r.available_qty || r.now_stock || 0),
+    0
+  );
 };
 
 // 안전한 UUID 생성 (uuid 패키지 미설치 상황 대비)
@@ -2228,13 +2280,17 @@ const generateNewLotNumber = async (prefix) => {
 // 출고 가능한 LOT 조회
 const getAvailableLotsForItem = async (item) => {
   const rows = await mariadb.query("selectAvailableLots", [
-    item.item_type, item.item_type, item.item_type,
-    item.item_type === "E1" ? item.item_code : "", item.item_type === "E1" ? item.item_code : "",
-    item.item_type !== "E1" ? item.item_code : "", item.item_type !== "E1" ? item.item_code : "",
-    item.item_type === "E3" ? (item.item_opt_code || "") : "",
-    item.item_type === "E3" ? (item.item_opt_code || "") : "",
+    item.item_type,
+    item.item_type,
+    item.item_type,
+    item.item_type === "E1" ? item.item_code : "",
+    item.item_type === "E1" ? item.item_code : "",
+    item.item_type !== "E1" ? item.item_code : "",
+    item.item_type !== "E1" ? item.item_code : "",
+    item.item_type === "E3" ? item.item_opt_code || "" : "",
+    item.item_type === "E3" ? item.item_opt_code || "" : "",
   ]);
-  return (rows || []).map(r => ({
+  return (rows || []).map((r) => ({
     wrhsdlvr_mas_id: r.wrhsdlvr_mas_id,
     lot_no: (r.lot_no || "").trim(),
     available_qty: Number(r.available_qty || r.now_stock || 0),

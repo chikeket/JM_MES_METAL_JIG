@@ -84,7 +84,6 @@ const lotStcPrecon = require("./sqls/lotStcPrecon.js");
 // 자재 불출 관련 쿼리
 const rwmatrRtun = require("./sqls/rwmatrRtunTrget.js");
 
-
 // 창고 입출고 모달 관련 쿼리
 const wrhsdlvr = require("./sqls/wrhsdlvr.js");
 
