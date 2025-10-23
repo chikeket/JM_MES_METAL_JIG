@@ -37,7 +37,7 @@
               @click="onSelectMain(r)"
             >
               <td class="cell-no">{{ i + 1 }}</td>
-              <td class="cell-left">
+              <td class="text-center">
                 <span class="cell-text" :title="fmtDate(selectedFrDt)">{{
                   fmtDate(selectedFrDt)
                 }}</span>
@@ -99,7 +99,7 @@
                 :class="{ 'selected-row': selectedEmp && selectedEmp.emp_id === r.emp_id }"
                 @click="onSelectEmp(r)"
               >
-                <td class="cell-left">
+                <td class="text-center">
                   <span class="cell-text mono" :title="r.emp_id">{{ r.emp_id }}</span>
                 </td>
                 <td class="cell-left">
@@ -139,7 +139,7 @@
                 :class="{ 'selected-row': selectedEqm && selectedEqm.eqm_id === r.eqm_id }"
                 @click="onSelectEqm(r)"
               >
-                <td class="cell-left">
+                <td class="text-center">
                   <span class="cell-text mono" :title="r.eqm_id">{{ r.eqm_id }}</span>
                 </td>
                 <td class="cell-left">
