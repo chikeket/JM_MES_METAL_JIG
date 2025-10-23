@@ -119,10 +119,11 @@ const rcvordSearchList = `
   FROM rcvord R
     JOIN co C ON C.co_id = R.co_id
     JOIN emp E ON E.emp_id = R.emp_id
-    LEFT JOIN rcvord_deta D ON D.rcvord_id = R.rcvord_id
-    LEFT JOIN prdt P ON P.prdt_id = D.prdt_id
-    LEFT JOIN prdt_opt O ON O.prdt_opt_id = D.prdt_opt_id
-    LEFT JOIN sub_code SC ON SC.sub_code_id = D.st
+    JOIN rcvord_deta D ON D.rcvord_id = R.rcvord_id
+    JOIN prdt P ON P.prdt_id = D.prdt_id
+    JOIN prdt_opt O ON O.prdt_opt_id = D.prdt_opt_id
+    AND O.prdt_id = D.prdt_id
+    JOIN sub_code SC ON SC.sub_code_id = D.st
   WHERE
     (? = '' OR R.rcvord_id LIKE CONCAT('%', ?, '%'))
     AND (? = '' OR C.co_nm LIKE CONCAT('%', ?, '%'))
