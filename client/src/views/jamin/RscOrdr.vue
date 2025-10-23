@@ -647,3 +647,251 @@ const reset = () => {
   rows.value = []
 }
 </script>
+
+<style scoped>
+/* ============================================
+   컨테이너 / 박스 - CompanyManage 스타일 준용
+   ============================================ */
+:deep(*) {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
+    sans-serif;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+:deep(.container-fluid) {
+  background: #ffffff;
+  padding: 1rem !important;
+  min-height: 100vh;
+}
+
+/* ============================================
+   버튼 - CompanyManage 스타일 준용
+   ============================================ */
+:deep(.btn) {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0.5rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  letter-spacing: -0.3px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+:deep(.btn-secondary) {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+  color: #fff !important;
+}
+:deep(.btn-secondary:hover) {
+  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+:deep(.btn-danger) {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  color: #fff !important;
+}
+:deep(.btn-danger:hover) {
+  background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+:deep(.btn:active) {
+  transform: translateY(0);
+}
+
+/* 버튼 간격 */
+.gap-2 {
+  gap: 0.5rem;
+}
+
+/* ============================================
+   폼 요소 - CompanyManage 스타일 준용
+   ============================================ */
+:deep(.form-label) {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.25rem;
+}
+:deep(.form-control),
+:deep(input.form-control),
+:deep(textarea.form-control) {
+  font-size: 12px;
+  font-weight: 400;
+  padding: 0.4rem 0.75rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  background-color: #f8f9fa;
+}
+:deep(.form-control:focus),
+:deep(input.form-control:focus),
+:deep(textarea.form-control:focus) {
+  border-color: #6c757d;
+  box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.15);
+  background-color: #ffffff;
+}
+:deep(.form-control:disabled) {
+  background-color: #e9ecef;
+  cursor: not-allowed;
+}
+:deep(input[type='date'].form-control),
+:deep(input[type='number'].form-control) {
+  font-size: 12px;
+}
+
+/* InputGroup 스타일 */
+:deep(.input-group-text) {
+  font-size: 12px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 2px solid #e9ecef;
+  color: #2c3e50;
+  border-radius: 8px 0 0 8px;
+}
+:deep(.input-group .form-control) {
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+}
+:deep(.input-group svg) {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+:deep(.input-group svg:hover) {
+  transform: scale(1.1);
+  color: #495057;
+}
+
+/* Textarea */
+:deep(textarea.form-control) {
+  min-height: 80px;
+  resize: vertical;
+}
+
+/* 검색 필터 영역 압축 */
+:deep(.g-3) {
+  --bs-gutter-y: 0.5rem;
+  --bs-gutter-x: 0.75rem;
+}
+
+/* ============================================
+   테이블 - CompanyManage 스타일 준용
+   ============================================ */
+:deep(.table) {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  user-select: none;
+  cursor: default;
+  width: 100%;
+}
+
+:deep(.table thead th) {
+  font-size: 12px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+  color: #ffffff;
+  text-align: center;
+  padding: 0.65rem 0.5rem;
+  border: none;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  vertical-align: middle;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+:deep(.table thead th:first-child) {
+  border-top-left-radius: 10px;
+}
+:deep(.table thead th:last-child) {
+  border-top-right-radius: 10px;
+}
+
+:deep(.table tbody td) {
+  font-size: 12px;
+  font-weight: 400;
+  vertical-align: middle;
+  padding: 0.55rem 0.5rem;
+  border-bottom: 1px solid #e9ecef;
+  border-right: 2px solid #e9ecef;
+  color: #2c3e50;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background-color: #ffffff;
+}
+
+:deep(.table tbody td:last-child) {
+  border-right: none;
+}
+
+:deep(.table tbody tr) {
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+}
+
+/* hover 효과 */
+:deep(.table) {
+  --row-hover-bg: var(
+    --cui-table-hover-bg,
+    var(
+      --bs-table-hover-bg,
+      rgba(var(--cui-emphasis-color-rgb, var(--bs-emphasis-color-rgb, 33, 37, 41)), 0.075)
+    )
+  );
+}
+
+:deep(.table tbody tr:hover:not(.table-secondary)) {
+  background-color: var(--row-hover-bg) !important;
+}
+:deep(.table tbody tr:hover:not(.table-secondary) td) {
+  background-color: var(--row-hover-bg) !important;
+}
+
+/* 빈 행 스타일 */
+:deep(.table tbody tr.table-secondary td) {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+
+/* 더블클릭 편집 가능한 셀 커서 */
+:deep(.table tbody td:not(:first-child):not(:nth-child(2))) {
+  cursor: text;
+}
+
+/* 테이블 내 인풋 스타일 */
+:deep(.table tbody td input.form-control) {
+  font-size: 12px;
+  line-height: 1.2;
+  padding: 0.25rem 0.5rem;
+  height: 28px;
+  border: 2px solid #6c757d;
+  background-color: #ffffff;
+}
+
+/* 체크박스 정렬 */
+:deep(.form-check-input) {
+  cursor: pointer;
+}
+
+/* ============================================
+   반응형 축소 시 폰트 크기 조정
+   ============================================ */
+@media (max-width: 1600px) {
+  :deep(.form-label),
+  :deep(.form-control),
+  :deep(input.form-control),
+  :deep(textarea.form-control),
+  :deep(.input-group-text),
+  :deep(.btn),
+  :deep(.table th),
+  :deep(.table td) {
+    font-size: 11px !important;
+  }
+  :deep(.btn) {
+    padding: 0.4rem 1rem;
+  }
+}
+</style>

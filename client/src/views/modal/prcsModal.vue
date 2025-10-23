@@ -209,111 +209,287 @@ onMounted(() => {
 </script>
 
 <style scoped>
-:deep(*) {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
-    sans-serif;
-  line-height: 1.5;
-  box-sizing: border-box;
+/* 모달 헤더 커스텀 */
+:deep(.modal-header-custom) {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 2px solid #e5e7eb;
+  padding: 1.25rem 1.5rem;
 }
-.modal-header-custom {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-right: 12px;
+
+:deep(.modal-header-custom .modal-title) {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2c3e50;
 }
+
+/* 모달 바디 */
+:deep(.modal-body) {
+  padding: 1.5rem;
+  background: #f5f7fa;
+}
+
+/* 검색 바 */
 .search-bar {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
   display: flex;
   align-items: center;
+  gap: 0.75rem;
 }
+
+.left-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.search-label {
+  min-width: 80px;
+  font-weight: 600;
+  font-size: 13px;
+  color: #2c3e50;
+  margin-bottom: 0;
+}
+
 .flex-spacer {
   flex: 1;
 }
+
 .right-controls {
   display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.search-label {
-  font-weight: 600;
-  font-size: 0.85rem;
-  color: #222;
-  display: inline-block;
-  min-width: 72px;
-  text-align: right;
+  gap: 0.5rem;
 }
 
-/* 표 스타일 - rcvordModalOne 준용 */
-:deep(.table-responsive) {
-  border-radius: 10px;
-}
-:deep(.table-responsive thead) {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-:deep(.table-responsive thead th) {
-  font-size: 13px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #495057 0%, #343a40 100%) !important;
-  color: #ffffff !important;
-  text-align: center;
-  padding: 0.6rem 0.5rem;
-  border: none;
-}
-:deep(.table-responsive tbody td) {
-  font-size: 14px;
-  vertical-align: middle;
-}
-:deep(.table-responsive tbody tr) {
+/* 폼 인풋 */
+:deep(.form-control) {
+  height: 34px;
+  font-size: 12px;
+  padding: 0.4rem 0.75rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  background-color: #f8f9fa;
   transition: all 0.2s ease;
-  background-color: #ffffff;
-}
-:deep(.table-responsive tbody tr:hover) {
-  background-color: #f8f9fa !important;
-}
-:deep(.table-responsive tbody tr:hover) td {
-  background-color: #f8f9fa !important;
 }
 
-/* 모던 스크롤바 */
-:deep(.table-responsive) {
+:deep(.form-control:focus) {
+  border-color: #6c757d;
+  background-color: #fff;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(108, 117, 125, 0.1);
+}
+
+/* 버튼 */
+:deep(.btn) {
+  cursor: pointer;
+  border-radius: 8px;
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: -0.3px;
+  transition: all 0.3s ease;
+  padding: 0.5rem 1.2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+  height: 34px;
+}
+
+:deep(.btn:hover:not(:disabled)) {
+  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+:deep(.btn:disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+:deep(.btn-secondary) {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+}
+
+:deep(.btn-secondary:hover:not(:disabled)) {
+  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+}
+
+/* 테이블 영역 */
+.col-width-scope {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.table-responsive {
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid #bcbcbc;
+  border-radius: 8px;
   scrollbar-gutter: stable;
-  -webkit-overflow-scrolling: touch;
 }
-:deep(.table-responsive::-webkit-scrollbar) {
-  width: 8px;
+
+.table-responsive::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
-:deep(.table-responsive::-webkit-scrollbar-track) {
+
+.table-responsive::-webkit-scrollbar-track {
   background: rgba(240, 240, 240, 0.6);
   border-radius: 10px;
 }
-:deep(.table-responsive::-webkit-scrollbar-thumb) {
+
+.table-responsive::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, #bfc2c7, #9ea2a8);
   border-radius: 10px;
   border: 2px solid rgba(255, 255, 255, 0.4);
 }
-:deep(.table-responsive::-webkit-scrollbar-thumb:hover) {
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #a4a8ae, #7e838a);
 }
 
-/* CoreUI 버튼 톤 유지 */
-:deep(.btn) {
-  font-size: 13px;
-  font-weight: 600;
-  padding: 0.5rem 1.2rem;
+/* 테이블 */
+:deep(.table) {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-size: 12px;
+  margin-bottom: 0;
+}
+
+:deep(.table thead) {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+:deep(.table thead th) {
+  background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+  color: #fff;
   border: none;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  letter-spacing: -0.3px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 0.65rem 0.5rem;
+  font-weight: 700;
+  text-align: center;
+  height: 34px;
+  white-space: nowrap;
 }
-:deep(.btn-secondary) {
-  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
-  color: #fff !important;
+
+:deep(.table thead th:first-child) {
+  border-top-left-radius: 4px;
 }
-:deep(.btn-secondary:hover) {
-  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.25);
+
+:deep(.table thead th:last-child) {
+  border-top-right-radius: 4px;
+}
+
+:deep(.table tbody td) {
+  border: none;
+  border-bottom: 1px solid #e9ecef;
+  border-right: 2px solid #e9ecef;
+  padding: 0.55rem 0.5rem;
+  background: #fff;
+  height: 34px;
+  vertical-align: middle;
+  text-align: center;
+}
+
+:deep(.table tbody td:last-child) {
+  border-right: none;
+}
+
+:deep(.table tbody tr) {
+  height: 34px;
+  transition: all 0.2s ease;
+  background: #fff;
+  cursor: pointer;
+}
+
+:deep(.table tbody tr:hover td) {
+  background-color: rgba(33, 37, 41, 0.075) !important;
+}
+
+:deep(.table tbody tr.table-active td) {
+  background-color: #e7f1ff !important;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* 체크박스 */
+.form-check-input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  border: 2px solid #6c757d;
+  border-radius: 3px;
+}
+
+.form-check-input:checked {
+  background-color: #6c757d;
+  border-color: #6c757d;
+}
+
+/* 텍스트 정렬 */
+.text-center {
+  text-align: center !important;
+}
+
+.text-muted {
+  color: #6c757d !important;
+}
+
+.py-3 {
+  padding-top: 1rem !important;
+  padding-bottom: 1rem !important;
+}
+
+/* 유틸리티 클래스 */
+.mb-3 {
+  margin-bottom: 1rem !important;
+}
+
+.d-flex {
+  display: flex;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.align-items-center {
+  align-items: center;
+}
+
+/* 반응형 */
+@media (max-width: 1600px) {
+  :deep(.btn) {
+    font-size: 11px !important;
+    padding: 0.4rem 1rem;
+  }
+}
+
+@media (max-height: 900px) {
+  .table-responsive {
+    max-height: 350px;
+  }
+}
+
+@media (max-height: 780px) {
+  .table-responsive {
+    max-height: 300px;
+  }
+}
+
+@media (max-height: 700px) {
+  .table-responsive {
+    max-height: 250px;
+  }
 }
 </style>

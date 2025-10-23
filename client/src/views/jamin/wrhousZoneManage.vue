@@ -2,8 +2,8 @@
   <CContainer fluid class="h-100 d-flex flex-column p-3">
     <!-- 상단 조회/초기화 버튼 -->
     <div class="d-flex justify-content-end mb-2 gap-2">
-      <CButton color="secondary" size="sm" @click="resetSearch">초기화</CButton>
       <CButton color="secondary" size="sm" @click="searchWrhousZone">조회</CButton>
+      <CButton color="secondary" size="sm" @click="resetSearch">초기화</CButton>
     </div>
 
     <!-- 검색 필터 영역 -->
@@ -60,31 +60,27 @@
           <CButton color="secondary" size="sm">저장</CButton>
           <CButton color="danger" size="sm">삭제</CButton>
         </div>
-
+        
         <!-- 그리드 테이블 -->
         <div class="grid-box flex-grow-1 overflow-hidden d-flex flex-column">
           <div class="table-wrapper">
             <CTable bordered hover class="data-table">
               <CTableHead>
                 <CTableRow>
-                  <CTableHeaderCell scope="col" class="text-center" style="width: 40px"
-                    >No</CTableHeaderCell
-                  >
+                  <CTableHeaderCell scope="col" class="text-center" style="width: 40px">No</CTableHeaderCell>
                   <CTableHeaderCell scope="col" class="text-center">창고 ID</CTableHeaderCell>
                   <CTableHeaderCell scope="col" class="text-center">창고 이름</CTableHeaderCell>
                   <CTableHeaderCell scope="col" class="text-center">로케이션 ID</CTableHeaderCell>
                   <CTableHeaderCell scope="col" class="text-center">로케이션 이름</CTableHeaderCell>
                   <CTableHeaderCell scope="col" class="text-center">품목 유형</CTableHeaderCell>
-                  <CTableHeaderCell scope="col" class="text-center" style="width: 80px"
-                    >상태</CTableHeaderCell
-                  >
+                  <CTableHeaderCell scope="col" class="text-center" style="width: 80px">상태</CTableHeaderCell>
                   <CTableHeaderCell scope="col" class="text-center">비고</CTableHeaderCell>
                 </CTableRow>
               </CTableHead>
               <CTableBody>
                 <!-- 데이터 행 -->
-                <CTableRow
-                  v-for="(item, index) in displayedData"
+                <CTableRow 
+                  v-for="(item, index) in displayedData" 
                   :key="`${item.wrhous_id}-${item.zone_id || 'no-zone'}`"
                   @click="selectZone(item, index)"
                   :class="{ 'selected-row': selectedRowIndex === index }"
@@ -127,9 +123,7 @@
         <div class="d-flex justify-content-end gap-2 mb-2">
           <CButton color="secondary" size="sm" @click="resetForm">신규</CButton>
           <CButton color="secondary" size="sm" @click="saveZone">저장</CButton>
-          <CButton color="danger" size="sm" @click="deleteZone" :disabled="!selectedZone"
-            >삭제</CButton
-          >
+          <CButton color="danger" size="sm" @click="deleteZone" :disabled="!selectedZone">삭제</CButton>
         </div>
 
         <!-- 입력 폼 -->
@@ -140,7 +134,7 @@
                 <CFormLabel class="form-label pt-1">창고 ID</CFormLabel>
               </CCol>
               <CCol :md="7" class="ps-3">
-                <CFormInput
+                <CFormInput 
                   v-model="formData.wrhous_id"
                   size="sm"
                   placeholder="창고 ID를 입력하세요"
@@ -148,48 +142,48 @@
                 />
               </CCol>
             </CRow>
-
+            
             <CRow class="mb-2">
               <CCol :md="4" class="text-end pe-2">
                 <CFormLabel class="form-label pt-1">창고 이름</CFormLabel>
               </CCol>
               <CCol :md="7" class="ps-3">
-                <CFormInput
-                  v-model="formData.wrhous_nm"
+                <CFormInput 
+                  v-model="formData.wrhous_nm" 
                   size="sm"
                   placeholder="창고 이름"
                   readonly
                 />
               </CCol>
             </CRow>
-
+            
             <CRow class="mb-2">
               <CCol :md="4" class="text-end pe-2">
                 <CFormLabel class="form-label pt-1">로케이션 ID</CFormLabel>
               </CCol>
               <CCol :md="7" class="ps-3">
-                <CFormInput
-                  v-model="formData.zone_id"
+                <CFormInput 
+                  v-model="formData.zone_id" 
                   size="sm"
                   placeholder="자동 생성됩니다"
                   readonly
                 />
               </CCol>
             </CRow>
-
+            
             <CRow class="mb-2">
               <CCol :md="4" class="text-end pe-2">
                 <CFormLabel class="form-label pt-1">로케이션 이름</CFormLabel>
               </CCol>
               <CCol :md="7" class="ps-3">
-                <CFormInput
-                  v-model="formData.zone_nm"
+                <CFormInput 
+                  v-model="formData.zone_nm" 
                   size="sm"
                   placeholder="자재창고 A구역 01번"
                 />
               </CCol>
             </CRow>
-
+            
             <CRow class="mb-2">
               <CCol :md="4" class="text-end pe-2">
                 <CFormLabel class="form-label pt-1">품목 유형</CFormLabel>
@@ -203,25 +197,25 @@
                 </CFormSelect>
               </CCol>
             </CRow>
-
+            
             <CRow class="mb-2">
               <CCol :md="4" class="text-end pe-2">
                 <CFormLabel class="form-label pt-1">상태</CFormLabel>
               </CCol>
               <CCol :md="7" class="ps-3">
                 <div class="radio-group">
-                  <CFormCheck
+                  <CFormCheck 
                     class="radio-item"
-                    type="radio"
+                    type="radio" 
                     id="status-active"
                     name="status"
                     value="M1"
                     v-model="formData.st"
                     label="활성상태"
                   />
-                  <CFormCheck
+                  <CFormCheck 
                     class="radio-item"
-                    type="radio"
+                    type="radio" 
                     id="status-inactive"
                     name="status"
                     value="M2"
@@ -231,15 +225,15 @@
                 </div>
               </CCol>
             </CRow>
-
+            
             <CRow class="mb-2">
               <CCol :md="4" class="text-end pe-2">
                 <CFormLabel class="form-label pt-1">비고</CFormLabel>
               </CCol>
               <CCol :md="7" class="ps-3">
-                <CFormTextarea
-                  v-model="formData.rm"
-                  rows="4"
+                <CFormTextarea 
+                  v-model="formData.rm" 
+                  rows="4" 
                   placeholder="비고사항을 입력하세요"
                   size="sm"
                 />
@@ -263,7 +257,7 @@ const searchForm = reactive({
   item_ty: '',
   zone_nm: '',
   st: '',
-  wrhous_nm: '',
+  wrhous_nm: ''
 })
 
 // 로케이션 데이터 목록
@@ -284,7 +278,7 @@ const formData = reactive({
   item_ty: '',
   zone_nm: '',
   st: 'M1',
-  rm: '',
+  rm: ''
 })
 
 // 편집 모드 여부
@@ -292,7 +286,7 @@ const isEditMode = ref(false)
 
 // 선택된 창고명 (표시용)
 const selectedWrhousNm = computed(() => {
-  const wrhous = wrhousOptions.value.find((w) => w.wrhous_id === formData.wrhous_id)
+  const wrhous = wrhousOptions.value.find(w => w.wrhous_id === formData.wrhous_id)
   return wrhous ? wrhous.wrhous_nm : ''
 })
 
@@ -323,7 +317,7 @@ const searchWrhousZone = async () => {
   try {
     console.log('[wrhousZoneManage] 조회 조건:', searchForm)
     const response = await axios.get('/api/wrhousZoneManage', {
-      params: searchForm,
+      params: searchForm
     })
     zoneData.value = response.data
     selectedRowIndex.value = null
@@ -344,7 +338,7 @@ const resetSearch = () => {
   searchForm.wrhous_nm = ''
   selectedRowIndex.value = null
   zoneData.value = []
-
+  
   // 우측 입력 폼 완전 초기화 (창고 정보도 포함)
   selectedZone.value = null
   isEditMode.value = false
@@ -361,11 +355,11 @@ const resetSearch = () => {
 const selectZone = (item, index) => {
   selectedZone.value = item
   selectedRowIndex.value = index
-
+  
   // 로케이션이 있는 경우는 편집 모드, 없는 경우는 신규 모드
   if (item.zone_id && item.zone_id.trim() !== '') {
     isEditMode.value = true
-
+    
     // 폼에 선택된 데이터 설정 (편집 모드)
     formData.zone_id = item.zone_id
     formData.wrhous_id = item.wrhous_id
@@ -377,7 +371,7 @@ const selectZone = (item, index) => {
   } else {
     // 로케이션이 없는 창고 선택시 신규 모드로 창고 정보만 설정
     isEditMode.value = false
-
+    
     formData.zone_id = ''
     formData.wrhous_id = item.wrhous_id
     formData.wrhous_nm = item.wrhous_nm
@@ -393,17 +387,17 @@ const resetForm = () => {
   selectedZone.value = null
   selectedRowIndex.value = null
   isEditMode.value = false
-
+  
   // 창고 정보를 유지하면서 나머지만 초기화
   const currentWrhousId = formData.wrhous_id
   const currentWrhousNm = formData.wrhous_nm
-
+  
   formData.zone_id = ''
   formData.item_ty = ''
   formData.zone_nm = ''
   formData.st = 'M1'
   formData.rm = ''
-
+  
   // 창고 정보가 있으면 유지, 없으면 빈 값
   if (currentWrhousId && currentWrhousNm) {
     formData.wrhous_id = currentWrhousId
@@ -416,7 +410,7 @@ const resetForm = () => {
 
 // 창고 선택시 창고명 자동 입력
 const onWrhousSelect = () => {
-  const selectedWrhous = wrhousOptions.value.find((w) => w.wrhous_id === formData.wrhous_id)
+  const selectedWrhous = wrhousOptions.value.find(w => w.wrhous_id === formData.wrhous_id)
   if (selectedWrhous) {
     formData.wrhous_nm = selectedWrhous.wrhous_nm
   } else {
@@ -427,9 +421,9 @@ const onWrhousSelect = () => {
 // 품목 유형 라벨 변환 함수
 const getItemTypeLabel = (itemType) => {
   const itemTypeMap = {
-    E1: '자재',
-    E2: '반제품',
-    E3: '완제품',
+    'E1': '자재',
+    'E2': '반제품', 
+    'E3': '완제품'
   }
   return itemTypeMap[itemType] || itemType || ''
 }
@@ -448,9 +442,9 @@ const saveZone = async () => {
     }
 
     console.log('[wrhousZoneManage] 저장 데이터:', formData)
-
+    
     const response = await axios.post('/api/wrhousZoneManage', formData)
-
+    
     if (response.data.success) {
       alert(isEditMode.value ? '로케이션 정보가 수정되었습니다.' : '새 로케이션이 등록되었습니다.')
       await searchWrhousZone() // 목록 재조회
@@ -475,9 +469,9 @@ const deleteZone = async () => {
 
   try {
     console.log('[wrhousZoneManage] 삭제 ID:', selectedZone.value.zone_id)
-
+    
     const response = await axios.delete(`/api/wrhousZoneManage/${selectedZone.value.zone_id}`)
-
+    
     if (response.data.success) {
       alert('로케이션이 삭제되었습니다.')
       await searchWrhousZone() // 목록 재조회
@@ -498,7 +492,7 @@ onMounted(async () => {
 
 <style scoped>
 /* ============================================
-   전역 스타일 - 2025 Modern Design
+   컨테이너 / 박스 - CompanyManage 스타일 준용
    ============================================ */
 :deep(*) {
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
@@ -506,32 +500,24 @@ onMounted(async () => {
   line-height: 1.5;
   box-sizing: border-box;
 }
-
-/* 전체 컨테이너 - 흰색 배경 */
 :deep(.container-fluid) {
   background: #ffffff;
   padding: 1rem !important;
   height: 100vh;
   overflow: hidden;
 }
-
-/* 검색 필터 박스 - 얇은 회색 테두리 */
 .search-filter-box {
   border: 1px solid #dee2e6;
   border-radius: 8px;
   padding: 1rem;
   background: #ffffff;
 }
-
-/* 그리드 박스 - 얇은 회색 테두리 */
 .grid-box {
   border: 1px solid #dee2e6;
   border-radius: 8px;
   background: #ffffff;
   overflow: hidden;
 }
-
-/* 폼 박스 - 얇은 회색 테두리 */
 .form-box {
   border: 1px solid #dee2e6;
   border-radius: 8px;
@@ -539,9 +525,16 @@ onMounted(async () => {
   overflow: hidden;
 }
 
+/* 투명 버튼 영역 (높이 맞추기용) */
+.button-spacer {
+  visibility: hidden;
+  height: 38px;
+}
+
 /* ============================================
-   버튼 스타일 - Modern & Clean
+   버튼 - CompanyManage 스타일 준용
    ============================================ */
+.btn,
 :deep(.btn) {
   font-size: 13px;
   font-weight: 600;
@@ -552,54 +545,52 @@ onMounted(async () => {
   letter-spacing: -0.3px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
-
 :deep(.btn-secondary) {
   background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
   color: #fff !important;
 }
-
 :deep(.btn-secondary:hover) {
   background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
 }
-
 :deep(.btn-danger) {
   background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
   color: #fff !important;
 }
-
-:deep(.btn-danger:hover) {
+:deep(.btn-danger:hover:not(:disabled)) {
   background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
 }
-
 :deep(.btn:active) {
   transform: translateY(0);
 }
+:deep(.btn:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
 
-/* 높이 맞추기용 투명 버튼 영역 */
-.button-spacer {
-  visibility: hidden;
-  display: flex;
-  justify-content: flex-end;
+/* 버튼 간격 */
+.gap-2 {
   gap: 0.5rem;
-  height: 38px;
 }
 
 /* ============================================
-   폼 요소 스타일 - Clean & Modern
+   폼 요소 - CompanyManage 스타일 준용
    ============================================ */
+.form-label,
 :deep(.form-label) {
   font-size: 12px;
   font-weight: 600;
   color: #2c3e50;
   margin-bottom: 0.25rem;
-  letter-spacing: -0.2px;
 }
-
 :deep(.form-control),
+:deep(input.form-control),
+:deep(select.form-control),
+:deep(textarea.form-control),
 :deep(.form-select) {
   font-size: 12px;
   font-weight: 400;
@@ -610,91 +601,81 @@ onMounted(async () => {
   background-color: #f8f9fa;
   height: 34px;
 }
-
+:deep(textarea.form-control) {
+  height: auto;
+  min-height: 80px;
+  resize: vertical;
+}
 :deep(.form-control:focus),
+:deep(input.form-control:focus),
+:deep(select.form-control:focus),
+:deep(textarea.form-control:focus),
 :deep(.form-select:focus) {
   border-color: #6c757d;
   box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.15);
   background-color: #ffffff;
 }
+:deep(.form-control:read-only) {
+  background-color: #e9ecef;
+  cursor: not-allowed;
+}
 
-/* 검색 필터 영역 압축 */
+/* 라디오 버튼 그룹 */
+.radio-group {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+.radio-item {
+  margin-bottom: 0;
+}
+:deep(.form-check-input) {
+  cursor: pointer;
+}
+:deep(.form-check-label) {
+  font-size: 12px;
+  font-weight: 400;
+  color: #2c3e50;
+  cursor: pointer;
+}
+
+/* 검색 필터 영역 압축 - CompanyManage와 동일 */
 :deep(.g-3) {
   --bs-gutter-y: 0.5rem;
   --bs-gutter-x: 0.75rem;
 }
 
 /* ============================================
-   라디오 버튼 스타일 - Modern
-   ============================================ */
-.radio-group {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-:deep(.radio-item) {
-  display: flex !important;
-  align-items: center !important;
-  margin-bottom: 0 !important;
-  padding: 0 !important;
-}
-
-:deep(.radio-item .form-check-input) {
-  width: 18px !important;
-  height: 18px !important;
-  margin: 0 6px 0 0 !important;
-  flex-shrink: 0 !important;
-  cursor: pointer;
-  border: 2px solid #6c757d;
-}
-
-:deep(.radio-item .form-check-input:checked) {
-  background-color: #6c757d;
-  border-color: #6c757d;
-}
-
-:deep(.radio-item .form-check-label) {
-  font-size: 12px !important;
-  font-weight: 500 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  line-height: 18px !important;
-  white-space: nowrap !important;
-  cursor: pointer;
-  color: #2c3e50;
-}
-
-/* 폼 행 간격 줄이기 */
-:deep(.mb-2) {
-  margin-bottom: 0.5rem !important;
-}
-
-/* ============================================
-   테이블 스타일 - Modern & Clean
+   테이블 - CompanyManage 스타일 준용
    ============================================ */
 .table-wrapper {
-  flex: 1;
-  overflow-y: auto;
+  --row-h: 35px;
+  --head-h: 44px;
+  flex: 1 1 auto;
   border-radius: 10px;
-  max-height: calc(100vh - 400px);
+  height: calc(var(--head-h) + (10 * var(--row-h)));
+  max-height: calc(var(--head-h) + (10 * var(--row-h)));
+  overflow-y: auto;
+  overflow-x: hidden;
 }
-
+.data-table,
 :deep(.data-table) {
   margin-bottom: 0;
   border-collapse: separate;
   border-spacing: 0;
   user-select: none;
   cursor: default;
+  table-layout: fixed;
+  width: 100%;
 }
-
-:deep(.data-table thead) {
+:deep(.data-table thead),
+:deep(.table thead) {
   position: sticky;
   top: 0;
   z-index: 10;
 }
-
-:deep(.data-table th) {
+:deep(.data-table th),
+:deep(.table thead th) {
   font-size: 12px;
   font-weight: 700;
   background: linear-gradient(135deg, #495057 0%, #343a40 100%);
@@ -703,122 +684,146 @@ onMounted(async () => {
   padding: 0.65rem 0.5rem;
   border: none;
   letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
 }
-
-:deep(.data-table th:first-child) {
+:deep(.data-table th:first-child),
+:deep(.table thead th:first-child) {
   border-top-left-radius: 10px;
 }
-
-:deep(.data-table th:last-child) {
+:deep(.data-table th:last-child),
+:deep(.table thead th:last-child) {
   border-top-right-radius: 10px;
 }
-
-:deep(.data-table td) {
+:deep(.data-table td),
+:deep(.table tbody td) {
   font-size: 12px;
   font-weight: 400;
   vertical-align: middle;
   padding: 0.55rem 0.5rem;
   border-bottom: 1px solid #e9ecef;
+  border-right: 2px solid #e9ecef;
   color: #2c3e50;
-}
-
-:deep(.data-table tbody tr) {
-  cursor: pointer;
-  transition: all 0.2s ease;
+  height: var(--row-h);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   background-color: #ffffff;
 }
-
-:deep(.data-table tbody tr:hover) {
-  background-color: #f8f9fa;
-  transform: scale(1.005);
+:deep(.data-table td:last-child),
+:deep(.table tbody td:last-child) {
+  border-right: none;
+}
+:deep(.data-table tbody tr),
+:deep(.table tbody tr) {
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+  cursor: pointer;
 }
 
-/* 선택된 행 스타일 - 모던 그레이 테마 */
-:deep(.selected-row) {
-  background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%) !important;
+/* hover 효과 */
+:deep(.data-table),
+:deep(.table) {
+  --row-hover-bg: var(
+    --cui-table-hover-bg,
+    var(
+      --bs-table-hover-bg,
+      rgba(var(--cui-emphasis-color-rgb, var(--bs-emphasis-color-rgb, 33, 37, 41)), 0.075)
+    )
+  );
+}
+
+:deep(.data-table tbody tr:hover:not(.empty-row)),
+:deep(.table tbody tr:hover:not(.empty-row)) {
+  background-color: var(--row-hover-bg) !important;
+}
+:deep(.data-table tbody tr:hover:not(.empty-row) td),
+:deep(.table tbody tr:hover:not(.empty-row) td) {
+  background-color: var(--row-hover-bg) !important;
+}
+
+/* 선택된 행 스타일 */
+:deep(.table tbody tr.selected-row) {
+  background-color: rgba(108, 117, 125, 0.15) !important;
+}
+:deep(.table tbody tr.selected-row td) {
+  background-color: rgba(108, 117, 125, 0.15) !important;
   font-weight: 600;
-  box-shadow: inset 0 0 0 2px #6c757d;
-}
-
-:deep(.selected-row td) {
-  border-bottom: 2px solid #495057;
-  color: #212529;
 }
 
 /* 빈 행 스타일 */
-.empty-row td {
-  height: 34px;
-  background-color: #fafbfc;
+.empty-row,
+:deep(.empty-row) {
+  cursor: default !important;
+}
+.empty-row td,
+:deep(.empty-row td) {
+  height: var(--row-h);
+  background-color: #ffffff;
+  border-bottom: 1px solid #e9ecef;
 }
 
-/* 로케이션이 없는 창고 스타일 */
-:deep(.text-muted) {
-  color: #6c757d !important;
-  font-style: italic;
-}
-
-/* 우측 폼 영역 높이 조정 */
-:deep(.overflow-auto) {
-  max-height: calc(100vh - 280px);
+/* 배지 스타일 */
+:deep(.badge) {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
 }
 
 /* ============================================
-   모던 스크롤바 스타일 (Glass / Minimal)
+   모던 스크롤바 - CompanyManage 스타일 준용
    ============================================ */
 .table-wrapper,
-:deep(.overflow-auto) {
-  overflow-y: scroll;
-  overflow-x: hidden;
+.form-box > div {
   scrollbar-gutter: stable;
   -webkit-overflow-scrolling: touch;
 }
-
-/* 모던 스크롤바 스타일 (Glass / Minimal) */
 .table-wrapper::-webkit-scrollbar,
-:deep(.overflow-auto)::-webkit-scrollbar {
-  width: 8px;
+.form-box > div::-webkit-scrollbar {
+  width: 6px;
 }
-
 .table-wrapper::-webkit-scrollbar-track,
-:deep(.overflow-auto)::-webkit-scrollbar-track {
+.form-box > div::-webkit-scrollbar-track {
   background: rgba(240, 240, 240, 0.6);
   border-radius: 10px;
 }
-
 .table-wrapper::-webkit-scrollbar-thumb,
-:deep(.overflow-auto)::-webkit-scrollbar-thumb {
+.form-box > div::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, #bfc2c7, #9ea2a8);
   border-radius: 10px;
   border: 2px solid rgba(255, 255, 255, 0.4);
   backdrop-filter: blur(2px);
   transition: all 0.2s ease;
 }
-
 .table-wrapper::-webkit-scrollbar-thumb:hover,
-:deep(.overflow-auto)::-webkit-scrollbar-thumb:hover {
+.form-box > div::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #a4a8ae, #7e838a);
 }
-
-/* Firefox 대응 */
 .table-wrapper,
-:deep(.overflow-auto) {
+.form-box > div {
   scrollbar-width: thin;
   scrollbar-color: #9ea2a8 rgba(240, 240, 240, 0.6);
 }
 
 /* ============================================
-   반응형
+   반응형 축소 시 폰트 크기 조정
    ============================================ */
 @media (max-width: 1600px) {
+  .form-label,
   :deep(.form-label),
   :deep(.form-control),
+  :deep(input.form-control),
+  :deep(select.form-control),
+  :deep(textarea.form-control),
   :deep(.form-select),
+  :deep(.form-check-label),
   :deep(.btn),
-  :deep(th),
-  :deep(td) {
+  :deep(.table th),
+  :deep(.table td) {
     font-size: 11px !important;
   }
-
   :deep(.btn) {
     padding: 0.4rem 1rem;
   }
