@@ -152,9 +152,11 @@ module.exports = {
           // 각 품목 재고 조회 및 비교
           for (const [key, reqSum] of reqByItem.entries()) {
             const [pid, opt] = key.split("|");
+            const optParam = opt === '' ? null : opt
             const rows = await conn.query(sqlList.selectNowStockByPrdtOpt, [
               pid,
-              opt,
+              optParam,
+              optParam,
             ]);
             const nowStock = Number(rows?.[0]?.now_stock || 0);
             if (reqSum > nowStock) {

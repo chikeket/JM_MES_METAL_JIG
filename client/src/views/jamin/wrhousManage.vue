@@ -231,7 +231,7 @@ const displayedData = computed(() => {
 // 빈 행 개수 계산
 const emptyRowCount = computed(() => {
   const dataCount = displayedData.value.length
-  return dataCount < 10 ? 10 - dataCount : 0
+  return dataCount < 30 ? 30 - dataCount : 0
 })
 
 // 창고 목록 조회
@@ -509,19 +509,24 @@ const getItemTypeLabel = (itemType) => {
   cursor: pointer;
 }
 
-:deep(.form-check-input:checked) {
-  background-color: #dc2626 !important;
-  border-color: #dc2626 !important;
+/* match Eqm.vue radio appearance: muted gray */
+:deep(.radio-item .form-check-input) {
+  width: 18px !important;
+  height: 18px !important;
+  margin: 0 6px 0 0 !important;
+  flex-shrink: 0 !important;
+  cursor: pointer;
+  border: 2px solid #6c757d;
 }
 
-:deep(.form-check-input:checked:hover) {
-  background-color: #b91c1c !important;
-  border-color: #b91c1c !important;
+:deep(.radio-item .form-check-input:checked) {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
 }
 
-:deep(.form-check-input:focus) {
-  border-color: #dc2626 !important;
-  box-shadow: 0 0 0 0.25rem rgba(220, 38, 38, 0.25) !important;
+:deep(.radio-item .form-check-input:focus) {
+  border-color: #6c757d !important;
+  box-shadow: 0 0 0 0.15rem rgba(108, 117, 125, 0.15) !important;
 }
 
 :deep(.form-check-label) {

@@ -178,6 +178,7 @@ SELECT
   p.prdt_nm                                AS item_name,
   rd.prdt_opt_id                           AS opt_code,
   po.opt_nm                                AS opt_name,
+  wm.LOT_NO                                AS lot_no,
   dd.DELI_QY                               AS pass_qty,
   COALESCE(SUM(wd.RCVPAY_QY), 0)           AS delivered_qty,
   (dd.DELI_QY - COALESCE(SUM(wd.RCVPAY_QY), 0)) AS available_qty,
@@ -285,32 +286,38 @@ ORDER BY pd.reg_dt DESC, p.prdt_nm, r.rsc_nm
 LIMIT 200
 `;
 
-// 창고 입출고 거래 목록 조회 (사용자별 필터링)
+// 창고 입출고 거래 목록 조회 (마스터 기준, 사용자별 필터링)
 const selectWrhousTransactionList = `
 SELECT
-  w.WRHOUS_WRHSDLVR_ID AS txn_id,
-  w.DLVR_TY AS txn_type,
-  w.ITEM_TY AS item_type,
-  w.ITEM_CODE AS item_code,
-  w.ITEM_NM AS item_name,
-  w.SPEC AS spec,
-  w.UNIT AS unit,
-  w.QY AS qty,
-  w.INSP_ID AS inspect_id,
-  w.EMP_ID AS emp_id,
+  wm.WRHSDLVR_MAS_ID AS txn_id,
+  wm.RCVPAY_TY AS txn_type,
+  CASE WHEN wm.PRDT_ID IS NOT NULL AND wm.PRDT_ID <> '' THEN '완제품'
+       WHEN wm.RSC_ID IS NOT NULL AND wm.RSC_ID <> '' THEN '자재'
+       ELSE '' END AS item_type,
+  COALESCE(wm.PRDT_ID, wm.RSC_ID) AS item_code,
+  COALESCE(p.prdt_nm, r.rsc_nm, wm.RCVPAY_NM) AS item_name,
+  wm.LOT_NO                                AS lot_no,
+  wm.SPEC AS spec,
+  wm.UNIT AS unit,
+  wm.ALL_RCVPAY_QY AS qty,
+  COALESCE(d.RSC_QLTY_INSP_ID, d.END_PRDT_QLTY_INSP_ID, d.SEMI_PRDT_QLTY_INSP_ID, d.DELI_DETA_ID) AS inspect_id,
+  wm.EMP_ID AS emp_id,
   e.emp_nm AS emp_nm,
-  DATE_FORMAT(w.REG_DT, '%Y-%m-%d %H:%i:%s') AS reg_dt,
-  w.RM AS rm
-FROM WRHOUS_WRHSDLVR w
-LEFT JOIN emp e ON w.EMP_ID = e.emp_id
-WHERE (? IS NULL OR w.DLVR_TY = ?)
-  AND (? IS NULL OR w.ITEM_TY LIKE CONCAT('%', ?, '%'))
-  AND (? IS NULL OR w.ITEM_CODE LIKE CONCAT('%', ?, '%'))
-  AND (? IS NULL OR w.ITEM_NM LIKE CONCAT('%', ?, '%'))
-  AND (? IS NULL OR w.INSP_ID LIKE CONCAT('%', ?, '%'))
-  AND (? IS NULL OR w.EMP_ID = ?)
-  AND (? IS NULL OR DATE(w.REG_DT) >= ?)
-ORDER BY w.REG_DT DESC
+  DATE_FORMAT(wm.RCVPAY_DT, '%Y-%m-%d %H:%i:%s') AS reg_dt,
+  wm.RM AS rm
+FROM WRHOUS_WRHSDLVR_MAS wm
+LEFT JOIN WRHOUS_WRHSDLVR d ON wm.WRHSDLVR_MAS_ID = d.WRHSDLVR_MAS_ID
+LEFT JOIN PRDT p ON wm.PRDT_ID = p.PRDT_ID
+LEFT JOIN RSC r ON wm.RSC_ID = r.RSC_ID
+LEFT JOIN emp e ON wm.EMP_ID = e.emp_id
+WHERE (? IS NULL OR wm.RCVPAY_TY = ?)
+  AND (? IS NULL OR (CASE WHEN wm.PRDT_ID IS NOT NULL AND wm.PRDT_ID <> '' THEN '완제품' WHEN wm.RSC_ID IS NOT NULL AND wm.RSC_ID <> '' THEN '자재' ELSE '' END) LIKE CONCAT('%', ?, '%'))
+  AND (? IS NULL OR COALESCE(wm.PRDT_ID, wm.RSC_ID) LIKE CONCAT('%', ?, '%'))
+  AND (? IS NULL OR COALESCE(p.PRDT_NM, r.RSC_NM) LIKE CONCAT('%', ?, '%'))
+  AND (? IS NULL OR COALESCE(d.RSC_QLTY_INSP_ID, d.END_PRDT_QLTY_INSP_ID, d.SEMI_PRDT_QLTY_INSP_ID, d.DELI_DETA_ID) LIKE CONCAT('%', ?, '%'))
+  AND (? IS NULL OR wm.EMP_ID = ?)
+  AND (? IS NULL OR DATE(wm.RCVPAY_DT) >= ?)
+ORDER BY wm.RCVPAY_DT DESC
 LIMIT 500
 `;
 
@@ -448,10 +455,10 @@ WHERE LOT_NO LIKE CONCAT(?, DATE_FORMAT(NOW(), '%y%m'), '%')
 `;
 
 const createLotId = `
-SELECT CONCAT('?', DATE_FORMAT(NOW(), '%y%m'),
+SELECT CONCAT(?, DATE_FORMAT(NOW(), '%y%m'),
   LPAD(IFNULL(MAX(SUBSTR(LOT_ID, -3)), 0) + 1, 3, '0')) "lot_id"
 FROM LOT_STC_PRECON 
-WHERE LOT_INVNTRY_PRECON_ID LIKE CONCAT('?', DATE_FORMAT(NOW(), '%y%m'), '%')
+WHERE LOT_INVNTRY_PRECON_ID LIKE CONCAT(?, DATE_FORMAT(NOW(), '%y%m'), '%')
 `;
 
 // 현재 재고 현황 조회 (마스터-디테일 구조)
@@ -719,7 +726,7 @@ WHERE wm.RCVPAY_TY = 'S1'  -- 입고에서 생성된 LOT만
      OR (? = 'E3' AND wm.PRDT_ID = ? AND (wm.PRDT_OPT_ID <=> ?))
       )
   AND COALESCE(lsp.NOW_STC_QY,0) > 0
-ORDER BY wm.REG_DT ASC, wm.LOT_NO ASC
+ORDER BY wm.RCVPAY_DT ASC, wm.LOT_NO ASC
 `;
 
 // 납품서별 출고 완료 수량 확인
@@ -853,7 +860,7 @@ FROM LOT_STC_PRECON lsp
 JOIN WRHOUS_WRHSDLVR_MAS wm 
   ON wm.WRHSDLVR_MAS_ID = lsp.WRHSDLVR_MAS_ID
 WHERE wm.PRDT_ID = ?
-  AND wm.PRDT_OPT_ID <=> ?
+  AND ( ? IS NULL OR wm.PRDT_OPT_ID = ? )
 `;
 
 // 수주 상세ID들로부터 제품/옵션 매핑 조회
@@ -865,34 +872,62 @@ WHERE rcvord_deta_id IN (?)
 
 // 자재 불출용 가용 수량
 const selectMaterialByProductOrder = `
-SELECT 
-  b.PRDT_ID,
-  b.PRDT_OPT_ID,
+WITH valid_bom AS (
+  SELECT b.BOM_ID, b.PRDT_ID, b.PRDT_OPT_ID, b.VALID_FR_DT, b.BOM_VER
+  FROM BOM b
+  WHERE b.PRDT_ID = ?
+  AND b.PRDT_OPT_ID = ?
+),
+max_fr AS ( -- 제품/옵션별 가장 최근 시작일
+  SELECT PRDT_ID, PRDT_OPT_ID, MAX(VALID_FR_DT) AS MAX_FR
+  FROM valid_bom
+  GROUP BY PRDT_ID, PRDT_OPT_ID
+),
+cand AS (  -- 그 시작일에 해당하는 BOM 중 버전 최대
+  SELECT v.*
+  FROM valid_bom v
+  JOIN max_fr m
+    ON m.PRDT_ID = v.PRDT_ID AND (m.PRDT_OPT_ID <=> v.PRDT_OPT_ID)
+   AND m.MAX_FR  = v.VALID_FR_DT
+),
+latest_bom AS (
+  SELECT c.*
+  FROM cand c
+  JOIN (
+    SELECT PRDT_ID, PRDT_OPT_ID, MAX(BOM_VER) AS MAX_VER
+    FROM cand
+    GROUP BY PRDT_ID, PRDT_OPT_ID
+  ) mm
+    ON mm.PRDT_ID = c.PRDT_ID AND (mm.PRDT_OPT_ID <=> c.PRDT_OPT_ID)
+   AND mm.MAX_VER = c.BOM_VER
+),
+req AS (
+  SELECT lb.PRDT_ID, lb.PRDT_OPT_ID, bd.RSC_ID, SUM(bd.REC_QY) AS REC_QY_PER_UNIT
+  FROM latest_bom lb
+  JOIN BOM_DETA bd ON bd.BOM_ID = lb.BOM_ID
+  GROUP BY lb.PRDT_ID, lb.PRDT_OPT_ID, bd.RSC_ID
+),
+stk AS (
+  SELECT m.RSC_ID, SUM(GREATEST(l.NOW_STC_QY,0)) AS STOCK_QY
+  FROM LOT_STC_PRECON l
+  JOIN WRHOUS_WRHSDLVR_MAS m
+    ON m.WRHSDLVR_MAS_ID = l.WRHSDLVR_MAS_ID
+  WHERE m.RSC_ID IS NOT NULL
+
+  GROUP BY m.RSC_ID
+)
+SELECT
+  r.PRDT_ID,
+  r.PRDT_OPT_ID,
   COALESCE(
     FLOOR(
-      MIN(
-        COALESCE(stk.STOCK_QY,0) / NULLIF(req.REC_QY_PER_UNIT, 0)
-      )
+      MIN( COALESCE(s.STOCK_QY,0) / NULLIF(r.REC_QY_PER_UNIT,0) )
     ), 0
   ) AS AVAILABLE_QY
-FROM BOM b
-JOIN (
-  -- 제품 1EA 생산에 필요한 자재 소요량
-  SELECT bd.BOM_ID, b.PRDT_ID, b.PRDT_OPT_ID, bd.RSC_ID, SUM(bd.REC_QY) AS REC_QY_PER_UNIT
-  FROM BOM b
-  JOIN BOM_DETA bd ON bd.BOM_ID = b.BOM_ID
-  WHERE b.PRDT_ID = ? AND b.PRDT_OPT_ID <=> ?
-  GROUP BY bd.BOM_ID, b.PRDT_ID, b.PRDT_OPT_ID, bd.RSC_ID
-) req ON req.BOM_ID = b.BOM_ID
-LEFT JOIN (
-  -- 자재별 현재 재고(LOT 합계) = LOT_STC_PRECON ←(MAS 조인)→ RSC_ID
-  SELECT wm.RSC_ID, SUM(lsp.NOW_STC_QY) AS STOCK_QY
-  FROM LOT_STC_PRECON lsp
-  JOIN WRHOUS_WRHSDLVR_MAS wm ON wm.WRHSDLVR_MAS_ID = lsp.WRHSDLVR_MAS_ID
-  GROUP BY wm.RSC_ID
-) stk ON stk.RSC_ID = req.RSC_ID
-WHERE b.PRDT_ID = ? AND b.PRDT_OPT_ID <=> ?
-GROUP BY b.PRDT_ID, b.PRDT_OPT_ID
+FROM req r
+LEFT JOIN stk s ON s.RSC_ID = r.RSC_ID
+GROUP BY r.PRDT_ID, r.PRDT_OPT_ID
+ORDER BY r.PRDT_ID, r.PRDT_OPT_ID
 `;
 
 // 창고 입출고 마스터 삭제
@@ -1015,7 +1050,7 @@ INSERT INTO LOT_STC_PRECON (
   OUST_QY,
   NOW_STC_QY,
   RM
-VALUES (?, ?, ?, ?, ?, ?)`;
+) VALUES (?, ?, ?, ?, ?, ?)`;
 
 const selectMasByLotNo = `
 SELECT WRHSDLVR_MAS_ID

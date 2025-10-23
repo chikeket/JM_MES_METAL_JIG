@@ -344,32 +344,42 @@ async function updateWarehouseLocationInfo(rows) {
 
   await Promise.all(
     rows.map(async (row) => {
-      const itemType = row.type // '자재' | '반제품' | '완제품' | 'E1' | 'E2' | 'E3'
-      let warehouses = []
       try {
-        warehouses = await getWarehousesByItemType(itemType)
-      } catch {}
-      if (!warehouses || warehouses.length === 0) {
-        resolveDefaultWHLocFromCaches(row)
-        return
-      }
-      const w = warehouses[0]
-      row.warehouse_id = w.warehouse_id
-      row.warehouse_name = w.warehouse_name
+        const itemType = row.type // '자재' | '반제품' | '완제품' | 'E1' | 'E2' | 'E3'
 
-      let locations = []
-      try {
-        locations = await getLocationsByItemType(itemType, w.warehouse_id)
-      } catch {}
-      if (locations && locations.length > 0) {
-        row.location_id = locations[0].location_id
-        row.location_name = locations[0].location_name
-      } else {
-        const locs = (locationList.value || []).filter((l) => l.warehouse_id === w.warehouse_id)
-        if (locs.length) {
-          row.location_id = locs[0].location_id
-          row.location_name = locs[0].location_name
+        let warehouses = []
+        try {
+          warehouses = await getWarehousesByItemType(itemType)
+        } catch (e) {
+          console.warn('[wrh] getWarehousesByItemType failed', e)
         }
+
+        if (!warehouses || warehouses.length === 0) {
+          resolveDefaultWHLocFromCaches(row)
+          return
+        }
+        const w = warehouses[0]
+        row.warehouse_id = w.warehouse_id
+        row.warehouse_name = w.warehouse_name
+
+        let locations = []
+        try {
+          locations = await getLocationsByItemType(itemType, w.warehouse_id)
+        } catch (e) {
+          console.warn('[wrh] getLocationsByItemType failed', e)
+        }
+        if (locations && locations.length > 0) {
+          row.location_id = locations[0].location_id
+          row.location_name = locations[0].location_name
+        } else {
+          const locs = (locationList.value || []).filter((l) => l.warehouse_id === w.warehouse_id)
+          if (locs.length) {
+            row.location_id = locs[0].location_id
+            row.location_name = locs[0].location_name
+          }
+        }
+      } catch (e) {
+        console.warn('[wrh] updateWarehouseLocationInfo error', e)
       }
     }),
   )
@@ -420,30 +430,39 @@ function roundQuantity(row) {
 /* =========================
    가용 수량(상단) 갱신
 ========================= */
-async function refreshAvailableForTopRow() {
-  const rows = summaryRows.value || []
-  if (!rows.length) return
+async function refreshAvailableForTopRow(target) {
+  // target: optional single row or array of rows. If not provided, refresh all summaryRows.
+  let rowsToCheck = []
+  if (!target) rowsToCheck = summaryRows.value || []
+  else if (Array.isArray(target)) rowsToCheck = target
+  else rowsToCheck = [target]
+  if (!rowsToCheck.length) return
 
   const currentMode = mode.value // 'in' | 'out'
 
   await Promise.all(
-    rows.map(async (r) => {
+    rowsToCheck.map(async (r) => {
+      // 보존 플래그가 있으면 모달에서 전달된 available_qty를 유지
+      if (r._preserveAvailable) {
+        r.available_qty = Number(r.available_qty || 0)
+        return
+      }
+
       try {
         if (currentMode === 'in') {
-          // 입고: 검사서 남은 수량 그대로
           r.available_qty = Number(r.available_qty ?? r.pass_qty ?? 0)
           return
         }
 
-        // 출고 모드
-        if (isMaterialIssueRow(r)) {
-          // 자재 불출(생산지시 기반): 몇 개 생산 가능한지(최솟값 원리)
+        // 출고 모드: production-available 로직은 DRCT 접두사인 ID에만 적용
+        const inspId = String(r.inspect_id || r.insp_no || r.withdrawal_id || '')
+        const isDrct = inspId.startsWith('DRCT')
+        if (isMaterialIssueRow(r) || isDrct) {
           const { data } = await axios.get('/api/warehouse/available-finished-production-qty', {
             params: { prdt_id: r.code, prdt_opt_id: r.opt_code || null },
           })
           r.available_qty = Number(data?.available_units || 0)
         } else {
-          // 완제품 납품: 완제품 현재 재고 합계
           const { data } = await axios.get('/api/warehouse/available-fg-stock', {
             params: { prdt_id: r.code, prdt_opt_id: r.opt_code || null },
           })
@@ -456,8 +475,8 @@ async function refreshAvailableForTopRow() {
     }),
   )
 
-  // 화면 반영
-  summaryRows.value = [...rows]
+  // trigger reactivity for summaryRows
+  summaryRows.value = [...summaryRows.value]
 }
 
 /* =========================
@@ -477,14 +496,35 @@ const consolidatedRows = computed(() => {
       .map((r) => r.inspect_id)
       .filter(Boolean)
     const filteredBom = bomMaterials.value.filter((m) => checkedProdIds.includes(m.inspect_id))
-    rowsToProcess.push(...filteredBom)
+    // If any of the checked rows are production orders, prefer BOM materials only
+    const hasProdOrder = checkedRows.some((r) => r._isProdOrder || isMaterialIssueRow(r))
+    if (hasProdOrder) {
+      rowsToProcess.push(...filteredBom)
+    } else {
+      rowsToProcess.push(...filteredBom)
+    }
   }
   // 일반 출고(납품 등)
-  rowsToProcess.push(...checkedRows.filter((r) => !isMaterialIssueRow(r)))
+  // If not in production-order mode, include non-production checked rows
+  // Always exclude rows explicitly marked to be excluded from allocation
+  rowsToProcess.push(...checkedRows.filter((r) => !isMaterialIssueRow(r) && !r._excludeFromAllocation))
 
   rowsToProcess.forEach((row) => {
     const key = `${row.code}_${row.opt_code || 'NO_OPT'}_${row.type}`
-    const qty = toUnits(row.qty)
+    // If this row comes from a BOM (has inspect_id), compute qty as
+    // bom_qty * parent production units (from checkedRows). This avoids
+    // double/multiple multiplications when BOM rows were pre-multiplied and
+    // then updateBomMaterialQuantities ran again.
+    let qty
+    if (row.inspect_id) {
+      const parent = checkedRows.find((p) => p.inspect_id === row.inspect_id)
+      const parentUnits = parent ? toUnits(parent.qty || 0) : null
+      const unitBom = Number(row.bom_qty || row.rec_qy || row._bom_unit || 1)
+      if (parentUnits !== null) qty = toUnits(unitBom * parentUnits)
+      else qty = toUnits(row.qty)
+    } else {
+      qty = toUnits(row.qty)
+    }
     if (consolidated[key]) consolidated[key].total_qty += qty
     else {
       consolidated[key] = {
@@ -513,7 +553,60 @@ const consolidatedRows = computed(() => {
 watch(
   consolidatedRows,
   async (newRows) => {
-    // LOT 배분 API가 있다면 여기서 호출해 finalConsolidatedRows를 채움
+    // LOT 배분: 출고 모드이면 서버에 할당 요청을 보내고 응답을 기반으로 finalConsolidatedRows를 구성
+    try {
+      if (mode.value === 'out' && Array.isArray(newRows) && newRows.length > 0) {
+        console.log('[wrhousdlvr] 출고 모드 - LOT 할당 시작', newRows)
+        const results = []
+        // 병렬 요청
+        await Promise.all(
+          newRows.map(async (item) => {
+            try {
+              const itemTypeCode = typeToCode(item.type) || ''
+              const params = {
+                item_type: itemTypeCode,
+                item_code: item.code || '',
+                item_opt_code: item.opt_code || '',
+                quantity: item.total_qty || item.qty || 0,
+              }
+              console.log('[wrhousdlvr] LOT 할당 요청:', params)
+              const { data } = await axios.get('/api/warehouse/lots/allocations', { params })
+              console.log('[wrhousdlvr] allocation call for item, original item:', item)
+              if (data && data.success && Array.isArray(data.allocations) && data.allocations.length) {
+                // 여러 LOT로 분할된 경우 각 할당 항목을 final row로 추가
+                data.allocations.forEach((a, idx) => {
+                  results.push({
+                    ...item,
+                    id: `${item.id || item.code}_LOT_${idx}`,
+                    lot_no: a.lot_no || a.LOT_NO || a.lot || '',
+                    lot: a.lot_no || a.LOT_NO || a.lot || '',
+                    total_qty: a.allocated_qty || a.allocated_qty || 0,
+                    warehouse_id: a.warehouse_id || item.warehouse_id || '',
+                    zone_id: a.zone_id || item.zone_id || '',
+                  })
+                })
+              } else {
+                // 할당 실패 또는 없음: 표시형식 유지
+                results.push({ ...item, lot: '-', lot_no: '-', total_qty: item.total_qty || item.qty || 0 })
+              }
+            } catch (err) {
+              console.error('[wrhousdlvr] LOT 할당 호출 실패', err)
+              results.push({ ...item, lot: '오류', lot_no: '오류', total_qty: item.total_qty || item.qty || 0 })
+            }
+          }),
+        )
+          finalConsolidatedRows.value = results
+          console.log('[wrhousdlvr] LOT 할당 완료:', finalConsolidatedRows.value)
+          // debug: show source BOM materials and consolidated rows for troubleshooting
+          console.log('[wrhousdlvr] debug - bomMaterials snapshot count:', bomMaterials.value.length)
+          console.log('[wrhousdlvr] debug - consolidated source (newRows):', newRows)
+        return
+      }
+    } catch (e) {
+      console.error('[wrhousdlvr] LOT 할당 처리 중 예외:', e)
+    }
+
+    // 기본 동작: 그대로 반영
     finalConsolidatedRows.value = newRows
   },
   { immediate: true },
@@ -624,6 +717,12 @@ async function onSelectWrhousdlvr({ master, details }) {
         d.code = d.prdt_id
         d.name = d.prdt_nm
       }
+      // Map known quantity fields into qty/available_qty so UI shows correct numbers
+      const q = Number(d.rcvpay_qy ?? d.RCVPAY_QY ?? d.DELI_QY ?? d.DELI_QY ?? d.PASS_QY ?? d.pass_qty ?? d.rcvpay_qy ?? 0)
+      d.qty = d.qty ?? q
+      d.available_qty = d.available_qty ?? q
+      // mark source so refreshAvailableForTopRow doesn't override with external lookups
+      d._sourceFromWrhous = true
     })
   }
   summaryRows.value = Array.isArray(details) ? details : []
@@ -710,6 +809,7 @@ async function onSelectDelivery(deliveryList) {
     alert('선택된 출고서가 없습니다.')
     return
   }
+  console.log('[wrhousdlvr] onSelectDelivery received:', deliveryList)
   mode.value = 'out'
 
   const isMaterialWithdrawal = deliveryList[0]?.insp_type === 'materialWithdrawal'
@@ -717,9 +817,13 @@ async function onSelectDelivery(deliveryList) {
   if (isMaterialWithdrawal) {
   // 1) 상단(완제품: 생산지시 행) 만들기
   const directRows = deliveryList.map((d, idx) => {
-    const qty = d.required_qty ?? d.pass_qty ?? d.insp_qty ?? d.rec_qy ?? d.qty ?? d.total_qty ?? d.order_qty ?? 1
+    // modal에서 전달된 planned_qty를 우선 사용
+    const qty = Number(d.planned_qty ?? d.required_qty ?? d.pass_qty ?? d.insp_qty ?? d.rec_qy ?? d.qty ?? d.total_qty ?? d.order_qty ?? 1)
+    const available = Number(d.available_qty ?? d.possible_qty ?? d.remaining_qty ?? d.pass_qty ?? d.insp_qty ?? 0)
     return {
       id: `${d.insp_no}_PROD_ORDER_${d.opt_code || 'NO_OPT'}_${Date.now()}_${idx}_${Math.random().toString(36).slice(2)}`,
+      // mark as production order so consolidatedRows can treat it specially
+      _isProdOrder: true,
       inspect_id: d.insp_no, // 생산지시 ID
       type: '완제품',
       code: d.item_code,
@@ -729,6 +833,9 @@ async function onSelectDelivery(deliveryList) {
       spec: d.item_spec || '',
       unit: d.item_unit || 'EA',
       qty: Math.ceil(qty),
+      available_qty: Math.ceil(available || qty),
+      // preserve flag so client doesn't overwrite modal-provided available_qty
+      _preserveAvailable: Boolean(d.planned_qty || d.available_qty),
       emp_nm: ownerName.value,
       remark: `생산지시 불출 - ${d.item_name}`,
       warehouse_id: '',
@@ -739,16 +846,17 @@ async function onSelectDelivery(deliveryList) {
     }
   })
 
-  // 중복 제거 후 상단에 추가
+
+  // 중복 제거 (아직 화면에는 반영하지 않음 — BOM 자재 먼저 로드한 뒤에 한꺼번에 반영)
   const existKeys = new Set(summaryRows.value.map(r => `${r.inspect_id}_${r.code}_${r.opt_code || 'NO_OPT'}`))
   const uniqueDirect = directRows.filter(r => !existKeys.has(`${r.inspect_id}_${r.code}_${r.opt_code || 'NO_OPT'}`))
-  summaryRows.value.push(...uniqueDirect)
 
   // 2) BOM 자재 불러오기(하단용 원본 리스트)
   const allMaterials = []
   for (const d of deliveryList) {
     const { data: materials = [] } = await axios.get(`/api/production/orders/${d.insp_no}/materials`)
-    const productionQty = Math.ceil(d.required_qty ?? d.pass_qty ?? d.insp_qty ?? d.rec_qy ?? d.qty ?? d.total_qty ?? d.order_qty ?? 1)
+    // 우선순위: modal에서 전달한 planned_qty를 사용
+    const productionQty = Math.ceil(d.planned_qty ?? d.required_qty ?? d.pass_qty ?? d.insp_qty ?? d.rec_qy ?? d.qty ?? d.total_qty ?? d.order_qty ?? 1)
     const mats = materials.map((m, i) => ({
       id: `${d.insp_no}_MATERIAL_${m.item_code}_${Date.now()}_${i}_${Math.random().toString(36).slice(2)}`,
       inspect_id: d.insp_no,
@@ -759,7 +867,7 @@ async function onSelectDelivery(deliveryList) {
       opt_name: '',
       spec: m.item_spec || '',
       unit: m.item_unit || 'EA',
-      qty: Math.ceil((m.bom_qty || m.rec_qy || 1) * productionQty),
+  qty: Math.ceil((m.bom_qty || m.rec_qy || 1) * productionQty),
       emp_nm: ownerName.value,
       remark: `자재 불출 - ${d.item_name}`,
       warehouse_id: m.warehouse_id || '',
@@ -770,6 +878,8 @@ async function onSelectDelivery(deliveryList) {
       rec_qy: m.bom_qty || m.rec_qy || 1,
       stock_qty: m.stock_qty || 0
     }))
+    // mark BOM materials so consolidatedRows can prefer them when production orders exist
+    mats.forEach((mm) => (mm._isBom = true))
     allMaterials.push(...mats)
   }
 
@@ -790,8 +900,32 @@ async function onSelectDelivery(deliveryList) {
   // 5) BOM 자재 반영
   bomMaterials.value.push(...filteredMaterialsWithWH)
 
-  // 6) 가용수량 갱신 + 창고/로케이션 기본값 주입
+  // 6) 이제 부모(완제품) 행과 BOM 자재를 순차적으로 화면에 반영
+  // 부모(완제품)를 먼저 summaryRows에 추가하고 선택 상태를 설정
+  if (uniqueDirect.length) {
+    summaryRows.value.push(...uniqueDirect)
+    selectedSummaryIds.value.push(...uniqueDirect.map((r, i) => getSelectKey(r, summaryRows.value.length - uniqueDirect.length + i)))
+  }
+
+  // BOM 자재는 별도 하단 원본 리스트(bomMaterials)에 반영되어 있으므로
+  // 필요 시 화면에 표시하려면 finalConsolidatedRows에서 계산됩니다.
+
+  // 7) 가용수량 갱신 + 창고/로케이션 기본값 주입
   await nextTick()
+  // 모달에서 전달된 출고 예정 수량(planned_qty)이 있으면 이를 가용 수량으로 유지하도록 표시
+  uniqueDirect.forEach((r, idx) => {
+    const source = deliveryList.find((d) => (d.insp_no === r.inspect_id) || (d.withdrawal_id === r.inspect_id)) || {}
+    // modal이 보낸 값 우선 사용
+    const planned = Number(source.planned_qty ?? source.drct_qy ?? source.DRCT_QY ?? source.required_qty ?? 0)
+    if (planned > 0) {
+      r.qty = Math.ceil(planned)
+      r.available_qty = Math.ceil(planned)
+      // 보존 플래그: 가용수량을 외부 API로 덮어쓰지 않도록 함
+      r._preserveAvailable = true
+      r._init_qty = Math.ceil(planned)
+    }
+  })
+  // 필요 시 서버에서 최신 가용 수량을 가져오지만, _preserveAvailable가 설정된 항목은 건너뜁니다
   for (const r of uniqueDirect) await refreshAvailableForTopRow(r)
 
   // 상단(완제품) + 방금 추가한 BOM 자재에 대해 창고/로케이션 일괄 주입
@@ -812,13 +946,21 @@ async function onSelectDelivery(deliveryList) {
       opt_name: d.opt_name || '',
       spec: d.item_spec || d.rsc_spec || '',
       unit: d.item_unit || d.rsc_unit || 'EA',
-      qty: toUnits(d.remaining_qty ?? d.pass_qty ?? d.insp_qty ?? 0),
+    // 요청 수량은 출고 예정 수량(remaining/pass/insp 등)을 기본으로 설정
+  qty: toUnits(d.remaining_qty ?? d.pass_qty ?? d.insp_qty ?? 0),
+  // 가용 수량: 모달이 보낸 available_qty를 우선 사용 (모달에서 수량을 입력하면 여기로 반영됨)
+  available_qty: Number(d.available_qty ?? d.remaining_qty ?? d.pass_qty ?? d.insp_qty ?? 0),
       emp_nm: ownerName.value,
       remark: '출고 처리',
       warehouse_id: '',
       warehouse_name: '',
       location_id: '',
       location_name: '',
+      // propagate lot information from delivery API (if provided)
+      lot: d.lot || d.lot_no || '',
+      lot_no: d.lot_no || d.lot || '',
+      // mark context so refreshAvailableForTopRow won't overwrite delivery-provided available_qty
+      context: 'delivery',
       deli_deta_id:
         d.insp_type === 'deliveryDetail' ? d.insp_no : d.deli_deta_id || d.deli_id || null,
     }))
@@ -838,13 +980,13 @@ async function onSelectDelivery(deliveryList) {
     const isMaterialWithdrawal = (deliveryList?.[0]?.insp_type === 'materialWithdrawal');
 
     // 2) 각 상단행에 context를 세팅 (가용수량 분기에 필요)
-    uniqueDirect.forEach(r => {
+    unique.forEach((r) => {
       r.context = isMaterialWithdrawal ? 'materialWithdrawal' : 'delivery';
-    });
-    await afterAddTopRows();
+    })
+    await afterAddTopRows()
 
     // 3) 사용자 안내
-    alert(`${uniqueDirect.length}건의 출고서 품목이 추가되었습니다.`);
+    alert(`${unique.length}건의 출고서 품목이 추가되었습니다.`)
   }
 }
 
@@ -933,7 +1075,7 @@ onMounted(async () => {
 /* =========================
    저장
 ========================= */
-async function saveMaterialIssue(topRow) {
+async function saveMaterialIssue(topRow, passedOverrides = null) {
   try {
     const payload = {
       prod_drct_deta_id: topRow.prod_drct_deta_id || topRow.inspect_id,
@@ -944,7 +1086,50 @@ async function saveMaterialIssue(topRow) {
       warehouse_id: topRow.warehouse_id || null,
       location_id: topRow.location_id || null,
     }
-    await axios.post('/api/warehouse/material-issue', payload)
+    // attach per-material overrides from lower-grid so server stores exact bottom-grid qty/rcvpay_nm
+    try {
+      let overrides = passedOverrides;
+      if (!Array.isArray(overrides)) {
+        const base = `${topRow.code}|${topRow.opt_code || 'NO_OPT'}|${topRow.warehouse_id}|${topRow.location_id || ''}`;
+        overrides = finalConsolidatedRows.value
+          .filter((fr) => {
+            const frBase = `${fr.code}|${fr.opt_code || 'NO_OPT'}|${fr.warehouse_id || fr.wrhous_id || ''}|${fr.zone_id || fr.location_id || ''}`;
+            return frBase === base;
+          })
+          .map((fr) => ({
+            rsc_id: fr.code,
+            qty: toUnits(fr.total_qty || fr.qty || 0),
+            rcvpay_nm: fr.rcvpay_nm || `${mode.value === 'in' ? '입고' : '출고'} 처리 - ${fr.name}`,
+          }));
+      }
+      // Ensure server always receives at least one material override so it uses
+      // the bottom-grid rcvpay_nm (or a sensible default) instead of falling
+      // back to emp_nm on the server side.
+      if (!Array.isArray(overrides) || overrides.length === 0) {
+        overrides = [
+          {
+            rsc_id: topRow.code,
+            qty: toUnits(topRow.qty || 0),
+            rcvpay_nm: topRow.rcvpay_nm || `${mode.value === 'in' ? '입고' : '출고'} 처리 - ${
+              topRow.name || topRow.code
+            }`,
+          },
+        ]
+      }
+      payload.materialOverrides = overrides;
+    } catch (e) {
+      console.warn('[saveMaterialIssue] build overrides failed', e);
+    }
+  console.log('[saveMaterialIssue] payload:', payload)
+    // debug: compare requested target_units with sum of overrides quantities
+    try {
+      const ov = Array.isArray(payload.materialOverrides) ? payload.materialOverrides : []
+      const sumOverrides = ov.reduce((s, x) => s + Number(x.qty || 0), 0)
+      console.log('[saveMaterialIssue] debug - target_units:', payload.target_units, 'sumOverrides:', sumOverrides, 'overrides:', ov)
+    } catch (e) {
+      console.warn('[saveMaterialIssue] debug compare failed', e)
+    }
+  await axios.post('/api/warehouse/material-issue', payload)
     alert('자재 불출이 저장되었습니다.')
   } catch (e) {
     if (e?.response?.status === 409) {
@@ -967,10 +1152,34 @@ async function onSave() {
     return
   }
 
-  // 선택된 행만
-  const selectedRows = summaryRows.value.filter((r, i) =>
-    selectedSummaryIds.value.includes(getSelectKey(r, i)),
-  )
+  // 선택된 행만 (출고 모드일 때는 화면에 표시된 LOT 분할 결과를 우선 사용)
+  let selectedRows = []
+  if (mode.value === 'out') {
+    // 선택된 상단 요약 행의 base 키 집합을 만든 뒤, finalConsolidatedRows에서 해당 base에 매칭되는 분할 LOT 행을 선택
+    const selectedKeys = new Set(selectedSummaryIds.value)
+    const selectedBases = new Set()
+    summaryRows.value.forEach((r, i) => {
+      const key = getSelectKey(r, i)
+      if (selectedKeys.has(key)) {
+        const base = `${r.code}|${r.opt_code || 'NO_OPT'}|${r.warehouse_id}|${r.location_id || ''}`
+        selectedBases.add(base)
+      }
+    })
+    selectedRows = finalConsolidatedRows.value.filter((fr) => {
+      const base = `${fr.code}|${fr.opt_code || 'NO_OPT'}|${fr.warehouse_id || fr.wrhous_id || ''}|${fr.zone_id || fr.location_id || ''}`
+      return selectedBases.has(base)
+    })
+    // Fallback: 분할 결과가 없거나 매칭되지 않으면 원래 summaryRows 기준으로 사용
+    if (!selectedRows || selectedRows.length === 0) {
+      selectedRows = summaryRows.value.filter((r, i) =>
+        selectedSummaryIds.value.includes(getSelectKey(r, i)),
+      )
+    }
+  } else {
+    selectedRows = summaryRows.value.filter((r, i) =>
+      selectedSummaryIds.value.includes(getSelectKey(r, i)),
+    )
+  }
   if (!selectedRows.length) {
     alert('디테일 테이블에 저장할 데이터가 없습니다.')
     return
@@ -978,7 +1187,25 @@ async function onSave() {
 
   // 자재 불출(생산지시) 먼저 처리 → 초과 방지 트랜잭션
   const matIssueRows = selectedRows.filter((r) => isMaterialIssueRow(r))
-  for (const r of matIssueRows) await saveMaterialIssue(r)
+  for (const r of matIssueRows) {
+    // compute overrides for this top-row and pass them explicitly to avoid matching issues
+    // build overrides more robustly: prefer matching by inspect_id (prod_drct_deta_id),
+    // fall back to matching by code/opt/warehouse/location
+    function buildOverridesForTop(top) {
+      const byInspect = finalConsolidatedRows.value.filter(fr => (fr.inspect_id || fr.prod_drct_deta_id) && (top.prod_drct_deta_id === (fr.inspect_id || fr.prod_drct_deta_id)));
+      if (byInspect.length) return byInspect.map(fr => ({ rsc_id: fr.code, qty: toUnits(fr.total_qty || fr.qty || 0), rcvpay_nm: fr.rcvpay_nm || `${mode.value === 'in' ? '입고' : '출고'} 처리 - ${fr.name}` }));
+
+      const base = `${top.code}|${top.opt_code || 'NO_OPT'}|${top.warehouse_id}|${top.location_id || ''}`;
+      const byBase = finalConsolidatedRows.value.filter((fr) => {
+        const frBase = `${fr.code}|${fr.opt_code || 'NO_OPT'}|${fr.warehouse_id || fr.wrhous_id || ''}|${fr.zone_id || fr.location_id || ''}`;
+        return frBase === base;
+      });
+      return byBase.map(fr => ({ rsc_id: fr.code, qty: toUnits(fr.total_qty || fr.qty || 0), rcvpay_nm: fr.rcvpay_nm || `${mode.value === 'in' ? '입고' : '출고'} 처리 - ${fr.name}` }));
+    }
+
+    const overrides = buildOverridesForTop(r);
+    await saveMaterialIssue(r, overrides);
+  }
 
   // 그 외(입고/완제품 납품 등)는 기존 집계 저장 API 유지 (프로젝트 기존 엔드포인트에 맞춰 조정)
   const normalRows = selectedRows.filter((r) => !isMaterialIssueRow(r))
@@ -997,7 +1224,9 @@ async function onSave() {
           zone_id: row.location_id,
           qty: toUnits(row.qty),
           rcvpay_ty: mode.value === 'in' ? 'S1' : 'S2',
-          rcvpay_nm: `${mode.value === 'in' ? '입고' : '출고'} 처리 - ${row.name}`,
+          // prefer explicit rcvpay_nm from the UI lower-grid; fall back to the
+          // previous default string if not provided
+          rcvpay_nm: row.rcvpay_nm || `${mode.value === 'in' ? '입고' : '출고'} 처리 - ${row.name}`,
           emp_id: ownerEmpId.value,
           emp_name: ownerName.value,
           rcvpay_dt: todayLocalYMD(),

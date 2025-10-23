@@ -358,7 +358,7 @@ onMounted(() => {
 })
 </script>
 
-<<style scoped>
+<style scoped>
 /* 모달 백드롭 */
 .modal-backdrop {
   position: fixed;

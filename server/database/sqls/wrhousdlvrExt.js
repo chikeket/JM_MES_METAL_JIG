@@ -49,8 +49,8 @@ const wrh_ext_available_fg_stock = `
   // 출고 마스터 생성(자재 단위 1:1)
   const wrh_ext_insert_mas_outbound = `
     INSERT INTO WRHOUS_WRHSDLVR_MAS
-      (WRHSDLVR_MAS_ID, RCVPAY_TY, EMP_ID, RSC_ID, WHOUS_ID, ZONE_ID, LOT_NO, ALL_RCVPAY_QY, RCVPAY_DT, RM)
-    VALUES (?,?,?,?,?,?,?, ?, CURRENT_DATE(), '')
+      (WRHSDLVR_MAS_ID, RCVPAY_TY, EMP_ID, RSC_ID, WRHOUS_ID, ZONE_ID, LOT_NO, ALL_RCVPAY_QY, RCVPAY_DT, RCVPAY_NM, RM)
+    VALUES (?,?,?,?,?,?,?, ?, CURRENT_DATE(), ?, ?)
   `;
 
   // 출고 디테일 생성(1:1)
