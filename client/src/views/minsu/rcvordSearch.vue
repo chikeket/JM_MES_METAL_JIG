@@ -91,7 +91,7 @@
           <tbody>
             <tr v-for="(r, idx) in displayedRows" :key="idx">
               <td class="text-center">{{ idx + 1 }}</td>
-              <td class="text-start" :title="r.rcvord_id">{{ r.rcvord_id }}</td>
+              <td class="text-center" :title="r.rcvord_id">{{ r.rcvord_id }}</td>
               <td class="text-start" :title="r.emp_nm">{{ r.emp_nm }}</td>
               <td class="text-start" :title="r.co_nm">{{ r.co_nm }}</td>
               <td class="text-start" :title="r.prdt_nm">{{ r.prdt_nm || '' }}</td>
@@ -101,8 +101,8 @@
               <td class="text-end" :title="formatNumber(r.rcvord_qy)">
                 {{ formatNumber(r.rcvord_qy) }}
               </td>
-              <td class="text-start" :title="formatDate(r.reg_dt)">{{ formatDate(r.reg_dt) }}</td>
-              <td class="text-start" :title="formatDate(r.paprd_dt)">
+              <td class="text-center" :title="formatDate(r.reg_dt)">{{ formatDate(r.reg_dt) }}</td>
+              <td class="text-center" :title="formatDate(r.paprd_dt)">
                 {{ formatDate(r.paprd_dt) }}
               </td>
               <td class="text-start" :title="r.st_nm">{{ r.st_nm || '' }}</td>
