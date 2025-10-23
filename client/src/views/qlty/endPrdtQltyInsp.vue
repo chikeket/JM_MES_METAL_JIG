@@ -14,45 +14,45 @@
       <CButton color="secondary" @click="update()">수정</CButton>
       <CButton color="danger" @click="deleteFunc()">삭제</CButton>
     </div>
-<div class="search-filter-box mb-2">
-    <!-- 기본 정보 입력 -->
-    <CRow class="g-3 mb-3">
-      <CCol md="3">
-        <c-form-label>검사자</c-form-label>
-            <c-form-input v-model="form.emp_nm" placeholder="검사자 이름"/>
-      </CCol>
-      <CCol md="3">
-        <c-form-label>완제품명</c-form-label>
-            <c-form-input v-model="form.prdt_nm" readonly class="bg-light"/>
-      </CCol>
-      <CCol md="3">
-        <c-form-label>옵션명</c-form-label>
-            <c-form-input v-model="form.opt_nm" readonly class="bg-light"/>
-      </CCol>
-      <CCol md="3">
-        <c-form-label>실적 수량</c-form-label>
-            <c-form-input v-model.number="form.qy" readonly type="number" min="0" class="bg-light"/>
-      </CCol>
-    </CRow>
-    <CRow class="g-3 mb-3">
-      <CCol md="3">
-        <c-form-label>검수 수량</c-form-label>
-            <c-form-input v-model.number="form.insp_qy" type="number" min="0"/>
-      </CCol>
-      <CCol md="3">
-        <c-form-label>합격 수량</c-form-label>
-            <c-form-input :value="pass_qy" readonly type="number" min="0" class="bg-light"/>
-      </CCol>
-      <CCol md="3">
-        <c-form-label>불량 수량</c-form-label>
-            <c-form-input :value="defectQty" readonly type="number" class="bg-light"/>
-      </CCol>
-      <CCol md="3">
-        <c-form-label>검사 일자</c-form-label>
-            <c-form-input type="date" v-model="form.insp_dt" />
-      </CCol>
-    </CRow>
-    <CFormTextarea v-model="form.rm" label="비고" rows="3" text="필요 시 기재"></CFormTextarea>
+    <div class="search-filter-box mb-2">
+      <!-- 기본 정보 입력 -->
+      <CRow class="g-3 mb-3">
+        <CCol md="3">
+          <c-form-label>검사자</c-form-label>
+          <c-form-input v-model="form.emp_nm" placeholder="검사자 이름" />
+        </CCol>
+        <CCol md="3">
+          <c-form-label>완제품명</c-form-label>
+          <c-form-input v-model="form.prdt_nm" readonly class="bg-light" />
+        </CCol>
+        <CCol md="3">
+          <c-form-label>옵션명</c-form-label>
+          <c-form-input v-model="form.opt_nm" readonly class="bg-light" />
+        </CCol>
+        <CCol md="3">
+          <c-form-label>실적 수량</c-form-label>
+          <c-form-input v-model.number="form.qy" readonly type="number" min="0" class="bg-light" />
+        </CCol>
+      </CRow>
+      <CRow class="g-3 mb-3">
+        <CCol md="3">
+          <c-form-label>검수 수량</c-form-label>
+          <c-form-input v-model.number="form.insp_qy" type="number" min="0" />
+        </CCol>
+        <CCol md="3">
+          <c-form-label>합격 수량</c-form-label>
+          <c-form-input :value="pass_qy" readonly type="number" min="0" class="bg-light" />
+        </CCol>
+        <CCol md="3">
+          <c-form-label>불량 수량</c-form-label>
+          <c-form-input :value="defectQty" readonly type="number" class="bg-light" />
+        </CCol>
+        <CCol md="3">
+          <c-form-label>검사 일자</c-form-label>
+          <c-form-input type="date" v-model="form.insp_dt" />
+        </CCol>
+      </CRow>
+      <CFormTextarea v-model="form.rm" label="비고" rows="3" text="필요 시 기재"></CFormTextarea>
     </div>
     <div class="d-flex justify-content-end gap-2 mb-3">
       <CButton color="secondary" @click="openEndPrdtQltyInspModal()">완제품 품질조회</CButton>
@@ -209,7 +209,7 @@ const selectOrdr = (prdts) => {
       qlty_item_mng_id: prdt.qlty_item_mng_id,
       end_prdt_qlty_insp_id: prdt.end_prdt_qlty_insp_id,
     })
-    console.log(form.value)
+  console.log(form.value)
 }
 
 const saveInspection = async () => {
@@ -237,9 +237,9 @@ const saveInspection = async () => {
     .catch((err) => console.log(err))
   let addRes = result.data
   if (addRes.isSuccessed) {
-    console.log('완제품 검수가 등록되었습니다.')
+    alert('완제품 검수가 등록되었습니다.')
   } else {
-    console.log('완제품 검수에 실패했습니다.')
+    alert('완제품 검수에 실패했습니다.')
   }
 }
 
@@ -269,9 +269,9 @@ const update = async () => {
     .catch((err) => console.log(err))
   let addRes = result.data
   if (addRes.isSuccessed) {
-    console.log('완제품 검수 수정이 등록되었습니다.')
+    alert('완제품 검수 수정이 등록되었습니다.')
   } else {
-    console.log('완제품 검수 수정에 실패했습니다.')
+    alert('완제품 검수 수정에 실패했습니다.')
   }
 }
 
@@ -284,9 +284,9 @@ const deleteFunc = async () => {
     .catch((err) => console.log(err))
   let addRes = result.data
   if (addRes.isSuccessed) {
-    console.log('완제품 검수 삭제가 성공되었습니다.')
+    alert('완제품 검수 삭제가 성공되었습니다.')
   } else {
-    console.log('완제품 검수 삭제가 실패했습니다.')
+    alert('완제품 검수 삭제가 실패했습니다.')
   }
 }
 
@@ -296,7 +296,7 @@ const newFunc = async () => {
   // form.value.emp_nm = '';
   form.value.prdt_nm = ''
   form.value.opt_nm = ''
-  form.value.qy = 0  
+  form.value.qy = 0
   form.value.insp_qy = 0
   form.value.insp_dt = userDateUtils.dateFormat(new Date(), 'yyyy-MM-dd')
   form.value.rm = ''
@@ -308,7 +308,8 @@ const newFunc = async () => {
 
 <style scoped>
 :deep(*) {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
+    sans-serif;
   line-height: 1.6;
   box-sizing: border-box;
 }
@@ -565,35 +566,34 @@ select.cell-input {
   :deep(.form-label) {
     font-size: 12px !important;
   }
-  
+
   :deep(.form-control),
   :deep(.form-select) {
     font-size: 12px !important;
     height: 38px !important;
     padding: 0.55rem 0.75rem !important;
   }
-  
+
   :deep(.btn) {
     font-size: 12px !important;
     padding: 0.5rem 1.1rem !important;
   }
-  
+
   :deep(th),
   :deep(td) {
     font-size: 12px !important;
   }
-  
+
   :deep(.data-table td) {
     height: 42px !important;
   }
-  
+
   .empty-row td {
     height: 42px !important;
   }
-  
+
   .cell-input {
     font-size: 12px !important;
   }
 }
-
 </style>
