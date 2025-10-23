@@ -43,10 +43,10 @@
               style="cursor: pointer"
             >
               <CTableDataCell class="cell-no">{{ idx + 1 }}</CTableDataCell>
-              <CTableDataCell class="cell-left">{{ row.rcvord_id }}</CTableDataCell>
+              <CTableDataCell class="text-center">{{ row.rcvord_id }}</CTableDataCell>
               <CTableDataCell class="cell-left">{{ row.emp_nm }}</CTableDataCell>
               <CTableDataCell class="cell-left">{{ row.co_nm }}</CTableDataCell>
-              <CTableDataCell class="cell-left">{{
+              <CTableDataCell class="text-center">{{
                 formatDate(row.rcv_reg_dt || row.reg_dt)
               }}</CTableDataCell>
               <CTableDataCell class="cell-left">{{

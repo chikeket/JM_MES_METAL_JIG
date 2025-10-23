@@ -92,7 +92,7 @@
               <input type="checkbox" v-model="row._selected" />
             </td>
             <td class="cell-no">{{ idx + 1 }}</td>
-            <td class="cell-left">
+            <td class="cell-left cell-ro-id">
               <span class="cell-text" :title="row.rcvord_id">{{ row.rcvord_id }}</span>
             </td>
             <td class="cell-left">
@@ -958,6 +958,10 @@ async function onSelectRcvord(rcvordRow) {
 }
 .cell-left {
   text-align: left;
+}
+/* rcvord_id body cells: center align, keep header alignment unchanged */
+.data-grid tbody td.cell-ro-id {
+  text-align: center;
 }
 .text-center {
   text-align: center;

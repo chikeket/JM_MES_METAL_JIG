@@ -122,7 +122,7 @@ const rcvordSearchList = `
     JOIN rcvord_deta D ON D.rcvord_id = R.rcvord_id
     JOIN prdt P ON P.prdt_id = D.prdt_id
     JOIN prdt_opt O ON O.prdt_opt_id = D.prdt_opt_id
-    AND O.prdt_id = D.prdt_id
+     AND O.prdt_id = D.prdt_id
     JOIN sub_code SC ON SC.sub_code_id = D.st
   WHERE
     (? = '' OR R.rcvord_id LIKE CONCAT('%', ?, '%'))
