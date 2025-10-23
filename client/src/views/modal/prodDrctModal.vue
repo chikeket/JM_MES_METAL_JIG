@@ -141,3 +141,284 @@ const selectProduct = async (prdts) => {
   close() // 모달 닫기
 }
 </script>
+
+<style scoped>
+/* 모달 헤더 */
+:deep(.modal-header) {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 2px solid #e5e7eb;
+  padding: 1.25rem 1.5rem;
+}
+
+:deep(.modal-title) {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+/* 모달 바디 */
+.modal-body {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 1rem;
+  background: #f5f7fa;
+}
+
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: rgba(240, 240, 240, 0.6);
+  border-radius: 10px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #bfc2c7, #9ea2a8);
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #a4a8ae, #7e838a);
+}
+
+/* 검색 영역 */
+.mb-3 {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.mb-2 {
+  margin-bottom: 0.75rem !important;
+}
+
+/* 인풋 그룹 */
+:deep(.input-group) {
+  display: flex;
+}
+
+:deep(.input-group-text) {
+  min-width: 120px;
+  font-weight: 600;
+  font-size: 12px;
+  color: #2c3e50;
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  display: flex;
+  align-items: center;
+}
+
+:deep(.input-group .form-control) {
+  border-radius: 0 8px 8px 0;
+  border-left: none;
+}
+
+/* 날짜 선택 영역 */
+.d-flex {
+  display: flex;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.align-items-center {
+  align-items: center;
+}
+
+/* 폼 셀렉트 */
+.form-select {
+  height: 34px;
+  font-size: 12px;
+  padding: 0.4rem 0.75rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  transition: all 0.2s ease;
+}
+
+.form-select:focus {
+  border-color: #6c757d;
+  background-color: #fff;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(108, 117, 125, 0.1);
+}
+
+/* 폼 컨트롤 */
+.form-control {
+  height: 34px;
+  font-size: 12px;
+  padding: 0.4rem 0.75rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  transition: all 0.2s ease;
+}
+
+.form-control:focus {
+  border-color: #6c757d;
+  background-color: #fff;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(108, 117, 125, 0.1);
+}
+
+input[type="date"].form-control {
+  border-radius: 8px;
+}
+
+/* 날짜 범위 구분자 */
+span {
+  font-weight: 600;
+  color: #6c757d;
+  padding: 0 0.25rem;
+}
+
+/* 검색 버튼 */
+.btn-secondary {
+  cursor: pointer;
+  border-radius: 8px;
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: -0.3px;
+  transition: all 0.3s ease;
+  padding: 0.5rem 1.2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+  height: 34px;
+  white-space: nowrap;
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+/* 테이블 */
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-size: 12px;
+  margin-bottom: 0;
+  border: 1px solid #bcbcbc;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.table thead th {
+  background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+  color: #fff;
+  border: none;
+  padding: 0.65rem 0.5rem;
+  font-weight: 700;
+  text-align: center;
+  height: 34px;
+}
+
+.table thead th:first-child {
+  border-top-left-radius: 4px;
+}
+
+.table thead th:last-child {
+  border-top-right-radius: 4px;
+}
+
+.table tbody td {
+  border: none;
+  border-bottom: 1px solid #e9ecef;
+  border-right: 2px solid #e9ecef;
+  padding: 0.55rem 0.5rem;
+  background: #fff;
+  height: 34px;
+  vertical-align: middle;
+  text-align: center;
+}
+
+.table tbody td:last-child {
+  border-right: none;
+}
+
+.table tbody tr {
+  height: 34px;
+  transition: all 0.2s ease;
+  background: #fff;
+  cursor: pointer;
+}
+
+.table tbody tr:hover td {
+  background-color: rgba(33, 37, 41, 0.075) !important;
+}
+
+/* 모달 푸터 */
+:deep(.modal-footer) {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  border-top: 2px solid #e5e7eb;
+  background: #f8f9fa;
+}
+
+:deep(.modal-footer .btn) {
+  cursor: pointer;
+  border-radius: 8px;
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: -0.3px;
+  transition: all 0.3s ease;
+  padding: 0.5rem 1.2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+}
+
+:deep(.modal-footer .btn:hover) {
+  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+/* 반응형 */
+@media (max-width: 1600px) {
+  .btn-secondary,
+  :deep(.modal-footer .btn) {
+    font-size: 11px !important;
+    padding: 0.4rem 1rem;
+  }
+}
+
+@media (max-height: 900px) {
+  .modal-body {
+    max-height: 350px;
+  }
+}
+
+@media (max-height: 780px) {
+  .modal-body {
+    max-height: 300px;
+  }
+}
+
+@media (max-height: 700px) {
+  .modal-body {
+    max-height: 250px;
+  }
+}
+</style>
