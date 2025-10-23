@@ -97,9 +97,9 @@ SELECT
   w.WRHOUS_NM as wrhous_nm,
   wz.ZONE_ID as zone_id,
   wz.ZONE_NM as zone_nm,
-  wz.ITEM_TY as item_ty,
-  wz.ST as st,
-  wz.RM as rm
+  w.ITEM_TY as item_ty,
+  w.ST as st,
+  w.RM as rm
 FROM WRHOUS w
 LEFT JOIN WRHOUS_ZONE wz ON w.WRHOUS_ID = wz.WRHOUS_ID
 WHERE w.ST = 'M1'

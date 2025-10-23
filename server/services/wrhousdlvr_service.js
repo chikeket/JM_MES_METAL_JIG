@@ -316,40 +316,35 @@ const getAvailableQtyForItem = async ({
   const t = item_type; // 이미 매핑됨
   let params;
   if (t === "E1") {
+    // SQL expects 7 placeholders: (type, rsc_id), (type, prdt_id_for_E2), (type, prdt_id_for_E3, prdt_opt)
     params = [
       "E1",
+      item_code || null,
       "E1",
+      null,
       "E1",
-      item_code || "",
-      item_code || "",
-      "",
-      "",
-      "",
-      "",
+      null,
+      null,
     ];
   } else if (t === "E2") {
     params = [
       "E2",
+      null,
       "E2",
+      item_code || null,
       "E2",
-      "",
-      "",
-      item_code || "",
-      item_code || "",
-      "",
-      "",
+      null,
+      null,
     ];
   } else if (t === "E3") {
     params = [
       "E3",
+      null,
       "E3",
+      null,
       "E3",
-      "",
-      "",
-      item_code || "",
-      item_code || "",
-      item_opt_code || "",
-      item_opt_code || "",
+      item_code || null,
+      item_opt_code || null,
     ];
   } else {
     return 0;
@@ -1115,30 +1110,38 @@ const resolveLotPrefix = (type) => {
 };
 
 // === LOT 생성 표준 함수(단일 진입점) ===
-const generateLotNumberByPrefix = async (prefix) => {
+// conn 파라미터가 제공되면 동일 트랜잭션(conn)을 사용해 번호를 생성합니다.
+const generateLotNumberByPrefix = async (prefix, conn = null) => {
   try {
-    // ✅ 별칭 문자열 "createLotno" 사용 + 파라미터 2개 전달 필수
-    const rows = await mariadb.query("createLotno", [prefix, prefix]); // <-- 중요
-    const lotNo = rows?.[0]?.lot_no;
-    if (!lotNo || typeof lotNo !== "string" || lotNo.trim() === "") {
-      console.error("[wrhousdlvr_service] LOT 번호 생성 실패: 응답값:", lotNo);
-      throw new Error("LOT 번호 생성 실패(응답 비정상)");
+    let rows;
+    if (conn && typeof conn.query === 'function') {
+      // 트랜잭션 연결을 사용하면 동시성 문제(동일 시점 복수 호출)에 대해
+      // DB 레벨 잠금/일관성을 확보할 수 있습니다.
+      rows = await conn.query(sqlList['createLotno'], [prefix, prefix]);
+    } else {
+      // 기존 동작(별칭을 통해 SQL을 찾아 실행)
+      rows = await mariadb.query('createLotno', [prefix, prefix]);
     }
-    console.log("[wrhousdlvr_service] 생성 LOT:", lotNo);
+    const lotNo = rows?.[0]?.lot_no;
+    if (!lotNo || typeof lotNo !== 'string' || lotNo.trim() === '') {
+      console.error('[wrhousdlvr_service] LOT 번호 생성 실패: 응답값:', lotNo);
+      throw new Error('LOT 번호 생성 실패(응답 비정상)');
+    }
+    console.log('[wrhousdlvr_service] 생성 LOT:', lotNo);
     return lotNo;
   } catch (err) {
-    console.error("[wrhousdlvr_service] LOT 생성 실패:", err);
+    console.error('[wrhousdlvr_service] LOT 생성 실패:', err);
     throw err;
   }
 };
 
 // LOT 번호 생성 함수 (호환성 유지)
-const generateLotNumber = async (inspType) => {
+const generateLotNumber = async (inspType, conn = null) => {
   try {
     const prefix = resolveLotPrefix(inspType);
-    return await generateLotNumberByPrefix(prefix);
+    return await generateLotNumberByPrefix(prefix, conn);
   } catch (error) {
-    console.error("[wrhousdlvr_service] LOT 번호 생성 실패:", error);
+    console.error('[wrhousdlvr_service] LOT 번호 생성 실패:', error);
     throw error;
   }
 };
@@ -1321,19 +1324,22 @@ const processTransactions = async (requestData) => {
       ]);
       const masId = masIdRows[0]?.txn_id;
 
-      // LOT 번호 자동 생성 (DB 일련번호)
+      // LOT 번호 자동 생성/확보 (DB 일련번호 또는 디테일에서 유래)
       let lotNo = doc.master.lot_no || null;
       if (doc.master.rcvpay_ty === "S1" && !lotNo) {
         const lotPrefix = resolveLotPrefix(doc.master.item_type);
-        const lotRows = await mariadb.query("createLotno", [
-          lotPrefix,
-          lotPrefix,
-        ]);
-        lotNo = lotRows[0]?.lot_no;
+        // 트랜잭션(conn)을 사용해 일관성 있게 LOT 번호를 발급
+        lotNo = await generateLotNumberByPrefix(lotPrefix, conn);
       } else if (doc.master.rcvpay_ty === "S2") {
-        // 출고일 때는 해당 마스터(그룹)의 첫 번째 디테일 LOT_NO를 마스터에 세팅
-        lotNo = "";
+        // 출고인 경우: 디테일에서 전달된 lot_no(또는 lot)를 마스터에 반영한다.
+        const firstDetail = doc?.details?.[0];
+        if (firstDetail) {
+          lotNo = firstDetail.lot_no || firstDetail.lot || lotNo || null;
+        }
       }
+
+      // 마스터 객체에 반드시 lot_no를 기록하도록 동기화
+      doc.master.lot_no = lotNo || doc.master.lot_no || null;
 
       // 마스터 등록
       console.log("[processTransactions] 마스터 insert 직전:", {
@@ -1860,7 +1866,8 @@ const saveMasterDetailTransactions = async ({
       let lotNumber = master.lot_no || null;
       if (!lotNumber && mode === "in") {
         const lotPrefix = resolveLotPrefix(master.item_type);
-        lotNumber = await generateLotNumberByPrefix(lotPrefix);
+        // 트랜잭션(conn)을 사용하여 LOT 번호 생성
+        lotNumber = await generateLotNumberByPrefix(lotPrefix, conn);
       }
       master.lot_no = lotNumber;
 
@@ -2032,13 +2039,24 @@ const saveWarehouseTransactions = async (info = {}) => {
     const masterInsertedIds = [];
     const detailInsertedIds = [];
 
-    // 3. 마스터 거래 처리
+  // 3. 마스터 거래 처리
     for (const masterTxn of masterTransactions) {
       console.log("[wrhousdlvr_service] 마스터 거래 처리:", masterTxn);
       console.log(
         "[wrhousdlvr_service] 마스터 거래 EMP_ID 확인:",
         masterTxn.emp_id
       );
+
+      // If existing master id is provided, perform update path instead of full insert
+      if (masterTxn.wrhsdlvr_mas_id) {
+        console.log('[wrhousdlvr_service] 기존 마스터 존재, 업데이트 경로로 처리:', masterTxn.wrhsdlvr_mas_id);
+        // update master total qty and note lot_no if provided
+        await conn.query(sqlList['updateWrhousdlvrMasQty'], [Number(masterTxn.total_qty), masterTxn.wrhsdlvr_mas_id]);
+
+        // If mode is out, we may need to adjust LOT_STC_PRECON or RWMATR_RTUN_TRGET later when processing details
+        masterInsertedIds.push(masterTxn.wrhsdlvr_mas_id);
+        continue; // 마스터 업데이트 후 디테일은 detailTransactions 루프에서 처리
+      }
 
       if (mode === "out") {
         const availableLots = await getAvailableLotsForItem(masterTxn, conn);
@@ -2061,7 +2079,7 @@ const saveWarehouseTransactions = async (info = {}) => {
           Number(masterTxn.total_qty)
         );
         console.log("[wrhousdlvr_service] LOT 할당 결과:", lotAllocations);
-        for (const allocation of lotAllocations) {
+  for (const allocation of lotAllocations) {
           console.log("[wrhousdlvr_service] 처리할 allocation:", allocation);
           console.log("[wrhousdlvr_service] 원본 masterTxn:", {
             warehouse_id: masterTxn.warehouse_id,
@@ -2090,13 +2108,14 @@ const saveWarehouseTransactions = async (info = {}) => {
       } else {
         // 입고 시 LOT 번호 분리 관리
         // 1) 마스터 LOT_NO: 품목 유형별 prefix로 생성 (예: LOT_END_...)
-        const lotPrefix = resolveLotPrefix(masterTxn.item_type);
-        const lotNo = await generateLotNumberByPrefix(lotPrefix);
+  const lotPrefix = resolveLotPrefix(masterTxn.item_type);
+  // 트랜잭션(conn)을 사용하여 LOT 번호 생성
+  const lotNo = await generateLotNumberByPrefix(lotPrefix, conn);
         if (!lotNo || typeof lotNo !== "string" || lotNo.trim() === "") {
           throw new Error("입고 마스터 LOT_NO 생성 실패: null 또는 빈 값");
         }
         // 2) LOT 재고 현황 PK: LOT_ID로 생성 (예: LOT_STC_...)
-        const lotIdRows = await mariadb.query("createLotId", [
+        const lotIdRows = await conn.query("createLotId", [
           "LOT_STC_",
           "LOT_STC_",
         ]);
@@ -2107,14 +2126,15 @@ const saveWarehouseTransactions = async (info = {}) => {
         const masterId = await processMasterTransaction(
           {
             ...masterTxn,
-            lot_no: allocation.lot_no, // 마스터 LOT_NO는 LOT_END_... 등 prefix
+            lot_no: lotNo, // 마스터 LOT_NO는 새로 생성한 lotNo
+            total_qty: masterTxn.total_qty,
           },
           mode,
           conn
         );
         masterInsertedIds.push(masterId);
         // LOT_STC_PRECON insert (입고수량, 현재수량 동시)
-        await mariadb.query("insertLotStcPrecon", [
+        await conn.query("insertLotStcPrecon", [
           lotId, // LOT_ID (재고 현황 LOT 번호)
           masterId, // WRHSDLVR_MAS_ID
           Number(masterTxn.total_qty), // IST_QY
@@ -2279,16 +2299,16 @@ const generateNewLotNumber = async (prefix) => {
 
 // 출고 가능한 LOT 조회
 const getAvailableLotsForItem = async (item) => {
+  // Align parameters with selectAvailableLots placeholders (7 params):
+  // (type, rsc_id), (type, prdt_id for E2), (type, prdt_id for E3, prdt_opt)
   const rows = await mariadb.query("selectAvailableLots", [
     item.item_type,
+    item.item_type === "E1" ? item.item_code : null,
     item.item_type,
+    item.item_type === "E2" ? item.item_code : null,
     item.item_type,
-    item.item_type === "E1" ? item.item_code : "",
-    item.item_type === "E1" ? item.item_code : "",
-    item.item_type !== "E1" ? item.item_code : "",
-    item.item_type !== "E1" ? item.item_code : "",
-    item.item_type === "E3" ? item.item_opt_code || "" : "",
-    item.item_type === "E3" ? item.item_opt_code || "" : "",
+    item.item_type === "E3" ? item.item_code : null,
+    item.item_type === "E3" ? item.item_opt_code || null : null,
   ]);
   return (rows || []).map((r) => ({
     wrhsdlvr_mas_id: r.wrhsdlvr_mas_id,
@@ -2322,14 +2342,23 @@ const allocateLotsForWithdrawal = (availableLots, requiredQty) => {
 };
 
 // 마스터 거래 처리
-const processMasterTransaction = async (masterTxn, mode) => {
+const processMasterTransaction = async (masterTxn, mode, conn = null) => {
   try {
     // 마스터 ID 생성
     const prefix = mode === "in" ? "WRHM_IN_" : "WRHM_OUT_";
-    const masterIdResult = await mariadb.query("createWrhousTransactionId", [
-      prefix,
-      prefix,
-    ]);
+    // Use provided connection when inside a larger transaction to ensure atomicity
+    let masterIdResult;
+    if (conn) {
+      masterIdResult = await conn.query("createWrhousTransactionId", [
+        prefix,
+        prefix,
+      ]);
+    } else {
+      masterIdResult = await mariadb.query("createWrhousTransactionId", [
+        prefix,
+        prefix,
+      ]);
+    }
 
     const masterId = masterIdResult[0]?.txn_id || `${prefix}${Date.now()}`;
 
@@ -2408,7 +2437,11 @@ const processMasterTransaction = async (masterTxn, mode) => {
       RCVPAY_NM: insertParams[14], // ✅ RCVPAY_NM 추가
     });
 
-    await mariadb.query("insertWrhousTransactionMaster", insertParams);
+    if (conn) {
+      await conn.query("insertWrhousTransactionMaster", insertParams);
+    } else {
+      await mariadb.query("insertWrhousTransactionMaster", insertParams);
+    }
 
     console.log(`[wrhousdlvr_service] 마스터 거래 저장됨: ${masterId}`);
     return masterId;
@@ -2877,9 +2910,9 @@ const getLotAllocations = async (info = {}) => {
     const allocations = allocateLotsForWithdrawal(availableLots, quantity);
     console.log("[wrhousdlvr_service] LOT 할당 결과:", allocations);
 
-    // 할당된 총 수량 확인
+    // 할당된 총 수량 확인 (allocateLotsForWithdrawal은 allocated_qty 사용)
     const totalAllocated = allocations.reduce(
-      (sum, alloc) => sum + alloc.qty,
+      (sum, alloc) => sum + Number(alloc.allocated_qty || alloc.qty || 0),
       0
     );
     const isFullyAllocated = totalAllocated >= quantity;
@@ -2894,7 +2927,7 @@ const getLotAllocations = async (info = {}) => {
       success: true,
       allocations: allocations.map((alloc) => ({
         lot_no: alloc.lot_no,
-        allocated_qty: alloc.qty,
+        allocated_qty: Number(alloc.allocated_qty || alloc.qty || 0),
         warehouse_id: alloc.warehouse_id,
         zone_id: alloc.zone_id,
       })),
@@ -2911,12 +2944,11 @@ const getLotAllocations = async (info = {}) => {
   } finally {
     if (conn) {
       try {
-        await conn.end();
-      } catch (endError) {
-        console.error("[wrhousdlvr_service] 연결 종료 실패:", endError);
-      } finally {
+        // release the connection obtained from mariadb.getConnection()
         conn.release();
         console.log("[wrhousdlvr_service] DB 연결 해제됨");
+      } catch (endError) {
+        console.error("[wrhousdlvr_service] 연결 해제 실패:", endError);
       }
     }
   }
@@ -3004,6 +3036,21 @@ const deleteSelectedTransactions = async (detailIds = []) => {
 
     // 2) 디테일 먼저 실제 삭제
     for (const id of ids) {
+      // Before deleting detail, fetch its rtun id to handle rwmatr_rtun_trget
+      try {
+        const det = await conn.query(sqlList["selectWrhousdlvrDeletePackByDetailIds"].replace('%IDS%', '?'), [id]);
+        if (Array.isArray(det) && det[0]) {
+          const rtunId = det[0].rtun_id || det[0].RSC_RTUN_TRGET_ID || null;
+          if (rtunId) {
+            // decrease or delete directly if we are removing the detail permanently
+            await conn.query(sqlList["decreaseRwmatrRtunTrgetQty"], [det[0].detail_qty || 0, rtunId]);
+            await conn.query(sqlList["deleteRwmatrRtunTrgetIfZero"], [rtunId]);
+          }
+        }
+      } catch (e) {
+        // 로그만 남기고 계속 진행
+        console.warn('[deleteSelectedTransactions] detail별 rtun 처리 실패', e && e.message);
+      }
       await conn.query(sqlList["deleteWrhousTransaction"], [id]); // ← 존재하는 키로 교체
     }
 
@@ -3044,11 +3091,12 @@ const deleteSelectedTransactions = async (detailIds = []) => {
 
       // 4-3) 자재불출 연계 수량 롤백 & 0이면 삭제
       for (const rtunId of info.rtunIds) {
-        await conn.query(sqlList["decreaseRwmatrRtunTrgetQty"], [
-          delta,
-          rtunId,
-        ]);
-        await conn.query(sqlList["deleteRwmatrRtunTrgetIfZero"], [rtunId]);
+        try {
+          await conn.query(sqlList["decreaseRwmatrRtunTrgetQty"], [delta, rtunId]);
+          await conn.query(sqlList["deleteRwmatrRtunTrgetIfZero"], [rtunId]);
+        } catch (e) {
+          console.warn('[deleteSelectedTransactions] rtun 롤백 실패', rtunId, e && e.message);
+        }
       }
 
       // 4-4) 마스터 총수량이 0이면 마스터 삭제
@@ -3123,8 +3171,10 @@ async function saveMaterialIssue({
   prdt_opt_id = null,
   target_units,
   emp_id,
+  emp_nm = null, // optional: 직원명(수불 명). 없으면 emp_id로 조회해서 채움
   warehouse_id = null,
   location_id = null,
+  materialOverrides = [],
 }) {
   if (!prod_drct_deta_id || !prdt_id || target_units == null || !emp_id) {
     throw new Error(
@@ -3135,7 +3185,20 @@ async function saveMaterialIssue({
   try {
     await conn.beginTransaction();
 
-    const bom = await conn.query(sqlList[wrh_ext_select_active_bom_id], [
+    console.log('[saveMaterialIssue] incoming', {
+      prod_drct_deta_id,
+      prdt_id,
+      prdt_opt_id,
+      target_units,
+      emp_id,
+      emp_nm,
+      materialOverridesLength: Array.isArray(materialOverrides) ? materialOverrides.length : 0,
+    });
+    if (Array.isArray(materialOverrides) && materialOverrides.length) {
+      console.log('[saveMaterialIssue] materialOverrides sample:', materialOverrides.slice(0,10));
+    }
+
+    const bom = await conn.query(sqlList["wrh_ext_select_active_bom_id"], [
       prdt_id,
       prdt_opt_id,
       prdt_opt_id,
@@ -3143,18 +3206,13 @@ async function saveMaterialIssue({
     const bom_id = bom?.[0]?.BOM_ID;
     if (!bom_id) throw new Error("유효 BOM 없음");
 
-    const reqRows = await conn.query(
-      sqlList[wrh_ext_required_per_unit_by_bom],
-      [bom_id]
-    );
+  const reqRows = await conn.query(sqlList["wrh_ext_required_per_unit_by_bom"], [bom_id]);
     if (!reqRows.length) throw new Error("BOM 요구량 없음");
 
     // LOT 목록 잠금 + 부족 검증
     const lotsByRsc = new Map();
     for (const r of reqRows) {
-      const lots = await conn.query(sqlList[wrh_ext_lots_for_rsc_for_update], [
-        r.RSC_ID,
-      ]);
+  const lots = await conn.query(sqlList["wrh_ext_lots_for_rsc_for_update"], [r.RSC_ID]);
       lotsByRsc.set(
         String(r.RSC_ID),
         lots.map((v) => ({
@@ -3187,42 +3245,118 @@ async function saveMaterialIssue({
       throw err;
     }
 
-    // LOT 배분 + 마스터/디테일/LOT 차감 (자재 1:1)
+    // 변경: RWMATR_RTUN_TRGET은 상단 그리드(생산지시) 단위로 1건 생성하고,
+    // 각 자재(r)별로 WRHSDLVR_MAS(마스터)를 1건씩 생성한 뒤,
+    // LOT별 분할은 해당 마스터의 디테일들로 저장하여 마스터 수량과 디테일 합이 일치하도록 함.
+    // Resolve employee name to put into RCVPAY_NM (수불 명)
+    // Frontend may send emp_nm; if not, lookup from emp table by emp_id
+    let resolvedEmpName = (emp_nm || "").toString().trim();
+    if (!resolvedEmpName) {
+      try {
+        const empRows = await conn.query("SELECT emp_nm FROM emp WHERE emp_id = ?", [emp_id]);
+        resolvedEmpName = empRows?.[0]?.EMP_NM || empRows?.[0]?.emp_nm || (emp_id || "");
+      } catch (e) {
+        // fallback to emp_id if lookup fails
+        resolvedEmpName = emp_id || "";
+      }
+    }
+
+    // 1) 상단(생산지시) 단위 RWMATR_RTUN_TRGET 1건 생성 (요청 수량 = target_units)
+    const globalRtunRows = await conn.query(sqlList["createRwmatrRtunTrgetId"]);
+    const globalRtunId = globalRtunRows?.[0]?.txn_id || genId("RSC_RTUN_");
+    await conn.query(sqlList["insertRwmatrRtunTrget"], [
+      globalRtunId,
+      prod_drct_deta_id,
+      prdt_id,
+      prdt_opt_id,
+      Number(target_units) || 0,
+      "J2",
+      "",
+    ]);
+
+    // build map of optional per-material overrides coming from client (lower-grid values)
+    const overrideMap = new Map();
+    if (Array.isArray(materialOverrides)) {
+      for (const mo of materialOverrides) {
+        if (!mo) continue;
+        const key = String(mo.rsc_id || mo.RSC_ID || mo.rscId || mo.code || '');
+        if (!key) continue;
+        overrideMap.set(key, mo);
+      }
+    }
+
+    // 2) 각 자재별(하단 그리드 row)로 마스터 1건 생성하고 LOT 분할을 디테일로 생성
     for (const r of reqRows) {
-      let remain = Number(r.REC_QY_PER_UNIT || 0) * Number(target_units);
+      const totalRequired = Number(r.REC_QY_PER_UNIT || 0) * Number(target_units);
+      // allow client override (e.g., lower-grid total shown on UI) to be used for this rsc
+      const override = overrideMap.get(String(r.RSC_ID));
+      const effectiveRequired = override && override.qty != null ? Number(override.qty) : totalRequired;
+      if (override && override.qty != null) {
+        console.log(`[wrhousdlvr_service] override qty for RSC ${r.RSC_ID}: using ${effectiveRequired} instead of computed ${totalRequired}`);
+      }
+      if (effectiveRequired <= 0) continue;
+
+      // create one master per material
+      const masIdRows = await conn.query(sqlList["createWrhousTransactionId"], ["WRHM_OUT_", "WRHM_OUT_"]);
+      const masId = masIdRows?.[0]?.txn_id || genId("WRHM_OUT_");
+
+      // determine rcvpay name: per-material override -> emp_nm fallback -> resolvedEmpName
+      const matOverride = overrideMap.get(String(r.RSC_ID));
+      const useRcvpayNm = (matOverride && (matOverride.rcvpay_nm || matOverride.RCVPAY_NM))
+        ? (matOverride.rcvpay_nm || matOverride.RCVPAY_NM)
+        : resolvedEmpName;
+
+      console.log(`[wrhousdlvr_service] inserting MAS for RSC ${r.RSC_ID} masId=${masId} all_rcvpay_qy=${effectiveRequired} rcvpay_nm=${useRcvpayNm}`);
+
+      await conn.query(sqlList["wrh_ext_insert_mas_outbound"], [
+        masId,
+        "S2",
+        emp_id,
+        r.RSC_ID,
+        warehouse_id,
+        location_id,
+        // use first lot_no as representative in master (actual allocation applied in details)
+        (lotsByRsc.get(String(r.RSC_ID)) || [])[0]?.lot_no || "",
+        effectiveRequired,
+        useRcvpayNm, // RCVPAY_NM (수불 명)
+        "",
+      ]);
+
+      // allocate across lots (FIFO) and create detail rows linked to this masId
+      let remain = effectiveRequired;
       const list = lotsByRsc.get(String(r.RSC_ID)) || [];
+      let allocatedSum = 0;
       for (const lot of list) {
         if (remain <= 0) break;
         const take = Math.min(lot.now_stc_qy, remain);
         if (take <= 0) continue;
 
-        const masId = genId("WRHM_OUT_");
-        const detaId = genId("WRHSD_");
+        // create detail with reference to globalRtunId
+        const detailIdRows = await conn.query(sqlList["createWrhousDetailId"], ["WRH_OUT_", "WRH_OUT_"]);
+        const detailId = detailIdRows?.[0]?.detail_id || genId("WRH_OUT_");
+        await conn.query(sqlList["insertWrhousTransaction"], [
+          detailId,
+          masId,
+          globalRtunId,
+          null,
+          null,
+          null,
+          null,
+          take,
+          "",
+        ]);
 
-        await conn.query(sqlList[wrh_ext_insert_mas_outbound], [
-          masId,
-          "S2",
-          emp_id,
-          r.RSC_ID,
-          warehouse_id,
-          location_id,
-          lot.lot_no,
-          take,
-        ]);
-        await conn.query(sqlList[wrh_ext_insert_deta_outbound], [
-          detaId,
-          masId,
-          take,
-        ]);
-        await conn.query(sqlList[wrh_ext_update_lot_oust], [
-          take,
-          take,
-          lot.lot_invntry_precon_id,
-        ]);
+        // update lot stock
+        await conn.query(sqlList["wrh_ext_update_lot_oust"], [take, take, lot.lot_invntry_precon_id]);
 
         remain -= take;
+        allocatedSum += take;
       }
-      if (remain > 0) throw new Error("LOT 배분 중 재고 경합/부족");
+
+      if (remain > 0) {
+        console.error(`[wrhousdlvr_service] allocation incomplete for RSC ${r.RSC_ID}: required=${effectiveRequired}, allocated=${allocatedSum}`);
+        throw new Error("LOT 배분 중 재고 경합/부족");
+      }
     }
 
     await conn.commit();
@@ -3241,11 +3375,17 @@ async function saveMaterialIssue({
 
 // [신규] 완제품 재고 합계 (옵션 없으면 전체 옵션 합계)
 async function getAvailableFgStock(prdt_id, prdt_opt_id = "") {
-  // LOT_STC_PRECON 기준 합계 또는 마스터/디테일 집계 쿼리 재사용
-  const rows = await mariadb.query("selectNowStockByPrdtOpt", [
-    prdt_id,
-    prdt_opt_id === "" ? null : prdt_opt_id,
-  ]);
+  // Support either getAvailableFgStock(prdt_id, prdt_opt_id) or getAvailableFgStock({prdt_id, prdt_opt_id})
+  let pid = prdt_id
+  let opt = prdt_opt_id
+  if (typeof prdt_id === 'object' && prdt_id !== null) {
+    pid = prdt_id.prdt_id
+    opt = prdt_id.prdt_opt_id ?? ''
+  }
+  const optParam = opt === "" ? null : opt
+  const params = [pid, optParam, optParam]
+  console.log('[DEBUG] getAvailableFgStock params:', params)
+  const rows = await mariadb.query("selectNowStockByPrdtOpt", params);
   // 쿼리는 now_stock 한 줄만 내려주도록 설계했음
   const qty = Number(rows?.[0]?.now_stock || 0);
   return qty;

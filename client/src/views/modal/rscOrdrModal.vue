@@ -19,7 +19,11 @@
           placeholder="검색어 입력"
           style="width: 250px"
         />
-        <input class="form-control" type="date" v-model="reg_dt" style="width: 160px" />
+        <div style="width: 260px; display:flex; gap:6px; align-items:center">
+          <input class="form-control" type="date" v-model="reg_dt_from" />
+          <span style="width:18px; text-align:center">~</span>
+          <input class="form-control" type="date" v-model="reg_dt_to" />
+        </div>
         <div class="ms-auto d-flex gap-2">
           <button class="btn btn-secondary" @click="search">검색</button>
           <button class="btn btn-secondary" @click="resetSearch">초기화</button>
@@ -70,7 +74,8 @@ const auth = useAuthStore()
 
 const pickValue = ref('rsc_ordr_nm')
 const searchKeyword = ref('')
-const reg_dt = ref('')
+const reg_dt_from = ref('')
+const reg_dt_to = ref('')
 const list = shallowRef([])
 
 const close = () => {
@@ -82,7 +87,8 @@ const resetSearch = () => {
   console.log('[rscOrdrModal] 검색 조건 초기화')
   pickValue.value = 'rsc_ordr_nm'
   searchKeyword.value = ''
-  reg_dt.value = ''
+  reg_dt_from.value = ''
+  reg_dt_to.value = ''
   list.value = []
 }
 
@@ -106,14 +112,16 @@ const search = async () => {
       rsc_ordr_nm: null,
       co_nm: null,
       emp_nm: null,
-      reg_dt: null,
+      reg_dt_from: null,
+      reg_dt_to: null,
       emp_id: empId, // 로그인 사용자 ID 추가
     }
 
     if (pickValue.value === 'rsc_ordr_nm') params.rsc_ordr_nm = searchKeyword.value
     else if (pickValue.value === 'co_nm') params.co_nm = searchKeyword.value
     else if (pickValue.value === 'emp_nm') params.emp_nm = searchKeyword.value
-    if (reg_dt.value) params.reg_dt = reg_dt.value
+    if (reg_dt_from.value) params.reg_dt_from = reg_dt_from.value
+    if (reg_dt_to.value) params.reg_dt_to = reg_dt_to.value
 
     console.log('[rscOrdrModal] request params:', params)
     const res = await axios.get('/api/rscOrdr', { params })

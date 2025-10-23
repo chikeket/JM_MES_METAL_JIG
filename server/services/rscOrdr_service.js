@@ -42,7 +42,8 @@ const coFindAll = async (Info) => {
   const rsc_ordr_nm = (info.rsc_ordr_nm ?? "").trim() || null;
   const emp_nm = (info.emp_nm ?? "").trim() || null;
   const co_nm = (info.co_nm ?? "").trim() || null;
-  const reg_dt = (info.reg_dt ?? "").trim() || null;
+  const reg_dt_from = (info.reg_dt_from ?? info.reg_dt ?? "").trim() || null;
+  const reg_dt_to = (info.reg_dt_to ?? info.reg_dt ?? "").trim() || null;
   const emp_id = (info.emp_id ?? "").trim() || null; // 로그인 사용자 ID 추가
 
   // SQL 파라미터 배열 (각 조건이 2개씩 들어감: IS NULL 체크용과 실제 값 비교용)
@@ -53,8 +54,10 @@ const coFindAll = async (Info) => {
     co_nm,
     emp_nm,
     emp_nm,
-    reg_dt,
-    reg_dt,
+    reg_dt_from,
+    reg_dt_from,
+    reg_dt_to,
+    reg_dt_to,
     emp_id,
     emp_id, // 로그인 사용자 ID 파라미터 추가
   ];
