@@ -137,3 +137,219 @@ const select = async (row) => {
   }
 }
 </script>
+
+<style scoped>
+/* ============================================
+	 기본 폰트 및 박스 설정
+	 ============================================ */
+:deep(*) {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
+    sans-serif;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+
+/* ============================================
+	 검색 영역
+	 ============================================ */
+.search-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.left-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.ms-auto {
+  margin-left: auto;
+}
+
+/* ============================================
+	 버튼 스타일
+	 ============================================ */
+.btn {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0.5rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  letter-spacing: -0.3px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.btn-secondary {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+  color: #fff !important;
+}
+.btn-secondary:hover {
+  background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+.btn:active {
+  transform: translateY(0);
+}
+
+/* ============================================
+	 폼 요소 스타일
+	 ============================================ */
+:deep(.form-control) {
+  font-size: 12px;
+  font-weight: 400;
+  padding: 0.4rem 0.75rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  background-color: #f8f9fa;
+  height: 34px;
+}
+:deep(.form-control:focus) {
+  border-color: #6c757d;
+  box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.15);
+  background-color: #ffffff;
+}
+:deep(input[type='date'].form-control) {
+  font-size: 12px;
+}
+
+/* ============================================
+	 테이블 스타일
+	 ============================================ */
+.table {
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  user-select: none;
+  cursor: default;
+  table-layout: fixed;
+  width: 100%;
+}
+
+.table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.table thead th {
+  font-size: 12px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+  color: #ffffff;
+  text-align: center;
+  padding: 0.65rem 0.5rem;
+  border: none;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.table thead th:first-child {
+  border-top-left-radius: 10px;
+}
+.table thead th:last-child {
+  border-top-right-radius: 10px;
+}
+
+.table tbody td {
+  font-size: 12px;
+  font-weight: 400;
+  vertical-align: middle;
+  padding: 0.55rem 0.5rem;
+  border-bottom: 1px solid #e9ecef;
+  border-right: 2px solid #e9ecef;
+  color: #2c3e50;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background-color: #ffffff;
+}
+
+.table tbody td:last-child {
+  border-right: none;
+}
+
+.table tbody tr {
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+  cursor: pointer;
+}
+
+/* hover 효과 */
+.table {
+  --row-hover-bg: var(
+    --cui-table-hover-bg,
+    var(
+      --bs-table-hover-bg,
+      rgba(var(--cui-emphasis-color-rgb, var(--bs-emphasis-color-rgb, 33, 37, 41)), 0.075)
+    )
+  );
+}
+
+.table tbody tr:hover {
+  background-color: var(--row-hover-bg) !important;
+}
+.table tbody tr:hover td {
+  background-color: var(--row-hover-bg) !important;
+}
+
+/* ============================================
+	 모던 스크롤바
+	 ============================================ */
+div[style*='overflow']::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+div[style*='overflow']::-webkit-scrollbar-track {
+  background: rgba(240, 240, 240, 0.6);
+  border-radius: 10px;
+}
+div[style*='overflow']::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #bfc2c7, #9ea2a8);
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(2px);
+  transition: all 0.2s ease;
+}
+div[style*='overflow']::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #a4a8ae, #7e838a);
+}
+div[style*='overflow'] {
+  scrollbar-width: thin;
+  scrollbar-color: #9ea2a8 rgba(240, 240, 240, 0.6);
+}
+
+/* ============================================
+	 간격 조정
+	 ============================================ */
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.mb-3 {
+  margin-bottom: 1rem;
+}
+
+/* ============================================
+	 반응형
+	 ============================================ */
+@media (max-width: 1600px) {
+  .search-label,
+  :deep(.form-control),
+  .btn,
+  .table th,
+  .table td {
+    font-size: 11px !important;
+  }
+  .btn {
+    padding: 0.4rem 1rem;
+  }
+}
+</style>
