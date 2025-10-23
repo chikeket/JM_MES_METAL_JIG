@@ -49,10 +49,12 @@
                 style="cursor: pointer"
               >
                 <CTableDataCell class="cell-no col-no">{{ idx + 1 }}</CTableDataCell>
-                <CTableDataCell class="cell-left col-id">{{ row.rcvord_id }}</CTableDataCell>
+                <CTableDataCell class="cell-left col-id cell-rcvord-id">{{
+                  row.rcvord_id
+                }}</CTableDataCell>
                 <CTableDataCell class="cell-left col-co">{{ row.co_nm }}</CTableDataCell>
                 <CTableDataCell class="cell-left col-emp">{{ row.emp_nm }}</CTableDataCell>
-                <CTableDataCell class="cell-left col-date">{{
+                <CTableDataCell class="cell-left col-date cell-reg-dt">{{
                   formatDate(row.reg_dt)
                 }}</CTableDataCell>
                 <CTableDataCell class="cell-left col-status">{{
@@ -251,6 +253,12 @@ onMounted(() => {
 }
 .cell-left {
   text-align: left !important;
+}
+
+/* center-align the body cells for rcvord_id and reg_dt only (header remains centered by design) */
+::v-deep .table-responsive tbody td.cell-rcvord-id,
+::v-deep .table-responsive tbody td.cell-reg-dt {
+  text-align: center !important;
 }
 
 /* CompanyManage 스타일 적용 */

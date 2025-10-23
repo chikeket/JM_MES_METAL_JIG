@@ -33,11 +33,13 @@
             <tr
               v-for="(r, i) in mainRows"
               :key="r.prcs_id + '-' + i"
-              :class="{ 'selected-row': selectedMain && selectedMain.prcs_id === r.prcs_id }"
-              @click="onSelectMain(r)"
+              :class="{
+                'selected-row': selectedMainKey && selectedMainKey === r.prcs_id + '-' + i,
+              }"
+              @click="onSelectMain(r, i)"
             >
               <td class="cell-no">{{ i + 1 }}</td>
-              <td class="cell-left">
+              <td class="text-center">
                 <span class="cell-text" :title="fmtDate(selectedFrDt)">{{
                   fmtDate(selectedFrDt)
                 }}</span>
@@ -99,7 +101,7 @@
                 :class="{ 'selected-row': selectedEmp && selectedEmp.emp_id === r.emp_id }"
                 @click="onSelectEmp(r)"
               >
-                <td class="cell-left">
+                <td class="text-center">
                   <span class="cell-text mono" :title="r.emp_id">{{ r.emp_id }}</span>
                 </td>
                 <td class="cell-left">
@@ -139,7 +141,7 @@
                 :class="{ 'selected-row': selectedEqm && selectedEqm.eqm_id === r.eqm_id }"
                 @click="onSelectEqm(r)"
               >
-                <td class="cell-left">
+                <td class="text-center">
                   <span class="cell-text mono" :title="r.eqm_id">{{ r.eqm_id }}</span>
                 </td>
                 <td class="cell-left">
@@ -184,6 +186,7 @@ const empRows = ref([])
 const eqmRows = ref([])
 
 const selectedMain = ref(null)
+const selectedMainKey = ref(null)
 const selectedEmp = ref(null)
 const selectedEqm = ref(null)
 
@@ -251,8 +254,9 @@ const fetchEmpList = async () => {
   }
 }
 
-function onSelectMain(row) {
+function onSelectMain(row, idx) {
   selectedMain.value = row
+  selectedMainKey.value = row && idx != null ? `${row.prcs_id}-${idx}` : null
   maybeProceed()
 }
 function onSelectEmp(row) {

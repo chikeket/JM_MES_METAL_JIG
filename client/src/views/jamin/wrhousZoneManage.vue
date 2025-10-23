@@ -97,12 +97,15 @@
                     </span>
                   </CTableDataCell>
                   <CTableDataCell>
-                    {{ item.zone_id ? getItemTypeLabel(item.item_ty) : '-' }}
+                    {{ getItemTypeLabel(getWarehouseItemType(item)) || '-' }}
                   </CTableDataCell>
                   <CTableDataCell class="text-center">
-                    <CBadge v-if="item.zone_id" :color="item.st === 'M1' ? 'success' : 'secondary'">
-                      {{ item.st === 'M1' ? '활성' : '비활성' }}
-                    </CBadge>
+                    <template v-if="getWarehouseStatus(item)
+                                      && getWarehouseStatus(item) !== ''">
+                      <CBadge :color="getWarehouseStatus(item) === 'M1' ? 'success' : 'secondary'">
+                        {{ getWarehouseStatus(item) === 'M1' ? '활성' : '비활성' }}
+                      </CBadge>
+                    </template>
                     <span v-else class="text-muted">-</span>
                   </CTableDataCell>
                   <CTableDataCell>{{ item.rm || '' }}</CTableDataCell>
@@ -189,12 +192,13 @@
                 <CFormLabel class="form-label pt-1">품목 유형</CFormLabel>
               </CCol>
               <CCol :md="7" class="ps-3">
-                <CFormSelect v-model="formData.item_ty" size="sm">
-                  <option value="">선택하세요</option>
-                  <option value="E1">자재</option>
-                  <option value="E2">반제품</option>
-                  <option value="E3">완제품</option>
-                </CFormSelect>
+                <!-- 사용자가 변경하지 못하도록 읽기전용으로 표시 -->
+                <CFormInput
+                  :value="getItemTypeLabel(formData.item_ty) || '-'"
+                  readonly
+                  size="sm"
+                />
+                <!-- 내부적으로 값은 formData.item_ty에 보관되어 전송 시 사용됨 -->
               </CCol>
             </CRow>
             
@@ -290,15 +294,30 @@ const selectedWrhousNm = computed(() => {
   return wrhous ? wrhous.wrhous_nm : ''
 })
 
+// 창고의 기본 품목유형을 반환 (존재하지 않으면 빈 문자열)
+const getWarehouseItemType = (item) => {
+  if (!item) return ''
+  const wh = wrhousOptions.value.find(w => w.wrhous_id === item.wrhous_id)
+  // 창고 객체에 item_ty 필드가 있을 수도 있고, 없으면 zone의 item_ty 사용
+  return (wh && (wh.item_ty || wh.item_type)) || item.item_ty || ''
+}
+
+// 창고의 기본 상태 반환
+const getWarehouseStatus = (item) => {
+  if (!item) return ''
+  const wh = wrhousOptions.value.find(w => w.wrhous_id === item.wrhous_id)
+  return (wh && (wh.st || wh.status)) || item.st || ''
+}
+
 // 표시할 데이터 (최대 10행)
 const displayedData = computed(() => {
-  return zoneData.value.slice(0, 10)
+  return zoneData.value.slice(0, 30)
 })
 
 // 빈 행 개수 계산
 const emptyRowCount = computed(() => {
   const dataCount = displayedData.value.length
-  return dataCount < 10 ? 10 - dataCount : 0
+  return dataCount < 30 ? 30 - dataCount : 0
 })
 
 // 창고 목록 조회 (로케이션 등록용)
@@ -357,16 +376,17 @@ const selectZone = (item, index) => {
   selectedRowIndex.value = index
   
   // 로케이션이 있는 경우는 편집 모드, 없는 경우는 신규 모드
-  if (item.zone_id && item.zone_id.trim() !== '') {
+    if (item.zone_id && item.zone_id.trim() !== '') {
     isEditMode.value = true
     
     // 폼에 선택된 데이터 설정 (편집 모드)
     formData.zone_id = item.zone_id
     formData.wrhous_id = item.wrhous_id
     formData.wrhous_nm = item.wrhous_nm
-    formData.item_ty = item.item_ty || ''
+  // 창고의 품목유형/상태가 우선
+  formData.item_ty = getWarehouseItemType(item) || item.item_ty || ''
     formData.zone_nm = item.zone_nm === '로케이션 없음' ? '' : item.zone_nm
-    formData.st = item.st || 'M1'
+  formData.st = getWarehouseStatus(item) || item.st || 'M1'
     formData.rm = item.rm || ''
   } else {
     // 로케이션이 없는 창고 선택시 신규 모드로 창고 정보만 설정
@@ -375,9 +395,10 @@ const selectZone = (item, index) => {
     formData.zone_id = ''
     formData.wrhous_id = item.wrhous_id
     formData.wrhous_nm = item.wrhous_nm
-    formData.item_ty = ''
+  // 신규 모드일 때도 창고의 기본 품목유형을 셋팅
+  formData.item_ty = getWarehouseItemType(item) || ''
     formData.zone_nm = ''
-    formData.st = 'M1'
+  formData.st = getWarehouseStatus(item) || 'M1'
     formData.rm = ''
   }
 }
@@ -631,6 +652,26 @@ onMounted(async () => {
 }
 :deep(.form-check-input) {
   cursor: pointer;
+}
+
+/* match Eqm.vue radio appearance: muted gray */
+:deep(.radio-item .form-check-input) {
+  width: 18px !important;
+  height: 18px !important;
+  margin: 0 6px 0 0 !important;
+  flex-shrink: 0 !important;
+  cursor: pointer;
+  border: 2px solid #6c757d;
+}
+
+:deep(.radio-item .form-check-input:checked) {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+}
+
+:deep(.radio-item .form-check-input:focus) {
+  border-color: #6c757d !important;
+  box-shadow: 0 0 0 0.15rem rgba(108, 117, 125, 0.15) !important;
 }
 :deep(.form-check-label) {
   font-size: 12px;

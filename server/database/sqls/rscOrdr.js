@@ -20,6 +20,7 @@ WHERE (? IS NULL OR c.RSC_ORDR_NM LIKE CONCAT('%', ?, '%'))
   AND (? IS NULL OR e.co_nm LIKE CONCAT('%', ?, '%'))
   AND (? IS NULL OR d.emp_nm LIKE CONCAT('%', ?, '%'))
   AND (? IS NULL OR c.reg_dt >= ?)
+  AND (? IS NULL OR c.reg_dt <= ?)
   AND (? IS NULL OR c.emp_id = ?)
 GROUP BY c.RSC_ORDR_ID
 ORDER BY substr(c.rsc_ordr_id,-6) desc

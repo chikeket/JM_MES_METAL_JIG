@@ -265,12 +265,19 @@ const selectedRsc = (r) => {
   const defaultDeliDt = new Date()
   defaultDeliDt.setDate(defaultDeliDt.getDate() + 7)
   const deliDtStr = defaultDeliDt.toISOString().slice(0, 10)
-  arr.forEach((item) => {
+  // 중복 방지: 이미 rows에 동일한 code가 있으면 추가하지 않음
+  const skipped = []
+  for (const item of arr) {
     const code = item.rsc_id ?? item.code ?? item.RSC_ID ?? item.rscId ?? ''
     const name = item.rsc_nm ?? item.name ?? item.RSC_NM ?? item.rscNm ?? ''
     const spec = item.spec ?? item.SPEC ?? ''
     const unit = item.rsc_unit ?? item.unit ?? item.RSC_UNIT ?? ''
-    if (!code) return
+    if (!code) continue
+    const exists = rows.value.some((row) => !row.__empty && String(row.code) === String(code))
+    if (exists) {
+      skipped.push(code)
+      continue
+    }
     const newId = rows.value.length > 0 ? Math.max(...rows.value.map((x) => x.id || 0)) + 1 : 1
     rows.value.push({
       id: newId,
@@ -283,7 +290,13 @@ const selectedRsc = (r) => {
       deli_dt: deliDtStr,
       note: '',
     })
-  })
+    // 새로 추가된 행은 자동으로 선택 상태로 만듦
+    if (!selectedIds.value.includes(newId)) selectedIds.value.push(newId)
+  }
+  if (skipped.length) {
+    const uniqueSkipped = Array.from(new Set(skipped))
+    alert(`다음 자재는 이미 존재하여 추가되지 않았습니다: ${uniqueSkipped.join(', ')}`)
+  }
 }
 
 // 공급업체 모달 선택

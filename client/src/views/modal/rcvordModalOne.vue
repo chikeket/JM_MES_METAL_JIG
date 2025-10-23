@@ -41,13 +41,13 @@
                 style="cursor: pointer"
               >
                 <CTableDataCell class="cell-no">{{ idx + 1 }}</CTableDataCell>
-                <CTableDataCell class="cell-left">{{ row.rcvord_id }}</CTableDataCell>
+                <CTableDataCell class="text-center">{{ row.rcvord_id }}</CTableDataCell>
                 <CTableDataCell class="cell-left">{{ row.co_nm }}</CTableDataCell>
                 <CTableDataCell class="cell-left">{{ row.emp_nm }}</CTableDataCell>
                 <CTableDataCell class="cell-number">{{
                   formatNumber(row.total_qty)
                 }}</CTableDataCell>
-                <CTableDataCell class="cell-left">{{ formatDate(row.reg_dt) }}</CTableDataCell>
+                <CTableDataCell class="text-center">{{ formatDate(row.reg_dt) }}</CTableDataCell>
                 <CTableDataCell class="cell-left">{{ row.status }}</CTableDataCell>
                 <CTableDataCell class="cell-left">{{ row.rm }}</CTableDataCell>
               </CTableRow>

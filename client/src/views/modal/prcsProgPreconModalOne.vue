@@ -48,14 +48,18 @@
               style="cursor: pointer"
             >
               <CTableDataCell class="cell-no">{{ i + 1 }}</CTableDataCell>
-              <CTableDataCell class="cell-left">{{ row.prod_drct_id }}</CTableDataCell>
+              <CTableDataCell class="text-center">{{ row.prod_drct_id }}</CTableDataCell>
               <CTableDataCell class="cell-left text-ellipsis" :title="row.prod_drct_nm">{{
                 row.prod_drct_nm
               }}</CTableDataCell>
               <CTableDataCell class="cell-left">{{ row.emp_nm }}</CTableDataCell>
-              <CTableDataCell class="cell-left">{{ fmtDate(row.prod_drct_fr_dt) }}</CTableDataCell>
-              <CTableDataCell class="cell-left">{{ fmtDate(row.prod_drct_to_dt) }}</CTableDataCell>
-              <CTableDataCell class="cell-left">{{ fmtDate(row.reg_dt) }}</CTableDataCell>
+              <CTableDataCell class="text-center">{{
+                fmtDate(row.prod_drct_fr_dt)
+              }}</CTableDataCell>
+              <CTableDataCell class="text-center">{{
+                fmtDate(row.prod_drct_to_dt)
+              }}</CTableDataCell>
+              <CTableDataCell class="text-center">{{ fmtDate(row.reg_dt) }}</CTableDataCell>
               <CTableDataCell class="cell-left text-ellipsis" :title="row.rm">{{
                 row.rm
               }}</CTableDataCell>

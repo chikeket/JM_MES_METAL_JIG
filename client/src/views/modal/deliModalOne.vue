@@ -44,9 +44,11 @@
               style="cursor: pointer"
             >
               <CTableDataCell class="cell-no">{{ idx + 1 }}</CTableDataCell>
-              <CTableDataCell class="cell-left">{{ row.deli_id }}</CTableDataCell>
+              <CTableDataCell class="cell-left cell-deli-id">{{ row.deli_id }}</CTableDataCell>
               <CTableDataCell class="cell-left">{{ row.emp_nm }}</CTableDataCell>
-              <CTableDataCell class="cell-left">{{ formatDate(row.deli_dt) }}</CTableDataCell>
+              <CTableDataCell class="cell-left cell-deli-dt">{{
+                formatDate(row.deli_dt)
+              }}</CTableDataCell>
               <CTableDataCell class="cell-left">{{ row.status || '진행 중' }}</CTableDataCell>
               <CTableDataCell class="cell-left">{{ row.rm }}</CTableDataCell>
             </CTableRow>
@@ -195,6 +197,12 @@ onMounted(() => {
 }
 .cell-left {
   text-align: left !important;
+}
+
+/* Center-align only the tbody cells for deli id and deli date (keep headers centered by design) */
+:deep(.table-responsive tbody td.cell-deli-id),
+:deep(.table-responsive tbody td.cell-deli-dt) {
+  text-align: center !important;
 }
 
 /* CompanyManage 스타일 적용 */

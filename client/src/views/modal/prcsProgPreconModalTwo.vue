@@ -51,7 +51,7 @@
               @dblclick="onDblClick(row)"
             >
               <CTableDataCell class="cell-no">{{ i + 1 }}</CTableDataCell>
-              <CTableDataCell class="cell-left">{{ row.mold_id }}</CTableDataCell>
+              <CTableDataCell class="text-center">{{ row.mold_id }}</CTableDataCell>
               <CTableDataCell class="cell-left text-ellipsis" :title="row.mold_nm">{{
                 row.mold_nm
               }}</CTableDataCell>
@@ -64,7 +64,7 @@
               <CTableDataCell class="cell-number">{{ fmtNumber(row.warn_qy) }}</CTableDataCell>
               <CTableDataCell class="cell-number">{{ fmtNumber(row.dsuse_qy) }}</CTableDataCell>
               <CTableDataCell class="cell-left">{{ row.chck_cycle }}</CTableDataCell>
-              <CTableDataCell class="cell-left">{{ fmtDate(row.chck_dt) }}</CTableDataCell>
+              <CTableDataCell class="text-center">{{ fmtDate(row.chck_dt) }}</CTableDataCell>
               <CTableDataCell class="cell-left">{{ row.st_nm }}</CTableDataCell>
               <CTableDataCell class="cell-left text-ellipsis" :title="row.rm">{{
                 row.rm

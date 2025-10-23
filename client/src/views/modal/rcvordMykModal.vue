@@ -1,7 +1,7 @@
 <template>
   <CModal :visible="visible" @close="close">
     <CModalHeader>
-      <CModalTitle>제품 검색</CModalTitle>
+      <CModalTitle>수주서 검색</CModalTitle>
     </CModalHeader>
     <CModalBody>
       <div class="modal-body" style="max-height: 400px; overflow-y: auto">

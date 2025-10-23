@@ -66,11 +66,13 @@
           <tbody>
             <tr v-for="(r, idx) in displayedRows" :key="idx">
               <td class="text-center">{{ idx + 1 }}</td>
-              <td class="text-start" :title="r.deli_id">{{ r.deli_id }}</td>
+              <td class="text-center" :title="r.deli_id">{{ r.deli_id }}</td>
               <td class="text-start" :title="r.emp_nm || r.emp_id">
                 {{ r.emp_nm || r.emp_id || '' }}
               </td>
-              <td class="text-start" :title="formatDate(r.deli_dt)">{{ formatDate(r.deli_dt) }}</td>
+              <td class="text-center" :title="formatDate(r.deli_dt)">
+                {{ formatDate(r.deli_dt) }}
+              </td>
               <td class="text-start" :title="computeDeliStatus(r)">{{ computeDeliStatus(r) }}</td>
               <td class="text-start" :title="r.rm">{{ r.rm || '' }}</td>
               <td class="text-center">

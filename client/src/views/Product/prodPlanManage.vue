@@ -73,9 +73,9 @@ const insertRowsToDB = async () => {
     .catch((err) => console.log(err))
   let addRes = result.data
   if (addRes.isSuccessed) {
-    console.log('생산계획이 등록되었습니다.')
+    alert('생산계획이 등록되었습니다.')
   } else {
-    console.log('생산계획이 실패했습니다.')
+    alert('생산계획이 실패했습니다.')
   }
 }
 
@@ -113,9 +113,9 @@ const updateRowsToDB = async () => {
     .catch((err) => console.log(err))
   let addRes = result.data
   if (addRes.isSuccessed) {
-    console.log('생산계획수정이 등록되었습니다.')
+    alert('생산계획수정이 등록되었습니다.')
   } else {
-    console.log('생산계획수정이 실패했습니다.')
+    alert('생산계획수정이 실패했습니다.')
   }
 }
 
@@ -126,9 +126,9 @@ const deleteRowsToDB = async () => {
     .catch((err) => console.log(err))
   let addRes = result.data
   if (addRes.isSuccessed) {
-    console.log('생산계획삭제가 성공되었습니다.')
+    alert('생산계획삭제가 성공되었습니다.')
   } else {
-    console.log('생산계획삭제가 실패했습니다. Info.value.prod_plan_id')
+    alert('생산계획삭제가 실패했습니다.')
   }
 }
 
@@ -258,31 +258,35 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
       <CButton color="secondary" @click="updateRowsToDB">수정</CButton>
       <CButton color="danger" @click="deleteRowsToDB()">삭제</CButton>
     </div>
-<div class="search-filter-box mb-2">
-    <CContainer fluid>
-      <CRow class="g-3 mb-3">
-        <CCol md="3">
-          <c-form-label>생산계획서 명</c-form-label>
-            <c-form-input v-model="Info.ordrName1" placeholder="생산지시서 명"/>
-        </CCol>
+    <div class="search-filter-box mb-2">
+      <CContainer fluid>
+        <CRow class="g-3 mb-3">
+          <CCol md="3">
+            <c-form-label>생산계획서 명</c-form-label>
+            <c-form-input v-model="Info.ordrName1" placeholder="생산지시서 명" />
+          </CCol>
 
-        <CCol md="3">
-          <c-form-label>등록 일자</c-form-label>
+          <CCol md="3">
+            <c-form-label>등록 일자</c-form-label>
             <c-form-input type="date" v-model="Info.startDate" />
-
-        </CCol>
-        <CCol md="3">
-          <c-form-label>시작 일자</c-form-label>
+          </CCol>
+          <CCol md="3">
+            <c-form-label>시작 일자</c-form-label>
             <c-form-input type="date" v-model="Info.startDate" />
-        </CCol>
-        <CCol md="3">
-          <c-form-label>종료 일자</c-form-label>
+          </CCol>
+          <CCol md="3">
+            <c-form-label>종료 일자</c-form-label>
             <c-form-input type="date" v-model="Info.endDate" />
-        </CCol>
-      </CRow>
-    </CContainer>
-    <CFormTextarea v-model="Info.remark" label="비고" rows="3" text="필요 시 기재"></CFormTextarea>
-</div>
+          </CCol>
+        </CRow>
+      </CContainer>
+      <CFormTextarea
+        v-model="Info.remark"
+        label="비고"
+        rows="3"
+        text="필요 시 기재"
+      ></CFormTextarea>
+    </div>
     <div class="d-flex justify-content-end gap-2 mb-3">
       <CButton color="secondary" @click="goToDrctPlan()">수주서 조회</CButton>
       <ProdDrctModal
@@ -398,7 +402,8 @@ const fmtQty = (n) => (n ?? 0).toLocaleString()
 </template>
 <style scoped>
 :deep(*) {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR',
+    sans-serif;
   line-height: 1.6;
   box-sizing: border-box;
 }
@@ -655,36 +660,34 @@ select.cell-input {
   :deep(.form-label) {
     font-size: 12px !important;
   }
-  
+
   :deep(.form-control),
   :deep(.form-select) {
     font-size: 12px !important;
     height: 38px !important;
     padding: 0.55rem 0.75rem !important;
   }
-  
+
   :deep(.btn) {
     font-size: 12px !important;
     padding: 0.5rem 1.1rem !important;
   }
-  
+
   :deep(th),
   :deep(td) {
     font-size: 12px !important;
   }
-  
+
   :deep(.data-table td) {
     height: 42px !important;
   }
-  
+
   .empty-row td {
     height: 42px !important;
   }
-  
+
   .cell-input {
     font-size: 12px !important;
   }
 }
-
-
 </style>

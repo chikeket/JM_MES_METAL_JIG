@@ -67,6 +67,7 @@ const semiPrdtQltyInsp = require("./routers/semiPrdtQltyInsp_router.js"); // 반
 const prodPlanManage = require("./routers/prodPlanManage_router.js"); // 생산계획관리 페이지 rud관련
 const bomRouter = require("./routers/bom_router"); // BOM 관리
 const inventoryRouter = require("./routers/invntry_router.js"); // 재고 조회
+const coG2 = require("./routers/coG2_router.js"); // G2 업체 조회
 
 // 배포 관련 미들웨어
 const publicPath = path.join(__dirname, "public");
@@ -108,6 +109,7 @@ app.use(contextPath, semiPrdtQltyInsp); // 반제품 품질검수
 app.use(contextPath, prodPlanManage); // 생산계획관리 rud관련
 app.use(contextPath, bomRouter); // BOM 관리
 app.use(contextPath, inventoryRouter); // 재고 조회
+app.use(contextPath, coG2); // G2 업체 조회
 
 // 라우팅 아니고 미들웨어 (에러 처리용)
 // 위쪽에서 처리가 안되는건 다 이쪽에서 처리되게

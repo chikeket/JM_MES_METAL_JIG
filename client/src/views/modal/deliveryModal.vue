@@ -97,7 +97,7 @@
                   <td>{{ item.opt_name || '-' }}</td>
                   <td>{{ item.item_spec || '-' }}</td>
                   <td>{{ item.item_unit || '-' }}</td>
-                  <td class="text-end">{{ Number(item.required_qty || 0).toLocaleString() }}</td>
+                  <td class="text-end">{{ Number(item.order_qty ?? item.drct_qy ?? item.DRCT_QY ?? item.required_qty ?? item.qty ?? 0).toLocaleString() }}</td>
                   <td>{{ item.emp_name }}</td>
                 </tr>
                 <tr v-if="!productionOrderList || productionOrderList.length === 0">
@@ -380,59 +380,73 @@ const toggleSelection = (item) => {
   }
 
   const index = selectedItems.value.findIndex((s) => s.insp_no === itemKey)
-  if (index > -1) {
-    selectedItems.value.splice(index, 1)
-  } else {
-    // 자재 불출의 경우 생산지시 정보로 저장
-    if (searchCondition.insp_type === 'materialWithdrawal') {
-      selectedItems.value.push({
-        insp_no: itemKey,
-        insp_type: searchCondition.insp_type,
-        item_type: item.item_type,
-        item_code: item.item_code,
-        item_name: item.item_name,
-        opt_code: item.opt_code,
-        opt_name: item.opt_name,
-        item_spec: item.item_spec,
-        item_unit: item.item_unit,
-        required_qty: item.required_qty,
-        emp_name: item.emp_name,
-      })
+    if (index > -1) {
+      selectedItems.value.splice(index, 1)
     } else {
-      selectedItems.value.push({
-        ...item,
-        insp_no: itemKey,
-        insp_type: searchCondition.insp_type,
-      })
-    }
+      // 자재 불출의 경우 생산지시 정보로 저장
+      if (searchCondition.insp_type === 'materialWithdrawal') {
+        // API가 다양한 이름으로 수량 필드를 보낼 수 있으므로 안전하게 여러 키를 취합해서 전달
+        const drctQy = item.drct_qy ?? item.DRCT_QY ?? item.required_qty ?? 0
+        const possibleQty = item.possible_qty ?? item.can_qty ?? item.available_qty ?? 0
+        selectedItems.value.push({
+          insp_no: itemKey,
+          insp_type: searchCondition.insp_type,
+          item_type: item.item_type,
+          item_code: item.item_code,
+          item_name: item.item_name,
+          opt_code: item.opt_code,
+          opt_name: item.opt_name,
+          item_spec: item.item_spec,
+          item_unit: item.item_unit,
+          // 보존용: 여러 필드로 전달하여 부모 컴포넌트가 어떤 필드를 사용하는지 상관없이 접근 가능
+          required_qty: item.required_qty,
+          drct_qy: drctQy,
+          possible_qty: possibleQty,
+          emp_name: item.emp_name,
+          originalItem: { ...item },
+        })
+      } else {
+        selectedItems.value.push({
+          ...item,
+          insp_no: itemKey,
+          insp_type: searchCondition.insp_type,
+        })
+      }
   }
   console.log('[deliveryModal] 선택된 검사서들:', selectedItems.value)
 }
 
 // 전체 선택/해제
 const toggleAll = (event) => {
-  if (event.target.checked) {
-    if (searchCondition.insp_type === 'materialWithdrawal') {
-      // 자재 불출의 경우 생산지시 정보로 저장
-      selectedItems.value = productionOrderList.value.map((item) => ({
-        insp_no: item.withdrawal_id,
-        insp_type: searchCondition.insp_type,
-        item_type: item.item_type,
-        item_code: item.item_code,
-        item_name: item.item_name,
-        opt_code: item.opt_code,
-        opt_name: item.opt_name,
-        item_spec: item.item_spec,
-        item_unit: item.item_unit,
-        required_qty: item.required_qty,
-        emp_name: item.emp_name,
-      }))
-    } else {
-      selectedItems.value = inspectionList.value.map((item) => ({
-        ...item,
-        insp_type: searchCondition.insp_type,
-      }))
-    }
+    if (event.target.checked) {
+      if (searchCondition.insp_type === 'materialWithdrawal') {
+        // 자재 불출의 경우 생산지시 정보로 저장 (선택 항목에 가능한 수량/원본 항목 포함)
+        selectedItems.value = productionOrderList.value.map((item) => {
+          const drctQy = item.drct_qy ?? item.DRCT_QY ?? item.required_qty ?? 0
+          const possibleQty = item.possible_qty ?? item.can_qty ?? item.available_qty ?? 0
+          return {
+            insp_no: item.withdrawal_id,
+            insp_type: searchCondition.insp_type,
+            item_type: item.item_type,
+            item_code: item.item_code,
+            item_name: item.item_name,
+            opt_code: item.opt_code,
+            opt_name: item.opt_name,
+            item_spec: item.item_spec,
+            item_unit: item.item_unit,
+            required_qty: item.required_qty,
+            drct_qy: drctQy,
+            possible_qty: possibleQty,
+            emp_name: item.emp_name,
+            originalItem: { ...item },
+          }
+        })
+      } else {
+        selectedItems.value = inspectionList.value.map((item) => ({
+          ...item,
+          insp_type: searchCondition.insp_type,
+        }))
+      }
   } else {
     selectedItems.value = []
   }
@@ -475,8 +489,21 @@ const onSelect = () => {
     return
   }
 
-  console.log('[deliveryModal] 최종 선택된 검사서들:', selectedItems.value)
-  emit('select', selectedItems.value)
+  // 부모 컴포넌트가 일관된 키로 사용할 수 있도록 선택 데이터를 정규화해서 전달
+  const normalized = selectedItems.value.map((item) => {
+    // include order_qty (API may provide different field names)
+    const planned_qty = item.order_qty ?? item.orderQy ?? item.drct_qy ?? item.DRCT_QY ?? item.required_qty ?? item.qty ?? 0
+    const available_qty = item.available_qty ?? item.possible_qty ?? item.can_qty ?? item.remaining_qty ?? 0
+    return {
+      ...item,
+      planned_qty,
+      available_qty,
+    }
+  })
+
+  console.log('[deliveryModal] 최종 선택된 검사서들 (원본):', selectedItems.value)
+  console.log('[deliveryModal] 정규화된 선택 항목 (emit):', normalized)
+  emit('select', normalized)
   closeModal()
 }
 
