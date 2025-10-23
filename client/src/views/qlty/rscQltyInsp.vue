@@ -277,9 +277,9 @@ const saveInspection = async () => {
   let result = await axios.post('/api/rscQltyInspInsert', payload).catch((err) => console.log(err))
   let addRes = result.data
   if (addRes.isSuccessed) {
-    console.log('자재품질검수가 등록되었습니다.')
+    alert('자재품질검수가 등록되었습니다.')
   } else {
-    console.log('자재품질검수에 실패했습니다.')
+    alert('자재품질검수에 실패했습니다.')
   }
 }
 
@@ -307,9 +307,9 @@ const update = async () => {
   let result = await axios.post('/api/rscQltyInspUpdate', payload).catch((err) => console.log(err))
   let addRes = result.data
   if (addRes.isSuccessed) {
-    console.log('자재품질검수 수정이 등록되었습니다.')
+    alert('자재품질검수 수정이 등록되었습니다.')
   } else {
-    console.log('자재품질검수 수정에 실패했습니다.')
+    alert('자재품질검수 수정에 실패했습니다.')
   }
 }
 
@@ -320,9 +320,9 @@ const deleteFunc = async () => {
   let result = await axios.post('/api/rscQltyInspDelete', payload).catch((err) => console.log(err))
   let addRes = result.data
   if (addRes.isSuccessed) {
-    console.log('자재품질검수 삭제가 성공되었습니다.')
+    alert('자재품질검수 삭제가 성공되었습니다.')
   } else {
-    console.log('자재품질검수 삭제가 실패했습니다.')
+    alert('자재품질검수 삭제가 실패했습니다.')
   }
 }
 
