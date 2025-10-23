@@ -315,11 +315,11 @@ const rightGridData = ref([])
 const selectedRightIndex = ref(null)
 const selectedRightBomDetaId = ref(null)
 
-const leftDisplayData = computed(() => leftGridData.value.slice(0, 10))
-const leftEmptyRows = computed(() => Math.max(0, 10 - leftDisplayData.value.length))
+const leftDisplayData = computed(() => leftGridData.value.slice(0, 100))
+const leftEmptyRows = computed(() => Math.max(0, 100 - leftDisplayData.value.length))
 
-const rightDisplayData = computed(() => rightGridData.value.slice(0, 10))
-const rightEmptyRows = computed(() => Math.max(0, 10 - rightDisplayData.value.length))
+const rightDisplayData = computed(() => rightGridData.value.slice(0, 100))
+const rightEmptyRows = computed(() => Math.max(0, 100 - rightDisplayData.value.length))
 
 // 날짜값이 들어올 때 자동 변환 (yyyy-MM-dd)
 watch(
@@ -649,7 +649,7 @@ const handleRightDelete = async () => {
   --color-btn-danger: #c53030;
   --color-btn-danger-hover: #a82323;
   --color-btn-text: #fff;
-  --table-visible-rows: 10;
+  --table-visible-rows: 16;
   --row-h: 34px;
   --thead-h: 34px;
   --row-vpad: 6px;

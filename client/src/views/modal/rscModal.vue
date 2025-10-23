@@ -44,7 +44,7 @@
                 <input type="checkbox" :checked="isSelected(r)" @change="toggleSelection(r)" />
               </td>
               <td>{{ r.rsc_id }}</td>
-              <td>{{ r.rsc_clsf_id || r.rsc_ty }}</td>
+              <td>{{ mapRscClsf(r.rsc_clsf_id || r.rsc_ty) }}</td>
               <td>{{ r.rsc_nm }}</td>
               <td>{{ r.spec }}</td>
               <td>{{ r.rsc_unit || r.unit }}</td>
@@ -73,6 +73,15 @@ const emit = defineEmits(['close', 'select'])
 const pickValue = ref('rsc_nm')
 const searchKeyword = ref('')
 const rscList = shallowRef([])
+
+// rsc_clsf_id 매핑: H1=원자재, H2=부자재, H3=외장재
+function mapRscClsf(val) {
+  const v = val ?? ''
+  if (v === 'H1') return '원자재'
+  if (v === 'H2') return '부자재'
+  if (v === 'H3') return '외장재'
+  return v
+}
 
 // 선택 관련 상태
 const selectedItems = ref([])
