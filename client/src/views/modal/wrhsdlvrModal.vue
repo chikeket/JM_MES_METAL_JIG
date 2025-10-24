@@ -4,26 +4,37 @@
       <CModalTitle>자재 발주서 조회</CModalTitle>
     </CModalHeader>
     <CModalBody>
-      <div class="d-flex gap-2 mb-3">
+      <div class="d-flex gap-2 mb-2 align-items-center">
         <div class="left-controls d-flex gap-2 align-items-center">
           <label class="search-label">수불 명</label>
           <CFormInput v-model="searchOrderNm" style="width: 140px" />
         </div>
         <div class="left-controls d-flex gap-2 align-items-center">
           <label class="search-label">수불 유형</label>
-          <CFormInput v-model="searchOrderType" style="width: 100px" placeholder="IN/OUT" />
+          <CFormInput
+            :value="props.mode === 'in' ? '입고' : '출고'"
+            style="width: 140px"
+            readonly
+          />
         </div>
         <div class="left-controls d-flex gap-2 align-items-center">
           <label class="search-label">담당자 명</label>
           <CFormInput v-model="searchOrderEmp" style="width: 100px" />
         </div>
-        <div class="left-controls d-flex gap-2 align-items-center">
-          <label class="search-label">수불 일자</label>
-          <CFormInput type="date" v-model="searchOrderDate" style="width: 120px" />
-        </div>
         <div class="ms-auto d-flex gap-2">
           <button class="btn btn-secondary" @click="search">검색</button>
           <button class="btn btn-secondary" @click="resetSearch">초기화</button>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2 mb-3 align-items-center">
+        <div class="left-controls d-flex gap-2 align-items-center">
+          <label class="search-label">수불 일자 (From)</label>
+          <CFormInput type="date" v-model="searchOrderDateFrom" style="width: 140px" />
+        </div>
+        <div class="left-controls d-flex gap-2 align-items-center">
+          <label class="search-label">수불 일자 (To)</label>
+          <CFormInput type="date" v-model="searchOrderDateTo" style="width: 140px" />
         </div>
       </div>
 
@@ -70,7 +81,7 @@ import { ref, defineProps, defineEmits, shallowRef } from 'vue'
 import axios from 'axios'
 import { useAuthStore } from '@/stores/auth.js'
 
-const props = defineProps({ visible: Boolean })
+const props = defineProps({ visible: Boolean, mode: { type: String, default: 'in' } })
 const emit = defineEmits(['close', 'select'])
 
 const auth = useAuthStore()
@@ -78,7 +89,8 @@ const auth = useAuthStore()
 const searchOrderNm = ref('')
 const searchOrderType = ref('')
 const searchOrderEmp = ref('')
-const searchOrderDate = ref('')
+const searchOrderDateFrom = ref('')
+const searchOrderDateTo = ref('')
 const list = shallowRef([])
 
 const close = () => {
@@ -91,7 +103,8 @@ const resetSearch = () => {
   searchOrderNm.value = ''
   searchOrderType.value = ''
   searchOrderEmp.value = ''
-  searchOrderDate.value = ''
+  searchOrderDateFrom.value = ''
+  searchOrderDateTo.value = ''
   list.value = []
 }
 
@@ -110,10 +123,12 @@ const search = async () => {
     // }
     const params = {
       rsc_ordr_nm: searchOrderNm.value || null,
-      rcvpay_ty: searchOrderType.value || null,
+      // parent-driven type: 'in' -> 'S1', 'out' -> 'S2'
+      rcvpay_ty: props.mode === 'in' ? 'S1' : 'S2',
       emp_nm: searchOrderEmp.value || null,
-      reg_dt: searchOrderDate.value || null,
-      emp_id: 'EMP005' ||empId || null,
+      reg_dt_from: searchOrderDateFrom.value || null,
+      reg_dt_to: searchOrderDateTo.value || null,
+      emp_id: 'EMP005' || empId || null,
     }
     const res = await axios.get('/api/wrhsdlvr/search', { params })
     const data = res?.data
@@ -128,11 +143,41 @@ const select = async (row) => {
   try {
     const res = await axios.get(`/api/wrhsdlvr/${row.wrhsdlvr_mas_id}`)
     const { master, details } = res.data || {}
-    emit('select', { master, details })
+    // Ensure master contains lot information when server returns lot only in details
+    const safeMaster = {
+      ...master,
+      lot_no:
+        (master && (master.lot_no || master.LOT_NO || master.lot)) ||
+        (Array.isArray(details) && details.length
+          ? details[0].lot_no || details[0].lot || ''
+          : '') ||
+        '',
+      lot:
+        (master && (master.lot || master.lot_no)) ||
+        (Array.isArray(details) && details.length
+          ? details[0].lot || details[0].lot_no || ''
+          : '') ||
+        '',
+      wrhsdlvr_mas_id:
+        (master && (master.wrhsdlvr_mas_id || master.wrhsdlvr_id)) ||
+        row.wrhsdlvr_mas_id ||
+        row.wrhsdlvr_id ||
+        '',
+    }
+    emit('select', { master: safeMaster, details })
     close()
   } catch (err) {
     console.error('[wrhsdlvrModal] select error:', err)
-    emit('select', { master: row, details: mappedDetails })
+    // If the API call fails, emit a normalized master (ensure lot_no is present)
+    const mappedDetails = row?.details ?? []
+    const masterFallback = {
+      ...row,
+      lot_no: row.lot_no || row.LOT_NO || row.lot || '',
+      wrhsdlvr_mas_id: row.wrhsdlvr_mas_id || row.wrhsdlvr_id || row.id || '',
+      rcvpay_nm: row.rcvpay_nm || row.RCVPAY_NM || row.name || '',
+      all_rcvpay_qy: row.all_rcvpay_qy || row.A_ALL_RCVPAY_QY || row.rcvpay_qy || 0,
+    }
+    emit('select', { master: masterFallback, details: mappedDetails })
     close()
   }
 }

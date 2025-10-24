@@ -171,7 +171,7 @@ LIMIT 200
 `;
 
 // 완제품 납품 대상 조회 (납품 상세) (사용) - 완전 출고된 것 제외
-const selectDeliveryProducts = `
+const selectDeliveryProducts = ` 
 SELECT
   dd.deli_deta_id                          AS insp_no,
   rd.prdt_id                               AS item_code,
@@ -199,7 +199,7 @@ HAVING available_qty > 0
 ORDER BY dd.DELI_DETA_ID DESC
 LIMIT 200`;
 
-// 생산지시 상세 목록 조회 (상단 그리드용 - 완제품 정보)
+// (상단 그리드용 - 완제품 정보)
 const selectProductionOrderDetails = `
 SELECT
   pdd.prod_drct_deta_id as withdrawal_id,
