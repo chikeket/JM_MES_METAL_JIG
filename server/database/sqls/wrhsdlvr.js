@@ -15,7 +15,8 @@ LEFT JOIN emp e ON mas.emp_id = e.emp_id
 WHERE (? = '' OR mas.rcvpay_nm LIKE CONCAT('%', ?, '%'))
   AND (? = '' OR mas.rcvpay_ty = ?)
   AND (? = '' OR mas.emp_id = ?)
-  AND (? = '' OR mas.rcvpay_dt = ?)
+  AND (? = '' OR mas.rcvpay_dt >= ?)
+  AND (? = '' OR mas.rcvpay_dt <= ?)
 ORDER BY mas.wrhsdlvr_mas_id DESC
 `;
 

@@ -1,47 +1,65 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const wrhousdlvrService = require('../services/wrhousdlvr_service.js');
+const wrhousdlvrService = require("../services/wrhousdlvr_service.js");
 
 // (1) 완제품 재고(납품용)
-router.get('/warehouse/available-fg-stock', async (req, res) => {
+router.get("/warehouse/available-fg-stock", async (req, res) => {
   try {
     const { prdt_id, prdt_opt_id = null } = req.query;
-    const result = await wrhousdlvrService.getAvailableFgStock({ prdt_id, prdt_opt_id });
+    const result = await wrhousdlvrService.getAvailableFgStock({
+      prdt_id,
+      prdt_opt_id,
+    });
     res.json(result);
   } catch (err) {
-    console.error('[API] /warehouse/available-fg-stock error:', err);
-    res.status(500).json({ error: err?.message ?? 'server error' });
+    console.error("[API] /warehouse/available-fg-stock error:", err);
+    res.status(500).json({ error: err?.message ?? "server error" });
   }
 });
 
 // (2) 가용 생산수량(자재 불출용)
-router.get('/warehouse/available-finished-production-qty', async (req, res) => {
+router.get("/warehouse/available-finished-production-qty", async (req, res) => {
   try {
     const { prdt_id, prdt_opt_id = null } = req.query;
-    const result = await wrhousdlvrService.getAvailableFinishedProductionQty({ prdt_id, prdt_opt_id });
+    const result = await wrhousdlvrService.getAvailableFinishedProductionQty({
+      prdt_id,
+      prdt_opt_id,
+    });
     res.json(result);
   } catch (err) {
-    console.error('[API] /warehouse/available-finished-production-qty error:', err);
-    res.status(500).json({ error: err?.message ?? 'server error' });
+    console.error(
+      "[API] /warehouse/available-finished-production-qty error:",
+      err
+    );
+    res.status(500).json({ error: err?.message ?? "server error" });
   }
 });
 
 // (3) 생산지시 기반 자재 불출 저장
-router.post('/warehouse/material-issue', async (req, res) => {
+router.post("/warehouse/material-issue", async (req, res) => {
   try {
     const result = await wrhousdlvrService.saveMaterialIssue(req.body);
     res.json(result);
   } catch (e) {
-    if (e?.code === 'INSUFFICIENT_STOCK') return res.status(409).json(e.payload);
-    console.error(e); res.status(500).json({ message: '자재 불출 저장 실패' });
+    if (e?.code === "INSUFFICIENT_STOCK")
+      return res.status(409).json(e.payload);
+    console.error(e);
+    res.status(500).json({ message: "자재 불출 저장 실패" });
   }
 });
 
 // 창고 입출고(수불서) 마스터+디테일 검색 (모달용)
-router.get('/wrhsdlvr/search', async (req, res) => {
+router.get("/wrhsdlvr/search", async (req, res) => {
   try {
-    const { rsc_ordr_nm, rcvpay_ty, emp_nm, reg_dt } = req.query;
-    const result = await wrhousdlvrService.searchWrhsdlvrMasterDetail({ rsc_ordr_nm, rcvpay_ty, emp_nm, reg_dt });
+    const { rsc_ordr_nm, rcvpay_ty, emp_nm, reg_dt_from, reg_dt_to } =
+      req.query;
+    const result = await wrhousdlvrService.searchWrhsdlvrMasterDetail({
+      rsc_ordr_nm,
+      rcvpay_ty,
+      emp_nm,
+      reg_dt_from,
+      reg_dt_to,
+    });
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -49,7 +67,7 @@ router.get('/wrhsdlvr/search', async (req, res) => {
 });
 
 // 창고 입출고 단건 마스터+디테일 조회 (ID 기준)
-router.get('/wrhsdlvr/:wrhsdlvr_mas_id', async (req, res) => {
+router.get("/wrhsdlvr/:wrhsdlvr_mas_id", async (req, res) => {
   try {
     const masId = req.params.wrhsdlvr_mas_id;
     const result = await wrhousdlvrService.getWrhsdlvrMasterDetailById(masId);
@@ -60,45 +78,55 @@ router.get('/wrhsdlvr/:wrhsdlvr_mas_id', async (req, res) => {
 });
 
 // 검사서ID로 남은 수량(remaining_qty) 단건 조회
-router.get('/warehouse/inspection-remaining-qty', async (req, res) => {
+router.get("/warehouse/inspection-remaining-qty", async (req, res) => {
   try {
     const { inspect_id, item_type } = req.query;
-    const result = await wrhousdlvrService.getInspectionRemainingQty({ inspect_id, item_type });
+    const result = await wrhousdlvrService.getInspectionRemainingQty({
+      inspect_id,
+      item_type,
+    });
     res.json(result);
   } catch (err) {
-    console.error('[API] /warehouse/inspection-remaining-qty error:', err);
-    res.status(500).json({ error: err?.message ?? 'server error' });
+    console.error("[API] /warehouse/inspection-remaining-qty error:", err);
+    res.status(500).json({ error: err?.message ?? "server error" });
   }
 });
 
 // 수량 update (입고/출고)
-router.post('/warehouse/update-qty', async (req, res) => {
+router.post("/warehouse/update-qty", async (req, res) => {
   try {
     const rows = req.body;
     const result = await wrhousdlvrService.updateQty(rows);
     res.json({ success: true, result });
   } catch (err) {
-    console.error('[API] /warehouse/update-qty error:', err);
-    res.status(500).json({ error: err?.message ?? 'server error' });
+    console.error("[API] /warehouse/update-qty error:", err);
+    res.status(500).json({ error: err?.message ?? "server error" });
   }
 });
 
 // 가용 수량 단건 조회 (E1/E2/E3 + 코드 + 옵션)
-router.get('/warehouse/available-qty', async (req, res) => {
+router.get("/warehouse/available-qty", async (req, res) => {
   try {
-    let { item_type, item_code, item_opt_code = '' } = req.query;
-    item_type = item_type ?? '';
-    item_code = item_code ?? '';
-    item_opt_code = item_opt_code ?? '';
-    console.log('[API] /warehouse/available-qty params:', { item_type, item_code, item_opt_code });
-    const result = await wrhousdlvrService.getAvailableQty({ item_type, item_code, item_opt_code });
+    let { item_type, item_code, item_opt_code = "" } = req.query;
+    item_type = item_type ?? "";
+    item_code = item_code ?? "";
+    item_opt_code = item_opt_code ?? "";
+    console.log("[API] /warehouse/available-qty params:", {
+      item_type,
+      item_code,
+      item_opt_code,
+    });
+    const result = await wrhousdlvrService.getAvailableQty({
+      item_type,
+      item_code,
+      item_opt_code,
+    });
     res.json(result);
   } catch (err) {
-    console.error('[API] /warehouse/available-qty error:', err);
-    res.status(500).json({ error: err?.message ?? 'server error' });
+    console.error("[API] /warehouse/available-qty error:", err);
+    res.status(500).json({ error: err?.message ?? "server error" });
   }
 });
-
 
 // 전체 창고 목록 조회 (품목 유형별 필터링 가능)
 router.get("/warehouses/all", async (req, res) => {
@@ -304,17 +332,21 @@ router.get("/warehouse/lots/allocations", async (req, res) => {
       item_type,
       item_code,
       item_opt_code,
-      quantity: Number(quantity)
+      quantity: Number(quantity),
     });
 
     const result = await wrhousdlvrService.getLotAllocations({
       item_type,
       item_code,
       item_opt_code: item_opt_code || null,
-      quantity: Number(quantity)
+      quantity: Number(quantity),
     });
 
-    console.log("[wrhousdlvr_router] LOT 할당 결과:", Array.isArray(result?.allocations) ? result.allocations.length : 0, "건");
+    console.log(
+      "[wrhousdlvr_router] LOT 할당 결과:",
+      Array.isArray(result?.allocations) ? result.allocations.length : 0,
+      "건"
+    );
     console.log("[wrhousdlvr_router] LOT 할당 상세:", result?.allocations);
 
     res.json(result);
@@ -323,7 +355,7 @@ router.get("/warehouse/lots/allocations", async (req, res) => {
     res.status(500).json({
       error: "LOT 할당 조회 실패",
       message: error.message,
-      details: error.stack
+      details: error.stack,
     });
   }
 });
@@ -573,14 +605,20 @@ router.post("/warehouse/transactions", async (req, res) => {
         res.status(result.success ? 200 : 400).json(result);
       } catch (err) {
         console.error("[wrhousdlvr_router] processTransactions error:", err);
-        res.status(500).json({ success: false, error: err?.message ?? "server error" });
+        res
+          .status(500)
+          .json({ success: false, error: err?.message ?? "server error" });
       }
       return;
     }
 
     // 기존 방식 (mode, masterTransactions, detailTransactions)
     const { mode, masterTransactions, detailTransactions } = req.body;
-    if (!mode || !Array.isArray(masterTransactions) || !Array.isArray(detailTransactions)) {
+    if (
+      !mode ||
+      !Array.isArray(masterTransactions) ||
+      !Array.isArray(detailTransactions)
+    ) {
       return res.status(400).json({
         success: false,
         error: "mode, masterTransactions, detailTransactions가 필요합니다.",
@@ -592,8 +630,12 @@ router.post("/warehouse/transactions", async (req, res) => {
         error: "디테일 테이블에 값이 하나도 없으면 저장할 수 없습니다.",
       });
     }
-    console.log(`[wrhousdlvr_router] 마스터 거래: ${masterTransactions.length}건`);
-    console.log(`[wrhousdlvr_router] 디테일 거래: ${detailTransactions.length}건`);
+    console.log(
+      `[wrhousdlvr_router] 마스터 거래: ${masterTransactions.length}건`
+    );
+    console.log(
+      `[wrhousdlvr_router] 디테일 거래: ${detailTransactions.length}건`
+    );
     const result = await wrhousdlvrService.saveWarehouseTransactions({
       mode,
       masterTransactions,
@@ -602,8 +644,13 @@ router.post("/warehouse/transactions", async (req, res) => {
     console.log("[wrhousdlvr_router] 창고 거래 저장 결과:", result);
     res.json(result);
   } catch (err) {
-    console.error("[wrhousdlvr_router] POST error:", err && err.stack ? err.stack : err);
-    res.status(500).json({ success: false, error: err?.message ?? "server error" });
+    console.error(
+      "[wrhousdlvr_router] POST error:",
+      err && err.stack ? err.stack : err
+    );
+    res
+      .status(500)
+      .json({ success: false, error: err?.message ?? "server error" });
   }
 });
 
@@ -690,7 +737,8 @@ router.delete("/warehouse/transaction-details", async (req, res) => {
       .split(",")
       .map((v) => v.trim())
       .filter(Boolean);
-    if (!ids.length) return res.status(400).json({ error: "ids 파라미터 필요" });
+    if (!ids.length)
+      return res.status(400).json({ error: "ids 파라미터 필요" });
     const result = await wrhousdlvrService.deleteSelectedTransactions(ids);
     res.json(result);
   } catch (err) {

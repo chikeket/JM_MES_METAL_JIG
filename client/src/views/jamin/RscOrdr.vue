@@ -752,6 +752,28 @@ const reset = () => {
   background-color: #ffffff;
 }
 
+/* 이 컴포넌트에서만 체크박스은 기본 브라우저 스타일을 사용하도록 강제
+   (다른 전역/심볼릭 스타일이 체크박스를 덮어쓰는 문제 방지) */
+:deep(.form-check-input) {
+  all: unset; /* 기존에 적용된 스타일을 초기화 */
+  -webkit-appearance: checkbox;
+  appearance: checkbox;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  vertical-align: middle;
+}
+
+:deep(.form-check-input:focus) {
+  outline: auto 1px -webkit-focus-ring-color;
+}
+
+:deep(.form-check-input[disabled]) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 :deep(.form-control[disabled]),
 :deep(.form-control[readonly]),
 :deep(input[disabled]),
@@ -990,7 +1012,7 @@ const reset = () => {
   :deep(.table) {
     font-size: 11px;
   }
-  
+
   :deep(.table thead th),
   :deep(.table tbody td) {
     padding: 0.4rem 0.3rem;
