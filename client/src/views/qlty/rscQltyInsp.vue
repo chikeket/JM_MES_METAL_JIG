@@ -33,7 +33,7 @@
 
       <CRow class="g-3 mb-3">
         <CCol md="3">
-          <c-form-label>출고처</c-form-label>
+          <c-form-label>자재명</c-form-label>
           <c-form-input
             v-model="form.rcs_nm"
             readonly
