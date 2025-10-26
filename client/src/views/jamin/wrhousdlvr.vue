@@ -571,10 +571,15 @@ watch(
         )
         const hasAnyLot = newRows.some((it) => !!(it.lot || it.lot_no))
         const hasAnyDeli = newRows.some((it) => !!it.deli_deta_id)
-        if (allHaveLotFromWrhous || (hasAnyLot && hasAnyDeli)) {
+        // If every row already carries lot information (from a 수불서 or modal),
+        // we can skip allocation. Previously we also skipped when there was any
+        // mix of LOT + delivery rows which prevented allocation for material
+        // withdrawal rows when finished-goods were present. Only skip when *all*
+        // rows already have LOT data to ensure per-item allocation still runs.
+        if (allHaveLotFromWrhous) {
           finalConsolidatedRows.value = newRows
           console.log(
-            '[wrhousdlvr] 출고 모드 - 수불서 기반 데이터(또는 deli+lot 혼재)로 LOT 할당 스킵, finalConsolidatedRows:',
+            '[wrhousdlvr] 출고 모드 - 수불서 기반 데이터로 LOT 할당 스킵, finalConsolidatedRows:',
             finalConsolidatedRows.value,
           )
           return
@@ -1077,8 +1082,11 @@ async function onSelectDelivery(deliveryList) {
       location_id: '',
       location_name: '',
       // propagate lot information from delivery API (if provided)
-      lot: d.lot || d.lot_no || '',
-      lot_no: d.lot_no || d.lot || '',
+      // If backend provided lot_allocations (候補 LOT), prefer the first candidate when
+      // no explicit lot/lot_no was supplied by the API/modal.
+      lot_allocations: Array.isArray(d.lot_allocations) ? d.lot_allocations : [],
+      lot: d.lot || d.lot_no || (Array.isArray(d.lot_allocations) && d.lot_allocations.length ? d.lot_allocations[0].lot_no : ''),
+      lot_no: d.lot_no || d.lot || (Array.isArray(d.lot_allocations) && d.lot_allocations.length ? d.lot_allocations[0].lot_no : ''),
       // mark context so refreshAvailableForTopRow won't overwrite delivery-provided available_qty
       context: 'delivery',
       deli_deta_id:
