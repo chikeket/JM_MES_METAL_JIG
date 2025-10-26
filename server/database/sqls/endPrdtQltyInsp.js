@@ -44,12 +44,13 @@ left join(
 		from end_prdt_qlty_insp
 		group by prcs_ctrl_id) d
 on a.prcs_ctrl_id = d.prcs_ctrl_id
-and a.pass_qy > d.end_insp_qy
 join prdt e
 on b.prdt_id = e.prdt_id
 join prdt_opt f
 on b.prdt_opt_id = f.prdt_opt_id
-WHERE e.prdt_nm LIKE CONCAT('%',? ,'%')
+and b.prdt_id = f.prdt_id
+WHERE a.pass_qy > d.end_insp_qy
+AND e.prdt_nm LIKE CONCAT('%',? ,'%')
 AND a.pass_qy > ?
 AND a.wk_to_dt >= ?
 `;
