@@ -1030,10 +1030,33 @@ const getDeliveryProductsList = async (item_code = "", item_name = "") => {
       JSON.stringify(results[0], null, 2)
     );
 
-    return results.map((item) => ({
-      ...item,
-      insp_type: "deliveryDetail",
-    }));
+    // For each delivery item, fetch LOT allocation suggestions (FIFO) so
+    // the UI can show candidate lot numbers for allocation during 납품.
+    const enriched = await Promise.all(
+      (results || []).map(async (item) => {
+        const availableQty = Number(item.available_qty || item.available_qty || 0);
+        let allocations = [];
+        try {
+          if (availableQty > 0) {
+            allocations = (await getLotAllocations({
+              item_type: 'E3',
+              item_code: item.item_code,
+              item_opt_code: item.opt_code || null,
+              quantity: availableQty,
+            }))?.allocations || [];
+          }
+        } catch (e) {
+          console.warn('[wrhousdlvr_service] getLotAllocations 실패 (무시):', e?.message || e);
+        }
+        return {
+          ...item,
+          insp_type: "deliveryDetail",
+          lot_allocations: allocations,
+        };
+      })
+    );
+
+    return enriched;
   } catch (error) {
     console.error("[wrhousdlvr_service] 완제품 납품 대상 조회 실패:", error);
     throw error;
