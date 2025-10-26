@@ -217,6 +217,7 @@ const selectOrdr = (prdts) => {
   form.value.prcs_ctrl_id = prdts.searchParams.prcs_ctrl_id
   form.value.semi_prdt_qlty_insp_id = prdts.searchParams.semi_prdt_qlty_insp_id
   form.value.emp_id = prdts.searchParams.emp_id ?? auth.user?.emp_id ?? 'EMP001'
+  form.value.emp_nm = prdts.searchParams.emp_nm ?? auth.user?.emp_nm ?? '홍길동'
   defectQty.value = prdts.searchParams.infer_qy || 0
   for (const prdt of prdts.detailData)
     inspectItems.value.push({
