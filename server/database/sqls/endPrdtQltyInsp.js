@@ -49,7 +49,7 @@ on b.prdt_id = e.prdt_id
 join prdt_opt f
 on b.prdt_opt_id = f.prdt_opt_id
 and b.prdt_id = f.prdt_id
-WHERE a.pass_qy > d.end_insp_qy
+WHERE a.pass_qy > COALESCE(d.end_insp_qy,0)
 AND e.prdt_nm LIKE CONCAT('%',? ,'%')
 AND a.pass_qy > ?
 AND a.wk_to_dt >= ?
