@@ -177,6 +177,7 @@ and a.rcvord_id LIKE CONCAT('%', ?,'%')
 and b.co_nm LIKE CONCAT('%', ?,'%')
 and c.emp_nm LIKE CONCAT('%', ?,'%')
 and a.reg_dt > ?
+ORDER BY a.rcvord_id desc
 `;
 
 // 수주서 모달에서 수주서 상세테이블 조회(윤기가 쓰는 쿼리)
