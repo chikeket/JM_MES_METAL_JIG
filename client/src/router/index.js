@@ -106,16 +106,16 @@ const routes = [
         name: 'BOM 관리',
         component: () => import('@/views/jamin/bomManage.vue'),
       },
-      {
-        path: '/lotSearch',
-        name: 'LOT 재고 조회',
-        component: () => import('@/views/jamin/lotSearch.vue'),
-      },
-      {
-        path: '/wrhousDlvrSearch',
-        name: '창고 입출고 내역 조회',
-        component: () => import('@/views/jamin/invntrySearch.vue'),
-      },
+      // {
+      //   path: '/lotSearch',
+      //   name: 'LOT 재고 조회',
+      //   component: () => import('@/views/jamin/lotSearch.vue'),
+      // },
+      // {
+      //   path: '/wrhousDlvrSearch',
+      //   name: '창고 입출고 내역 조회',
+      //   component: () => import('@/views/jamin/invntrySearch.vue'),
+      // },
       // ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
       // ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■ 상준 ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
       // ■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■
